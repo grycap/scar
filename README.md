@@ -12,6 +12,14 @@ SCAR uses the following underlying technologies:
 
 SCAR creates Lambda functions and provides a command-line interface to transparently execute Docker containers in AWS Lambda.
 
+## Configuration
+
+### IAM Role
+
+The Lambda functions require a role in order to acquire the required permissions to access the different AWS services during its execution.
+
+There is a sample policy in the [lambda-execute.role](docs/aws/lambda-execute.role) file. This role should be created beforehand using Amazon IAM.
+
 ## Licensing
 SCAR is licensed under the Apache License, Version 2.0. See
 [LICENSE](https://github.com/grycap/scar/blob/master/LICENSE) for the full
