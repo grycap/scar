@@ -1,0 +1,4 @@
+{
+  "image": "centos:7",
+  "script": "https://gist.githubusercontent.com/alpegon/d9f4110f63cb987a1bcef164e60f81cf/raw/6dc405dec596026e3b925fbe267cc5541564ae3f/test.sh"
+}
