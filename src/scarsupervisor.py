@@ -28,7 +28,7 @@ name="c7"
 def prepare_environment(file_retriever):
     # Download Udocker
     url = "https://raw.githubusercontent.com/indigo-dc/udocker/udocker-fr/udocker.py"
-    call(["mkdir", "/tmp/udocker"])
+    call(["mkdir", "-p", "/tmp/udocker"])
     file_retriever.retrieve(url, udocker_bin)
     # Install udocker in /tmp
     call(["chmod", "u+rx", udocker_bin])
