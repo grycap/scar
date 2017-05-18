@@ -21,7 +21,7 @@ from subprocess import call, check_output, Popen, PIPE, STDOUT
 print('Loading function')
 
 udocker_bin="/tmp/udocker/udocker"
-lambda_output="/tmp/lambda_output"
+lambda_output="/tmp/output"
 script = "/tmp/udocker/script"
 name="c7"
 
