@@ -1,3 +1,4 @@
 test/*.zip
 .p*
 *.pyc
+*.zip*
