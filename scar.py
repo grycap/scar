@@ -4,6 +4,7 @@ import zipfile
 import os
 import shutil
 from tabulate import tabulate
+import base64
 
 version = "v0.0.1"
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -41,6 +42,10 @@ def create_zip_file(file_name=lambda_name):
     # Return the zip as an array of bytes
     with open(zif_file_path, 'rb') as f:
         return f.read()
+    
+def load_payload(payload):
+    with open(payload, 'rb') as f:
+        return f.read()   
 
 class Scar(object):
     """Implements most of the command line interface.
@@ -96,6 +101,7 @@ class Scar(object):
         parser_run.add_argument("-m", "--memory", type=int, help="Lambda function memory in megabytes. Range from 128 to 1536 in increments of 64")
         parser_run.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 300.")
         parser_run.add_argument("--async", help="Tell Scar to wait or not for the lambda function return", action="store_true")
+        parser_run.add_argument("-p", "--payload", nargs='?', type=argparse.FileType('rb'), help="Path to the input file passed to the function")        
         
         # Create the parser for the 'rm' command
         parser_rm = subparsers.add_parser('rm', help="Delete function")
@@ -153,7 +159,21 @@ class Scar(object):
         print (tabulate(table, headers))
         
     def run(self, args):
-        print (args)
+        
+        invocation_type = 'RequestResponse'
+        log_type = 'Tail'
+        if args.async:
+            invocation_type= 'Event'
+            log_type = 'None'
+            
+        response = self.boto3_client.invoke( FunctionName=args.name,
+                                             InvocationType=invocation_type,
+                                             LogType=log_type,
+                                             Payload=args.payload.read() )
+        
+        result = base64.b64decode(response['LogResult'])
+        print (result.decode("utf-8"))
+         
             
     def rm(self, args):
         if args.name:
