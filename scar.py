@@ -1,9 +1,17 @@
 import argparse
+import boto3
+import zipfile
+import os
+import shutil
+from tabulate import tabulate
 
 version = "v0.0.1"
+dir_path = os.path.dirname(os.path.realpath(__file__))
+lambda_name = "scar_function"
+zif_file_path = dir_path+'/function.zip'
 
 def check_memory(lambda_memory):
-    """ Check if the memory intrduced by the user is correct.
+    """ Check if the memory introduced by the user is correct.
     If the memory is not specified in 64mb increments, 
     transforms the request to the next available increment."""
     if (lambda_memory < 128) or (lambda_memory > 1536):
@@ -19,7 +27,20 @@ def check_memory(lambda_memory):
 def check_time(lambda_time):
     if (lambda_time <= 0) or (lambda_time > 300):
         raise Exception('Incorrect time specified')
-    return lambda_time    
+    return lambda_time
+
+def create_zip_file(file_name=lambda_name):
+    # Set generic lambda function name
+    function_name = file_name+'.py'
+    # Copy file to avoid messing with the repo files
+    shutil.copy(dir_path+'/src/scarsupervisor.py',function_name)
+    # Zip the function file
+    with zipfile.ZipFile(zif_file_path, 'w') as zf:
+        zf.write(function_name)
+        os.remove(function_name)
+    # Return the zip as an array of bytes
+    with open(zif_file_path, 'rb') as f:
+        return f.read()
 
 class Scar(object):
     """Implements most of the command line interface.
@@ -28,6 +49,25 @@ class Scar(object):
     """
 
     def __init__(self):
+        
+        self.create_boto3_client()
+        self.create_command_parser()               
+    
+    def init_lambda_fuction_parameters(self):
+        self.lambda_name = lambda_name
+        self.lambda_runtime = "python2.7"
+        self.lambda_handler = self.lambda_name+".lambda_handler"        
+        self.lambda_role = "arn:aws:iam::974349055189:role/lambda-s3-execution-role"        
+        self.lambda_env_variables = {"Variables" : {"UDOCKER_DIR":"/tmp/home/.udocker"}}
+        self.lambda_zip_file_base64 = {"ZipFile": create_zip_file()}
+        self.lambda_memory = 128
+        self.lambda_time = 3
+        self.lambda_description = "Automatically generated lambda function"
+
+    def create_boto3_client(self):
+        self.boto3_client = boto3.client('lambda', region_name='us-east-1')
+
+    def create_command_parser(self):
         self.parser = argparse.ArgumentParser(prog="scar",
                                               description="Deploy containers in serverless architectures",
                                               epilog="Run 'scar COMMAND --help' for more information on a command.")
@@ -38,8 +78,9 @@ class Scar(object):
         # Set default function
         parser_init.set_defaults(func=self.init)
         # Set the positional arguments
-        parser_init.add_argument("image_id", help="Container image id (i.e. centos:7)")
-        # Set the optional arguments 
+        parser_init.add_argument("image_id", help="Container image id (i.e. centos:7)") 
+        # Set the optional arguments
+        parser_init.add_argument("-d", "--description", help="Lambda function description.")        
         parser_init.add_argument("-n", "--name", help="Lambda function name")
         parser_init.add_argument("-m", "--memory", type=int, help="Lambda function memory in megabytes. Range from 128 to 1536 in increments of 64")
         parser_init.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 300.")
@@ -68,37 +109,62 @@ class Scar(object):
 
         # Create the parser for the 'version' command
         parser_version = subparsers.add_parser('version', help="Show the Scar version information")
-        parser_version.set_defaults(func=self.version)        
-                         
+        parser_version.set_defaults(func=self.version) 
+    
     def execute(self):
         """Command parsing and selection"""
         args = self.parser.parse_args()
         args.func(args)
 
     def init(self, args):
-        if args.memory:
-            check_memory(args.memory)
-        if args.time:
-            check_time(args.time)
+        self.init_lambda_fuction_parameters()
         
-        print (args)
+        if args.name:
+            self.lambda_name = args.name
+            self.lambda_handler = self.lambda_name+".lambda_handler"
+            self.lambda_zip_file_base64 = {"ZipFile": create_zip_file(args.name)}  
+        if args.memory:
+            self.lambda_memory = check_memory(args.memory)
+        if args.time:
+            self.lambda_time = check_time(args.time)
+        if args.description:
+            self.lambda_description = args.description            
+           
+        response = self.boto3_client.create_function( FunctionName=self.lambda_name,
+                                                      Runtime=self.lambda_runtime,
+                                                      Role=self.lambda_role,
+                                                      Handler=self.lambda_handler,
+                                                      Code=self.lambda_zip_file_base64,
+                                                      Environment=self.lambda_env_variables,
+                                                      Description=self.lambda_description,
+                                                      Timeout=self.lambda_time,
+                                                      MemorySize=self.lambda_memory )
+        # Remove the zip created in the operation
+        os.remove(zif_file_path)
+        print (response)
         
     def ls(self, args):
-        print (args)
+        paginator = self.boto3_client.get_paginator('list_functions')        
+        headers = ['NAME', 'MEMORY', 'TIME']
+        table = []
+        for functions in paginator.paginate():         
+            for lfunction in functions['Functions']:
+                table.append([lfunction['FunctionName'], lfunction['MemorySize'], lfunction['Timeout']])            
+        print (tabulate(table, headers))
         
     def run(self, args):
         print (args)
             
     def rm(self, args):
-        print (args)
+        if args.name:
+            response = self.boto3_client.delete_function(FunctionName=args.name)
+            print(response)
 
     def log(self, args):
         print (args)
     
     def version(self, args):
         print ("scar " + version)
-        
-        
-        
+               
 if __name__ == "__main__":
     Scar().execute()        
