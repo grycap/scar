@@ -16,13 +16,13 @@
 import urllib
 import json
 import os
-from subprocess import call, check_output, Popen, PIPE, STDOUT
+from subprocess import call, check_output
 
 print('Loading function')
 
 udocker_bin="/tmp/udocker/udocker"
 lambda_output="/tmp/output"
-script = "/tmp/udocker/script"
+script = "/tmp/udocker/script.sh"
 name="c7"
 
 def prepare_environment(file_retriever):
@@ -33,7 +33,6 @@ def prepare_environment(file_retriever):
     # Install udocker in /tmp
     call(["chmod", "u+rx", udocker_bin])
     call(["mkdir", "-p", "/tmp/home/.udocker"])
-    os.environ["UDOCKER_DIR"] = "/tmp/home/.udocker"
 
 def prepare_container(container_image):
     # Download and create container
@@ -42,15 +41,17 @@ def prepare_container(container_image):
     # Set container execution engine to Fakechroot
     call([udocker_bin, "setup", "--execmode=F1", name])
 
-def retrieve_script(script_url, file_retriever):
-    file_retriever.retrieve(script_url, script)
+def create_script(content):
+    with open(script,"w") as f:
+        f.write(content)
 
 def lambda_handler(event, context):
     print("Received event: " + json.dumps(event, indent=2))
     file_retriever = urllib.URLopener()
     prepare_environment(file_retriever)
-    prepare_container(event['image'])
-    retrieve_script(event['script'], file_retriever)
+    prepare_container(os.environ['IMAGE_ID'])
+    create_script(event['script'])
+    
     # Execute script
     call([udocker_bin, "run", "-v", "/tmp", "--nosysdirs", name, "/bin/bash", script])
     return check_output(["cat", lambda_output])
