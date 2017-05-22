@@ -20,6 +20,18 @@ The Lambda functions require a role in order to acquire the required permissions
 
 There is a sample policy in the [lambda-execute.role](docs/aws/lambda-execute.role) file. This role should be created beforehand using Amazon IAM.
 
+## Installation
+
+Install the required dependencies:
+
+* [AWS SDK for Python (Boto 3)](https://github.com/boto/boto3)
+* [Tabulate](https://pypi.python.org/pypi/tabulate)
+
+You can automatically install them issuing the following command:
+```
+sudo pip install -r requirements.txt
+```
+
 ## Licensing
 SCAR is licensed under the Apache License, Version 2.0. See
 [LICENSE](https://github.com/grycap/scar/blob/master/LICENSE) for the full
