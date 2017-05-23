@@ -189,14 +189,24 @@ class Scar(object):
         return False
        
     def ls(self, args):
+        '''
         #self.lambda_filters = [{'createdby':'tag:createdby', 'Values':['scar']}]
         paginator = self.boto3_client.get_paginator('list_functions') 
         #operation_parameters = {'createdby': 'scar'}
+        
+        '''
+        
+        client = boto3.client('resourcegroupstaggingapi', region_name='us-east-1')
+        tag_filters=[ { 'Key': 'owner', 'Values': [ get_user_name() ] }, { 'Key': 'createdby', 'Values': ['scar'] } ]
+        result = client.get_resources(TagFilters=tag_filters, TagsPerPage=100)
+        filtered_functions = result['ResourceTagMappingList']
         headers = ['NAME', 'MEMORY', 'TIME']
         table = []
-        for functions in paginator.paginate():
-            for lfunction in functions['Functions']:
-                table.append([lfunction['FunctionName'], lfunction['MemorySize'], lfunction['Timeout']])            
+        for function_arn in filtered_functions:
+            function_info = self.boto3_client.get_function(FunctionName=function_arn['ResourceARN'])
+            table.append([function_info['Configuration']['FunctionName'], 
+                          function_info['Configuration']['MemorySize'], 
+                          function_info['Configuration']['Timeout']])            
         print (tabulate(table, headers))
         
     def run(self, args):
