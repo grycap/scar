@@ -43,9 +43,9 @@ def create_zip_file(file_name=lambda_name):
         # Lambda function code
         zf.write(function_name)
         # Udocker script code
-        zf.write(dir_path + '/lambda/udocker')
+        zf.write(dir_path + '/lambda/udocker', 'udocker')
         # Udocker libs
-        zf.write(dir_path + '/lambda/udocker-1.1.0-RC2.tar.gz')
+        zf.write(dir_path + '/lambda/udocker-1.1.0-RC2.tar.gz', 'udocker-1.1.0-RC2.tar.gz')
         os.remove(function_name)
     # Return the zip as an array of bytes
     with open(zif_file_path, 'rb') as f:
@@ -85,7 +85,8 @@ class Scar(object):
         self.lambda_runtime = "python2.7"
         self.lambda_handler = self.lambda_name + ".lambda_handler"        
         self.lambda_role = "arn:aws:iam::974349055189:role/lambda-s3-execution-role"        
-        self.lambda_env_variables = {"Variables" : {"UDOCKER_DIR":"/tmp/home/.udocker", "UDOCKER_TARBALL":"/var/task/udocker-1.1.0-RC2.tar.gz"}}
+        self.lambda_env_variables = {"Variables" : {"UDOCKER_DIR":"/tmp/home/.udocker", 
+                                                    "UDOCKER_TARBALL":"/var/task/udocker-1.1.0-RC2.tar.gz"}}
         self.lambda_zip_file_base64 = {"ZipFile": create_zip_file()}
         self.lambda_memory = 128
         self.lambda_time = 3

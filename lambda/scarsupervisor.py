@@ -26,11 +26,10 @@ script = "/tmp/udocker/script.sh"
 name="c7"
 
 def prepare_environment(file_retriever):
-    # Download Udocker
-    url = "https://raw.githubusercontent.com/indigo-dc/udocker/udocker-fr/udocker.py"
-    call(["mkdir", "-p", "/tmp/udocker"])
-    file_retriever.retrieve(url, udocker_bin)
     # Install udocker in /tmp
+    print check_output(["ls", "-l", "/var/task/"])
+    call(["mkdir", "-p", "/tmp/udocker"])
+    call(["cp", "/var/task/udocker", udocker_bin])
     call(["chmod", "u+rx", udocker_bin])
     call(["mkdir", "-p", "/tmp/home/.udocker"])
 
