@@ -36,10 +36,16 @@ def create_zip_file(file_name=lambda_name):
     # Set generic lambda function name
     function_name = file_name + '.py'
     # Copy file to avoid messing with the repo files
-    shutil.copy(dir_path + '/src/scarsupervisor.py', function_name)
+    # We have to rename because the function name afects the handler name
+    shutil.copy(dir_path + '/lambda/scarsupervisor.py', function_name)
     # Zip the function file
     with zipfile.ZipFile(zif_file_path, 'w') as zf:
+        # Lambda function code
         zf.write(function_name)
+        # Udocker script code
+        zf.write(dir_path + '/lambda/udocker')
+        # Udocker libs
+        zf.write(dir_path + '/lambda/udocker-1.1.0-RC2.tar.gz')
         os.remove(function_name)
     # Return the zip as an array of bytes
     with open(zif_file_path, 'rb') as f:
@@ -54,8 +60,6 @@ def get_user_name():
         return boto3.client('iam').get_user()['User']['UserName']
     except ClientError as ce:
         # If the user doesn't have access rights to IAM
-        # print(str(ce))
-        #(?<=User: )(\S+)(?=:user)
         return find_expression('(?<=user\/)(\S+)', str(ce))
 
 def find_expression(rgx_pattern, string_to_search):
@@ -81,7 +85,7 @@ class Scar(object):
         self.lambda_runtime = "python2.7"
         self.lambda_handler = self.lambda_name + ".lambda_handler"        
         self.lambda_role = "arn:aws:iam::974349055189:role/lambda-s3-execution-role"        
-        self.lambda_env_variables = {"Variables" : {"UDOCKER_DIR":"/tmp/home/.udocker"}}
+        self.lambda_env_variables = {"Variables" : {"UDOCKER_DIR":"/tmp/home/.udocker", "UDOCKER_TARBALL":"/var/task/udocker-1.1.0-RC2.tar.gz"}}
         self.lambda_zip_file_base64 = {"ZipFile": create_zip_file()}
         self.lambda_memory = 128
         self.lambda_time = 3
