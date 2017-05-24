@@ -24,7 +24,7 @@ There is a sample policy in the [lambda-execute.role](docs/aws/lambda-execute.ro
 
 Install the required dependencies:
 
-* [AWS SDK for Python (Boto 3)](https://github.com/boto/boto3)
+* [AWS SDK for Python (Boto 3)](https://github.com/boto/boto3) (v1.4.4+ is required)
 * [Tabulate](https://pypi.python.org/pypi/tabulate)
 
 You can automatically install them issuing the following command:
