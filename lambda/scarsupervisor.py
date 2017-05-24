@@ -17,6 +17,7 @@ import urllib
 import json
 import os
 import re
+import uuid
 from subprocess import call, check_output, STDOUT
 
 print('Loading function')
@@ -24,7 +25,7 @@ print('Loading function')
 udocker_bin="/tmp/udocker/udocker"
 lambda_output="/tmp/lambda-stdout.txt"
 script = "/tmp/udocker/script.sh"
-name="container"
+name = uuid.uuid4()
 
 def prepare_environment(file_retriever):
     # Install udocker in /tmp

@@ -249,7 +249,6 @@ class Scar(object):
                 self.lambda_env_variables['Variables']['CONT_VAR_'+var_parsed[0]] = var_parsed[1]
             self.boto3_client.update_function_configuration(FunctionName=args.name,
                                                             Environment=self.lambda_env_variables)   
-        
         # Generate the script passed to the container
         script = "{ \"script\" : \"" + args.payload.read().replace('\n', '\\n').replace('"', '\\"') + "\"}"
          
