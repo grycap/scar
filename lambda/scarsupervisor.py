@@ -52,5 +52,5 @@ def lambda_handler(event, context):
     create_script(event['script'])
     
     # Execute script
-    call([udocker_bin, "run", "-v", "/tmp", "--nosysdirs", name, "/bin/bash", script])
+    call([udocker_bin, "run", "-v", "/tmp", "--nosysdirs", name, "/bin/sh", script])
     return check_output(["cat", lambda_output])
