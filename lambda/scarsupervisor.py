@@ -25,7 +25,7 @@ print('Loading function')
 udocker_bin="/tmp/udocker/udocker"
 lambda_output="/tmp/lambda-stdout.txt"
 script = "/tmp/udocker/script.sh"
-name = uuid.uuid4()
+name = str(uuid.uuid4())
 
 def prepare_environment(file_retriever):
     # Install udocker in /tmp
