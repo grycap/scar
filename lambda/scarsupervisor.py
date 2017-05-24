@@ -16,12 +16,12 @@
 import urllib
 import json
 import os
-from subprocess import call, check_output
+from subprocess import call, check_output, STDOUT
 
 print('Loading function')
 
 udocker_bin="/tmp/udocker/udocker"
-lambda_output="/tmp/output"
+lambda_output="/tmp/lambda-stdout.txt"
 script = "/tmp/udocker/script.sh"
 name="c7"
 
@@ -52,5 +52,10 @@ def lambda_handler(event, context):
     create_script(event['script'])
     
     # Execute script
-    call([udocker_bin, "run", "-v", "/tmp", "--nosysdirs", name, "/bin/bash", script])
-    return check_output(["cat", lambda_output])
+    call([udocker_bin, "run", "--rm", "-v", "/tmp", "--nosysdirs", name, "/bin/sh", script], 
+          stderr = STDOUT,
+          stdout = open(lambda_output,"w"))
+
+    stdout = check_output(["cat", lambda_output])
+    print stdout    
+    return stdout
