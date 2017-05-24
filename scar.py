@@ -143,6 +143,7 @@ class Scar(object):
         parser_run.add_argument("name", help="Lambda function name")
         parser_run.add_argument("-m", "--memory", type=int, help="Lambda function memory in megabytes. Range from 128 to 1536 in increments of 64")
         parser_run.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 300.")
+        parser_run.add_argument("-e", "--env", action='append', help="Pass environment variable to the container (VAR=val). Can be defined multiple times.")
         parser_run.add_argument("--async", help="Tell Scar to wait or not for the lambda function return", action="store_true")
         parser_run.add_argument("-p", "--payload", nargs='?', type=argparse.FileType('r'), help="Path to the input file passed to the function")        
         
@@ -227,14 +228,31 @@ class Scar(object):
         print (tabulate(table, headers))
         
     def run(self, args):
-        
         invocation_type = 'RequestResponse'
         log_type = 'Tail'
         if args.async:
             invocation_type = 'Event'
-            log_type = 'None'
-            
-        script = "{ \"script\" : \"" + args.payload.read().replace('\n', '\\n').replace('"', '\\"') + "\"}" 
+            log_type = 'None' 
+        
+        if args.memory:
+            self.boto3_client.update_function_configuration(FunctionName=args.name,
+                                                            MemorySize=check_memory(args.memory))   
+        if args.time:
+            self.boto3_client.update_function_configuration(FunctionName=args.name,
+                                                            Timeout=check_time(args.time))   
+        if args.env:
+            # Retrieve the global variables already defined
+            self.lambda_env_variables = self.boto3_client.get_function(FunctionName=args.name)['Configuration']['Environment']
+            for var in args.env:
+                var_parsed = var.split("=")
+                # Add an specific prefix to be able to find the variables defined by the user
+                self.lambda_env_variables['Variables']['CONT_VAR_'+var_parsed[0]] = var_parsed[1]
+            self.boto3_client.update_function_configuration(FunctionName=args.name,
+                                                            Environment=self.lambda_env_variables)   
+        
+        # Generate the script passed to the container
+        script = "{ \"script\" : \"" + args.payload.read().replace('\n', '\\n').replace('"', '\\"') + "\"}"
+         
         response = self.boto3_client.invoke( FunctionName=args.name,
                                              InvocationType=invocation_type,
                                              LogType=log_type,

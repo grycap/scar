@@ -16,18 +16,18 @@
 import urllib
 import json
 import os
-from subprocess import call, check_output
+import re
+from subprocess import call, check_output, STDOUT
 
 print('Loading function')
 
 udocker_bin="/tmp/udocker/udocker"
-lambda_output="/tmp/output"
+lambda_output="/tmp/lambda-stdout.txt"
 script = "/tmp/udocker/script.sh"
-name="c7"
+name="container"
 
 def prepare_environment(file_retriever):
     # Install udocker in /tmp
-    print check_output(["ls", "-l", "/var/task/"])
     call(["mkdir", "-p", "/tmp/udocker"])
     call(["cp", "/var/task/udocker", udocker_bin])
     call(["chmod", "u+rx", udocker_bin])
@@ -44,6 +44,16 @@ def create_script(content):
     with open(script,"w") as f:
         f.write(content)
 
+def get_global_variables():
+    cont_variables = []
+    for key in os.environ.keys():
+        # Find global variables with the specified prefix
+        if re.match("CONT_VAR_.*", key):
+            cont_variables.append('--env')
+            # Remove global variable prefix
+            cont_variables.append(key.replace("CONT_VAR_", "")+'='+os.environ[key])
+    return cont_variables
+
 def lambda_handler(event, context):
     print("Received event: " + json.dumps(event, indent=2))
     file_retriever = urllib.URLopener()
@@ -51,6 +61,17 @@ def lambda_handler(event, context):
     prepare_container(os.environ['IMAGE_ID'])
     create_script(event['script'])
     
+    # Create container execution command
+    command = [udocker_bin, "run", "-v", "/tmp", "--nosysdirs"]
+    # Add global variables (if any)
+    global_variables = get_global_variables()
+    if global_variables:
+        command.extend(global_variables)
+    command.extend((name, "/bin/sh", script))
+    
     # Execute script
-    call([udocker_bin, "run", "-v", "/tmp", "--nosysdirs", name, "/bin/sh", script])
-    return check_output(["cat", lambda_output])
+    call(command, stderr = STDOUT, stdout = open(lambda_output,"w"))
+
+    stdout = check_output(["cat", lambda_output])
+    print stdout    
+    return stdout
