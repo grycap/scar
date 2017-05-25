@@ -20,10 +20,14 @@ import boto3
 import zipfile
 import os
 import shutil
-from tabulate import tabulate
+import json
 import base64
+from tabulate import tabulate
 from botocore.exceptions import ClientError
+from botocore.response import StreamingBody
+from six import StringIO
 import re
+from datetime import datetime, timedelta, tzinfo
 
 version = "v0.0.1"
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -86,6 +90,41 @@ def find_expression(rgx_pattern, string_to_search):
     if  match :
         return match.group()
     
+def escape_string(value):
+    value = value.replace("\\","\\/").replace('\n', '\\n')
+    value = value.replace('"', '\\"').replace("\/","\\/")
+    value = value.replace("\b","\\b").replace("\f","\\f")
+    return value.replace("\r","\\r").replace("\t","\\t")
+
+
+def serialize(obj):
+    """Convert objects into JSON structures."""
+    # Record class and module information for deserialization
+    result = {'__class__': obj.__class__.__name__}
+    try:
+        result['__module__'] = obj.__module__
+    except AttributeError:
+        pass
+    # Convert objects to dictionary representation based on type
+    if isinstance(obj, datetime):
+        result['year'] = obj.year
+        result['month'] = obj.month
+        result['day'] = obj.day
+        result['hour'] = obj.hour
+        result['minute'] = obj.minute
+        result['second'] = obj.second
+        result['microsecond'] = obj.microsecond
+        return result
+    if isinstance(obj, StreamingBody):
+        result['body'] = obj.read().decode("utf-8")
+        # obj._raw_stream = StringIO(result['body'].decode("utf-8"))
+        #obj._amount_read = 0
+        return result
+        #return obj.read().decode("utf-8")
+    else:
+        return str(obj)
+    # Raise a TypeError if the object isn't recognized
+    raise TypeError("Type not serializable")
 
 class Scar(object):
     """Implements most of the command line interface.
@@ -196,7 +235,7 @@ class Scar(object):
                                                          Tags=self.lambda_tags)
         # Remove the zip created in the operation
         os.remove(zif_file_path)
-        print (response)
+        print (json.dumps(response))
     
     def check_function_name(self, function_name):
         paginator = self.boto3_client.get_paginator('list_functions')  
@@ -211,7 +250,6 @@ class Scar(object):
         #self.lambda_filters = [{'createdby':'tag:createdby', 'Values':['scar']}]
         paginator = self.boto3_client.get_paginator('list_functions') 
         #operation_parameters = {'createdby': 'scar'}
-        
         '''
         
         client = boto3.client('resourcegroupstaggingapi', region_name='us-east-1')
@@ -250,21 +288,21 @@ class Scar(object):
             self.boto3_client.update_function_configuration(FunctionName=args.name,
                                                             Environment=self.lambda_env_variables)   
         # Generate the script passed to the container
-        script = "{ \"script\" : \"" + args.payload.read().replace('\n', '\\n').replace('"', '\\"') + "\"}"
+        script = "{ \"script\" : \"" + escape_string(args.payload.read()) + "\"}"
          
         response = self.boto3_client.invoke( FunctionName=args.name,
                                              InvocationType=invocation_type,
                                              LogType=log_type,
                                              Payload=script)
-        
-        result = base64.b64decode(response['LogResult'])
-        print (result.decode("utf-8"))
-         
+        # Transform the base64 encoded results to something legible
+        response['LogResult'] = base64.b64decode(response['LogResult']).decode('utf-8')
+        response['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'] = base64.b64decode(response['ResponseMetadata']['HTTPHeaders']['x-amz-log-result']).decode('utf-8')
+        print (json.dumps(response, default=serialize))         
             
     def rm(self, args):
         if args.name:
             response = self.boto3_client.delete_function(FunctionName=args.name)
-            print(response)
+            print(json.dumps(response))
 
     def log(self, args):
         print (args)
