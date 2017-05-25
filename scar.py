@@ -96,6 +96,10 @@ def escape_string(value):
     value = value.replace("\b","\\b").replace("\f","\\f")
     return value.replace("\r","\\r").replace("\t","\\t")
 
+def get_access_key():
+    session = boto3.Session()
+    credentials = session.get_credentials()
+    return credentials.access_key
 
 def serialize(obj):
     """Convert objects into JSON structures."""
@@ -235,6 +239,7 @@ class Scar(object):
                                                          Tags=self.lambda_tags)
         # Remove the zip created in the operation
         os.remove(zif_file_path)
+        response['AccessKey'] = get_access_key()
         print (json.dumps(response))
     
     def check_function_name(self, function_name):
