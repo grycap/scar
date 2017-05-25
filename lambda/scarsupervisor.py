@@ -17,7 +17,6 @@ import urllib
 import json
 import os
 import re
-import uuid
 from subprocess import call, check_output, STDOUT
 
 print('Loading function')
@@ -25,7 +24,7 @@ print('Loading function')
 udocker_bin="/tmp/udocker/udocker"
 lambda_output="/tmp/lambda-stdout.txt"
 script = "/tmp/udocker/script.sh"
-name = str(uuid.uuid4())
+name = 'lambda_cont'
 
 def prepare_environment(file_retriever):
     # Install udocker in /tmp
@@ -35,11 +34,23 @@ def prepare_environment(file_retriever):
     call(["mkdir", "-p", "/tmp/home/.udocker"])
 
 def prepare_container(container_image):
+    # Check if the container is already downloaded
+    cmd_out = check_output([udocker_bin, "images"])
+    if container_image not in cmd_out:
+        print("SCAR: Pulling container '" + container_image + "' from dockerhub")
+        # If the container doesn't exist
+        call([udocker_bin, "pull", container_image])
+    else:
+        print("SCAR: Container image '" + container_image + "' already available")
     # Download and create container
-    call([udocker_bin, "pull", container_image])
-    call([udocker_bin, "create", "--name="+name, container_image])
-    # Set container execution engine to Fakechroot
-    call([udocker_bin, "setup", "--execmode=F1", name])
+    cmd_out = check_output([udocker_bin, "ps"])
+    if name not in cmd_out:
+        print("SCAR: Creating container with name '" + name + "' based on image '" + container_image + "'.")
+        call([udocker_bin, "create", "--name="+name, container_image])
+        # Set container execution engine to Fakechroot
+        call([udocker_bin, "setup", "--execmode=F1", name])
+    else:
+        print("SCAR: Container '" + name + "' already available")
 
 def create_script(content):
     with open(script,"w") as f:
@@ -56,7 +67,9 @@ def get_global_variables():
     return cont_variables
 
 def lambda_handler(event, context):
-    print("Received event: " + json.dumps(event, indent=2))
+    print("SCAR: Received event: " + json.dumps(event, indent=2))
+    print("SCAR: Log stream name:", context.log_stream_name)
+    print("SCAR: Log group name:",  context.log_group_name)
     file_retriever = urllib.URLopener()
     prepare_environment(file_retriever)
     prepare_container(os.environ['IMAGE_ID'])
