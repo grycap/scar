@@ -76,7 +76,7 @@ def lambda_handler(event, context):
     create_script(event['script'])
     
     # Create container execution command
-    command = [udocker_bin, "run", "-v", "/tmp", "--nosysdirs"]
+    command = [udocker_bin, "--quiet", "run", "-v", "/tmp", "--nosysdirs"]
     # Add global variables (if any)
     global_variables = get_global_variables()
     if global_variables:
