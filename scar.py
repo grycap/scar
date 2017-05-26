@@ -196,6 +196,7 @@ class Scar(object):
         parser_rm.set_defaults(func=self.rm)
         parser_rm.add_argument("name", help="Lambda function name")
         parser_rm.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
+        parser_rm.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
         
         # 'log' command
         parser_log = subparsers.add_parser('log', help="Show the logs for the lambda function")
@@ -321,16 +322,20 @@ class Scar(object):
         print (json.dumps(response, default=serialize))         
             
     def rm(self, args):
+        # Call AWS delete
         response = self.boto3_client.delete_function(FunctionName=args.name)
-        
-        if args.json:
+        # Parse output
+        if args.verbose:
             print(json.dumps(response))
+        elif args.json:
+            result = {'RequestId' : response['RequestId'],
+                      'ResponseMetadata' : response['ResponseMetadata']['HTTPStatusCode']}
+            print(json.dumps(result))
         else:
             if response['ResponseMetadata']['HTTPStatusCode'] == 204:
                 print ("Function '" + args.name + "' deleted.")
             else:
-                print("Error deleting function.\n")
-                print(json.dumps(response))
+                print("Error deleting function '" + args.name + "'.")
 
     def log(self, args):
         response = boto3.client('logs', region_name='us-east-1').get_log_events(
