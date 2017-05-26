@@ -25,9 +25,8 @@ import base64
 from tabulate import tabulate
 from botocore.exceptions import ClientError
 from botocore.response import StreamingBody
-from six import StringIO
 import re
-from datetime import datetime, timedelta, tzinfo
+from datetime import datetime
 
 version = "v0.0.1"
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -91,10 +90,10 @@ def find_expression(rgx_pattern, string_to_search):
         return match.group()
     
 def escape_string(value):
-    value = value.replace("\\","\\/").replace('\n', '\\n')
-    value = value.replace('"', '\\"').replace("\/","\\/")
-    value = value.replace("\b","\\b").replace("\f","\\f")
-    return value.replace("\r","\\r").replace("\t","\\t")
+    value = value.replace("\\", "\\/").replace('\n', '\\n')
+    value = value.replace('"', '\\"').replace("\/", "\\/")
+    value = value.replace("\b", "\\b").replace("\f", "\\f")
+    return value.replace("\r", "\\r").replace("\t", "\\t")
 
 def get_access_key():
     session = boto3.Session()
@@ -122,9 +121,9 @@ def serialize(obj):
     if isinstance(obj, StreamingBody):
         result['body'] = obj.read().decode("utf-8")
         # obj._raw_stream = StringIO(result['body'].decode("utf-8"))
-        #obj._amount_read = 0
+        # obj._amount_read = 0
         return result
-        #return obj.read().decode("utf-8")
+        # return obj.read().decode("utf-8")
     else:
         return str(obj)
     # Raise a TypeError if the object isn't recognized
@@ -145,7 +144,7 @@ class Scar(object):
         self.lambda_runtime = "python2.7"
         self.lambda_handler = self.lambda_name + ".lambda_handler"        
         self.lambda_role = "arn:aws:iam::974349055189:role/lambda-s3-execution-role"        
-        self.lambda_env_variables = {"Variables" : {"UDOCKER_DIR":"/tmp/home/.udocker", 
+        self.lambda_env_variables = {"Variables" : {"UDOCKER_DIR":"/tmp/home/.udocker",
                                                     "UDOCKER_TARBALL":"/var/task/udocker-1.1.0-RC2.tar.gz"}}
         self.lambda_zip_file_base64 = {"ZipFile": create_zip_file()}
         self.lambda_memory = 128
@@ -179,6 +178,7 @@ class Scar(object):
         # 'ls' command
         parser_ls = subparsers.add_parser('ls', help="List lambda functions")
         parser_ls.set_defaults(func=self.ls)
+        parser_ls.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         
         # 'run' command
         parser_run = subparsers.add_parser('run', help="Deploy function")
@@ -194,11 +194,13 @@ class Scar(object):
         parser_rm = subparsers.add_parser('rm', help="Delete function")
         parser_rm.set_defaults(func=self.rm)
         parser_rm.add_argument("name", help="Lambda function name")
+        parser_rm.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         
         # 'log' command
         parser_log = subparsers.add_parser('log', help="Show the logs for the lambda function")
         parser_log.set_defaults(func=self.log)
-        parser_log.add_argument("name", help="Lambda function name")       
+        parser_log.add_argument("log_group_name", help="The name of the log group.")
+        parser_log.add_argument("log_stream_name", help="The name of the log stream.")       
 
         # Create the parser for the 'version' command
         parser_version = subparsers.add_parser('version', help="Show the Scar version information")
@@ -251,24 +253,30 @@ class Scar(object):
         return False
        
     def ls(self, args):
-        '''
-        #self.lambda_filters = [{'createdby':'tag:createdby', 'Values':['scar']}]
-        paginator = self.boto3_client.get_paginator('list_functions') 
-        #operation_parameters = {'createdby': 'scar'}
-        '''
-        
+        # Get the filtered resources from AWS
         client = boto3.client('resourcegroupstaggingapi', region_name='us-east-1')
-        tag_filters=[ { 'Key': 'owner', 'Values': [ get_user_name() ] }, { 'Key': 'createdby', 'Values': ['scar'] } ]
+        tag_filters = [ { 'Key': 'owner', 'Values': [ get_user_name() ] }, { 'Key': 'createdby', 'Values': ['scar'] } ]
         result = client.get_resources(TagFilters=tag_filters, TagsPerPage=100)
         filtered_functions = result['ResourceTagMappingList']
-        headers = ['NAME', 'MEMORY', 'TIME']
-        table = []
+        # Create the data structure
+        result = {'Functions': []}
         for function_arn in filtered_functions:
             function_info = self.boto3_client.get_function(FunctionName=function_arn['ResourceARN'])
-            table.append([function_info['Configuration']['FunctionName'], 
-                          function_info['Configuration']['MemorySize'], 
-                          function_info['Configuration']['Timeout']])            
-        print (tabulate(table, headers))
+            function = {'Name' : function_info['Configuration']['FunctionName'],
+                        'Memory' : function_info['Configuration']['MemorySize'],
+                        'Timeout' : function_info['Configuration']['Timeout']}
+            result['Functions'].append(function)
+        # Print the results
+        if args.json:
+            print(json.dumps(result))
+        else:  
+            headers = ['NAME', 'MEMORY', 'TIME']
+            table = []
+            for function in result['Functions']:
+                table.append([function['Name'],
+                              function['Memory'],
+                              function['Timeout']])            
+            print (tabulate(table, headers))
         
     def run(self, args):
         invocation_type = 'RequestResponse'
@@ -289,28 +297,44 @@ class Scar(object):
             for var in args.env:
                 var_parsed = var.split("=")
                 # Add an specific prefix to be able to find the variables defined by the user
-                self.lambda_env_variables['Variables']['CONT_VAR_'+var_parsed[0]] = var_parsed[1]
+                self.lambda_env_variables['Variables']['CONT_VAR_' + var_parsed[0]] = var_parsed[1]
             self.boto3_client.update_function_configuration(FunctionName=args.name,
                                                             Environment=self.lambda_env_variables)   
         # Generate the script passed to the container
         script = "{ \"script\" : \"" + escape_string(args.payload.read()) + "\"}"
          
-        response = self.boto3_client.invoke( FunctionName=args.name,
+        response = self.boto3_client.invoke(FunctionName=args.name,
                                              InvocationType=invocation_type,
                                              LogType=log_type,
                                              Payload=script)
         # Transform the base64 encoded results to something legible
-        response['LogResult'] = base64.b64decode(response['LogResult']).decode('utf-8')
+        response['LogResult'] = base64.b64decode(response['LogResult']).decode('utf-8')        
         response['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'] = base64.b64decode(response['ResponseMetadata']['HTTPHeaders']['x-amz-log-result']).decode('utf-8')
         print (json.dumps(response, default=serialize))         
             
     def rm(self, args):
-        if args.name:
-            response = self.boto3_client.delete_function(FunctionName=args.name)
+        response = self.boto3_client.delete_function(FunctionName=args.name)
+        
+        if args.json:
             print(json.dumps(response))
+        else:
+            if response['ResponseMetadata']['HTTPStatusCode'] == 204:
+                print ("Function '" + args.name + "' deleted.")
+            else:
+                print("Error deleting function.\n")
+                print(json.dumps(response))
 
     def log(self, args):
-        print (args)
+        response = boto3.client('logs', region_name='us-east-1').get_log_events(
+            logGroupName=args.log_group_name,
+            logStreamName=args.log_stream_name,
+            startFromHead=True
+        )
+        full_msg = ""
+        for event in response['events']:
+            full_msg += event['message']
+        response['completeMessage'] = full_msg
+        print (full_msg)
     
     def version(self, args):
         print ("scar " + version)
