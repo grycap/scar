@@ -174,6 +174,7 @@ class Scar(object):
         parser_init.add_argument("-n", "--name", help="Lambda function name")
         parser_init.add_argument("-m", "--memory", type=int, help="Lambda function memory in megabytes. Range from 128 to 1536 in increments of 64")
         parser_init.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 300.")
+        parser_init.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
     
         # 'ls' command
         parser_ls = subparsers.add_parser('ls', help="List lambda functions")
@@ -212,6 +213,9 @@ class Scar(object):
         args.func(args)
 
     def init(self, args):
+        if self.check_function_name(args.name):
+            print("ERROR: Cannot create function. Function name '" + args.name + "' already defined.")
+            return
         self.init_lambda_fuction_parameters()
         if args.name:
             self.lambda_name = args.name
@@ -225,24 +229,28 @@ class Scar(object):
             self.lambda_description = args.description  
         if args.image_id:
             self.lambda_env_variables['Variables']['IMAGE_ID'] = args.image_id
-
-        if self.check_function_name(args.name):
-            response = "ERROR: Cannot create function. Function name already defined."
-        else:
-            response = self.boto3_client.create_function(FunctionName=self.lambda_name,
-                                                         Runtime=self.lambda_runtime,
-                                                         Role=self.lambda_role,
-                                                         Handler=self.lambda_handler,
-                                                         Code=self.lambda_zip_file_base64,
-                                                         Environment=self.lambda_env_variables,
-                                                         Description=self.lambda_description,
-                                                         Timeout=self.lambda_time,
-                                                         MemorySize=self.lambda_memory,
-                                                         Tags=self.lambda_tags)
+        # Call the AWS service
+        response = self.boto3_client.create_function(FunctionName=self.lambda_name,
+                                                     Runtime=self.lambda_runtime,
+                                                     Role=self.lambda_role,
+                                                     Handler=self.lambda_handler,
+                                                     Code=self.lambda_zip_file_base64,
+                                                     Environment=self.lambda_env_variables,
+                                                     Description=self.lambda_description,
+                                                     Timeout=self.lambda_time,
+                                                     MemorySize=self.lambda_memory,
+                                                     Tags=self.lambda_tags)
         # Remove the zip created in the operation
         os.remove(zif_file_path)
-        response['AccessKey'] = get_access_key()
-        print (json.dumps(response))
+        result = {'AccessKey' : get_access_key(),
+                  'FunctionArn' : response['FunctionArn'],
+                  'Timeout' : response['Timeout'],
+                  'MemorySize' : response['MemorySize'],
+                  'FunctionName' : response['FunctionName']}
+        if args.json:        
+            print (json.dumps(result))
+        else:
+            print ("Function '" + args.name + "' successfully initiated.")
     
     def check_function_name(self, function_name):
         paginator = self.boto3_client.get_paginator('list_functions')  
