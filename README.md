@@ -82,6 +82,13 @@ Note that the first invocation to the Lambda function will trigger the pulling o
 
 The shell-script can be changed in each different execution of the Lambda function.
 
+### Passing Environment Variables
+
+You can pass environment variables to the Lambda function which will be in turn passed to the executed Docker container and made available to your shell-script:
+```
+scar run -e TEST1=45 -e TEST2=69 -p test/test-global-vars.sh lambda-docker-cowsay
+```
+
 ## Licensing
 SCAR is licensed under the Apache License, Version 2.0. See
 [LICENSE](https://github.com/grycap/scar/blob/master/LICENSE) for the full
