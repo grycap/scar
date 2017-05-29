@@ -113,7 +113,7 @@ def parse_logs(logs, request_id):
             logging = True
          
 def parse_payload(response):
-    response['Payload'] = response['Payload'].read().decode("utf-8")[1:-1].replace('\\n','\n')
+    response['Payload'] = response['Payload'].read().decode("utf-8")[1:-1].replace('\\n', '\n')
     return response 
 
 def  base64_to_utf8(value):
@@ -211,7 +211,7 @@ class Scar(object):
     def init(self, args):
         if self.check_function_name(args.name):
             if args.verbose or args.json:
-                error = {'Error' : 'Cannot execute function. Function name \'' + args.name +  '\' already defined.'}
+                error = {'Error' : 'Cannot execute function. Function name \'' + args.name + '\' already defined.'}
                 print(json.dumps(error))           
             else:
                 print("ERROR: Cannot create function. Function name '" + args.name + "' already defined.")
@@ -242,6 +242,7 @@ class Scar(object):
                                                      Tags=self.lambda_tags)
         # Remove the zip created in the operation
         os.remove(zif_file_path)
+        # Generate results
         result = {'AccessKey' : get_access_key(),
                   'FunctionArn' : response['FunctionArn'],
                   'Timeout' : response['Timeout'],
@@ -294,7 +295,7 @@ class Scar(object):
     def run(self, args):
         if not self.check_function_name(args.name):
             if args.verbose or args.json:
-                error = {'Error' : 'Cannot execute function. Function name \'' + args.name +  '\' doesn\'t exist.'}
+                error = {'Error' : 'Cannot execute function. Function name \'' + args.name + '\' doesn\'t exist.'}
                 print(json.dumps(error))           
             else:
                 print("ERROR: Cannot execute function. Function name '" + args.name + "' doesn't exist.")
@@ -324,12 +325,12 @@ class Scar(object):
         if args.payload:
             # Generate the script passed to the container
             script = "{ \"script\" : \"" + escape_string(args.payload.read()) + "\"}"
-            response = self.boto3_client.invoke( FunctionName=args.name,
+            response = self.boto3_client.invoke(FunctionName=args.name,
                                                  InvocationType=invocation_type,
                                                  LogType=log_type,
                                                  Payload=script)
         else:
-            response = self.boto3_client.invoke( FunctionName=args.name,
+            response = self.boto3_client.invoke(FunctionName=args.name,
                                                  InvocationType=invocation_type,
                                                  LogType=log_type)
         
@@ -352,7 +353,7 @@ class Scar(object):
     
             # Extract log_group_name and log_stream_name from payload
             function_output = response['Payload'].read().decode("utf-8")[1:-1]
-            response['Payload'] = function_output.replace('\\n','\n')
+            response['Payload'] = function_output.replace('\\n', '\n')
             result = 'SCAR: Request Id: ' + response['ResponseMetadata']['RequestId'] + '\n'
             result += response['Payload']
             
@@ -373,18 +374,25 @@ class Scar(object):
                 print(result)            
         
     def rm(self, args):
-        # Call AWS delete
-        response = self.boto3_client.delete_function(FunctionName=args.name)
+        # Delete the lambda function
+        response_lambda = self.boto3_client.delete_function(FunctionName=args.name)
+        # Delete the cloudwatch log group
+        response_cw = boto3.client('logs', region_name='us-east-1').delete_log_group(logGroupName='/aws/lambda/' + args.name)
+        full_response = {'LambdaOutput' : response_lambda,
+                         'CloudWatchOuput' : response_cw}
         # Parse output
         if args.verbose:
-            print(json.dumps(response))
+            print(json.dumps(full_response))
         elif args.json:
-            result = {'RequestId' : response['RequestId'],
-                      'ResponseMetadata' : response['ResponseMetadata']['HTTPStatusCode']}
+            result = {'LambdaOutput' : { 'RequestId' : response_lambda['ResponseMetadata']['RequestId'],
+                                         'HTTPStatusCode' : response_lambda['ResponseMetadata']['HTTPStatusCode'] },
+                      'CloudWatchOutput' : { 'RequestId' : response_cw['ResponseMetadata']['RequestId'],
+                                             'HTTPStatusCode' : response_cw['ResponseMetadata']['HTTPStatusCode'] }                      
+                      }
             print(json.dumps(result))
         else:
-            if response['ResponseMetadata']['HTTPStatusCode'] == 204:
-                print ("Function '" + args.name + "' deleted.")
+            if (response_lambda['ResponseMetadata']['HTTPStatusCode'] == 204) and (response_cw['ResponseMetadata']['HTTPStatusCode'] == 200):
+                print ("Function '" + args.name + "' and logs correctly deleted.")
             else:
                 print("Error deleting function '" + args.name + "'.")
 
