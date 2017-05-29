@@ -24,9 +24,7 @@ import json
 import base64
 from tabulate import tabulate
 from botocore.exceptions import ClientError
-from botocore.response import StreamingBody
 import re
-from datetime import datetime
 
 version = "v0.0.1"
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -100,34 +98,26 @@ def get_access_key():
     credentials = session.get_credentials()
     return credentials.access_key
 
-def serialize(obj):
-    """Convert objects into JSON structures."""
-    # Record class and module information for deserialization
-    result = {'__class__': obj.__class__.__name__}
-    try:
-        result['__module__'] = obj.__module__
-    except AttributeError:
-        pass
-    # Convert objects to dictionary representation based on type
-    if isinstance(obj, datetime):
-        result['year'] = obj.year
-        result['month'] = obj.month
-        result['day'] = obj.day
-        result['hour'] = obj.hour
-        result['minute'] = obj.minute
-        result['second'] = obj.second
-        result['microsecond'] = obj.microsecond
-        return result
-    if isinstance(obj, StreamingBody):
-        result['body'] = obj.read().decode("utf-8")
-        # obj._raw_stream = StringIO(result['body'].decode("utf-8"))
-        # obj._amount_read = 0
-        return result
-        # return obj.read().decode("utf-8")
-    else:
-        return str(obj)
-    # Raise a TypeError if the object isn't recognized
-    raise TypeError("Type not serializable")
+def parse_logs(logs, request_id):
+    full_msg = ""
+    logging = False
+    #print (json.dumps(logs))
+    
+    print("request id: " + request_id)
+    
+    for event in logs['events']:
+        if request_id in event['message']:
+            if event['message'].startswith('START'):
+                logging = True
+            else:
+                logging = False
+            full_msg += event['message']
+        if logging:
+            full_msg += event['message']
+    return full_msg
+
+def  base64_to_utf8(value):
+    return base64.b64decode(value).decode('utf8') 
 
 class Scar(object):
     """Implements most of the command line interface.
@@ -175,11 +165,13 @@ class Scar(object):
         parser_init.add_argument("-m", "--memory", type=int, help="Lambda function memory in megabytes. Range from 128 to 1536 in increments of 64")
         parser_init.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 300.")
         parser_init.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
+        parser_init.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
     
         # 'ls' command
         parser_ls = subparsers.add_parser('ls', help="List lambda functions")
         parser_ls.set_defaults(func=self.ls)
         parser_ls.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
+        parser_ls.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
         
         # 'run' command
         parser_run = subparsers.add_parser('run', help="Deploy function")
@@ -190,6 +182,8 @@ class Scar(object):
         parser_run.add_argument("-e", "--env", action='append', help="Pass environment variable to the container (VAR=val). Can be defined multiple times.")
         parser_run.add_argument("--async", help="Tell Scar to wait or not for the lambda function return", action="store_true")
         parser_run.add_argument("-p", "--payload", nargs='?', type=argparse.FileType('r'), help="Path to the input file passed to the function")        
+        parser_run.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
+        parser_run.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
         
         # Create the parser for the 'rm' command
         parser_rm = subparsers.add_parser('rm', help="Delete function")
@@ -248,7 +242,10 @@ class Scar(object):
                   'Timeout' : response['Timeout'],
                   'MemorySize' : response['MemorySize'],
                   'FunctionName' : response['FunctionName']}
-        if args.json:        
+        # Parse output
+        if args.verbose:
+            print(json.dumps(response))
+        elif args.json:        
             print (json.dumps(result))
         else:
             print ("Function '" + args.name + "' successfully initiated.")
@@ -265,8 +262,8 @@ class Scar(object):
         # Get the filtered resources from AWS
         client = boto3.client('resourcegroupstaggingapi', region_name='us-east-1')
         tag_filters = [ { 'Key': 'owner', 'Values': [ get_user_name() ] }, { 'Key': 'createdby', 'Values': ['scar'] } ]
-        result = client.get_resources(TagFilters=tag_filters, TagsPerPage=100)
-        filtered_functions = result['ResourceTagMappingList']
+        response = client.get_resources(TagFilters=tag_filters, TagsPerPage=100)
+        filtered_functions = response['ResourceTagMappingList']
         # Create the data structure
         result = {'Functions': []}
         for function_arn in filtered_functions:
@@ -275,8 +272,10 @@ class Scar(object):
                         'Memory' : function_info['Configuration']['MemorySize'],
                         'Timeout' : function_info['Configuration']['Timeout']}
             result['Functions'].append(function)
-        # Print the results
-        if args.json:
+        # Parse output
+        if args.verbose:
+            print(json.dumps(response))
+        elif args.json:
             print(json.dumps(result))
         else:  
             headers = ['NAME', 'MEMORY', 'TIME']
@@ -309,18 +308,42 @@ class Scar(object):
                 self.lambda_env_variables['Variables']['CONT_VAR_' + var_parsed[0]] = var_parsed[1]
             self.boto3_client.update_function_configuration(FunctionName=args.name,
                                                             Environment=self.lambda_env_variables)   
-        # Generate the script passed to the container
-        script = "{ \"script\" : \"" + escape_string(args.payload.read()) + "\"}"
-         
-        response = self.boto3_client.invoke(FunctionName=args.name,
-                                             InvocationType=invocation_type,
-                                             LogType=log_type,
-                                             Payload=script)
+        if args.payload:
+            # Generate the script passed to the container
+            script = "{ \"script\" : \"" + escape_string(args.payload.read()) + "\"}"
+            response = self.boto3_client.invoke( FunctionName=args.name,
+                                                 InvocationType=invocation_type,
+                                                 LogType=log_type,
+                                                 Payload=script)
+        else:
+            response = self.boto3_client.invoke( FunctionName=args.name,
+                                                 InvocationType=invocation_type,
+                                                 LogType=log_type)
+        
         # Transform the base64 encoded results to something legible
-        response['LogResult'] = base64.b64decode(response['LogResult']).decode('utf-8')        
-        response['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'] = base64.b64decode(response['ResponseMetadata']['HTTPHeaders']['x-amz-log-result']).decode('utf-8')
-        print (json.dumps(response, default=serialize))         
-            
+        response['LogResult'] = base64_to_utf8(response['LogResult'])        
+        response['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'] = base64_to_utf8(response['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'])
+
+        # Extract log_group_name and log_stream_name from payload
+        function_output = response['Payload'].read().decode("utf-8")[1:-1]
+        response['Payload'] = function_output.replace('\\n','\n')
+        result = response['Payload']
+        
+        parsed_output = result.split('\n')
+        response['LogGroupName'] = parsed_output[0][22:]
+        response['LogStreamName'] = parsed_output[1][23:]
+        
+        if args.verbose:
+            print(json.dumps(response))
+        elif args.json:
+            result = {'StatusCode' : response['StatusCode'],
+                      'Payload' : response['Payload'],
+                      'LogGroupName' : response['LogGroupName'],
+                      'LogStreamName' : response['LogStreamName']}
+            print(json.dumps(result))            
+        else:
+            print(result)            
+        
     def rm(self, args):
         # Call AWS delete
         response = self.boto3_client.delete_function(FunctionName=args.name)
@@ -348,6 +371,18 @@ class Scar(object):
             full_msg += event['message']
         response['completeMessage'] = full_msg
         print (full_msg)
+        '''
+        request_id = response['ResponseMetadata']['RequestId']  
+        log_group_name = parsed_output[0][22:]
+        log_stream_name = parsed_output[1][23:]
+        sleep(5)
+        # Output the container logs
+        log_response = boto3.client('logs', region_name='us-east-1').get_log_events(
+            logGroupName=log_group_name,
+            logStreamName=log_stream_name,
+            startFromHead=True
+        )
+        '''
     
     def version(self, args):
         print ("scar " + version)
