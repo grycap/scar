@@ -287,6 +287,10 @@ class Scar(object):
             print (tabulate(table, headers))
         
     def run(self, args):
+        if not self.check_function_name(args.name):
+            print("ERROR: Cannot execute function. Function name '" + args.name + "' doesn't exist.")
+            return
+        
         invocation_type = 'RequestResponse'
         log_type = 'Tail'
         if args.async:
