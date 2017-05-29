@@ -87,5 +87,6 @@ def lambda_handler(event, context):
     call(command, stderr = STDOUT, stdout = open(lambda_output,"w"))
 
     stdout = check_output(["cat", lambda_output])
+    stdout = "SCAR: Log stream name:" + context.log_stream_name + "\nSCAR: Log group name: " + context.log_group_name + "\n" + stdout
     print stdout    
     return stdout
