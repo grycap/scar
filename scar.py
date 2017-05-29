@@ -101,20 +101,21 @@ def get_access_key():
 def parse_logs(logs, request_id):
     full_msg = ""
     logging = False
-    #print (json.dumps(logs))
-    
-    print("request id: " + request_id)
-    
-    for event in logs['events']:
-        if request_id in event['message']:
-            if event['message'].startswith('START'):
-                logging = True
-            else:
-                logging = False
-            full_msg += event['message']
+    lines = logs.split('\n')
+    for line in lines:
+        if line.startswith('REPORT') and request_id in line:
+            full_msg += line + '\n'
+            #print(line)        
+            return full_msg
         if logging:
-            full_msg += event['message']
-    return full_msg
+           # print(line)
+            full_msg += line + '\n' 
+        if line.startswith('START') and request_id in line:
+            #print(line)
+            full_msg += line + '\n'
+            logging = True
+         
+          
 
 def  base64_to_utf8(value):
     return base64.b64decode(value).decode('utf8') 
@@ -196,7 +197,8 @@ class Scar(object):
         parser_log = subparsers.add_parser('log', help="Show the logs for the lambda function")
         parser_log.set_defaults(func=self.log)
         parser_log.add_argument("log_group_name", help="The name of the log group.")
-        parser_log.add_argument("log_stream_name", help="The name of the log stream.")       
+        parser_log.add_argument("log_stream_name", help="The name of the log stream.")
+        parser_log.add_argument("-ri", "--request_id", help="Id of the request that generated the log.")       
 
         # Create the parser for the 'version' command
         parser_version = subparsers.add_parser('version', help="Show the Scar version information")
@@ -209,8 +211,12 @@ class Scar(object):
 
     def init(self, args):
         if self.check_function_name(args.name):
-            print("ERROR: Cannot create function. Function name '" + args.name + "' already defined.")
-            return
+            if args.verbose or args.json:
+                error = {'Error' : 'Cannot execute function. Function name \'' + args.name +  '\' already defined.'}
+                print(json.dumps(error))           
+            else:
+                print("ERROR: Cannot create function. Function name '" + args.name + "' already defined.")
+            return        
         self.init_lambda_fuction_parameters()
         if args.name:
             self.lambda_name = args.name
@@ -288,7 +294,11 @@ class Scar(object):
         
     def run(self, args):
         if not self.check_function_name(args.name):
-            print("ERROR: Cannot execute function. Function name '" + args.name + "' doesn't exist.")
+            if args.verbose or args.json:
+                error = {'Error' : 'Cannot execute function. Function name \'' + args.name +  '\' doesn\'t exist.'}
+                print(json.dumps(error))           
+            else:
+                print("ERROR: Cannot execute function. Function name '" + args.name + "' doesn't exist.")
             return
         
         invocation_type = 'RequestResponse'
@@ -331,11 +341,12 @@ class Scar(object):
         # Extract log_group_name and log_stream_name from payload
         function_output = response['Payload'].read().decode("utf-8")[1:-1]
         response['Payload'] = function_output.replace('\\n','\n')
-        result = response['Payload']
+        result = 'SCAR: Request Id: ' + response['ResponseMetadata']['RequestId'] + '\n'
+        result += response['Payload']
         
         parsed_output = result.split('\n')
-        response['LogGroupName'] = parsed_output[0][22:]
-        response['LogStreamName'] = parsed_output[1][23:]
+        response['LogGroupName'] = parsed_output[1][22:]
+        response['LogStreamName'] = parsed_output[2][23:]
         
         if args.verbose:
             print(json.dumps(response))
@@ -343,7 +354,8 @@ class Scar(object):
             result = {'StatusCode' : response['StatusCode'],
                       'Payload' : response['Payload'],
                       'LogGroupName' : response['LogGroupName'],
-                      'LogStreamName' : response['LogStreamName']}
+                      'LogStreamName' : response['LogStreamName'],
+                      'RequestId' : response['ResponseMetadata']['RequestId']}
             print(json.dumps(result))            
         else:
             print(result)            
@@ -365,28 +377,23 @@ class Scar(object):
                 print("Error deleting function '" + args.name + "'.")
 
     def log(self, args):
-        response = boto3.client('logs', region_name='us-east-1').get_log_events(
-            logGroupName=args.log_group_name,
-            logStreamName=args.log_stream_name,
-            startFromHead=True
-        )
-        full_msg = ""
-        for event in response['events']:
-            full_msg += event['message']
-        response['completeMessage'] = full_msg
-        print (full_msg)
-        '''
-        request_id = response['ResponseMetadata']['RequestId']  
-        log_group_name = parsed_output[0][22:]
-        log_stream_name = parsed_output[1][23:]
-        sleep(5)
-        # Output the container logs
-        log_response = boto3.client('logs', region_name='us-east-1').get_log_events(
-            logGroupName=log_group_name,
-            logStreamName=log_stream_name,
-            startFromHead=True
-        )
-        '''
+        try:
+            response = boto3.client('logs', region_name='us-east-1').get_log_events(
+                logGroupName=args.log_group_name,
+                logStreamName=args.log_stream_name,
+                startFromHead=True
+            )
+            full_msg = ""
+            for event in response['events']:
+                full_msg += event['message']
+            response['completeMessage'] = full_msg
+            if args.request_id:
+                print (parse_logs(full_msg, args.request_id))
+            else:
+                print (full_msg)
+            
+        except ClientError as ce:
+            print(ce)
     
     def version(self, args):
         print ("scar " + version)

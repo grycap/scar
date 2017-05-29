@@ -66,6 +66,12 @@ def get_global_variables():
             cont_variables.append(key.replace("CONT_VAR_", "")+'='+os.environ[key])
     return cont_variables
 
+def prepare_output(context):
+    stdout = "SCAR: Log group name: " + context.log_group_name + "\n"
+    stdout += "SCAR: Log stream name: " + context.log_stream_name + "\n"
+    stdout += "---------------------------------------------------------------------------\n"
+    return stdout
+
 def lambda_handler(event, context):
     print("SCAR: Received event: " + json.dumps(event, indent=2))
     file_retriever = urllib.URLopener()
@@ -88,6 +94,8 @@ def lambda_handler(event, context):
     
     # Execute script
     call(command, stderr = STDOUT, stdout = open(lambda_output,"w"))
-    stdout = "SCAR: Log group name: " + context.log_group_name + "\nSCAR: Log stream name: " + context.log_stream_name + "\n" + check_output(["cat", lambda_output])
+    
+    stdout = prepare_output(context)
+    stdout += check_output(["cat", lambda_output])
     print stdout    
     return stdout
