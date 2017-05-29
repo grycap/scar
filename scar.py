@@ -105,17 +105,16 @@ def parse_logs(logs, request_id):
     for line in lines:
         if line.startswith('REPORT') and request_id in line:
             full_msg += line + '\n'
-            #print(line)        
             return full_msg
         if logging:
-           # print(line)
             full_msg += line + '\n' 
         if line.startswith('START') and request_id in line:
-            #print(line)
             full_msg += line + '\n'
             logging = True
          
-          
+def parse_payload(response):
+    response['Payload'] = response['Payload'].read().decode("utf-8")[1:-1].replace('\\n','\n')
+    return response 
 
 def  base64_to_utf8(value):
     return base64.b64decode(value).decode('utf8') 
@@ -334,31 +333,44 @@ class Scar(object):
                                                  InvocationType=invocation_type,
                                                  LogType=log_type)
         
-        # Transform the base64 encoded results to something legible
-        response['LogResult'] = base64_to_utf8(response['LogResult'])        
-        response['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'] = base64_to_utf8(response['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'])
-
-        # Extract log_group_name and log_stream_name from payload
-        function_output = response['Payload'].read().decode("utf-8")[1:-1]
-        response['Payload'] = function_output.replace('\\n','\n')
-        result = 'SCAR: Request Id: ' + response['ResponseMetadata']['RequestId'] + '\n'
-        result += response['Payload']
-        
-        parsed_output = result.split('\n')
-        response['LogGroupName'] = parsed_output[1][22:]
-        response['LogStreamName'] = parsed_output[2][23:]
-        
-        if args.verbose:
-            print(json.dumps(response))
-        elif args.json:
-            result = {'StatusCode' : response['StatusCode'],
-                      'Payload' : response['Payload'],
-                      'LogGroupName' : response['LogGroupName'],
-                      'LogStreamName' : response['LogStreamName'],
-                      'RequestId' : response['ResponseMetadata']['RequestId']}
-            print(json.dumps(result))            
+        if args.async:
+            if args.verbose:
+                print(json.dumps(parse_payload(response))) 
+            elif args.json:
+                result = {'StatusCode' : response['StatusCode'],
+                          'RequestId' : response['ResponseMetadata']['RequestId']}
+                print(json.dumps(result))            
+            else:
+                if response['StatusCode'] == 202:
+                    print("Function '" + args.name + "' launched correctly")
+                else:
+                    print("Error launching function.")            
         else:
-            print(result)            
+            # Transform the base64 encoded results to something legible
+            response['LogResult'] = base64_to_utf8(response['LogResult'])        
+            response['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'] = base64_to_utf8(response['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'])
+    
+            # Extract log_group_name and log_stream_name from payload
+            function_output = response['Payload'].read().decode("utf-8")[1:-1]
+            response['Payload'] = function_output.replace('\\n','\n')
+            result = 'SCAR: Request Id: ' + response['ResponseMetadata']['RequestId'] + '\n'
+            result += response['Payload']
+            
+            parsed_output = result.split('\n')
+            response['LogGroupName'] = parsed_output[1][22:]
+            response['LogStreamName'] = parsed_output[2][23:]
+            
+            if args.verbose:
+                print(json.dumps(response))
+            elif args.json:
+                result = {'StatusCode' : response['StatusCode'],
+                          'Payload' : response['Payload'],
+                          'LogGroupName' : response['LogGroupName'],
+                          'LogStreamName' : response['LogStreamName'],
+                          'RequestId' : response['ResponseMetadata']['RequestId']}
+                print(json.dumps(result))            
+            else:
+                print(result)            
         
     def rm(self, args):
         # Call AWS delete
