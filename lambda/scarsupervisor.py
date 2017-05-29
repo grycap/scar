@@ -68,12 +68,10 @@ def get_global_variables():
 
 def lambda_handler(event, context):
     print("SCAR: Received event: " + json.dumps(event, indent=2))
-    print("SCAR: Log stream name:", context.log_stream_name)
-    print("SCAR: Log group name:",  context.log_group_name)
     file_retriever = urllib.URLopener()
     prepare_environment(file_retriever)
     prepare_container(os.environ['IMAGE_ID'])
-    create_script(event['script'])
+
     
     # Create container execution command
     command = [udocker_bin, "--quiet", "run", "-v", "/tmp", "--nosysdirs"]
@@ -81,12 +79,15 @@ def lambda_handler(event, context):
     global_variables = get_global_variables()
     if global_variables:
         command.extend(global_variables)
-    command.extend((name, "/bin/sh", script))
+    
+    if ('script' in event) and event['script']:
+        create_script(event['script'])           
+        command.extend((name, "/bin/sh", script))
+    else:
+        command.append(name)
     
     # Execute script
     call(command, stderr = STDOUT, stdout = open(lambda_output,"w"))
-
-    stdout = check_output(["cat", lambda_output])
-    stdout = "SCAR: Log stream name:" + context.log_stream_name + "\nSCAR: Log group name: " + context.log_group_name + "\n" + stdout
+    stdout = "SCAR: Log group name: " + context.log_group_name + "\nSCAR: Log stream name: " + context.log_stream_name + "\n" + check_output(["cat", lambda_output])
     print stdout    
     return stdout
