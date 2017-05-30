@@ -85,12 +85,21 @@ def lambda_handler(event, context):
     global_variables = get_global_variables()
     if global_variables:
         command.extend(global_variables)
-    
+
+    # Container running script
     if ('script' in event) and event['script']:
-        create_script(event['script'])           
+        create_script(event['script'])  
         command.extend((name, "/bin/sh", script))
+    # Container with args
+    elif ('cmd_args' in event) and event['cmd_args']:
+        args = map(lambda x: x.encode('ascii'), event['cmd_args'])
+        command.append(name)
+        command.extend(args)    
+    # Only container        
     else:
         command.append(name)
+    
+    print(command)
     
     # Execute script
     call(command, stderr = STDOUT, stdout = open(lambda_output,"w"))
