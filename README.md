@@ -18,10 +18,10 @@ SCAR provides a command-line interface to create a Lambda function to execute a 
 
 * The Docker container must fit within the current [AWS Lambda limits](http://docs.aws.amazon.com/lambda/latest/dg/limits.html):
   * Uncompressed Docker image under 512 MB.
-  * Maximum execution time of 300 seconds (5 minutes)
+  * Maximum execution time of 300 seconds (5 minutes).
 * The following Docker images cannot be currently used:
-  * alpine/*
-* Installation of packages in the user-defined script is currently not possible.
+  * Those based on Alpine Linux.
+* Installation of packages in the user-defined script (i.e. using `yum`, `apt-get`, etc.) is currently not possible.
   
 
 ## Configuration
@@ -52,12 +52,12 @@ git clone https://github.com/grycap/scar.git
 * [AWS SDK for Python (Boto 3)](https://github.com/boto/boto3) (v1.4.4+ is required)
 * [Tabulate](https://pypi.python.org/pypi/tabulate)
 
-  You can automatically install them issuing the following command:
+You can automatically install the dependencies by issuing the following command:
 ```
 sudo pip install -r requirements.txt
 ```
 
-3. (Optional) Define an alias for increased usability
+3. (Optional) Define an alias for increased usability:
 ```
 cd scar 
 alias scar=`pwd`/scar.py
@@ -65,11 +65,13 @@ alias scar=`pwd`/scar.py
 
 ## Basic Usage
 
-1. Create a Lambda function to execute a container (out of a Docker image is stored in Docker Hub)
+1. Create a Lambda function to execute a container (out of a Docker image that is stored in Docker Hub).
+
+In these examples the popular [chuanwen/cowsay](https://hub.docker.com/r/chuanwen/cowsay/) Docker image in Docker Hub will be employed:
 ```
 scar init -n lambda-docker-cowsay -m 128 -t 300 chuanwen/cowsay
 ```
-Notice that the memory and time limits for the Lambda function can be specified. Further information is available querying the help:
+Notice that the memory and time limits for the Lambda function can be specified. Further information is available in the help:
 ```
 scar --help
 ```
@@ -79,18 +81,17 @@ scar --help
 ```
 scar run lambda-docker-cowsay
 ```
-The first invocation to the Lambda function will trigger the pulling of the Docker image from Docker Hub so it will take considerably longer than the subsequent invocations, which will most certainly reuse the existing Docker image, stored in ```/tmp```.
+The first invocation to the Lambda function will pull the Docker image from Docker Hub so it will take considerably longer than the subsequent invocations, which will most certainly reuse the existing Docker image, stored in ```/tmp```.
 
-4. Access the logs
+3. Access the logs
 
-The logs are stored in CloudWatch with a default retention of 30 days. 
-The logs for a specific invocation a Lambda function can be obtained as follows:
+The logs are stored in CloudWatch with a default retention policy of 30 days.  The logs for a specific invocation a Lambda function can be obtained as follows:
 ```
 scar log -ri <Request-Id> <Log-Group-Name> 'Log-Stream-Name' 
 ```
-These values are obtained as a result of executing `scar run`.
+These values are shown in the output when executing `scar run`. Do not forget to use the single quotes, as indicated in the example, to avoid unwanted shell expansions.
 
-3. Remove the Lambda function
+4. Remove the Lambda function
 You can remove the Lambda function together with the logs generated in CloudWatch by:
 ```
 scar rm lambda-docker-cowsay
@@ -124,11 +125,20 @@ Applications available in the Docker image can be directly executed:
 You can also supply arguments which will be passed to the command executed in the Docker container:
 ```
 scar run lambda-docker-cowsay /usr/bin/perl /usr/games/cowsay Hello World
-````
+```
 Note that since cowsay is a Perl script you will have to prepend it with the location of the Perl interpreter (in the Docker container).
 
+### Obtaining a JSON Output
+
+For easier scripting, a JSON output can be obtained by including the `--json` or the `-v` (even more verbose output) flags.
+```
+scar run --json lambda-docker-cowsay
+```
 
 ## Licensing
 SCAR is licensed under the Apache License, Version 2.0. See
 [LICENSE](https://github.com/grycap/scar/blob/master/LICENSE) for the full
 license text.
+
+## Acknowledgements
+* [udocker](https://github.com/indigo-dc/udocker)
