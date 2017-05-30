@@ -87,6 +87,12 @@ def find_expression(rgx_pattern, string_to_search):
     if  match :
         return match.group()
     
+def escape_list(values):
+    result = []
+    for value in values:
+        result.append(escape_string(value)) 
+    return str(result).replace("'", "\"")
+    
 def escape_string(value):
     value = value.replace("\\", "\\/").replace('\n', '\\n')
     value = value.replace('"', '\\"').replace("\/", "\\/")
@@ -116,7 +122,7 @@ def parse_payload(response):
     response['Payload'] = response['Payload'].read().decode("utf-8")[1:-1].replace('\\n', '\n')
     return response 
 
-def  base64_to_utf8(value):
+def base64_to_utf8(value):
     return base64.b64decode(value).decode('utf8')
 
 def get_boto3_client(client_name, region='us-east-1'):
@@ -156,6 +162,9 @@ class Scar(object):
                                               description="Deploy containers in serverless architectures",
                                               epilog="Run 'scar COMMAND --help' for more information on a command.")
         subparsers = self.parser.add_subparsers(title='Commands')
+        
+        # Create the parser for the 'version' command
+        self.parser.add_argument('--version', action='version', version='%(prog)s ' + version)        
                 
         # 'init' command
         parser_init = subparsers.add_parser('init', help="Create lambda function")
@@ -188,6 +197,7 @@ class Scar(object):
         parser_run.add_argument("-p", "--payload", nargs='?', type=argparse.FileType('r'), help="Path to the input file passed to the function")        
         parser_run.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         parser_run.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
+        parser_run.add_argument('cont_args', nargs=argparse.REMAINDER, help="Arguments passed to the container.")
         
         # Create the parser for the 'rm' command
         parser_rm = subparsers.add_parser('rm', help="Delete function")
@@ -202,10 +212,6 @@ class Scar(object):
         parser_log.add_argument("log_group_name", help="The name of the log group.")
         parser_log.add_argument("log_stream_name", help="The name of the log stream.")
         parser_log.add_argument("-ri", "--request_id", help="Id of the request that generated the log.")       
-
-        # Create the parser for the 'version' command
-        parser_version = subparsers.add_parser('version', help="Show the Scar version information")
-        parser_version.set_defaults(func=self.version) 
     
     def execute(self):
         """Command parsing and selection"""
@@ -252,11 +258,11 @@ class Scar(object):
             tags={ 'owner' : get_user_name(), 
                    'createdby' : 'scar' }
         )
-        response = get_log_client().put_retention_policy(
+        # Set retention policy in the logs
+        get_log_client().put_retention_policy(
             logGroupName='/aws/lambda/' + args.name,
             retentionInDays=30
         )
-        print(json.dumps(response))
         full_response = {'LambdaOutput' : lambda_response,
                          'CloudWatchOuput' : cw_response}
         # Generate results
@@ -341,18 +347,18 @@ class Scar(object):
                 # Add an specific prefix to be able to find the variables defined by the user
                 self.lambda_env_variables['Variables']['CONT_VAR_' + var_parsed[0]] = var_parsed[1]
             get_lambda_client().update_function_configuration(FunctionName=args.name,
-                                                            Environment=self.lambda_env_variables)   
+                                                            Environment=self.lambda_env_variables)
+            
+        script = ""
         if args.payload:
-            # Generate the script passed to the container
             script = "{ \"script\" : \"" + escape_string(args.payload.read()) + "\"}"
-            response = get_lambda_client().invoke(FunctionName=args.name,
-                                                 InvocationType=invocation_type,
-                                                 LogType=log_type,
-                                                 Payload=script)
-        else:
-            response = get_lambda_client().invoke(FunctionName=args.name,
-                                                 InvocationType=invocation_type,
-                                                 LogType=log_type)
+        elif args.cont_args:
+            script = "{ \"cmd_args\" : " + escape_list(args.cont_args) + "}"
+        # Invoke lambda function 
+        response = get_lambda_client().invoke(FunctionName=args.name,
+                                              InvocationType=invocation_type,
+                                              LogType=log_type,
+                                              Payload=script) 
         
         if args.async:
             if args.verbose:
@@ -434,11 +440,6 @@ class Scar(object):
             
         except ClientError as ce:
             print(ce)
-    
-    def version(self, args):
-        print ("scar " + version)
-
-
 
 if __name__ == "__main__":
     Scar().execute()        
