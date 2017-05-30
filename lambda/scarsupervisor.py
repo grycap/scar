@@ -18,6 +18,7 @@ import json
 import os
 import re
 from subprocess import call, check_output, STDOUT
+import traceback
 
 print('Loading function')
 
@@ -52,10 +53,6 @@ def prepare_container(container_image):
     else:
         print("SCAR: Container '" + name + "' already available")
 
-def create_script(content):
-    with open(script,"w") as f:
-        f.write(content)
-
 def get_global_variables():
     cont_variables = []
     for key in os.environ.keys():
@@ -72,39 +69,50 @@ def prepare_output(context):
     stdout += "---------------------------------------------------------------------------\n"
     return stdout
 
+def create_file(content, path):
+    with open(path,"w") as f:
+        f.write(content)
+
+def create_event_file(event, context):
+    event_file_path = "/tmp/" + context.aws_request_id + "/"
+    call(["mkdir", "-p", event_file_path])
+    create_file(event, event_file_path+"/event.json")
+
 def lambda_handler(event, context):
-    print("SCAR: Received event: " + json.dumps(event, indent=2))
-    file_retriever = urllib.URLopener()
-    prepare_environment(file_retriever)
-    prepare_container(os.environ['IMAGE_ID'])
-
+    try:
+        print("SCAR: Received event: " + json.dumps(event))
+        print (type(event))
+        create_event_file(json.dumps(event), context)
+        file_retriever = urllib.URLopener()
+        prepare_environment(file_retriever)
+        prepare_container(os.environ['IMAGE_ID'])
     
-    # Create container execution command
-    command = [udocker_bin, "--quiet", "run", "-v", "/tmp", "--nosysdirs"]
-    # Add global variables (if any)
-    global_variables = get_global_variables()
-    if global_variables:
-        command.extend(global_variables)
-
-    # Container running script
-    if ('script' in event) and event['script']:
-        create_script(event['script'])  
-        command.extend((name, "/bin/sh", script))
-    # Container with args
-    elif ('cmd_args' in event) and event['cmd_args']:
-        args = map(lambda x: x.encode('ascii'), event['cmd_args'])
-        command.append(name)
-        command.extend(args)    
-    # Only container        
-    else:
-        command.append(name)
+        # Create container execution command
+        command = [udocker_bin, "--quiet", "run", "-v", "/tmp", "--nosysdirs"]
+        # Add global variables (if any)
+        global_variables = get_global_variables()
+        if global_variables:
+            command.extend(global_variables)
     
-    print(command)
-    
-    # Execute script
-    call(command, stderr = STDOUT, stdout = open(lambda_output,"w"))
-    
-    stdout = prepare_output(context)
-    stdout += check_output(["cat", lambda_output])
+        # Container running script
+        if ('script' in event) and event['script']:
+            create_file(event['script'], script)  
+            command.extend((name, "/bin/sh", script))
+        # Container with args
+        elif ('cmd_args' in event) and event['cmd_args']:
+            args = map(lambda x: x.encode('ascii'), event['cmd_args'])
+            command.append(name)
+            command.extend(args)    
+        # Only container        
+        else:
+            command.append(name)
+        # Execute script
+        call(command, stderr = STDOUT, stdout = open(lambda_output,"w"))
+        
+        stdout = prepare_output(context)
+        stdout += check_output(["cat", lambda_output])
+    except Exception:
+        stdout = prepare_output(context)
+        stdout += "ERROR: Exception launched:\n %s" % traceback.format_exc()
     print stdout    
     return stdout

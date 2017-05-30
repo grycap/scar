@@ -358,8 +358,7 @@ class Scar(object):
         response = get_lambda_client().invoke(FunctionName=args.name,
                                               InvocationType=invocation_type,
                                               LogType=log_type,
-                                              Payload=script) 
-        
+                                              Payload=script)
         if args.async:
             if args.verbose:
                 print(json.dumps(parse_payload(response))) 
@@ -397,7 +396,7 @@ class Scar(object):
                           'RequestId' : response['ResponseMetadata']['RequestId']}
                 print(json.dumps(result))            
             else:
-                print(result)            
+                print(result)
         
     def rm(self, args):
         # Delete the lambda function
