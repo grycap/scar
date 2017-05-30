@@ -5,12 +5,12 @@ SCAR is a framework to transparently execute containers (e.g. Docker) in serverl
 
 ## Approach
 
-SCAR provides a command-line interface to create a Lambda function to execute Docker container out of an image stored in [Docker Hub](https://hub.docker.com/). Each invocation of the Lambda function will result in the execution of such a container (optionally executing a shell-script inside the container for further versatility).
+SCAR provides a command-line interface to create a Lambda function to execute a container out of a Docker image stored in [Docker Hub](https://hub.docker.com/). Each invocation of the Lambda function will result in the execution of such a container (optionally executing a shell-script inside the container for further versatility).
 
  The following underlying technologies are employed:
 
 * [udocker](https://github.com/indigo-dc/udocker/): A tool to execute Docker containers in user space.
-  * The [Fakechroot](https://github.com/dex4er/fakechroot/wiki) execution mode of udocker is employed.
+  * The [Fakechroot](https://github.com/dex4er/fakechroot/wiki) execution mode of udocker is employed, since Docker containers cannot be natively run on AWS Lambda. Isolation is provided by the boundary of the Lambda function itself.
 * [AWS Lambda](https://aws.amazon.com/lambda): A serverless compute service that runs Lambda functions in response to events.
 
 
@@ -63,9 +63,9 @@ cd scar
 alias scar=`pwd`/scar.py
 ```
 
-## Usage
+## Basic Usage
 
-1. Create a Lambda function to execute a Docker container (whose image is stored in Docker Hub)
+1. Create a Lambda function to execute a container (out of a Docker image is stored in Docker Hub)
 ```
 scar init -n lambda-docker-cowsay -m 128 -t 300 chuanwen/cowsay
 ```
@@ -73,21 +73,60 @@ Notice that the memory and time limits for the Lambda function can be specified.
 ```
 scar --help
 ```
+ 
+2. Execute the Lambda function
 
-2. Execute the Lambda function (to trigger the execution of the Docker container) and pass a script to be executed within the container.
+```
+scar run lambda-docker-cowsay
+```
+The first invocation to the Lambda function will trigger the pulling of the Docker image from Docker Hub so it will take considerably longer than the subsequent invocations, which will most certainly reuse the existing Docker image, stored in ```/tmp```.
+
+4. Access the logs
+
+The logs are stored in CloudWatch with a default retention of 30 days. 
+The logs for a specific invocation a Lambda function can be obtained as follows:
+```
+scar log -ri <Request-Id> <Log-Group-Name> 'Log-Stream-Name' 
+```
+These values are obtained as a result of executing `scar run`.
+
+3. Remove the Lambda function
+You can remove the Lambda function together with the logs generated in CloudWatch by:
+```
+scar rm lambda-docker-cowsay
+```
+
+## Advanced Usage
+
+### Executing a shell-script
+You can execute the Lambda function and specify a shell-script locally available in your machine to be executed within the container.
 ```
 scar run -p test/test-cowsay.sh lambda-docker-cowsay
 ```
-Note that the first invocation to the Lambda function will trigger the pulling of the Docker image from Docker Hub so it will take considerably longer than the subsequent invocations, which will most certainly reuse the existing Docker image, stored in ```/tmp```.
-
 The shell-script can be changed in each different execution of the Lambda function.
 
 ### Passing Environment Variables
 
-You can pass environment variables to the Lambda function which will be in turn passed to the executed Docker container and made available to your shell-script:
+You can specify environment variables to the run command which will be in turn passed to the executed Docker container and made available to your shell-script:
 ```
 scar run -e TEST1=45 -e TEST2=69 -p test/test-global-vars.sh lambda-docker-cowsay
 ```
+
+### Executing Applications
+
+Applications available in the Docker image can be directly executed:
+```
+ scar run lambda-docker-cowsay /usr/games/fortune
+ ```
+
+### Passing Arguments
+
+You can also supply arguments which will be passed to the command executed in the Docker container:
+```
+scar run lambda-docker-cowsay /usr/bin/perl /usr/games/cowsay Hello World
+````
+Note that since cowsay is a Perl script you will have to prepend it with the location of the Perl interpreter (in the Docker container).
+
 
 ## Licensing
 SCAR is licensed under the Apache License, Version 2.0. See
