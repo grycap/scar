@@ -117,7 +117,16 @@ def parse_payload(response):
     return response 
 
 def  base64_to_utf8(value):
-    return base64.b64decode(value).decode('utf8') 
+    return base64.b64decode(value).decode('utf8')
+
+def get_boto3_client(client_name, region='us-east-1'):
+    return boto3.client(client_name, region_name=region)
+
+def get_lambda_client(region='us-east-1'):
+    return get_boto3_client('lambda', region)
+
+def get_log_client(region='us-east-1'):
+    return get_boto3_client('logs', region)
 
 class Scar(object):
     """Implements most of the command line interface.
@@ -126,7 +135,6 @@ class Scar(object):
     """
 
     def __init__(self):
-        self.create_boto3_client()
         self.create_command_parser()
     
     def init_lambda_fuction_parameters(self):
@@ -143,10 +151,6 @@ class Scar(object):
         self.lambda_tags = { 'owner' : get_user_name(),
                             'createdby' : 'scar' }
         
-
-    def create_boto3_client(self):
-        self.boto3_client = boto3.client('lambda', region_name='us-east-1')
-
     def create_command_parser(self):
         self.parser = argparse.ArgumentParser(prog="scar",
                                               description="Deploy containers in serverless architectures",
@@ -230,7 +234,7 @@ class Scar(object):
         if args.image_id:
             self.lambda_env_variables['Variables']['IMAGE_ID'] = args.image_id
         # Call the AWS service
-        response = self.boto3_client.create_function(FunctionName=self.lambda_name,
+        lambda_response = get_lambda_client().create_function(FunctionName=self.lambda_name,
                                                      Runtime=self.lambda_runtime,
                                                      Role=self.lambda_role,
                                                      Handler=self.lambda_handler,
@@ -242,22 +246,38 @@ class Scar(object):
                                                      Tags=self.lambda_tags)
         # Remove the zip created in the operation
         os.remove(zif_file_path)
+        # Create log group
+        cw_response = get_log_client().create_log_group(
+            logGroupName='/aws/lambda/' + args.name,
+            tags={ 'owner' : get_user_name(), 
+                   'createdby' : 'scar' }
+        )
+        response = get_log_client().put_retention_policy(
+            logGroupName='/aws/lambda/' + args.name,
+            retentionInDays=30
+        )
+        print(json.dumps(response))
+        full_response = {'LambdaOutput' : lambda_response,
+                         'CloudWatchOuput' : cw_response}
         # Generate results
-        result = {'AccessKey' : get_access_key(),
-                  'FunctionArn' : response['FunctionArn'],
-                  'Timeout' : response['Timeout'],
-                  'MemorySize' : response['MemorySize'],
-                  'FunctionName' : response['FunctionName']}
+        result = {'LambdaOutput' : {'AccessKey' : get_access_key(), 
+                                    'FunctionArn' : lambda_response['FunctionArn'], 
+                                    'Timeout' : lambda_response['Timeout'], 
+                                    'MemorySize' : lambda_response['MemorySize'], 
+                                    'FunctionName' : lambda_response['FunctionName']},
+                  'CloudWatchOutput' : { 'RequestId' : cw_response['ResponseMetadata']['RequestId'], 
+                                         'HTTPStatusCode' : cw_response['ResponseMetadata']['HTTPStatusCode'] }} 
         # Parse output
         if args.verbose:
-            print(json.dumps(response))
+            print(json.dumps(full_response))
         elif args.json:        
             print (json.dumps(result))
         else:
-            print ("Function '" + args.name + "' successfully initiated.")
+            print ("Function '" + args.name + "' successfully created.")
+            print ("Log group '/aws/lambda/" + args.name + "' successfully created.")
     
     def check_function_name(self, function_name):
-        paginator = self.boto3_client.get_paginator('list_functions')  
+        paginator = get_lambda_client().get_paginator('list_functions')  
         for functions in paginator.paginate():         
             for lfunction in functions['Functions']:
                 if function_name == lfunction['FunctionName']:
@@ -266,14 +286,14 @@ class Scar(object):
        
     def ls(self, args):
         # Get the filtered resources from AWS
-        client = boto3.client('resourcegroupstaggingapi', region_name='us-east-1')
+        client = get_boto3_client('resourcegroupstaggingapi')
         tag_filters = [ { 'Key': 'owner', 'Values': [ get_user_name() ] }, { 'Key': 'createdby', 'Values': ['scar'] } ]
         response = client.get_resources(TagFilters=tag_filters, TagsPerPage=100)
         filtered_functions = response['ResourceTagMappingList']
         # Create the data structure
         result = {'Functions': []}
         for function_arn in filtered_functions:
-            function_info = self.boto3_client.get_function(FunctionName=function_arn['ResourceARN'])
+            function_info = get_lambda_client().get_function(FunctionName=function_arn['ResourceARN'])
             function = {'Name' : function_info['Configuration']['FunctionName'],
                         'Memory' : function_info['Configuration']['MemorySize'],
                         'Timeout' : function_info['Configuration']['Timeout']}
@@ -308,29 +328,29 @@ class Scar(object):
             log_type = 'None' 
         
         if args.memory:
-            self.boto3_client.update_function_configuration(FunctionName=args.name,
+            get_lambda_client().update_function_configuration(FunctionName=args.name,
                                                             MemorySize=check_memory(args.memory))   
         if args.time:
-            self.boto3_client.update_function_configuration(FunctionName=args.name,
+            get_lambda_client().update_function_configuration(FunctionName=args.name,
                                                             Timeout=check_time(args.time))   
         if args.env:
             # Retrieve the global variables already defined
-            self.lambda_env_variables = self.boto3_client.get_function(FunctionName=args.name)['Configuration']['Environment']
+            self.lambda_env_variables = get_lambda_client().get_function(FunctionName=args.name)['Configuration']['Environment']
             for var in args.env:
                 var_parsed = var.split("=")
                 # Add an specific prefix to be able to find the variables defined by the user
                 self.lambda_env_variables['Variables']['CONT_VAR_' + var_parsed[0]] = var_parsed[1]
-            self.boto3_client.update_function_configuration(FunctionName=args.name,
+            get_lambda_client().update_function_configuration(FunctionName=args.name,
                                                             Environment=self.lambda_env_variables)   
         if args.payload:
             # Generate the script passed to the container
             script = "{ \"script\" : \"" + escape_string(args.payload.read()) + "\"}"
-            response = self.boto3_client.invoke(FunctionName=args.name,
+            response = get_lambda_client().invoke(FunctionName=args.name,
                                                  InvocationType=invocation_type,
                                                  LogType=log_type,
                                                  Payload=script)
         else:
-            response = self.boto3_client.invoke(FunctionName=args.name,
+            response = get_lambda_client().invoke(FunctionName=args.name,
                                                  InvocationType=invocation_type,
                                                  LogType=log_type)
         
@@ -375,30 +395,30 @@ class Scar(object):
         
     def rm(self, args):
         # Delete the lambda function
-        response_lambda = self.boto3_client.delete_function(FunctionName=args.name)
+        lambda_response = get_lambda_client().delete_function(FunctionName=args.name)
         # Delete the cloudwatch log group
-        response_cw = boto3.client('logs', region_name='us-east-1').delete_log_group(logGroupName='/aws/lambda/' + args.name)
-        full_response = {'LambdaOutput' : response_lambda,
-                         'CloudWatchOuput' : response_cw}
+        cw_response = get_log_client().delete_log_group(logGroupName='/aws/lambda/' + args.name)
+        full_response = {'LambdaOutput' : lambda_response,
+                         'CloudWatchOuput' : cw_response}
         # Parse output
         if args.verbose:
             print(json.dumps(full_response))
         elif args.json:
-            result = {'LambdaOutput' : { 'RequestId' : response_lambda['ResponseMetadata']['RequestId'],
-                                         'HTTPStatusCode' : response_lambda['ResponseMetadata']['HTTPStatusCode'] },
-                      'CloudWatchOutput' : { 'RequestId' : response_cw['ResponseMetadata']['RequestId'],
-                                             'HTTPStatusCode' : response_cw['ResponseMetadata']['HTTPStatusCode'] }                      
+            result = {'LambdaOutput' : { 'RequestId' : lambda_response['ResponseMetadata']['RequestId'],
+                                         'HTTPStatusCode' : lambda_response['ResponseMetadata']['HTTPStatusCode'] },
+                      'CloudWatchOutput' : { 'RequestId' : cw_response['ResponseMetadata']['RequestId'],
+                                             'HTTPStatusCode' : cw_response['ResponseMetadata']['HTTPStatusCode'] }                      
                       }
             print(json.dumps(result))
         else:
-            if (response_lambda['ResponseMetadata']['HTTPStatusCode'] == 204) and (response_cw['ResponseMetadata']['HTTPStatusCode'] == 200):
+            if (lambda_response['ResponseMetadata']['HTTPStatusCode'] == 204) and (cw_response['ResponseMetadata']['HTTPStatusCode'] == 200):
                 print ("Function '" + args.name + "' and logs correctly deleted.")
             else:
                 print("Error deleting function '" + args.name + "'.")
 
     def log(self, args):
         try:
-            response = boto3.client('logs', region_name='us-east-1').get_log_events(
+            response = get_log_client().get_log_events(
                 logGroupName=args.log_group_name,
                 logStreamName=args.log_stream_name,
                 startFromHead=True
