@@ -81,7 +81,6 @@ def create_event_file(event, context):
 def lambda_handler(event, context):
     try:
         print("SCAR: Received event: " + json.dumps(event))
-        print (type(event))
         create_event_file(json.dumps(event), context)
         file_retriever = urllib.URLopener()
         prepare_environment(file_retriever)
