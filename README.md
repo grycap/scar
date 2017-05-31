@@ -20,7 +20,7 @@ SCAR provides a command-line interface to create a Lambda function to execute a 
   * Uncompressed Docker image under 512 MB.
   * Maximum execution time of 300 seconds (5 minutes).
 * The following Docker images cannot be currently used:
-  * Those based on Alpine Linux.
+  * Those based on Alpine Linux (due to the use of MUSL instead of GLIBC, which is not supported by Fakechroot).
 * Installation of packages in the user-defined script (i.e. using `yum`, `apt-get`, etc.) is currently not possible.
   
 
@@ -92,6 +92,7 @@ scar log -ri <Request-Id> <Log-Group-Name> 'Log-Stream-Name'
 These values are shown in the output when executing `scar run`. Do not forget to use the single quotes, as indicated in the example, to avoid unwanted shell expansions.
 
 4. Remove the Lambda function
+
 You can remove the Lambda function together with the logs generated in CloudWatch by:
 ```
 scar rm lambda-docker-cowsay
@@ -134,6 +135,45 @@ For easier scripting, a JSON output can be obtained by including the `--json` or
 ```
 scar run --json lambda-docker-cowsay
 ```
+
+### Local Testing via udocker
+
+You can test locally if the Docker image will be able to run in AWS Lambda by means of udocker (available in the `lambda` directory) and taking into account the following limitations:
+
+ * udocker cannot run on macOS. Use a Linux box instead.
+ * Images based in Alpine will not work.
+ 
+ Procedure for testing:
+
+0. (Optional) Define an alias for easier usage
+```
+alias udocker=`pwd`/lambda/udocker
+```
+1. Pull the image from Docker Hub into udocker
+```
+udocker pull chuanwen/cowsay
+```
+2. Create the container
+```
+udocker create --name=my-container chuanwen/cowsay
+```
+3. Change the execution mode to Fakechroot
+```
+udocker setup --execmode=F1 my-container
+```
+4. Execute the container
+```
+udocker run my-container
+```
+5. (Optional) Get a shell into the container
+```
+udocker run my-container /bin/sh
+```
+Further information is available in the udocker documentation:
+```
+udocker help
+```
+
 
 ## Licensing
 SCAR is licensed under the Apache License, Version 2.0. See
