@@ -361,28 +361,6 @@ class Config(object):
         
     config = configparser.ConfigParser()    
     
-    '''
-    def __init__(self):
-        self.lambda_name = "scar_function"
-        self.lambda_runtime = "python2.7"
-        self.lambda_handler = self.lambda_name + ".lambda_handler"        
-        self.lambda_role = "arn:aws:iam::974349055189:role/lambda-s3-execution-role"
-        self.lambda_region = 'us-east-1'
-        self.lambda_env_variables = {"Variables" : {"UDOCKER_DIR":"/tmp/home/.udocker", "UDOCKER_TARBALL":"/var/task/udocker-1.1.0-RC2.tar.gz"}}
-        self.lambda_memory = 128
-        self.lambda_time = 3
-        self.lambda_description = "Automatically generated lambda function"
-        self.lambda_tags = { 'createdby' : 'scar' }
-        
-        self.version = "v0.0.1"
-        
-        self.dir_path = os.path.dirname(os.path.realpath(__file__))
-        
-        self.zif_file_path = self.dir_path + '/function.zip'        
-        
-        self.config = configparser.ConfigParser()
-    '''
-
     def create_config_file(self, file_dir):
         
         self.config['scar'] = {'lambda_name' : "scar_function",
