@@ -4,12 +4,10 @@ MAINTAINER Amanda Calatrava <amcaar@i3m.upv.es>
 ENV LD_LIBRARY_PATH /usr/local/lib
 
 # Package and dependencies to install MrBayes (including MPI and BEAGLE)
-RUN apt-get update && apt-get install -y \
-    build-essential \
+RUN apt-get update && apt-get install -y \    
     autoconf \
-    automake \ 
-    libtool \
-    pkg-config \    
+    make \ 
+    gcc  \    
     wget
 
 RUN wget http://sourceforge.net/projects/mrbayes/files/mrbayes/3.2.6/mrbayes-3.2.6.tar.gz -O /tmp/mrbayes-3.2.6.tar.gz && \
