@@ -2,9 +2,6 @@
 
 Docker image for [AWS CLI](https://aws.amazon.com/cli/) based on the [python:slim](https://hub.docker.com/r/library/python/tags/slim/) Docker image.
 
-Built to be used by [SCAR](https://github.com/grycap/scar) on AWS Lamda.
-Not based on Alpine since it is meant to be executed using [udocker](github.com/indigo-dc/udocker)'s Fakechroot execution mode. 
-
 ## Local Usage
 
 Credentials can be passed through the following environment variables:

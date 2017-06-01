@@ -87,7 +87,7 @@ def lambda_handler(event, context):
         prepare_container(os.environ['IMAGE_ID'])
     
         # Create container execution command
-        command = [udocker_bin, "--quiet", "run", "-v", "/tmp", "-v", "/dev", "--nosysdirs"]
+        command = [udocker_bin, "--quiet", "run", "-v", "/tmp", "-v", "/dev", "-v", "/proc", "--nosysdirs"]
         # Add global variables (if any)
         global_variables = get_global_variables()
         if global_variables:
