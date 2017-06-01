@@ -5,7 +5,7 @@ Docker image for [AWS CLI](https://aws.amazon.com/cli/) based on the [python:sli
 Built to be used by [SCAR](https://github.com/grycap/scar) on AWS Lamda.
 Not based on Alpine since it is meant to be executed using [udocker](github.com/indigo-dc/udocker)'s Fakechroot execution mode. 
 
-## Usage
+## Local Usage
 
 Credentials can be passed through the following environment variables:
 
@@ -17,3 +17,19 @@ Assuming that these variables are already populated on your machine, you would l
 docker run --rm -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY grycap/aws-cli ec2 describe-instances
 ```
 Further information is available in the [AWS CLI documentation](https://aws.amazon.com/documentation/cli/).
+
+## Usage in AWS Lambda via SCAR 
+
+You can run AWS CLI in AWS Lambda via [SCAR](https://github.com/grycap/scar) using the following procedure:
+
+1. Create the Lambda function
+```
+scar init -n lambda-aws-cli -m 128 -t 300 grycap/aws-cli
+```
+
+2. Execute the Lambda function
+```
+scar run -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY lambda-aws-cli ec2 describe-instances
+```
+You have the AWS CLI running on AWS Lambda.
+

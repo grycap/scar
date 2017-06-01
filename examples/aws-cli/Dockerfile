@@ -1,4 +1,4 @@
-FROM python:2.7-slim
+FROM python:slim
 
 MAINTAINER Germán Moltó - gmolto@dsic.upv.es
 
