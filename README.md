@@ -67,9 +67,9 @@ alias scar=`pwd`/scar.py
 
 1. Create a Lambda function to execute a container (out of a Docker image that is stored in Docker Hub).
 
-In these examples the popular [chuanwen/cowsay](https://hub.docker.com/r/chuanwen/cowsay/) Docker image in Docker Hub will be employed:
+In these examples the [grycap/cowsay](https://hub.docker.com/r/grycap/cowsay/) Docker image in Docker Hub will be employed:
 ```
-scar init -n lambda-docker-cowsay -m 128 -t 300 chuanwen/cowsay
+scar init -n lambda-docker-cowsay -m 128 -t 300 grycap/cowsay
 ```
 Notice that the memory and time limits for the Lambda function can be specified. Further information is available in the help:
 ```
@@ -151,11 +151,11 @@ alias udocker=`pwd`/lambda/udocker
 ```
 1. Pull the image from Docker Hub into udocker
 ```
-udocker pull chuanwen/cowsay
+udocker pull grycap/cowsay
 ```
 2. Create the container
 ```
-udocker create --name=my-container chuanwen/cowsay
+udocker create --name=my-container grycap/cowsay
 ```
 3. Change the execution mode to Fakechroot
 ```
