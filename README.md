@@ -71,7 +71,9 @@ In these examples the [grycap/cowsay](https://hub.docker.com/r/grycap/cowsay/) D
 ```
 scar init -n lambda-docker-cowsay -m 128 -t 300 grycap/cowsay
 ```
-Notice that the memory and time limits for the Lambda function can be specified. Further information is available in the help:
+Notice that the memory and time limits for the Lambda function can be specified in the command-line. Upon first execution, the file `$HOME/.scar/scar.cfg` is created with default values for the memory and timeout, among other features.
+
+Further information about the command-line arguments is available in the help:
 ```
 scar --help
 ```
