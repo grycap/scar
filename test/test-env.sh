@@ -1,4 +1,4 @@
-#/bin/hash
+#/bin/sh
 
 # SCAR - Serverless Container-aware ARchitectures
 # Copyright (C) GRyCAP - I3M - UPV 
