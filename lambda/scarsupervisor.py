@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import urllib
+
 import json
 import os
 import re
@@ -27,7 +27,7 @@ lambda_output="/tmp/lambda-stdout.txt"
 script = "/tmp/udocker/script.sh"
 name = 'lambda_cont'
 
-def prepare_environment(file_retriever):
+def prepare_environment():
     # Install udocker in /tmp
     call(["mkdir", "-p", "/tmp/udocker"])
     call(["cp", "/var/task/udocker", udocker_bin])
@@ -82,8 +82,7 @@ def lambda_handler(event, context):
     try:
         print("SCAR: Received event: " + json.dumps(event))
         create_event_file(json.dumps(event), context)
-        file_retriever = urllib.URLopener()
-        prepare_environment(file_retriever)
+        prepare_environment()
         prepare_container(os.environ['IMAGE_ID'])
     
         # Create container execution command
