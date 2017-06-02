@@ -349,7 +349,7 @@ class Config(object):
     lambda_region = 'us-east-1'
     lambda_env_variables = {"Variables" : {"UDOCKER_DIR":"/tmp/home/.udocker", "UDOCKER_TARBALL":"/var/task/udocker-1.1.0-RC2.tar.gz"}}
     lambda_memory = 128
-    lambda_time = 3
+    lambda_time = 300
     lambda_description = "Automatically generated lambda function"
     lambda_tags = { 'createdby' : 'scar' }
         
@@ -365,8 +365,8 @@ class Config(object):
         
         self.config['scar'] = {'lambda_name' : "scar_function",
                           'lambda_description' : "Automatically generated lambda function",
-                          'lambda_memory' : 128,
-                          'lambda_time' : 3,
+                          'lambda_memory' : lambda_memory,
+                          'lambda_time' : lambda_time,
                           'lambda_region' : 'us-east-1'}
         with open(file_dir + "/scar.cfg","w") as configfile:
             self.config.write(configfile)
