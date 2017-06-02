@@ -113,5 +113,5 @@ def lambda_handler(event, context):
     except Exception:
         stdout = prepare_output(context)
         stdout += "ERROR: Exception launched:\n %s" % traceback.format_exc()
-    print stdout    
+    print(stdout)    
     return stdout

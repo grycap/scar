@@ -343,7 +343,7 @@ class Config(object):
     
     lambda_name = "scar_function"
     lambda_name = "scar_function"
-    lambda_runtime = "python2.7"
+    lambda_runtime = "python3.6"
     lambda_handler = lambda_name + ".lambda_handler"        
     lambda_role = "arn:aws:iam::974349055189:role/lambda-s3-execution-role"
     lambda_region = 'us-east-1'
