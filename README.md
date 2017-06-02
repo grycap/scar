@@ -138,7 +138,7 @@ For easier scripting, a JSON output can be obtained by including the `--json` or
 scar run --json lambda-docker-cowsay
 ```
 
-### Local Testing via udocker
+### Local Testing of the Docker images via udocker
 
 You can test locally if the Docker image will be able to run in AWS Lambda by means of udocker (available in the `lambda` directory) and taking into account the following limitations:
 
@@ -176,6 +176,16 @@ Further information is available in the udocker documentation:
 udocker help
 ```
 
+### Local Testing of the Lambda functions with emulambda
+
+For easier debugging of the Lambda functions, [emulambda](https://github.com/fugue/emulambda) can be employed to locally execute them.
+
+1. Install emulambda
+2. Execute a sample local test
+```
+sh test/emulambda/run-local-test.sh
+```   
+This test locally executes the ubuntu:16.04 image in DockerHub via udocker executing a simple shell-script.
 
 ## Licensing
 SCAR is licensed under the Apache License, Version 2.0. See
