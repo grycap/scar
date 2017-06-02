@@ -36,7 +36,7 @@ def prepare_environment():
 
 def prepare_container(container_image):
     # Check if the container is already downloaded
-    cmd_out = check_output([udocker_bin, "images"])
+    cmd_out = check_output([udocker_bin, "images"]).decode("utf-8")
     if container_image not in cmd_out:
         print("SCAR: Pulling container '" + container_image + "' from dockerhub")
         # If the container doesn't exist
@@ -44,7 +44,7 @@ def prepare_container(container_image):
     else:
         print("SCAR: Container image '" + container_image + "' already available")
     # Download and create container
-    cmd_out = check_output([udocker_bin, "ps"])
+    cmd_out = check_output([udocker_bin, "ps"]).decode("utf-8")
     if name not in cmd_out:
         print("SCAR: Creating container with name '" + name + "' based on image '" + container_image + "'.")
         call([udocker_bin, "create", "--name="+name, container_image])
@@ -108,7 +108,7 @@ def lambda_handler(event, context):
         call(command, stderr = STDOUT, stdout = open(lambda_output,"w"))
         
         stdout = prepare_output(context)
-        stdout += check_output(["cat", lambda_output])
+        stdout += check_output(["cat", lambda_output]).decode("utf-8")
     except Exception:
         stdout = prepare_output(context)
         stdout += "ERROR: Exception launched:\n %s" % traceback.format_exc()
