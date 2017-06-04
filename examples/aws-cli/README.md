@@ -1,6 +1,6 @@
 # Alpine-less AWS CLI Docker Image 
 
-Docker image for [AWS CLI](https://aws.amazon.com/cli/) based on the [python:slim](https://hub.docker.com/r/library/python/tags/slim/) Docker image.
+Docker image for [AWS CLI](https://aws.amazon.com/cli/) based on the [bitnami/minideb:jessie](https://hub.docker.com/r/bitnami/minideb/) Docker image.
 
 ## Local Usage
 
@@ -21,7 +21,7 @@ You can run AWS CLI in AWS Lambda via [SCAR](https://github.com/grycap/scar) usi
 
 1. Create the Lambda function
 ```
-scar init -n lambda-aws-cli -m 128 -t 300 grycap/aws-cli
+scar init -n lambda-aws-cli grycap/aws-cli
 ```
 
 2. Execute the Lambda function
