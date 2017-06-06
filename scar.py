@@ -23,6 +23,7 @@ import json
 import os
 import re
 import shutil
+import sys
 import zipfile
 from botocore.exceptions import ClientError
 from subprocess import call
@@ -35,7 +36,7 @@ class Scar(object):
     """
             
     def init(self, args):
-        if self.check_function_name(args.name):
+        if self.find_function_name(args.name):
             if args.verbose or args.json:
                 error = {'Error' : 'Cannot execute function. Function name \'' + args.name + '\' already defined.'}
                 print(json.dumps(error))           
@@ -102,13 +103,22 @@ class Scar(object):
             print ("Function '" + args.name + "' successfully created.")
             print ("Log group '/aws/lambda/" + args.name + "' successfully created.")
     
-    def check_function_name(self, function_name):
+    def find_function_name(self, function_name):
         paginator = AwsClient().get_lambda().get_paginator('list_functions')  
         for functions in paginator.paginate():         
             for lfunction in functions['Functions']:
                 if function_name == lfunction['FunctionName']:
                     return True
         return False
+    
+    def check_function_name(self, function_name, json=False):
+        if not self.find_function_name(function_name):
+            if json:
+                error = {'Error' : 'Function name \'' + function_name + '\' doesn\'t exist.'}
+                print(json.dumps(error))           
+            else:
+                print("ERROR: Function name '" + function_name + "' doesn't exist.")
+            sys.exit(1)  
        
     def ls(self, args):
         # Get the filtered resources from AWS
@@ -139,13 +149,7 @@ class Scar(object):
             print (tabulate(table, headers))
         
     def run(self, args):
-        if not self.check_function_name(args.name):
-            if args.verbose or args.json:
-                error = {'Error' : 'Cannot execute function. Function name \'' + args.name + '\' doesn\'t exist.'}
-                print(json.dumps(error))           
-            else:
-                print("ERROR: Cannot execute function. Function name '" + args.name + "' doesn't exist.")
-            return
+        self.check_function_name(args.name, (True if args.verbose or args.json else False))
         
         invocation_type = 'RequestResponse'
         log_type = 'Tail'
@@ -219,6 +223,8 @@ class Scar(object):
                 print(result)
         
     def rm(self, args):
+        self.check_function_name(args.name, (True if args.verbose or args.json else False))       
+        
         # Delete the lambda function
         lambda_response = AwsClient().get_lambda().delete_function(FunctionName=args.name)
         # Delete the cloudwatch log group
@@ -313,7 +319,7 @@ class Scar(object):
                 full_msg += line + '\n' 
             if line.startswith('START') and request_id in line:
                 full_msg += line + '\n'
-                logging = True            
+                logging = True
 
 class StringUtils(object):
 
