@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import urllib
+
 import json
 import os
 import re
@@ -27,7 +27,7 @@ lambda_output="/tmp/lambda-stdout.txt"
 script = "/tmp/udocker/script.sh"
 name = 'lambda_cont'
 
-def prepare_environment(file_retriever):
+def prepare_environment():
     # Install udocker in /tmp
     call(["mkdir", "-p", "/tmp/udocker"])
     call(["cp", "/var/task/udocker", udocker_bin])
@@ -36,7 +36,7 @@ def prepare_environment(file_retriever):
 
 def prepare_container(container_image):
     # Check if the container is already downloaded
-    cmd_out = check_output([udocker_bin, "images"])
+    cmd_out = check_output([udocker_bin, "images"]).decode("utf-8")
     if container_image not in cmd_out:
         print("SCAR: Pulling container '" + container_image + "' from dockerhub")
         # If the container doesn't exist
@@ -44,7 +44,7 @@ def prepare_container(container_image):
     else:
         print("SCAR: Container image '" + container_image + "' already available")
     # Download and create container
-    cmd_out = check_output([udocker_bin, "ps"])
+    cmd_out = check_output([udocker_bin, "ps"]).decode("utf-8")
     if name not in cmd_out:
         print("SCAR: Creating container with name '" + name + "' based on image '" + container_image + "'.")
         call([udocker_bin, "create", "--name="+name, container_image])
@@ -82,8 +82,7 @@ def lambda_handler(event, context):
     try:
         print("SCAR: Received event: " + json.dumps(event))
         create_event_file(json.dumps(event), context)
-        file_retriever = urllib.URLopener()
-        prepare_environment(file_retriever)
+        prepare_environment()
         prepare_container(os.environ['IMAGE_ID'])
     
         # Create container execution command
@@ -109,9 +108,9 @@ def lambda_handler(event, context):
         call(command, stderr = STDOUT, stdout = open(lambda_output,"w"))
         
         stdout = prepare_output(context)
-        stdout += check_output(["cat", lambda_output])
+        stdout += check_output(["cat", lambda_output]).decode("utf-8")
     except Exception:
         stdout = prepare_output(context)
         stdout += "ERROR: Exception launched:\n %s" % traceback.format_exc()
-    print stdout    
+    print(stdout)    
     return stdout
