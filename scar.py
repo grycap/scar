@@ -36,20 +36,19 @@ class Scar(object):
     """
             
     def init(self, args):
-        if self.find_function_name(args.name):
+        # Set lambda name
+        Config.lambda_name = args.name if args.name else Config.lambda_name
+        if self.find_function_name(Config.lambda_name):
             if args.verbose or args.json:
-                error = {'Error' : 'Cannot execute function. Function name \'' + args.name + '\' already defined.'}
+                error = {'Error' : 'Cannot create function. Function name \'' + Config.lambda_name + '\' already defined.'}
                 print(json.dumps(error))           
             else:
-                print("ERROR: Cannot create function. Function name '" + args.name + "' already defined.")
-            return        
-        if args.name:
-            Config.lambda_name = args.name
-            Config.lambda_handler = Config.lambda_name + ".lambda_handler"
-            Config.lambda_zip_file = {"ZipFile": self.create_zip_file(args.name)}
-        else:
-            # Create zip file with default values
-            Config.lambda_zip_file = {"ZipFile": self.create_zip_file(Config.lambda_name)}
+                print("ERROR: Cannot create function. Function name '" + Config.lambda_name + "' already defined.")
+            sys.exit(1) 
+        
+        Config.lambda_handler = Config.lambda_name + ".lambda_handler"
+        Config.lambda_zip_file = {"ZipFile": self.create_zip_file(Config.lambda_name)}
+        
         if args.memory:
             Config.lambda_memory = self.check_memory(args.memory)
         if args.time:
@@ -75,13 +74,13 @@ class Scar(object):
         os.remove(Config.zif_file_path)
         # Create log group
         cw_response = AwsClient().get_log().create_log_group(
-            logGroupName='/aws/lambda/' + args.name,
+            logGroupName='/aws/lambda/' + Config.lambda_name,
             tags={ 'owner' : AwsClient().get_user_name(), 
                    'createdby' : 'scar' }
         )
         # Set retention policy in the logs
         AwsClient().get_log().put_retention_policy(
-            logGroupName='/aws/lambda/' + args.name,
+            logGroupName='/aws/lambda/' + Config.lambda_name,
             retentionInDays=30
         )
         full_response = {'LambdaOutput' : lambda_response,
@@ -100,8 +99,8 @@ class Scar(object):
         elif args.json:        
             print (json.dumps(result))
         else:
-            print ("Function '" + args.name + "' successfully created.")
-            print ("Log group '/aws/lambda/" + args.name + "' successfully created.")
+            print ("Function '" + Config.lambda_name + "' successfully created.")
+            print ("Log group '/aws/lambda/" + Config.lambda_name + "' successfully created.")
     
     def find_function_name(self, function_name):
         paginator = AwsClient().get_lambda().get_paginator('list_functions')  
