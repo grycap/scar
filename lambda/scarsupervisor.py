@@ -38,16 +38,16 @@ def prepare_container(container_image):
     # Check if the container is already downloaded
     cmd_out = check_output([udocker_bin, "images"]).decode("utf-8")
     if container_image not in cmd_out:
-        print("SCAR: Pulling container '" + container_image + "' from dockerhub")
+        print("SCAR: Pulling container '%s' from dockerhub" % container_image)
         # If the container doesn't exist
         call([udocker_bin, "pull", container_image])
     else:
-        print("SCAR: Container image '" + container_image + "' already available")
+        print("SCAR: Container image '%s' already available" % container_image)
     # Download and create container
     cmd_out = check_output([udocker_bin, "ps"]).decode("utf-8")
     if name not in cmd_out:
-        print("SCAR: Creating container with name '" + name + "' based on image '" + container_image + "'.")
-        call([udocker_bin, "create", "--name="+name, container_image])
+        print("SCAR: Creating container with name '%s' based on image '%s'." % (name, container_image))
+        call([udocker_bin, "create", "--name=%s" % name, container_image])
         # Set container execution engine to Fakechroot
         call([udocker_bin, "setup", "--execmode=F1", name])
     else:
@@ -64,8 +64,8 @@ def get_global_variables():
     return cont_variables
 
 def prepare_output(context):
-    stdout = "SCAR: Log group name: " + context.log_group_name + "\n"
-    stdout += "SCAR: Log stream name: " + context.log_stream_name + "\n"
+    stdout = "SCAR: Log group name: %s\n" % context.log_group_name
+    stdout += "SCAR: Log stream name: %s\n" % context.log_stream_name
     stdout += "---------------------------------------------------------------------------\n"
     return stdout
 
@@ -79,8 +79,9 @@ def create_event_file(event, context):
     create_file(event, event_file_path+"/event.json")
 
 def lambda_handler(event, context):
+    print("SCAR: Received event: " + json.dumps(event))
+    stdout = prepare_output(context)
     try:
-        print("SCAR: Received event: " + json.dumps(event))
         create_event_file(json.dumps(event), context)
         prepare_environment()
         prepare_container(os.environ['IMAGE_ID'])
@@ -88,7 +89,7 @@ def lambda_handler(event, context):
         # Create container execution command
         command = [udocker_bin, "--quiet", "run"]
         container_dirs = ["-v", "/tmp", "-v", "/dev", "-v", "/proc", "--nosysdirs"]
-        container_vars = ["--env", "REQUEST_ID=" + context.aws_request_id]
+        container_vars = ["--env", "REQUEST_ID=%s" % context.aws_request_id]
         command.extend(container_dirs)
         command.extend(container_vars)
         # Add global variables (if any)
@@ -111,10 +112,8 @@ def lambda_handler(event, context):
         # Execute script
         call(command, stderr = STDOUT, stdout = open(lambda_output,"w"))
         
-        stdout = prepare_output(context)
         stdout += check_output(["cat", lambda_output]).decode("utf-8")
     except Exception:
-        stdout = prepare_output(context)
         stdout += "ERROR: Exception launched:\n %s" % traceback.format_exc()
     print(stdout)    
     return stdout

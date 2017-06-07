@@ -190,10 +190,23 @@ class Scar(object):
         except ClientError as ce:
             print ("Unexpected error: %s" % ce)
         
+        # Decode and parse the payload
+        response = StringUtils().parse_payload(response)
+        if "FunctionError" in response:
+            if "Task timed out" in response['Payload']:
+                if args.verbose or args.json:
+                    StringUtils().print_json({"Error" : "Funtion'%s' timed out." % args.name})               
+                else:
+                    print ("Error: Function '%s' timed out." % args.name)
+            else:
+                print ("Unexpected error: %s" % response['Payload'])
+            sys.exit(1)
+                
+        
         result = Result()    
         if args.async:
             # Prepare the outputs
-            result.append_to_verbose('LambdaOutput', StringUtils().parse_payload(response))
+            result.append_to_verbose('LambdaOutput', response)
             result.append_to_json('LambdaOutput', {'StatusCode' : response['StatusCode'], 
                                                        'RequestId' : response['ResponseMetadata']['RequestId']})           
             result.append_to_plain_text("Function '%s' launched correctly" % args.name)
@@ -201,8 +214,6 @@ class Scar(object):
         else:
             # Transform the base64 encoded results to something legible
             response = StringUtils().parse_base64_response_values(response)
-            # Decode and parse the payload
-            response = StringUtils().parse_payload(response)
             # Extract log_group_name and log_stream_name from the payload
             response = StringUtils().parse_log_ids(response)
             # Prepare the outputs
@@ -388,8 +399,8 @@ class Config(object):
         
         self.config['scar'] = {'lambda_name' : "scar_function",
                           'lambda_description' : "Automatically generated lambda function",
-                          'lambda_memory' : 128,
-                          'lambda_time' : 300,
+                          'lambda_memory' : Config.lambda_memory,
+                          'lambda_time' : Config.lambda_time,
                           'lambda_region' : 'us-east-1'}
         with open(file_dir + "/scar.cfg","w") as configfile:
             self.config.write(configfile)
