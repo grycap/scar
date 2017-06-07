@@ -26,6 +26,7 @@ udocker_bin="/tmp/udocker/udocker"
 lambda_output="/tmp/lambda-stdout.txt"
 script = "/tmp/udocker/script.sh"
 name = 'lambda_cont'
+init_script_path = "/tmp/udocker/init_script.sh"
 
 def prepare_environment():
     # Install udocker in /tmp
@@ -33,6 +34,8 @@ def prepare_environment():
     call(["cp", "/var/task/udocker", udocker_bin])
     call(["chmod", "u+rx", udocker_bin])
     call(["mkdir", "-p", "/tmp/home/.udocker"])
+    if ('INIT_SCRIPT_PATH' in os.environ) and os.environ['INIT_SCRIPT_PATH']:
+        call(["cp", "/var/task/init_script.sh", init_script_path])
 
 def prepare_container(container_image):
     # Check if the container is already downloaded
@@ -96,16 +99,19 @@ def lambda_handler(event, context):
         global_variables = get_global_variables()
         if global_variables:
             command.extend(global_variables)
-    
+
         # Container running script
         if ('script' in event) and event['script']:
             create_file(event['script'], script)  
-            command.extend((name, "/bin/sh", script))
+            command.extend([name, "/bin/sh", script])
         # Container with args
         elif ('cmd_args' in event) and event['cmd_args']:
             args = map(lambda x: x.encode('ascii'), event['cmd_args'])
             command.append(name)
-            command.extend(args)    
+            command.extend(args)
+        # Script to be executed every time (if defined)
+        elif ('INIT_SCRIPT_PATH' in os.environ) and os.environ['INIT_SCRIPT_PATH']:
+            command.extend([name, "/bin/sh", init_script_path])             
         # Only container        
         else:
             command.append(name)

@@ -42,7 +42,11 @@ class Scar(object):
         AwsClient().check_function_name_exists(Config.lambda_name, (True if args.verbose or args.json else False))       
         # Set the rest of the parameters
         Config.lambda_handler = Config.lambda_name + ".lambda_handler"
-        Config.lambda_zip_file = {"ZipFile": self.create_zip_file(Config.lambda_name)}
+        if args.payload:
+            Config.lambda_zip_file = {"ZipFile": self.create_zip_file(Config.lambda_name, args.payload)}
+            Config.lambda_env_variables['Variables']['INIT_SCRIPT_PATH'] = "/var/task/init_script.sh"
+        else:
+            Config.lambda_zip_file = {"ZipFile": self.create_zip_file(Config.lambda_name)}
         if args.memory:
             Config.lambda_memory = self.check_memory(args.memory)
         if args.time:
@@ -279,7 +283,7 @@ class Scar(object):
             raise Exception('Incorrect time specified')
         return lambda_time
     
-    def create_zip_file(self, file_name):
+    def create_zip_file(self, file_name, script_path=None):
         # Set generic lambda function name
         function_name = file_name + '.py'
         # Copy file to avoid messing with the repo files
@@ -294,6 +298,8 @@ class Scar(object):
             # Udocker libs
             zf.write(Config.dir_path + '/lambda/udocker-1.1.0-RC2.tar.gz', 'udocker-1.1.0-RC2.tar.gz')
             os.remove(function_name)
+            if script_path:
+                zf.write(script_path, 'init_script.sh')
         # Return the zip as an array of bytes
         with open(Config.zif_file_path, 'rb') as f:
             return f.read()
@@ -593,6 +599,7 @@ class CmdParser(object):
         parser_init.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 300.")
         parser_init.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         parser_init.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
+        parser_init.add_argument("-p", "--payload", help="Path to the input file passed to the function")         
     
         # 'ls' command
         parser_ls = subparsers.add_parser('ls', help="List lambda functions")
