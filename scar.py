@@ -99,10 +99,7 @@ class Scar(object):
             
         except ClientError as ce:
             if ce.response['Error']['Code'] == 'ResourceAlreadyExistsException':
-                if args.json or args.verbose:
-                    StringUtils().print_json({"Warning" : "Using existent log group '%s'" % log_group_name})
-                else:        
-                    print ("Warning: Using existent log group '%s'" % log_group_name)
+                result.add_warning_message("Using existent log group '%s'" % log_group_name)                
             else:
                 print ("Unexpected error: %s" % ce)
         # Set retention policy into the log group
@@ -245,7 +242,10 @@ class Scar(object):
                                              'HTTPStatusCode' : cw_response['ResponseMetadata']['HTTPStatusCode'] })
             result.append_to_plain_text("Log group '%s' correctly deleted." % args.name)
         except ClientError as ce:
-            print ("Unexpected error: %s" % ce)
+            if ce.response['Error']['Code'] == 'ResourceNotFoundException':
+                result.add_warning_message("Cannot delete log group '%s'. Group not found." % log_group_name)
+            else:
+                print ("Unexpected error: %s" % ce)
        
         # Show results
         result.print_results(json=args.json, verbose=args.verbose)       
@@ -552,6 +552,11 @@ class Result(object):
                           function['Memory'],
                           function['Timeout']])            
         print (tabulate(table, headers))
+        
+    def add_warning_message(self, message):
+        self.append_to_verbose('Warning', message)
+        self.append_to_json('Warning', message)
+        self.append_to_plain_text ("Warning: %s" % message)  
     
 class CmdParser(object):
     
