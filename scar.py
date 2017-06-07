@@ -34,21 +34,15 @@ class Scar(object):
     These methods correspond directly to the commands that can
     be invoked via the command line interface.
     """
-            
+    
     def init(self, args):
         # Set lambda name
         Config.lambda_name = args.name if args.name else Config.lambda_name
-        if self.find_function_name(Config.lambda_name):
-            if args.verbose or args.json:
-                error = {'Error' : 'Cannot create function. Function name \'' + Config.lambda_name + '\' already defined.'}
-                print(json.dumps(error))           
-            else:
-                print("ERROR: Cannot create function. Function name '" + Config.lambda_name + "' already defined.")
-            sys.exit(1) 
-        
+        # Check if function exists
+        AwsClient().check_function_name_exists(Config.lambda_name, (True if args.verbose or args.json else False))       
+        # Set the rest of the parameters
         Config.lambda_handler = Config.lambda_name + ".lambda_handler"
         Config.lambda_zip_file = {"ZipFile": self.create_zip_file(Config.lambda_name)}
-        
         if args.memory:
             Config.lambda_memory = self.check_memory(args.memory)
         if args.time:
@@ -59,216 +53,203 @@ class Scar(object):
             Config.lambda_env_variables['Variables']['IMAGE_ID'] = args.image_id
         # Update lambda tags
         Config.lambda_tags['owner'] = AwsClient().get_user_name()
-        # Call the AWS service
-        lambda_response = AwsClient().get_lambda().create_function(FunctionName=Config.lambda_name,
-                                                     Runtime=Config.lambda_runtime,
-                                                     Role=Config.lambda_role,
-                                                     Handler=Config.lambda_handler,
-                                                     Code=Config.lambda_zip_file,
-                                                     Environment=Config.lambda_env_variables,
-                                                     Description=Config.lambda_description,
-                                                     Timeout=Config.lambda_time,
-                                                     MemorySize=Config.lambda_memory,
-                                                     Tags=Config.lambda_tags)
-        # Remove the zip created in the operation
-        os.remove(Config.zif_file_path)
-        # Create log group
-        cw_response = AwsClient().get_log().create_log_group(
-            logGroupName='/aws/lambda/' + Config.lambda_name,
-            tags={ 'owner' : AwsClient().get_user_name(), 
-                   'createdby' : 'scar' }
-        )
-        # Set retention policy in the logs
-        AwsClient().get_log().put_retention_policy(
-            logGroupName='/aws/lambda/' + Config.lambda_name,
-            retentionInDays=30
-        )
-        full_response = {'LambdaOutput' : lambda_response,
-                         'CloudWatchOuput' : cw_response}
-        # Generate results
-        result = {'LambdaOutput' : {'AccessKey' : AwsClient().get_access_key(), 
-                                    'FunctionArn' : lambda_response['FunctionArn'], 
-                                    'Timeout' : lambda_response['Timeout'], 
-                                    'MemorySize' : lambda_response['MemorySize'], 
-                                    'FunctionName' : lambda_response['FunctionName']},
-                  'CloudWatchOutput' : { 'RequestId' : cw_response['ResponseMetadata']['RequestId'], 
-                                         'HTTPStatusCode' : cw_response['ResponseMetadata']['HTTPStatusCode'] }} 
-        # Parse output
-        if args.verbose:
-            print(json.dumps(full_response))
-        elif args.json:        
-            print (json.dumps(result))
-        else:
-            print ("Function '" + Config.lambda_name + "' successfully created.")
-            print ("Log group '/aws/lambda/" + Config.lambda_name + "' successfully created.")
-    
-    def find_function_name(self, function_name):
-        paginator = AwsClient().get_lambda().get_paginator('list_functions')  
-        for functions in paginator.paginate():         
-            for lfunction in functions['Functions']:
-                if function_name == lfunction['FunctionName']:
-                    return True
-        return False
-    
-    def check_function_name(self, function_name, json=False):
-        if not self.find_function_name(function_name):
-            if json:
-                error = {'Error' : 'Function name \'' + function_name + '\' doesn\'t exist.'}
-                print(json.dumps(error))           
-            else:
-                print("ERROR: Function name '" + function_name + "' doesn't exist.")
-            sys.exit(1)  
        
+        # Call the AWS service
+        result = Result()
+        try:
+            lambda_response = AwsClient().get_lambda().create_function(FunctionName=Config.lambda_name,
+                                                         Runtime=Config.lambda_runtime,
+                                                         Role=Config.lambda_role,
+                                                         Handler=Config.lambda_handler,
+                                                         Code=Config.lambda_zip_file,
+                                                         Environment=Config.lambda_env_variables,
+                                                         Description=Config.lambda_description,
+                                                         Timeout=Config.lambda_time,
+                                                         MemorySize=Config.lambda_memory,
+                                                         Tags=Config.lambda_tags)
+            # Parse results
+            result.append_to_verbose('LambdaOutput', lambda_response)
+            result.append_to_json('LambdaOutput', {'AccessKey' : AwsClient().get_access_key(),
+                                                   'FunctionArn' : lambda_response['FunctionArn'],
+                                                   'Timeout' : lambda_response['Timeout'],
+                                                   'MemorySize' : lambda_response['MemorySize'],
+                                                   'FunctionName' : lambda_response['FunctionName']})
+            result.append_to_plain_text("Function '%s' successfully created." % Config.lambda_name)
+                
+        except ClientError as ce:
+            print ("Unexpected error: %s" % ce)
+            sys.exit(1)
+        finally:       
+            # Remove the zip created in the operation   
+            os.remove(Config.zif_file_path)
+
+        # Create log group
+        log_group_name='/aws/lambda/' + Config.lambda_name
+        try:
+            cw_response = AwsClient().get_log().create_log_group(
+                logGroupName=log_group_name,
+                tags={ 'owner' : AwsClient().get_user_name(), 
+                       'createdby' : 'scar' }
+            )
+            # Parse results
+            result.append_to_verbose('CloudWatchOuput', cw_response)         
+            result.append_to_json('CloudWatchOutput', {'RequestId' : cw_response['ResponseMetadata']['RequestId'], 
+                                                       'HTTPStatusCode' : cw_response['ResponseMetadata']['HTTPStatusCode']})
+            result.append_to_plain_text("Log group '/aws/lambda/%s' successfully created." % Config.lambda_name)
+            
+        except ClientError as ce:
+            if ce.response['Error']['Code'] == 'ResourceAlreadyExistsException':
+                if args.json or args.verbose:
+                    StringUtils().print_json({"Warning" : "Using existent log group '%s'" % log_group_name})
+                else:        
+                    print ("Warning: Using existent log group '%s'" % log_group_name)
+            else:
+                print ("Unexpected error: %s" % ce)
+        # Set retention policy into the log group
+        try:        
+            AwsClient().get_log().put_retention_policy( logGroupName=log_group_name, 
+                                                        retentionInDays=30 )                
+        except ClientError as ce:
+            print ("Unexpected error: %s" % ce)
+        
+        # Show results
+        result.print_results(json=args.json, verbose=args.verbose)
+
     def ls(self, args):
-        # Get the filtered resources from AWS
-        client = AwsClient().get_resource_groups_tagging_api()
-        tag_filters = [ { 'Key': 'owner', 'Values': [ AwsClient().get_user_name() ] }, { 'Key': 'createdby', 'Values': ['scar'] } ]
-        response = client.get_resources(TagFilters=tag_filters, TagsPerPage=100)
-        filtered_functions = response['ResourceTagMappingList']
-        # Create the data structure
-        result = {'Functions': []}
-        for function_arn in filtered_functions:
-            function_info = AwsClient().get_lambda().get_function(FunctionName=function_arn['ResourceARN'])
-            function = {'Name' : function_info['Configuration']['FunctionName'],
-                        'Memory' : function_info['Configuration']['MemorySize'],
-                        'Timeout' : function_info['Configuration']['Timeout']}
-            result['Functions'].append(function)
-        # Parse output
-        if args.verbose:
-            print(json.dumps(response))
-        elif args.json:
-            print(json.dumps(result))
-        else:  
-            headers = ['NAME', 'MEMORY', 'TIME']
-            table = []
-            for function in result['Functions']:
-                table.append([function['Name'],
-                              function['Memory'],
-                              function['Timeout']])            
-            print (tabulate(table, headers))
+        result = Result()
+        try:
+            # Get the filtered resources from AWS
+            client = AwsClient().get_resource_groups_tagging_api()
+            tag_filters = [ { 'Key': 'owner', 'Values': [ AwsClient().get_user_name() ] },
+                            { 'Key': 'createdby', 'Values': ['scar'] } ]
+            response = client.get_resources( TagFilters=tag_filters,
+                                             TagsPerPage=100 )
+            
+            
+            
+            filtered_functions = response['ResourceTagMappingList']
+            
+            # Create the data structure
+            functions_parsed_info = []
+            functions_full_info = []
+            for function_arn in filtered_functions:
+                lambda_function_info = AwsClient().get_lambda().get_function(FunctionName=function_arn['ResourceARN'])
+                function = {'Name' : lambda_function_info['Configuration']['FunctionName'],
+                            'Memory' : lambda_function_info['Configuration']['MemorySize'],
+                            'Timeout' : lambda_function_info['Configuration']['Timeout']}
+                functions_full_info.append(lambda_function_info)
+                functions_parsed_info.append(function)
+                
+            
+            result.append_to_verbose('LambdaOutput', functions_full_info)
+            result.append_to_json('Functions', functions_parsed_info)
+
+            # Parse output
+            if args.verbose:
+                result.print_verbose_result()
+            elif args.json:
+                result.print_json_result()
+            else:  
+                result.generate_table(functions_parsed_info)
+                
+        except ClientError as ce:
+            print ("Unexpected error: %s" % ce)
+
         
     def run(self, args):
-        self.check_function_name(args.name, (True if args.verbose or args.json else False))
-        
+        # Check if function not exists
+        AwsClient().check_function_name_not_exists(args.name, (True if args.verbose or args.json else False))
+        # Set call parameters
         invocation_type = 'RequestResponse'
         log_type = 'Tail'
         if args.async:
             invocation_type = 'Event'
             log_type = 'None' 
-        
+        # Modify memory if necessary
         if args.memory:
-            AwsClient().get_lambda().update_function_configuration(FunctionName=args.name,
-                                                            MemorySize=self.check_memory(args.memory))   
+            AwsClient().update_function_timeout(args.name, args.memory)
+        # Modify timeout if necessary            
         if args.time:
-            AwsClient().get_lambda().update_function_configuration(FunctionName=args.name,
-                                                            Timeout=self.check_time(args.time))   
+            AwsClient().update_function_timeout(args.name, args.time)
+        # Modify environment vars if necessary   
         if args.env:
-            # Retrieve the global variables already defined
-            Config.lambda_env_variables = AwsClient().get_lambda().get_function(FunctionName=args.name)['Configuration']['Environment']
-            for var in args.env:
-                var_parsed = var.split("=")
-                # Add an specific prefix to be able to find the variables defined by the user
-                Config.lambda_env_variables['Variables']['CONT_VAR_' + var_parsed[0]] = var_parsed[1]
-            AwsClient().get_lambda().update_function_configuration(FunctionName=args.name,
-                                                            Environment=Config.lambda_env_variables)
+            AwsClient().update_function_env_variables(args.name, args.env)
             
         script = ""
+        # Parse the function payload
         if args.payload:
-            script = "{ \"script\" : \"" + StringUtils().escape_string(args.payload.read()) + "\"}"
+            script = "{ \"script\" : \"%s\"}" % StringUtils().escape_string(args.payload.read())
+        # Or parse the container arguments
         elif args.cont_args:
-            script = "{ \"cmd_args\" : " + StringUtils().escape_list(args.cont_args) + "}"
-        # Invoke lambda function 
-        response = AwsClient().get_lambda().invoke(FunctionName=args.name,
-                                              InvocationType=invocation_type,
-                                              LogType=log_type,
-                                              Payload=script)
+            script = "{ \"cmd_args\" : %s }" % StringUtils().escape_list(args.cont_args)
+            
+        # Invoke lambda function
+        response = {}
+        try: 
+            response = AwsClient().get_lambda().invoke(FunctionName=args.name,
+                                                  InvocationType=invocation_type,
+                                                  LogType=log_type,
+                                                  Payload=script)
+        except ClientError as ce:
+            print ("Unexpected error: %s" % ce)
+        
+        result = Result()    
         if args.async:
-            if args.verbose:
-                print(json.dumps(self.parse_payload(response))) 
-            elif args.json:
-                result = {'StatusCode' : response['StatusCode'],
-                          'RequestId' : response['ResponseMetadata']['RequestId']}
-                print(json.dumps(result))            
-            else:
-                if response['StatusCode'] == 202:
-                    print("Function '" + args.name + "' launched correctly")
-                else:
-                    print("Error launching function.")            
+            # Prepare the outputs
+            result.append_to_verbose('LambdaOutput', StringUtils().parse_payload(response))
+            result.append_to_json('LambdaOutput', {'StatusCode' : response['StatusCode'], 
+                                                       'RequestId' : response['ResponseMetadata']['RequestId']})           
+            result.append_to_plain_text("Function '%s' launched correctly" % args.name)
+                
         else:
             # Transform the base64 encoded results to something legible
-            response['LogResult'] = StringUtils().base64_to_utf8(response['LogResult'])        
-            response['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'] = StringUtils().base64_to_utf8(response['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'])
-    
-            # Extract log_group_name and log_stream_name from payload
-            function_output = response['Payload'].read().decode("utf-8")[1:-1]
-            response['Payload'] = function_output.replace('\\n', '\n')
-            result = 'SCAR: Request Id: ' + response['ResponseMetadata']['RequestId'] + '\n'
-            result += response['Payload']
+            response = StringUtils().parse_base64_response_values(response)
+            # Decode and parse the payload
+            response = StringUtils().parse_payload(response)
+            # Extract log_group_name and log_stream_name from the payload
+            response = StringUtils().parse_log_ids(response)
+            # Prepare the outputs
+            result.append_to_verbose('LambdaOutput', response)
+            result.append_to_json('LambdaOutput', {'StatusCode' : response['StatusCode'],
+                                                   'Payload' : response['Payload'],
+                                                   'LogGroupName' : response['LogGroupName'],
+                                                   'LogStreamName' : response['LogStreamName'],
+                                                   'RequestId' : response['ResponseMetadata']['RequestId']}) 
             
-            parsed_output = result.split('\n')
-            response['LogGroupName'] = parsed_output[1][22:]
-            response['LogStreamName'] = parsed_output[2][23:]
-            
-            if args.verbose:
-                print(json.dumps(response))
-            elif args.json:
-                result = {'StatusCode' : response['StatusCode'],
-                          'Payload' : response['Payload'],
-                          'LogGroupName' : response['LogGroupName'],
-                          'LogStreamName' : response['LogStreamName'],
-                          'RequestId' : response['ResponseMetadata']['RequestId']}
-                print(json.dumps(result))            
-            else:
-                print(result)
+            result.append_to_plain_text('SCAR: Request Id: %s' % response['ResponseMetadata']['RequestId'])
+            result.append_to_plain_text(response['Payload'])            
+                
+        # Show results
+        result.print_results(json=args.json, verbose=args.verbose)                
         
     def rm(self, args):
-        self.check_function_name(args.name, (True if args.verbose or args.json else False))       
+        AwsClient().check_function_name_not_exists(args.name, (True if args.verbose or args.json else False))       
         
-        # Delete the lambda function
-        lambda_response = AwsClient().get_lambda().delete_function(FunctionName=args.name)
-        # Delete the cloudwatch log group
-        cw_response = AwsClient().get_log().delete_log_group(logGroupName='/aws/lambda/' + args.name)
-        full_response = {'LambdaOutput' : lambda_response,
-                         'CloudWatchOuput' : cw_response}
-        # Parse output
-        if args.verbose:
-            print(json.dumps(full_response))
-        elif args.json:
-            result = {'LambdaOutput' : { 'RequestId' : lambda_response['ResponseMetadata']['RequestId'],
-                                         'HTTPStatusCode' : lambda_response['ResponseMetadata']['HTTPStatusCode'] },
-                      'CloudWatchOutput' : { 'RequestId' : cw_response['ResponseMetadata']['RequestId'],
-                                             'HTTPStatusCode' : cw_response['ResponseMetadata']['HTTPStatusCode'] }                      
-                      }
-            print(json.dumps(result))
-        else:
-            if (lambda_response['ResponseMetadata']['HTTPStatusCode'] == 204) and (cw_response['ResponseMetadata']['HTTPStatusCode'] == 200):
-                print ("Function '" + args.name + "' and logs correctly deleted.")
-            else:
-                print("Error deleting function '" + args.name + "'.")
-
-    def log(self, args):
+        result= Result()
         try:
-            response = AwsClient().get_log().get_log_events(
-                logGroupName=args.log_group_name,
-                logStreamName=args.log_stream_name,
-                startFromHead=True
-            )
-            full_msg = ""
-            for event in response['events']:
-                full_msg += event['message']
-            response['completeMessage'] = full_msg
-            if args.request_id:
-                print (self.parse_logs(full_msg, args.request_id))
-            else:
-                print (full_msg)
-            
+            # Delete the lambda function
+            lambda_response = AwsClient().get_lambda().delete_function(FunctionName=args.name)
+            result.append_to_verbose('LambdaOutput', lambda_response)
+            result.append_to_json('LambdaOutput', { 'RequestId' : lambda_response['ResponseMetadata']['RequestId'],
+                                         'HTTPStatusCode' : lambda_response['ResponseMetadata']['HTTPStatusCode'] })
+            result.append_to_plain_text("Function '%s' correctly deleted." % args.name)
         except ClientError as ce:
-            print(ce)
+            print ("Unexpected error: %s" % ce)
             
-    def parse_payload(self, response):
-        response['Payload'] = response['Payload'].read().decode("utf-8")[1:-1].replace('\\n', '\n')
-        return response
-    
+        try:           
+            # Delete the cloudwatch log group
+            log_group_name = '/aws/lambda/' + args.name
+            cw_response = AwsClient().get_log().delete_log_group(logGroupName=log_group_name)
+            result.append_to_verbose('CloudWatchOuput', cw_response)
+            result.append_to_json('CloudWatchOutput', { 'RequestId' : cw_response['ResponseMetadata']['RequestId'],
+                                             'HTTPStatusCode' : cw_response['ResponseMetadata']['HTTPStatusCode'] })
+            result.append_to_plain_text("Log group '%s' correctly deleted." % args.name)
+        except ClientError as ce:
+            print ("Unexpected error: %s" % ce)
+       
+        # Show results
+        result.print_results(json=args.json, verbose=args.verbose)       
+        
     def check_memory(self, lambda_memory):
         """ Check if the memory introduced by the user is correct.
         If the memory is not specified in 64mb increments, 
@@ -305,6 +286,25 @@ class Scar(object):
         # Return the zip as an array of bytes
         with open(Config.zif_file_path, 'rb') as f:
             return f.read()
+
+    def log(self, args):
+        try:
+            response = AwsClient().get_log().get_log_events(
+                logGroupName=args.log_group_name,
+                logStreamName=args.log_stream_name,
+                startFromHead=True
+            )
+            full_msg = ""
+            for event in response['events']:
+                full_msg += event['message']
+            response['completeMessage'] = full_msg
+            if args.request_id:
+                print (self.parse_logs(full_msg, args.request_id))
+            else:
+                print (full_msg)
+            
+        except ClientError as ce:
+            print(ce)
         
     def parse_logs(self, logs, request_id):
         full_msg = ""
@@ -343,6 +343,24 @@ class StringUtils(object):
         value = value.replace('"', '\\"').replace("\/", "\\/")
         value = value.replace("\b", "\\b").replace("\f", "\\f")
         return value.replace("\r", "\\r").replace("\t", "\\t")
+
+    def parse_payload(self, value):
+        value['Payload'] = value['Payload'].read().decode("utf-8")[1:-1].replace('\\n', '\n')
+        return value
+    
+    def parse_base64_response_values(self, value):
+        value['LogResult'] = self.base64_to_utf8(value['LogResult'])        
+        value['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'] = self.base64_to_utf8(value['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'])
+        return value
+
+    def parse_log_ids(self, value):
+        parsed_output = value['Payload'].split('\n')
+        value['LogGroupName'] = parsed_output[1][22:]
+        value['LogStreamName'] = parsed_output[2][23:]
+        return value
+    
+    def print_json(self, value):
+        print(json.dumps(value)) 
 
 class Config(object):
     
@@ -432,7 +450,109 @@ class AwsClient(object):
     
     def get_resource_groups_tagging_api(self, region=None):
         return self.get_boto3_client('resourcegroupstaggingapi', region)
+    
+    def find_function_name(self, function_name):
+        try:
+            paginator = AwsClient().get_lambda().get_paginator('list_functions')  
+            for functions in paginator.paginate():         
+                for lfunction in functions['Functions']:
+                    if function_name == lfunction['FunctionName']:
+                        return True
+            return False
+        except ClientError as ce:
+            print ("Unexpected error: %s" % ce)
+            sys.exit(1)  
+    
+    def check_function_name_not_exists(self, function_name, json):     
+        if not self.find_function_name(function_name):
+            if json:
+                StringUtils().print_json({"Error" : "Function '%s' doesn't exist." % function_name})
+            else:
+                print("Error: Function '%s' doesn't exist." % function_name)
+            sys.exit(1)
+
+    def check_function_name_exists(self, function_name, json):
+        if self.find_function_name(function_name):
+            if json:
+                StringUtils().print_json({"Error" : "Function '%s' already exists." % function_name})
+            else:
+                print ("Error: Function '%s' already exists." % function_name)
+            sys.exit(1)
+            
+    def update_function_timeout(self, function_name, timeout):
+        try:           
+            self.get_lambda().update_function_configuration(FunctionName=function_name, 
+                                                                   Timeout=self.check_time(timeout))
+        except ClientError as ce:
+            print ("Unexpected error: %s" % ce)
+
+    def update_function_memory(self, function_name, memory):
+        try:           
+            self.get_lambda().update_function_configuration(FunctionName=function_name, 
+                                                                   MemorySize=self.check_memory(memory))
+        except ClientError as ce:
+            print ("Unexpected error: %s" % ce)
+
+    def get_function_environment_variables(self, function_name):
+        return AwsClient().get_lambda().get_function(FunctionName=function_name)['Configuration']['Environment']
+            
+    def update_function_env_variables(self, function_name, env_vars):
+        try:
+            # Retrieve the global variables already defined
+            Config.lambda_env_variables = self.get_function_environment_variables(function_name)
+            for var in env_vars:
+                var_parsed = var.split("=")
+                # Add an specific prefix to be able to find the variables defined by the user
+                Config.lambda_env_variables['Variables']['CONT_VAR_' + var_parsed[0]] = var_parsed[1]
+                
+            self.get_lambda().update_function_configuration(FunctionName=function_name,
+                                                                    Environment=Config.lambda_env_variables)
+        except ClientError as ce:
+            print ("Unexpected error: %s" % ce)            
+
+class Result(object):
+
+    def __init__(self):
+        self.verbose = {}
+        self.json = {}
+        self.plain_text = ""
+    
+    def append_to_verbose(self, key, value):
+        self.verbose[key] = value
+    
+    def append_to_json(self, key, value):
+        self.json[key] = value
         
+    def append_to_plain_text(self, value):
+        self.plain_text += value + "\n"        
+    
+    def print_verbose_result(self):
+        print(json.dumps(self.verbose))
+        
+    def print_json_result(self):
+        print(json.dumps(self.json))
+        
+    def print_plain_text_result(self):
+        print(self.plain_text)        
+    
+    def print_results(self, json=False, verbose=False):
+        # Verbose output has precedence against json output
+        if verbose:
+            self.print_verbose_result()
+        elif json:        
+            self.print_json_result()
+        else:
+            self.print_plain_text_result()
+    
+    def generate_table(self, functions_info):
+        headers = ['NAME', 'MEMORY', 'TIME']
+        table = []
+        for function in functions_info:
+            table.append([function['Name'], 
+                          function['Memory'],
+                          function['Timeout']])            
+        print (tabulate(table, headers))
+    
 class CmdParser(object):
     
     def __init__(self):
