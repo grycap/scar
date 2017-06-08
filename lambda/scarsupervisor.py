@@ -103,7 +103,7 @@ def lambda_handler(event, context):
         # Container running script
         if ('script' in event) and event['script']:
             create_file(event['script'], script)  
-            command.extend([name, "/bin/sh", script])
+            command.extend(["--entrypoint=/bin/sh %s" % script, name])
         # Container with args
         elif ('cmd_args' in event) and event['cmd_args']:
             args = map(lambda x: x.encode('ascii'), event['cmd_args'])
