@@ -88,16 +88,16 @@ class Scar(object):
             os.remove(Config.zif_file_path)
 
         # Create log group
-        log_group_name='/aws/lambda/' + Config.lambda_name
+        log_group_name = '/aws/lambda/' + Config.lambda_name
         try:
             cw_response = AwsClient().get_log().create_log_group(
                 logGroupName=log_group_name,
-                tags={ 'owner' : AwsClient().get_user_name(), 
+                tags={ 'owner' : AwsClient().get_user_name(),
                        'createdby' : 'scar' }
             )
             # Parse results
             result.append_to_verbose('CloudWatchOuput', cw_response)         
-            result.append_to_json('CloudWatchOutput', {'RequestId' : cw_response['ResponseMetadata']['RequestId'], 
+            result.append_to_json('CloudWatchOutput', {'RequestId' : cw_response['ResponseMetadata']['RequestId'],
                                                        'HTTPStatusCode' : cw_response['ResponseMetadata']['HTTPStatusCode']})
             result.append_to_plain_text("Log group '/aws/lambda/%s' successfully created." % Config.lambda_name)
             
@@ -108,8 +108,8 @@ class Scar(object):
                 print ("Unexpected error: %s" % ce)
         # Set retention policy into the log group
         try:        
-            AwsClient().get_log().put_retention_policy( logGroupName=log_group_name, 
-                                                        retentionInDays=30 )                
+            AwsClient().get_log().put_retention_policy(logGroupName=log_group_name,
+                                                        retentionInDays=30)                
         except ClientError as ce:
             print ("Unexpected error: %s" % ce)
         
@@ -123,8 +123,8 @@ class Scar(object):
             client = AwsClient().get_resource_groups_tagging_api()
             tag_filters = [ { 'Key': 'owner', 'Values': [ AwsClient().get_user_name() ] },
                             { 'Key': 'createdby', 'Values': ['scar'] } ]
-            response = client.get_resources( TagFilters=tag_filters,
-                                             TagsPerPage=100 )
+            response = client.get_resources(TagFilters=tag_filters,
+                                             TagsPerPage=100)
             
             
             
@@ -211,7 +211,7 @@ class Scar(object):
         if args.async:
             # Prepare the outputs
             result.append_to_verbose('LambdaOutput', response)
-            result.append_to_json('LambdaOutput', {'StatusCode' : response['StatusCode'], 
+            result.append_to_json('LambdaOutput', {'StatusCode' : response['StatusCode'],
                                                        'RequestId' : response['ResponseMetadata']['RequestId']})           
             result.append_to_plain_text("Function '%s' launched correctly" % args.name)
                 
@@ -237,7 +237,7 @@ class Scar(object):
     def rm(self, args):
         AwsClient().check_function_name_not_exists(args.name, (True if args.verbose or args.json else False))       
         
-        result= Result()
+        result = Result()
         try:
             # Delete the lambda function
             lambda_response = AwsClient().get_lambda().delete_function(FunctionName=args.name)
@@ -408,7 +408,7 @@ class Config(object):
                           'lambda_memory' : Config.lambda_memory,
                           'lambda_time' : Config.lambda_time,
                           'lambda_region' : 'us-east-1'}
-        with open(file_dir + "/scar.cfg","w") as configfile:
+        with open(file_dir + "/scar.cfg", "w") as configfile:
             self.config.write(configfile)
     
     def check_config_file(self):
@@ -498,14 +498,14 @@ class AwsClient(object):
             
     def update_function_timeout(self, function_name, timeout):
         try:           
-            self.get_lambda().update_function_configuration(FunctionName=function_name, 
+            self.get_lambda().update_function_configuration(FunctionName=function_name,
                                                                    Timeout=self.check_time(timeout))
         except ClientError as ce:
             print ("Unexpected error: %s" % ce)
 
     def update_function_memory(self, function_name, memory):
         try:           
-            self.get_lambda().update_function_configuration(FunctionName=function_name, 
+            self.get_lambda().update_function_configuration(FunctionName=function_name,
                                                                    MemorySize=self.check_memory(memory))
         except ClientError as ce:
             print ("Unexpected error: %s" % ce)
@@ -565,7 +565,7 @@ class Result(object):
         headers = ['NAME', 'MEMORY', 'TIME']
         table = []
         for function in functions_info:
-            table.append([function['Name'], 
+            table.append([function['Name'],
                           function['Memory'],
                           function['Timeout']])            
         print (tabulate(table, headers))
@@ -599,7 +599,8 @@ class CmdParser(object):
         parser_init.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 300.")
         parser_init.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         parser_init.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
-        parser_init.add_argument("-p", "--payload", help="Path to the input file passed to the function")         
+        parser_init.add_argument("-p", "--payload", help="Path to the input file passed to the function")
+        parser_init.add_argument("-es", "--event-source", help="Name specifying the source of the events that will launch the lambda function. Only supporting buckets right now.")                  
     
         # 'ls' command
         parser_ls = subparsers.add_parser('ls', help="List lambda functions")

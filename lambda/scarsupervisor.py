@@ -22,8 +22,8 @@ import traceback
 
 print('Loading function')
 
-udocker_bin="/tmp/udocker/udocker"
-lambda_output="/tmp/lambda-stdout.txt"
+udocker_bin = "/tmp/udocker/udocker"
+lambda_output = "/tmp/lambda-stdout.txt"
 script = "/tmp/udocker/script.sh"
 name = 'lambda_cont'
 init_script_path = "/tmp/udocker/init_script.sh"
@@ -63,7 +63,7 @@ def get_global_variables():
         if re.match("CONT_VAR_.*", key):
             cont_variables.append('--env')
             # Remove global variable prefix
-            cont_variables.append(key.replace("CONT_VAR_", "")+'='+os.environ[key])
+            cont_variables.append(key.replace("CONT_VAR_", "") + '=' + os.environ[key])
     return cont_variables
 
 def prepare_output(context):
@@ -73,13 +73,13 @@ def prepare_output(context):
     return stdout
 
 def create_file(content, path):
-    with open(path,"w") as f:
+    with open(path, "w") as f:
         f.write(content)
 
 def create_event_file(event, context):
     event_file_path = "/tmp/" + context.aws_request_id + "/"
     call(["mkdir", "-p", event_file_path])
-    create_file(event, event_file_path+"/event.json")
+    create_file(event, event_file_path + "/event.json")
 
 def lambda_handler(event, context):
     print("SCAR: Received event: " + json.dumps(event))
@@ -111,12 +111,12 @@ def lambda_handler(event, context):
             command.extend(args)
         # Script to be executed every time (if defined)
         elif ('INIT_SCRIPT_PATH' in os.environ) and os.environ['INIT_SCRIPT_PATH']:
-            command.extend([name, "/bin/sh", init_script_path])             
+            command.extend(["--entrypoint=/bin/sh %s" % init_script_path, name])       
         # Only container        
         else:
             command.append(name)
         # Execute script
-        call(command, stderr = STDOUT, stdout = open(lambda_output,"w"))
+        call(command, stderr=STDOUT, stdout=open(lambda_output, "w"))
         
         stdout += check_output(["cat", lambda_output]).decode("utf-8")
     except Exception:
