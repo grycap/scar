@@ -71,7 +71,7 @@ In these examples the [grycap/cowsay](https://hub.docker.com/r/grycap/cowsay/) D
 ```
 scar init -n lambda-docker-cowsay -m 128 -t 300 grycap/cowsay
 ```
-Notice that the memory and time limits for the Lambda function can be specified in the command-line. Upon first execution, the file `$HOME/.scar/scar.cfg` is created with default values for the memory and timeout, among other features. The command-line values always take precedence over the values in the configuration file.
+Notice that the memory and time limits for the Lambda function can be specified in the command-line. Upon first execution, the file `$HOME/.scar/scar.cfg` is created with default values for the memory and timeout, among other features. The command-line values always take precedence over the values in the configuration file. The default values are 128 MB for the memory (minimize memory) and 300 seconds for the timeout (maximize runtime).
 
 Further information about the command-line arguments is available in the help:
 ```
@@ -102,12 +102,24 @@ scar rm lambda-docker-cowsay
 
 ## Advanced Usage
 
-### Executing a shell-script
+
+### Executing an user-defined shell-script
 You can execute the Lambda function and specify a shell-script locally available in your machine to be executed within the container.
 ```
 scar run -p test/test-cowsay.sh lambda-docker-cowsay
 ```
 The shell-script can be changed in each different execution of the Lambda function.
+
+### Execute a shell-script upon invocation of the Lambda function
+A shell-script can be specified when initializing the Lambda function to trigger its execution inside the container on each invocation of the Lambda function. For example:
+```
+scar init -p test/test-env.sh -n lambda-test-init-script ubuntu:16.04
+```
+Now whenever this Lambda function is executed, the script will be run in the container:
+```
+scar run lambda-test-init-script
+```
+This can be overridden by speciying a different shell-script when running the Lambda function.
 
 ### Passing Environment Variables
 
