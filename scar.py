@@ -24,6 +24,7 @@ import os
 import re
 import shutil
 import sys
+import uuid
 import zipfile
 from botocore.exceptions import ClientError
 from subprocess import call
@@ -112,6 +113,14 @@ class Scar(object):
                                                         retentionInDays=30)                
         except ClientError as ce:
             print ("Unexpected error: %s" % ce)
+        
+        # Add even source to lambda function
+        if args.event_source:
+            try:
+                AwsClient().add_permissions(args.event_source)
+                AwsClient().create_trigger_from_bucket(args.event_source, Config.lambda_name)                
+            except ClientError as ce:
+                print ("Unexpected error: %s" % ce)        
         
         # Show results
         result.print_results(json=args.json, verbose=args.verbose)
@@ -382,9 +391,8 @@ class StringUtils(object):
 class Config(object):
     
     lambda_name = "scar_function"
-    lambda_name = "scar_function"
     lambda_runtime = "python3.6"
-    lambda_handler = lambda_name + ".lambda_handler"        
+    lambda_handler = lambda_name + ".lambda_handler"      
     lambda_role = "arn:aws:iam::974349055189:role/lambda-s3-execution-role"
     lambda_region = 'us-east-1'
     lambda_env_variables = {"Variables" : {"UDOCKER_DIR":"/tmp/home/.udocker", "UDOCKER_TARBALL":"/var/task/udocker-1.1.0-RC2.tar.gz"}}
@@ -468,6 +476,9 @@ class AwsClient(object):
     def get_resource_groups_tagging_api(self, region=None):
         return self.get_boto3_client('resourcegroupstaggingapi', region)
     
+    def get_s3(self, region=None):
+        return self.get_boto3_client('s3', region)    
+    
     def find_function_name(self, function_name):
         try:
             paginator = AwsClient().get_lambda().get_paginator('list_functions')  
@@ -511,7 +522,7 @@ class AwsClient(object):
             print ("Unexpected error: %s" % ce)
 
     def get_function_environment_variables(self, function_name):
-        return AwsClient().get_lambda().get_function(FunctionName=function_name)['Configuration']['Environment']
+        return self.get_lambda().get_function(FunctionName=function_name)['Configuration']['Environment']
             
     def update_function_env_variables(self, function_name, env_vars):
         try:
@@ -525,7 +536,57 @@ class AwsClient(object):
             self.get_lambda().update_function_configuration(FunctionName=function_name,
                                                                     Environment=Config.lambda_env_variables)
         except ClientError as ce:
-            print ("Unexpected error: %s" % ce)            
+            print ("Unexpected error: %s" % ce)
+            
+    def create_trigger_from_bucket(self, bucket_name, function_name):
+        try:           
+            self.get_s3().put_bucket_notification_configuration(Bucket=bucket_name,
+                                                                 NotificationConfiguration={
+                                                                     "LambdaFunctionConfigurations": [
+                                                                        {
+                                                                            "Id": "string",
+                                                                            "LambdaFunctionArn": "arn:aws:lambda:us-east-1:974349055189:function:%s" % function_name,
+                                                                            "Events": [ "s3:ObjectCreated:*" ],
+                                                                            "Filter": {
+                                                                                "Key": {
+                                                                                    "FilterRules": [
+                                                                                        {
+                                                                                            "Name": "prefix",
+                                                                                            "Value": "input/"
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                     ]}
+                                                                )
+                                                                 
+        except ClientError as ce:
+            print ("Unexpected error: %s" % ce)
+        
+    def add_lambda_permissions(self, event_source):
+        self.get_lambda().add_permission(FunctionName=Config.lambda_name,
+                                         StatementId=str(uuid.uuid4()),
+                                         Action="lambda:InvokeFunction",
+                                         Principal="s3.amazonaws.com",
+                                         SourceArn='arn:aws:s3:::%s' % event_source
+                                        )              
+                
+    def add_permissions(self, event_source):
+        try:
+            buckets = self.get_s3().list_buckets()
+            found_bucket = [bucket for bucket in buckets['Buckets'] if bucket['Name'] == event_source]
+            if found_bucket:
+                self.add_lambda_permissions(event_source)
+            else:
+                # Create S3 bucket
+                self.get_s3().create_bucket(
+                    ACL='private',
+                    Bucket=event_source
+                )
+                self.add_lambda_permissions(event_source)
+        except ClientError as ce:
+            print ("Unexpected error: %s" % ce)    
 
 class Result(object):
 
@@ -600,7 +661,7 @@ class CmdParser(object):
         parser_init.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         parser_init.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
         parser_init.add_argument("-p", "--payload", help="Path to the input file passed to the function")
-        parser_init.add_argument("-es", "--event-source", help="Name specifying the source of the events that will launch the lambda function. Only supporting buckets right now.")                  
+        parser_init.add_argument("-es", "--event_source", help="Name specifying the source of the events that will launch the lambda function. Only supporting buckets right now.")                  
     
         # 'ls' command
         parser_ls = subparsers.add_parser('ls', help="List lambda functions")
