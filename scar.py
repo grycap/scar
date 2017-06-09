@@ -56,6 +56,9 @@ class Scar(object):
             Config.lambda_description = args.description  
         if args.image_id:
             Config.lambda_env_variables['Variables']['IMAGE_ID'] = args.image_id
+        # Modify environment vars if necessary   
+        if args.env:
+            StringUtils().parse_environment_variables(args.env)            
         # Update lambda tags
         Config.lambda_tags['owner'] = AwsClient().get_user_name()
        
@@ -386,7 +389,13 @@ class StringUtils(object):
         return value
     
     def print_json(self, value):
-        print(json.dumps(value)) 
+        print(json.dumps(value))
+
+    def parse_environment_variables(self, env_vars):
+        for var in env_vars:
+            var_parsed = var.split("=")
+            # Add an specific prefix to be able to find the variables defined by the user
+            Config.lambda_env_variables['Variables']['CONT_VAR_' + var_parsed[0]] = var_parsed[1]          
 
 class Config(object):
     
@@ -444,7 +453,7 @@ class Config(object):
         Config.lambda_memory = scar_config.getint('lambda_memory', fallback=Config.lambda_memory)
         Config.lambda_time = scar_config.getint('lambda_time', fallback=Config.lambda_time)
         Config.lambda_description = scar_config.get('lambda_description', fallback=Config.lambda_description)
-
+        
 class AwsClient(object):
     
     def get_user_name(self):
@@ -528,11 +537,7 @@ class AwsClient(object):
         try:
             # Retrieve the global variables already defined
             Config.lambda_env_variables = self.get_function_environment_variables(function_name)
-            for var in env_vars:
-                var_parsed = var.split("=")
-                # Add an specific prefix to be able to find the variables defined by the user
-                Config.lambda_env_variables['Variables']['CONT_VAR_' + var_parsed[0]] = var_parsed[1]
-                
+            StringUtils().parse_environment_variables(env_vars)
             self.get_lambda().update_function_configuration(FunctionName=function_name,
                                                                     Environment=Config.lambda_env_variables)
         except ClientError as ce:
@@ -654,7 +659,8 @@ class CmdParser(object):
         # Set the positional arguments
         parser_init.add_argument("image_id", help="Container image id (i.e. centos:7)") 
         # Set the optional arguments
-        parser_init.add_argument("-d", "--description", help="Lambda function description.")        
+        parser_init.add_argument("-d", "--description", help="Lambda function description.")  
+        parser_init.add_argument("-e", "--env", action='append', help="Pass environment variable to the container (VAR=val). Can be defined multiple times.")
         parser_init.add_argument("-n", "--name", help="Lambda function name")
         parser_init.add_argument("-m", "--memory", type=int, help="Lambda function memory in megabytes. Range from 128 to 1536 in increments of 64")
         parser_init.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 300.")
