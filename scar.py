@@ -39,6 +39,13 @@ class Scar(object):
     def init(self, args):
         # Set lambda name
         Config.lambda_name = args.name if args.name else Config.lambda_name
+        # Validate function name
+        if not StringUtils().validate_function_name(Config.lambda_name):
+            if args.verbose or args.json:
+                StringUtils().print_json({"Error" : "Function name '%s' is not valid." % Config.lambda_name})
+            else:
+                print ("Error: Function name '%s' is not valid." % Config.lambda_name)
+            sys.exit(1)            
         # Check if function exists
         AwsClient().check_function_name_exists(Config.lambda_name, (True if args.verbose or args.json else False))       
         # Set the rest of the parameters
@@ -350,6 +357,12 @@ class Scar(object):
                 logging = True
 
 class StringUtils(object):
+
+    def validate_function_name(self, name):
+        aws_name_regex = "((arn:(aws|aws-us-gov):lambda:)?([a-z]{2}(-gov)?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-]+)(:($LATEST|[a-zA-Z0-9-]+))?)"
+        pattern = re.compile(aws_name_regex)
+        func_name = pattern.match(name)
+        return func_name and (func_name.group() == name)
 
     def find_expression(self, rgx_pattern, string_to_search):
         '''Returns the first group that matches the rgx_pattern in the string_to_search'''
