@@ -23,5 +23,5 @@ scar init -n lambda-mrbayes grycap/mrbayes
 
 2. Execute the Lambda function passing an execution script
 ```
-scar run -p examples/mrbayes/mrbayes-sample-run.sh lambda-mrbayes
+scar run -s examples/mrbayes/mrbayes-sample-run.sh lambda-mrbayes
 ```
