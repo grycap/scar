@@ -43,8 +43,8 @@ class Scar(object):
         AwsClient().check_function_name_exists(Config.lambda_name, (True if args.verbose or args.json else False))       
         # Set the rest of the parameters
         Config.lambda_handler = Config.lambda_name + ".lambda_handler"
-        if args.payload:
-            Config.lambda_zip_file = {"ZipFile": self.create_zip_file(Config.lambda_name, args.payload)}
+        if args.script:
+            Config.lambda_zip_file = {"ZipFile": self.create_zip_file(Config.lambda_name, args.script)}
             Config.lambda_env_variables['Variables']['INIT_SCRIPT_PATH'] = "/var/task/init_script.sh"
         else:
             Config.lambda_zip_file = {"ZipFile": self.create_zip_file(Config.lambda_name)}
@@ -186,9 +186,9 @@ class Scar(object):
             AwsClient().update_function_env_variables(args.name, args.env)
             
         script = ""
-        # Parse the function payload
-        if args.payload:
-            script = "{ \"script\" : \"%s\"}" % StringUtils().escape_string(args.payload.read())
+        # Parse the function script
+        if args.script:
+            script = "{ \"script\" : \"%s\"}" % StringUtils().escape_string(args.script.read())
         # Or parse the container arguments
         elif args.cont_args:
             script = "{ \"cmd_args\" : %s }" % StringUtils().escape_list(args.cont_args)
@@ -660,7 +660,7 @@ class CmdParser(object):
         parser_init.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 300.")
         parser_init.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         parser_init.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
-        parser_init.add_argument("-p", "--payload", help="Path to the input file passed to the function")
+        parser_init.add_argument("-s", "--script", help="Path to the input file passed to the function")
         parser_init.add_argument("-es", "--event_source", help="Name specifying the source of the events that will launch the lambda function. Only supporting buckets right now.")                  
     
         # 'ls' command
@@ -677,7 +677,7 @@ class CmdParser(object):
         parser_run.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 300.")
         parser_run.add_argument("-e", "--env", action='append', help="Pass environment variable to the container (VAR=val). Can be defined multiple times.")
         parser_run.add_argument("--async", help="Tell Scar to wait or not for the lambda function return", action="store_true")
-        parser_run.add_argument("-p", "--payload", nargs='?', type=argparse.FileType('r'), help="Path to the input file passed to the function")        
+        parser_run.add_argument("-s", "--script", nargs='?', type=argparse.FileType('r'), help="Path to the input file passed to the function")        
         parser_run.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         parser_run.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
         parser_run.add_argument('cont_args', nargs=argparse.REMAINDER, help="Arguments passed to the container.")
