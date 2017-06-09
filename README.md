@@ -106,7 +106,7 @@ scar rm lambda-docker-cowsay
 ### Executing an user-defined shell-script
 You can execute the Lambda function and specify a shell-script locally available in your machine to be executed within the container.
 ```
-scar run -p test/test-cowsay.sh lambda-docker-cowsay
+scar run -s test/test-cowsay.sh lambda-docker-cowsay
 ```
 The shell-script can be changed in each different execution of the Lambda function.
 
@@ -125,7 +125,7 @@ This can be overridden by speciying a different shell-script when running the La
 
 You can specify environment variables to the run command which will be in turn passed to the executed Docker container and made available to your shell-script:
 ```
-scar run -e TEST1=45 -e TEST2=69 -p test/test-global-vars.sh lambda-docker-cowsay
+scar run -e TEST1=45 -e TEST2=69 -s test/test-global-vars.sh lambda-docker-cowsay
 ```
 
 ### Executing Applications
