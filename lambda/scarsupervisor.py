@@ -14,6 +14,7 @@
 # limitations under the License.
 
 
+import boto3
 import json
 import os
 import re
@@ -76,8 +77,8 @@ def create_file(content, path):
     with open(path, "w") as f:
         f.write(content)
 
-def create_event_file(event, context):
-    event_file_path = "/tmp/" + context.aws_request_id + "/"
+def create_event_file(event, request_id):
+    event_file_path = "/tmp/%s/" % request_id
     call(["mkdir", "-p", event_file_path])
     create_file(event, event_file_path + "/event.json")
 
@@ -85,7 +86,9 @@ def lambda_handler(event, context):
     print("SCAR: Received event: " + json.dumps(event))
     stdout = prepare_output(context)
     try:
-        create_event_file(json.dumps(event), context)
+        create_event_file(json.dumps(event), context.aws_request_id)
+        bucket = S3_Bucket()
+        bucket.download_input(event, context.aws_request_id)
         prepare_environment()
         prepare_container(os.environ['IMAGE_ID'])
     
@@ -119,7 +122,37 @@ def lambda_handler(event, context):
         call(command, stderr=STDOUT, stdout=open(lambda_output, "w"))
         
         stdout += check_output(["cat", lambda_output]).decode("utf-8")
+        bucket.upload_output()
     except Exception:
         stdout += "ERROR: Exception launched:\n %s" % traceback.format_exc()
     print(stdout)    
     return stdout
+
+class S3_Bucket():
+    name = []
+    key = []
+    download_path = ""
+    
+    def get_s3_client(self):
+        return boto3.client('s3')
+    
+    def download_input(self, event, request_id):
+        if ('Records' in event) and event['Records']:
+            for index, record in enumerate(event['Records']):            
+                S3_Bucket.name.append(record['s3']['bucket']['name'])
+                S3_Bucket.key.append(record['s3']['object']['key'])
+                S3_Bucket.download_path = '/tmp/%s/input' % request_id
+                print ("Downloading item in bucket %s with key %s" %(S3_Bucket.name[index], S3_Bucket.key[index]))
+                os.makedirs(os.path.dirname(S3_Bucket.download_path), exist_ok=True)
+                self.get_s3_client().download_file(S3_Bucket.name[index], S3_Bucket.key[index], S3_Bucket.download_path)
+                print(check_output(["ls", "-la", "/tmp/%s/input" % request_id]).decode("utf-8"))
+        
+    def upload_output(self):
+        for index, bucket_name in enumerate(S3_Bucket.name):
+            file_key = "output/%s" % str(S3_Bucket.key[index]).replace("input/","")
+            print ("Uploading image in bucket %s with key %s" % (bucket_name, file_key))
+            self.get_s3_client().upload_file(S3_Bucket.download_path, bucket_name, file_key)
+            print ("Changing ACLs for public-read for object in bucket %s with key %s" % (bucket_name, file_key))
+            s3_resource = boto3.resource('s3')
+            obj = s3_resource.Object(bucket_name, file_key)
+            obj.Acl().put(ACL='public-read')
