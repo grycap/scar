@@ -113,7 +113,7 @@ The shell-script can be changed in each different execution of the Lambda functi
 ### Execute a shell-script upon invocation of the Lambda function
 A shell-script can be specified when initializing the Lambda function to trigger its execution inside the container on each invocation of the Lambda function. For example:
 ```
-scar init -p test/test-env.sh -n lambda-test-init-script ubuntu:16.04
+scar init -s test/test-env.sh -n lambda-test-init-script ubuntu:16.04
 ```
 Now whenever this Lambda function is executed, the script will be run in the container:
 ```
