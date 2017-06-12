@@ -1,4 +1,3 @@
-# SCAR - Serverless Container-aware ARchitectures
 # Copyright (C) GRyCAP - I3M - UPV
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -57,15 +56,26 @@ def prepare_container(container_image):
     else:
         print("SCAR: Container '" + name + "' already available")
 
+def add_global_variable(variables, key, value):
+    variables.append('--env')
+    variables.append(key + '=' + value)
+    return variables
+        
 def get_global_variables():
-    cont_variables = []
+    variables = []
     for key in os.environ.keys():
         # Find global variables with the specified prefix
         if re.match("CONT_VAR_.*", key):
-            cont_variables.append('--env')
-            # Remove global variable prefix
-            cont_variables.append(key.replace("CONT_VAR_", "") + '=' + os.environ[key])
-    return cont_variables
+            variables = add_global_variable(variables, key.replace("CONT_VAR_", ""), os.environ[key])
+    # Add IAM credentials
+    if not ('CONT_VAR_AWS_ACCESS_KEY_ID' in os.environ):
+        variables = add_global_variable(variables, "AWS_ACCESS_KEY_ID", os.environ["AWS_ACCESS_KEY_ID"])
+    if not ('CONT_VAR_AWS_SECRET_ACCESS_KEY' in os.environ):
+        variables = add_global_variable(variables, "AWS_SECRET_ACCESS_KEY", os.environ["AWS_SECRET_ACCESS_KEY"])
+    # Always add Session and security tokens
+    variables = add_global_variable(variables, "AWS_SESSION_TOKEN", os.environ["AWS_SESSION_TOKEN"])
+    variables = add_global_variable(variables, "AWS_SECURITY_TOKEN", os.environ["AWS_SECURITY_TOKEN"])
+    return variables
 
 def prepare_output(context):
     stdout = "SCAR: Log group name: %s\n" % context.log_group_name
@@ -132,7 +142,7 @@ def lambda_handler(event, context):
         # Only container
         else:
             command.append(name)
-        print("UDOCKER command: %s" % command)
+        #print("UDOCKER command: %s" % command)
         # Execute script
         call(command, stderr=STDOUT, stdout=open(lambda_output, "w"))
 
