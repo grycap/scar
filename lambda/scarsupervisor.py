@@ -99,7 +99,7 @@ def post_process(event, context):
     request_id = context.aws_request_id
     if(Utils().is_s3_event(event)):
         S3_Bucket().upload_output(event['Records'][0]['s3'], request_id)
-        
+        call(["rm", "-rf", "/tmp/%s/output/" % request_id])
                 
 def lambda_handler(event, context):
     print("SCAR: Received event: " + json.dumps(event))
