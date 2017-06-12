@@ -106,7 +106,6 @@ def lambda_handler(event, context):
     stdout = prepare_output(context)
     try:
         pre_process(event, context)
-
         # Create container execution command
         command = [udocker_bin, "--quiet", "run"]
         container_dirs = ["-v", "/tmp", "-v", "/dev", "-v", "/proc", "--nosysdirs"]
@@ -150,24 +149,19 @@ def lambda_handler(event, context):
 class Utils():
     def is_s3_event(self, event):
         if ('Records' in event) and event['Records']:
-            for record in event['Records']:
-                # Check if the event is an S3 event
-                if('s3' in record) and record['s3']:
-                    return True
-        return False
+            # Check if the event is an S3 event
+            if event['Records'][0]['eventSource'] == "aws:s3":
+                return True
+        else:
+            return False
     
     def get_s3_records(self, event):
         records = []
         if ('Records' in event) and event['Records']:
             for record in event['Records']:
-                if('s3' in event) and record['s3']:
+                if('s3' in record) and record['s3']:
                     records.append(record['s3'])
         return records
-    
-    def get_records(self, event):
-        if ('Records' in event) and event['Records']:
-            return event['Records']   
-
 
 class S3_Bucket():
     
@@ -178,12 +172,12 @@ class S3_Bucket():
         return s3_record['bucket']['name']
     
     def download_input(self, s3_record, request_id):
-        name = self.get_bucket_name(s3_record)
-        key = s3_record['object']['key']
-        download_path = '/tmp/%s/input' % request_id
-        print ("Downloading item from bucket %s with key %s" %(name, key))
-        os.makedirs(os.path.dirname(download_path), exist_ok=True)
-        self.get_s3_client().download_file(name, key, download_path)
+        bucket_name = self.get_bucket_name(s3_record)
+        file_key = s3_record['object']['key']
+        download_path = '/tmp/%s/%s' % (request_id, file_key)
+        print ("Downloading item from bucket %s with key %s" %(bucket_name, file_key))
+        os.makedirs(os.path.dirname(download_path), exist_ok = True)        
+        self.get_s3_client().download_file(bucket_name, file_key, download_path)
 
     def upload_output(self, s3_record, request_id):
         bucket_name = self.get_bucket_name(s3_record)
