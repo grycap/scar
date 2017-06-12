@@ -1,4 +1,5 @@
 FROM ubuntu:16.04
+
 MAINTAINER Germán Moltó - gmolto@dsic.upv.es
 
 RUN apt-get update && apt-get install -y \

@@ -1,9 +1,10 @@
 FROM ubuntu:14.04
+
 MAINTAINER Amanda Calatrava <amcaar@i3m.upv.es>
 
 ENV LD_LIBRARY_PATH /usr/local/lib
 
-# Package and dependencies to install MrBayes (including MPI and BEAGLE)
+# Package and dependencies to install MrBayes
 RUN apt-get update && apt-get install -y \    
     autoconf \
     make \ 
@@ -20,4 +21,3 @@ RUN wget http://sourceforge.net/projects/mrbayes/files/mrbayes/3.2.6/mrbayes-3.2
     make install
 
 ADD mrbayes-sample-run.sh /tmp
-
