@@ -1,5 +1,5 @@
 # SCAR - Serverless Container-aware ARchitectures
-# Copyright (C) GRyCAP - I3M - UPV 
+# Copyright (C) GRyCAP - I3M - UPV
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -82,16 +82,31 @@ def create_event_file(event, request_id):
     call(["mkdir", "-p", event_file_path])
     create_file(event, event_file_path + "/event.json")
 
+def pre_process(event, context):
+    create_event_file(json.dumps(event), context.aws_request_id)
+    prepare_environment()
+    prepare_container(os.environ['IMAGE_ID'])
+    check_event_records(event, context)
+
+def check_event_records(event, context):
+    request_id = context.aws_request_id
+    if(Utils().is_s3_event(event)):
+        s3_records = Utils().get_s3_records(event)
+        for s3_record in s3_records:
+            S3_Bucket().download_input(s3_record, request_id)
+
+def post_process(event, context):
+    request_id = context.aws_request_id
+    if(Utils().is_s3_event(event)):
+        S3_Bucket().upload_output(event['Records'][0]['s3'], request_id)
+        
+                
 def lambda_handler(event, context):
     print("SCAR: Received event: " + json.dumps(event))
     stdout = prepare_output(context)
     try:
-        create_event_file(json.dumps(event), context.aws_request_id)
-        bucket = S3_Bucket()
-        bucket.download_input(event, context.aws_request_id)
-        prepare_environment()
-        prepare_container(os.environ['IMAGE_ID'])
-    
+        pre_process(event, context)
+
         # Create container execution command
         command = [udocker_bin, "--quiet", "run"]
         container_dirs = ["-v", "/tmp", "-v", "/dev", "-v", "/proc", "--nosysdirs"]
@@ -105,7 +120,7 @@ def lambda_handler(event, context):
 
         # Container running script
         if ('script' in event) and event['script']:
-            create_file(event['script'], script)  
+            create_file(event['script'], script)
             command.extend(["--entrypoint=/bin/sh %s" % script, name])
         # Container with args
         elif ('cmd_args' in event) and event['cmd_args']:
@@ -114,45 +129,78 @@ def lambda_handler(event, context):
             command.extend(args)
         # Script to be executed every time (if defined)
         elif ('INIT_SCRIPT_PATH' in os.environ) and os.environ['INIT_SCRIPT_PATH']:
-            command.extend(["--entrypoint=/bin/sh %s" % init_script_path, name])       
-        # Only container        
+            command.extend(["--entrypoint=/bin/sh %s" % init_script_path, name])
+        # Only container
         else:
             command.append(name)
+        print("UDOCKER command: %s" % command)
         # Execute script
         call(command, stderr=STDOUT, stdout=open(lambda_output, "w"))
-        
+
         stdout += check_output(["cat", lambda_output]).decode("utf-8")
-        bucket.upload_output()
+        
+        post_process(event, context)
+        
+        #bucket.upload_output(context.aws_request_id)
     except Exception:
         stdout += "ERROR: Exception launched:\n %s" % traceback.format_exc()
-    print(stdout)    
+    print(stdout)
     return stdout
 
+class Utils():
+    def is_s3_event(self, event):
+        if ('Records' in event) and event['Records']:
+            for record in event['Records']:
+                # Check if the event is an S3 event
+                if('s3' in record) and record['s3']:
+                    return True
+        return False
+    
+    def get_s3_records(self, event):
+        records = []
+        if ('Records' in event) and event['Records']:
+            for record in event['Records']:
+                if('s3' in event) and record['s3']:
+                    records.append(record['s3'])
+        return records
+    
+    def get_records(self, event):
+        if ('Records' in event) and event['Records']:
+            return event['Records']   
+
+
 class S3_Bucket():
-    name = []
-    key = []
-    download_path = ""
     
     def get_s3_client(self):
         return boto3.client('s3')
+
+    def get_bucket_name(self, s3_record):
+        return s3_record['bucket']['name']
     
-    def download_input(self, event, request_id):
-        if ('Records' in event) and event['Records']:
-            for index, record in enumerate(event['Records']):            
-                S3_Bucket.name.append(record['s3']['bucket']['name'])
-                S3_Bucket.key.append(record['s3']['object']['key'])
-                S3_Bucket.download_path = '/tmp/%s/input' % request_id
-                print ("Downloading item in bucket %s with key %s" %(S3_Bucket.name[index], S3_Bucket.key[index]))
-                os.makedirs(os.path.dirname(S3_Bucket.download_path), exist_ok=True)
-                self.get_s3_client().download_file(S3_Bucket.name[index], S3_Bucket.key[index], S3_Bucket.download_path)
-                print(check_output(["ls", "-la", "/tmp/%s/input" % request_id]).decode("utf-8"))
-        
-    def upload_output(self):
-        for index, bucket_name in enumerate(S3_Bucket.name):
-            file_key = "output/%s" % str(S3_Bucket.key[index]).replace("input/","")
-            print ("Uploading image in bucket %s with key %s" % (bucket_name, file_key))
-            self.get_s3_client().upload_file(S3_Bucket.download_path, bucket_name, file_key)
+    def download_input(self, s3_record, request_id):
+        name = self.get_bucket_name(s3_record)
+        key = s3_record['object']['key']
+        download_path = '/tmp/%s/input' % request_id
+        print ("Downloading item from bucket %s with key %s" %(name, key))
+        os.makedirs(os.path.dirname(download_path), exist_ok=True)
+        self.get_s3_client().download_file(name, key, download_path)
+
+    def upload_output(self, s3_record, request_id):
+        bucket_name = self.get_bucket_name(s3_record)
+        output_folder = "/tmp/%s/output/" % request_id
+        output_files_path = self.get_all_files_in_directory(output_folder)
+        for file_path in output_files_path:
+            file_key = "output/%s" % file_path.replace(output_folder,"")
+            print ("Uploading file to bucket %s with key %s" % (bucket_name, file_key))
+            self.get_s3_client().upload_file(file_path, bucket_name, file_key)
             print ("Changing ACLs for public-read for object in bucket %s with key %s" % (bucket_name, file_key))
             s3_resource = boto3.resource('s3')
             obj = s3_resource.Object(bucket_name, file_key)
             obj.Acl().put(ACL='public-read')
+
+    def get_all_files_in_directory(self, dir_path):
+        files = []
+        for dirname, dirnames, filenames in os.walk(dir_path):
+            for filename in filenames:
+                files.append(os.path.join(dirname, filename))
+        return files
