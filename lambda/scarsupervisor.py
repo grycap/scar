@@ -17,8 +17,6 @@
 import boto3
 import json
 import os
-from os import listdir
-from os.path import isfile, join
 import re
 from subprocess import call, check_output, STDOUT
 import traceback
@@ -84,15 +82,30 @@ def create_event_file(event, request_id):
     call(["mkdir", "-p", event_file_path])
     create_file(event, event_file_path + "/event.json")
 
+def pre_process(event, context):
+    create_event_file(json.dumps(event), context.aws_request_id)
+    prepare_environment()
+    prepare_container(os.environ['IMAGE_ID'])
+    check_event_records(event, context)
+
+def check_event_records(event, context):
+    request_id = context.aws_request_id
+    if(Utils().is_s3_event(event)):
+        s3_records = Utils().get_s3_records(event)
+        for s3_record in s3_records:
+            S3_Bucket().download_input(s3_record, request_id)
+
+def post_process(event, context):
+    request_id = context.aws_request_id
+    if(Utils().is_s3_event(event)):
+        S3_Bucket().upload_output(event['Records'][0]['s3'], request_id)
+        
+                
 def lambda_handler(event, context):
     print("SCAR: Received event: " + json.dumps(event))
     stdout = prepare_output(context)
     try:
-        create_event_file(json.dumps(event), context.aws_request_id)
-        bucket = S3_Bucket()
-        bucket.download_input(event, context.aws_request_id)
-        prepare_environment()
-        prepare_container(os.environ['IMAGE_ID'])
+        pre_process(event, context)
 
         # Create container execution command
         command = [udocker_bin, "--quiet", "run"]
@@ -125,34 +138,60 @@ def lambda_handler(event, context):
         call(command, stderr=STDOUT, stdout=open(lambda_output, "w"))
 
         stdout += check_output(["cat", lambda_output]).decode("utf-8")
-        bucket.upload_output(context.aws_request_id)
+        
+        post_process(event, context)
+        
+        #bucket.upload_output(context.aws_request_id)
     except Exception:
         stdout += "ERROR: Exception launched:\n %s" % traceback.format_exc()
     print(stdout)
     return stdout
 
-class S3_Bucket():
+class Utils():
+    def is_s3_event(self, event):
+        if ('Records' in event) and event['Records']:
+            for record in event['Records']:
+                # Check if the event is an S3 event
+                if('s3' in record) and record['s3']:
+                    return True
+        return False
+    
+    def get_s3_records(self, event):
+        records = []
+        if ('Records' in event) and event['Records']:
+            for record in event['Records']:
+                if('s3' in event) and record['s3']:
+                    records.append(record['s3'])
+        return records
+    
+    def get_records(self, event):
+        if ('Records' in event) and event['Records']:
+            return event['Records']   
 
+
+class S3_Bucket():
+    
     def get_s3_client(self):
         return boto3.client('s3')
 
-    def download_input(self, event, request_id):
-        if ('Records' in event) and event['Records']:
-            for record in event['Records']:
-                name = record['s3']['bucket']['name']
-                key = record['s3']['object']['key']
-                download_path = '/tmp/%s/input' % request_id
-                print ("Downloading item in bucket %s with key %s" %(name, key))
-                os.makedirs(os.path.dirname(download_path), exist_ok=True)
-                self.get_s3_client().download_file(name, key, download_path)
-                print(check_output(["ls", "-la", "/tmp/%s/input" % request_id]).decode("utf-8"))
+    def get_bucket_name(self, s3_record):
+        return s3_record['bucket']['name']
+    
+    def download_input(self, s3_record, request_id):
+        name = self.get_bucket_name(s3_record)
+        key = s3_record['object']['key']
+        download_path = '/tmp/%s/input' % request_id
+        print ("Downloading item from bucket %s with key %s" %(name, key))
+        os.makedirs(os.path.dirname(download_path), exist_ok=True)
+        self.get_s3_client().download_file(name, key, download_path)
 
-    def upload_output(self, request_id):
-        output_folder = "/tmp/%s/" % request_id
+    def upload_output(self, s3_record, request_id):
+        bucket_name = self.get_bucket_name(s3_record)
+        output_folder = "/tmp/%s/output/" % request_id
         output_files_path = self.get_all_files_in_directory(output_folder)
         for file_path in output_files_path:
-            file_key = file_path.replace(output_folder,"")
-            print ("Uploading file in bucket %s with key %s" % (bucket_name, file_key))
+            file_key = "output/%s" % file_path.replace(output_folder,"")
+            print ("Uploading file to bucket %s with key %s" % (bucket_name, file_key))
             self.get_s3_client().upload_file(file_path, bucket_name, file_key)
             print ("Changing ACLs for public-read for object in bucket %s with key %s" % (bucket_name, file_key))
             s3_resource = boto3.resource('s3')
@@ -161,7 +200,7 @@ class S3_Bucket():
 
     def get_all_files_in_directory(self, dir_path):
         files = []
-        for root, dirs, files in os.walk(os.path.abspath(dir_path)):
-            for file in files:
-                files.append(os.path.join(root, file))
+        for dirname, dirnames, filenames in os.walk(dir_path):
+            for filename in filenames:
+                files.append(os.path.join(dirname, filename))
         return files
