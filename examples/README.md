@@ -5,5 +5,7 @@ This directory includes different use cases of applications packaged as Docker i
 * [Cowsay](https://en.wikipedia.org/wiki/Cowsay) and [Fortune](https://en.wikipedia.org/wiki/Fortune_(Unix)), just for silly testing.
 * [AWS CLI](https://aws.amazon.com/cli/), to execute shell-scripts using this tool.
 * [MrBayes](http://mrbayes.sourceforge.net/), a scientific application for bayesian inference of Phylogeny.
+* [FFmpeg](https://ffmpeg.org/), a tool to transcode and manipulate videos.
+
 
 Are you using SCAR for another application? Let us know by creating an issue.
