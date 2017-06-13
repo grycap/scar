@@ -17,7 +17,7 @@ SCAR can optionally define a trigger so that the Lambda function is executed whe
 ## Limitations
 
 * The Docker container must fit within the current [AWS Lambda limits](http://docs.aws.amazon.com/lambda/latest/dg/limits.html):
-  * Compressed + uncompressed Docker image under 512 MB (udocker needs to download the image and the uncompress it).
+  * Compressed + uncompressed Docker image under 512 MB (udocker needs to download the image before uncompressing it).
   * Maximum execution time of 300 seconds (5 minutes).
 * The following Docker images cannot be currently used:
   * Those based on Alpine Linux (due to the use of MUSL instead of GLIBC, which is not supported by Fakechroot).
