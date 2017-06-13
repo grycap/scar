@@ -73,11 +73,11 @@ except ImportError:
 try:
     long
 except:
-    long=int
+    long = int
 try:
     raw_input
 except:
-    raw_input=input
+    raw_input = input
 
 if PY_VER < "2.6":
     try:
@@ -96,11 +96,13 @@ except ImportError:
     except ImportError:
         pass
 
+
 def decode(obj):
     if not isinstance(obj, str):
         return obj.decode("utf-8")
     else:
         return obj
+
 
 def encode(obj):
     if isinstance(obj, str):
@@ -2541,27 +2543,32 @@ class FakechrootEngine(ExecutionEngineCommon):
             elif isinstance(conf.fakechroot_so, str):
                 image_list = [conf.fakechroot_so, ]
         else:
-            lib = "libfakechroot"
-            deflib = "libfakechroot.so"
-            arch = conf.arch()
-            (distro, version) = conf.osdistribution()
-            version = version.split(".")[0]
-            if arch == "amd64":
-                image_list = ["%s-%s-%s-x86_64.so" % (lib, distro, version),
-                              "%s-%s-x86_64.so" % (lib, distro),
-                              "%s-x86_64.so" % (lib), deflib]
-            elif arch == "i386":
-                image_list = ["%s-%s-%s-x86.so" % (lib, distro, version),
-                              "%s-%s-x86.so" % (lib, distro),
-                              "%s-x86.so" % (lib), deflib]
-            elif arch == "arm64":
-                image_list = ["%s-%s-%s-arm64.so" % (lib, distro, version),
-                              "%s-%s-arm64.so" % (lib, distro),
-                              "%s-arm64.so" % (lib), deflib]
-            elif arch == "arm":
-                image_list = ["%s-%s-%s-arm.so" % (lib, distro, version),
-                              "%s-%s-arm.so" % (lib, distro),
-                              "%s-arm.so" % (lib), deflib]
+            # Find /lib/libc.musl-x86_64.so.1 to see if the image is alpine
+            libmusl_path = self._cont2host("/lib/libc.musl-x86_64.so.1")
+            if os.path.isfile(libmusl_path) and os.access(libmusl_path, os.X_OK):
+                image_list = ["libfakechroot-Alpine-x86_64.so"]
+            else:
+                lib = "libfakechroot"
+                deflib = "libfakechroot.so"
+                arch = conf.arch()
+                (distro, version) = conf.osdistribution()
+                version = version.split(".")[0]
+                if arch == "amd64":
+                    image_list = ["%s-%s-%s-x86_64.so" % (lib, distro, version),
+                                  "%s-%s-x86_64.so" % (lib, distro),
+                                  "%s-x86_64.so" % (lib), deflib]
+                elif arch == "i386":
+                    image_list = ["%s-%s-%s-x86.so" % (lib, distro, version),
+                                  "%s-%s-x86.so" % (lib, distro),
+                                  "%s-x86.so" % (lib), deflib]
+                elif arch == "arm64":
+                    image_list = ["%s-%s-%s-arm64.so" % (lib, distro, version),
+                                  "%s-%s-arm64.so" % (lib, distro),
+                                  "%s-arm64.so" % (lib), deflib]
+                elif arch == "arm":
+                    image_list = ["%s-%s-%s-arm.so" % (lib, distro, version),
+                                  "%s-%s-arm.so" % (lib, distro),
+                                  "%s-arm.so" % (lib), deflib]
         f_util = FileUtil(self.localrepo.libdir)
         fakechroot_so = f_util.find_file_in_dir(image_list)
         if not fakechroot_so:
@@ -3608,7 +3615,7 @@ class LocalRepository(object):
             return []
         else:
             if not my_layer_id:
-                my_layer_id = structure["layers"].keys()[0]
+                my_layer_id = list(structure["layers"].keys())[0]
             found = ""
             for layer_id in structure["layers"]:
                 if "json" not in structure["layers"][layer_id]:   # v2
@@ -4266,7 +4273,7 @@ class DockerIoAPI(object):
                 if self.v2_auth_token:
                     header = ["Authorization: Basic %s" % (self.v2_auth_token)]
                 (dummy, auth_buf) = self._get_url(auth_url, header=header, RETRY=retry)
-                token_buf = auth_buf.getvalue().decode("utf-8")
+                token_buf = decode(auth_buf.getvalue())
                 if token_buf and "token" in token_buf:
                     try:
                         auth_token = json.loads(token_buf)
@@ -4317,7 +4324,7 @@ class DockerIoAPI(object):
         Msg().out("manifest url:", url, l=Msg.DBG)
         (hdr, buf) = self._get_url(url)
         try:
-            return(hdr.data, json.loads(buf.getvalue().decode("utf-8")))
+            return(hdr.data, json.loads(decode(buf.getvalue())))
         except (IOError, OSError, AttributeError, ValueError, TypeError):
             return(hdr.data, [])
 
@@ -4361,7 +4368,7 @@ class DockerIoAPI(object):
             Msg().out("v2 layers: %s" % (imagerepo), l=Msg.DBG)
             files = self.get_v2_layers_all(imagerepo,
                                            manifest["fsLayers"])
-        except (KeyError, AttributeError, IndexError, ValueError, TypeError) as ex:
+        except (KeyError, AttributeError, IndexError, ValueError, TypeError):
             pass
         return files
 
