@@ -118,38 +118,42 @@ def post_process(event, context):
         S3_Bucket().upload_output(event['Records'][0]['s3'], request_id)
         call(["rm", "-rf", "/tmp/%s/output/" % request_id])
                 
+def create_command(event, context):
+    # Create container execution command
+    command = [udocker_bin, "--quiet", "run"]
+    container_dirs = ["-v", "/tmp", "-v", "/dev", "-v", "/proc", "-v", "/etc", "--nosysdirs"]
+    container_vars = ["--env", "REQUEST_ID=%s" % context.aws_request_id]
+    command.extend(container_dirs)
+    command.extend(container_vars)
+    # Add global variables (if any)
+    global_variables = get_global_variables()
+    if global_variables:
+        command.extend(global_variables)
+
+    # Container running script
+    if ('script' in event) and event['script']:
+        create_file(event['script'], script)
+        command.extend(["--entrypoint=%s %s" % (script_exec, script), container_name])
+    # Container with args
+    elif ('cmd_args' in event) and event['cmd_args']:
+        args = map(lambda x: x.encode('ascii'), event['cmd_args'])
+        command.append(container_name)
+        command.extend(args)
+    # Script to be executed every time (if defined)
+    elif ('INIT_SCRIPT_PATH' in os.environ) and os.environ['INIT_SCRIPT_PATH']:
+        command.extend(["--entrypoint=%s %s" % (script_exec, init_script_path), container_name])
+    # Only container
+    else:
+        command.append(container_name)
+    return command
+    
 def lambda_handler(event, context):
     print("SCAR: Received event: " + json.dumps(event))
     stdout = prepare_output(context)
     try:
         pre_process(event, context)
         # Create container execution command
-        command = [udocker_bin, "--quiet", "run"]
-        container_dirs = ["-v", "/tmp", "-v", "/dev", "-v", "/proc", "-v", "/etc", "--nosysdirs"]
-        container_vars = ["--env", "REQUEST_ID=%s" % context.aws_request_id]
-        command.extend(container_dirs)
-        command.extend(container_vars)
-        # Add global variables (if any)
-        global_variables = get_global_variables()
-        if global_variables:
-            command.extend(global_variables)
-
-        # Container running script
-        if ('script' in event) and event['script']:
-            create_file(event['script'], script)
-            command.extend(["--entrypoint=%s %s" % (script_exec, script), container_name])
-        # Container with args
-        elif ('cmd_args' in event) and event['cmd_args']:
-            args = map(lambda x: x.encode('ascii'), event['cmd_args'])
-            command.append(container_name)
-            command.extend(args)
-        # Script to be executed every time (if defined)
-        elif ('INIT_SCRIPT_PATH' in os.environ) and os.environ['INIT_SCRIPT_PATH']:
-            command.extend(["--entrypoint=%s %s" % (script_exec, init_script_path), container_name])
-        # Only container
-        else:
-            command.append(container_name)
-        #print("UDOCKER command: %s" % command)
+        command = create_command(event, context)
         # Execute script
         call(command, stderr=STDOUT, stdout=open(lambda_output, "w"))
 
