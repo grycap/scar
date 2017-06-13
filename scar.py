@@ -72,6 +72,7 @@ class Scar(object):
        
         # Call the AWS service
         result = Result()
+        function_arn = ""
         try:
             lambda_response = aws_client.get_lambda().create_function(FunctionName=Config.lambda_name,
                                                          Runtime=Config.lambda_runtime,
@@ -84,6 +85,7 @@ class Scar(object):
                                                          MemorySize=Config.lambda_memory,
                                                          Tags=Config.lambda_tags)
             # Parse results
+            function_arn = lambda_response['FunctionArn']
             result.append_to_verbose('LambdaOutput', lambda_response)
             result.append_to_json('LambdaOutput', {'AccessKey' : aws_client.get_access_key(),
                                                    'FunctionArn' : lambda_response['FunctionArn'],
@@ -93,7 +95,7 @@ class Scar(object):
             result.append_to_plain_text("Function '%s' successfully created." % Config.lambda_name)
                 
         except ClientError as ce:
-            print ("Unexpected error: %s" % ce)
+            print ("Error initializing lambda function: %s" % ce)
             sys.exit(1)
         finally:       
             # Remove the zip created in the operation   
@@ -117,22 +119,22 @@ class Scar(object):
             if ce.response['Error']['Code'] == 'ResourceAlreadyExistsException':
                 result.add_warning_message("Using existent log group '%s'" % log_group_name)                
             else:
-                print ("Unexpected error: %s" % ce)
+                print ("Error creating log groups: %s" % ce)
         # Set retention policy into the log group
         try:        
             aws_client.get_log().put_retention_policy(logGroupName=log_group_name,
                                                         retentionInDays=30)                
         except ClientError as ce:
-            print ("Unexpected error: %s" % ce)
+            print ("Error setting log retention policy: %s" % ce)
         
         # Add even source to lambda function
         if args.event_source:
             try:
-                aws_client.check_and_create_bucket(args.event_source)
+                aws_client.check_and_create_s3_bucket(args.event_source)
                 aws_client.add_lambda_permissions(args.event_source)
-                aws_client.create_trigger_from_bucket(args.event_source, Config.lambda_name)                
+                aws_client.create_trigger_from_bucket(args.event_source, function_arn)                
             except ClientError as ce:
-                print ("Unexpected error: %s" % ce)        
+                print ("Error creating the event source: %s" % ce)        
         
         # Show results
         result.print_results(json=args.json, verbose=args.verbose)
@@ -176,7 +178,7 @@ class Scar(object):
                 result.generate_table(functions_parsed_info)
                 
         except ClientError as ce:
-            print ("Unexpected error: %s" % ce)
+            print ("Error listing the resources: %s" % ce)
 
         
     def run(self, args):
@@ -215,7 +217,7 @@ class Scar(object):
                                                   LogType=log_type,
                                                   Payload=script)
         except ClientError as ce:
-            print ("Unexpected error: %s" % ce)
+            print ("Error invoking lambda function: %s" % ce)
         
         # Decode and parse the payload
         response = StringUtils().parse_payload(response)
@@ -226,7 +228,7 @@ class Scar(object):
                 else:
                     print ("Error: Function '%s' timed out." % args.name)
             else:
-                print ("Unexpected error: %s" % response['Payload'])
+                print ("Error in function response: %s" % response['Payload'])
             sys.exit(1)
                 
         
@@ -270,7 +272,7 @@ class Scar(object):
                                          'HTTPStatusCode' : lambda_response['ResponseMetadata']['HTTPStatusCode'] })
             result.append_to_plain_text("Function '%s' correctly deleted." % args.name)
         except ClientError as ce:
-            print ("Unexpected error: %s" % ce)
+            print ("Error deleting the lambda function: %s" % ce)
             
         try:           
             # Delete the cloudwatch log group
@@ -284,7 +286,7 @@ class Scar(object):
             if ce.response['Error']['Code'] == 'ResourceNotFoundException':
                 result.add_warning_message("Cannot delete log group '%s'. Group not found." % log_group_name)
             else:
-                print ("Unexpected error: %s" % ce)
+                print ("Error deleting the cloudwatch log: %s" % ce)
        
         # Show results
         result.print_results(json=args.json, verbose=args.verbose)       
@@ -518,7 +520,7 @@ class AwsClient(object):
                         return True
             return False
         except ClientError as ce:
-            print ("Unexpected error: %s" % ce)
+            print ("Error listing the lambda functions: %s" % ce)
             sys.exit(1)  
     
     def check_function_name_not_exists(self, function_name, json):     
@@ -542,14 +544,14 @@ class AwsClient(object):
             self.get_lambda().update_function_configuration(FunctionName=function_name,
                                                                    Timeout=self.check_time(timeout))
         except ClientError as ce:
-            print ("Unexpected error: %s" % ce)
+            print ("Error updating lambda function timeout: %s" % ce)
 
     def update_function_memory(self, function_name, memory):
         try:           
             self.get_lambda().update_function_configuration(FunctionName=function_name,
                                                                    MemorySize=self.check_memory(memory))
         except ClientError as ce:
-            print ("Unexpected error: %s" % ce)
+            print ("Error updating lambda function memory: %s" % ce)
 
     def get_function_environment_variables(self, function_name):
         return self.get_lambda().get_function(FunctionName=function_name)['Configuration']['Environment']
@@ -562,16 +564,16 @@ class AwsClient(object):
             self.get_lambda().update_function_configuration(FunctionName=function_name,
                                                                     Environment=Config.lambda_env_variables)
         except ClientError as ce:
-            print ("Unexpected error: %s" % ce)
+            print ("Error updating the environment variables of the lambda function: %s" % ce)
             
-    def create_trigger_from_bucket(self, bucket_name, function_name):
+    def create_trigger_from_bucket(self, bucket_name, function_arn):
         try:           
             self.get_s3().put_bucket_notification_configuration(Bucket=bucket_name,
                                                                  NotificationConfiguration={
                                                                      "LambdaFunctionConfigurations": [
                                                                         {
                                                                             "Id": "string",
-                                                                            "LambdaFunctionArn": "arn:aws:lambda:us-east-1:974349055189:function:%s" % function_name,
+                                                                            "LambdaFunctionArn": function_arn,
                                                                             "Events": [ "s3:ObjectCreated:*" ],
                                                                             "Filter": {
                                                                                 "Key": {
@@ -588,20 +590,20 @@ class AwsClient(object):
                                                                 )
                                                                  
         except ClientError as ce:
-            print ("Unexpected error: %s" % ce)
+            print ("Error configuring S3 bucket: %s" % ce)
         
-    def add_lambda_permissions(self, event_source):
+    def add_lambda_permissions(self, bucket_name):
         try:
             self.get_lambda().add_permission(FunctionName=Config.lambda_name,
                                              StatementId=str(uuid.uuid4()),
                                              Action="lambda:InvokeFunction",
                                              Principal="s3.amazonaws.com",
-                                             SourceArn='arn:aws:s3:::%s' % event_source
+                                             SourceArn='arn:aws:s3:::%s' % bucket_name
                                             )
         except ClientError as ce:
-            print ("Unexpected error: %s" % ce)         
+            print ("Error setting lambda permissions: %s" % ce)         
 
-    def check_and_create_bucket(self, bucket_name):
+    def check_and_create_s3_bucket(self, bucket_name):
         try:
             buckets = self.get_s3().list_buckets()
             # Search for the bucket
@@ -610,22 +612,22 @@ class AwsClient(object):
                 # Create the bucket if not found
                 self.create_s3_bucket(bucket_name)
             # Add folder structure
-            self.add_s3_bucket_fodlers(bucket_name)
+            self.add_s3_bucket_folders(bucket_name)
         except ClientError as ce:
-            print ("Unexpected error: %s" % ce) 
+            print ("Error getting the S3 buckets list: %s" % ce) 
 
     def create_s3_bucket(self, bucket_name):
         try:
             self.get_s3().create_bucket(ACL='private', Bucket=bucket_name)
         except ClientError as ce:
-            print ("Unexpected error: %s" % ce)
+            print ("Error creating the S3 bucket '%s': %s" % (bucket_name, ce))
             
-    def add_s3_bucket_fodlers(self, bucket_name):
+    def add_s3_bucket_folders(self, bucket_name):
         try:
             self.get_s3().put_object(Bucket=bucket_name, Key="input/")
             self.get_s3().put_object(Bucket=bucket_name, Key="output/")
         except ClientError as ce:
-            print ("Unexpected error: %s" % ce)        
+            print ("Error creating the S3 bucket '%s' folders: %s" % (bucket_name, ce))
 
 class Result(object):
 
