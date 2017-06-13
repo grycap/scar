@@ -161,7 +161,8 @@ class Scar(object):
                 lambda_function_info = aws_client.get_lambda().get_function(FunctionName=function_arn['ResourceARN'])
                 function = {'Name' : lambda_function_info['Configuration']['FunctionName'],
                             'Memory' : lambda_function_info['Configuration']['MemorySize'],
-                            'Timeout' : lambda_function_info['Configuration']['Timeout']}
+                            'Timeout' : lambda_function_info['Configuration']['Timeout'],
+                            'Image_id': lambda_function_info['Configuration']['Environment']['Variables']['IMAGE_ID']}
                 functions_full_info.append(lambda_function_info)
                 functions_parsed_info.append(function)
                 
@@ -665,12 +666,13 @@ class Result(object):
             self.print_plain_text_result()
     
     def generate_table(self, functions_info):
-        headers = ['NAME', 'MEMORY', 'TIME']
+        headers = ['NAME', 'MEMORY', 'TIME', 'IMAGE_ID']
         table = []
         for function in functions_info:
             table.append([function['Name'],
                           function['Memory'],
-                          function['Timeout']])            
+                          function['Timeout'],
+                          function['Image_id']])            
         print (tabulate(table, headers))
         
     def add_warning_message(self, message):
