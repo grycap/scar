@@ -1,6 +1,6 @@
 # SCAR - Serverless Container-aware ARchitectures
 
-SCAR is a framework to transparently execute containers (e.g. Docker) in serverless platforms (e.g. AWS Lambda) to create ultra-elastic application architectures in the Cloud.
+SCAR is a framework to transparently execute containers (e.g. Docker) in serverless platforms (e.g. AWS Lambda). This can be used to create higly-parallel event-driven file-processing serverless applications that execute on customized runtime environments provided by Docker containers and run them on AWS Lambda.
 
 ## Approach
 
@@ -11,6 +11,8 @@ SCAR provides a command-line interface to create a Lambda function to execute a 
 * [udocker](https://github.com/indigo-dc/udocker/): A tool to execute Docker containers in user space.
   * The [Fakechroot](https://github.com/dex4er/fakechroot/wiki) execution mode of udocker is employed, since Docker containers cannot be natively run on AWS Lambda. Isolation is provided by the boundary of the Lambda function itself.
 * [AWS Lambda](https://aws.amazon.com/lambda): A serverless compute service that runs Lambda functions in response to events.
+
+SCAR can optionally define a trigger so that the Lambda function is executed whenever a file is uploaded to an Amazon S3 bucket. This file is automatically made available to the underlying Docker container run on AWS Lambda so that an user-provided shell-script can process the file. See the [Programming Model](#programming-model) for more details.
 
 ## Limitations
 
@@ -170,6 +172,30 @@ For easier scripting, a JSON output can be obtained by including the `--json` or
 ```sh
 scar run --json lambda-docker-cowsay
 ```
+
+## Event-Driven File-Processing Programming Model<a id="programming-model"></a>
+
+SCAR supports an event-driven programming model suitable for the execution of highly-parallel file-processing applications that require a customized runtime environment. 
+
+The following command:
+
+```sh
+scar init -s user-defined-script.sh -n lambda-ffmpeg-01 -es bucket-name repo/image:latest
+```
+
+Creates a Lambda function to execute the shell-script `user-defined-script.sh` inside a Docker container created out of the `repo/image:latest` Docker image stored in Docker Hub.
+
+The following workflow summarises the programming model, which heavily uses the [convention over configuration](https://en.wikipedia.org/wiki/Convention_over_configuration) pattern:
+
+1. The Amazon S3 bucket `bucket-name` will be created if it does not exist.
+1. The Lambda function is triggered upon uploading a file into the `input` folder of the `bucket-name` bucket.
+1. The Lambda function retrieves the file(s) from the Amazon S3 bucket and makes it/them available for the shell-script running inside the container in the `/tmp/$REQUEST_ID/input` folder.
+1. The shell-script processes the input file(s) and produces the output (either one or multiple files) in the folder `/tmp/$REQUEST_ID/output`.
+1. The output files are automatically uploaded by the Lambda function into the `output` folder of `bucket-name`.
+
+Many instances of the Lambda function may run concurrently and independently, depending on the files to be processed in the S3 bucket. Initial executions of the Lambda may require retrieving the Docker image from Docker Hub but this will be cached for subsequent invocations, thus speeding up the process.
+
+For further information, an example of such application is included in the [examples/ffmpeg](examples/ffmpeg) folder, in order to run the [FFmpeg](https://ffmpeg.org/) video codification tool on AWS Lambda.
 
 ### Local Testing of the Docker images via udocker
 
