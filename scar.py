@@ -740,7 +740,10 @@ class CmdParser(object):
         Config().check_config_file()
         """Command parsing and selection"""
         args = self.parser.parse_args()
-        args.func(args)        
+        try:
+            args.func(args)
+        except AttributeError:
+            print("Use scar -h to see the options available")                    
         
 if __name__ == "__main__":
     CmdParser().execute()        

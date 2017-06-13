@@ -17,7 +17,7 @@ SCAR can optionally define a trigger so that the Lambda function is executed whe
 ## Limitations
 
 * The Docker container must fit within the current [AWS Lambda limits](http://docs.aws.amazon.com/lambda/latest/dg/limits.html):
-  * Uncompressed Docker image under 512 MB.
+  * Compressed + uncompressed Docker image under 512 MB (udocker needs to download the image and the uncompress it).
   * Maximum execution time of 300 seconds (5 minutes).
 * The following Docker images cannot be currently used:
   * Those based on Alpine Linux (due to the use of MUSL instead of GLIBC, which is not supported by Fakechroot).
@@ -29,7 +29,7 @@ You need:
 
 * Valid AWS [IAM](https://aws.amazon.com/iam/) user credentials (Access Key and Secret Key ID) with permissions to deploy Lambda functions.
 
-* An IAM Role for the Lambda function be be authorized to access other AWS services during its execution.
+* An IAM Role for the Lambda function be authorized to access other AWS services during its execution.
 
 ### IAM User Credentials
 
