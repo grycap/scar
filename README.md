@@ -1,6 +1,6 @@
 # SCAR - Serverless Container-aware ARchitectures
 
-SCAR is a framework to transparently execute containers (e.g. Docker) in serverless platforms (e.g. AWS Lambda). This can be used to create higly-parallel event-driven file-processing serverless applications that execute on customized runtime environments provided by Docker containers and run them on AWS Lambda.
+SCAR is a framework to transparently execute containers (e.g. Docker) in serverless platforms (e.g. AWS Lambda). This can be used to create highly-parallel event-driven file-processing serverless applications that execute on customized runtime environments provided by Docker containers and run them on AWS Lambda.
 
 ## Approach
 
