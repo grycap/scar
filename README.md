@@ -147,6 +147,15 @@ You can specify environment variables to the run command which will be in turn p
 scar run -e TEST1=45 -e TEST2=69 -s test/test-global-vars.sh lambda-docker-cowsay
 ```
 
+In particular, the following environment variables are automatically made available to the underlying Docker container:
+
+* `AWS_ACCESS_KEY_ID`
+* `AWS_SECRET_ACCESS_KEY`
+* `AWS_SESSION_TOKEN`
+* `AWS_SECURITY_TOKEN`
+
+This allows a script running in the Docker container to access other AWS services. As an example, see how the AWS CLI is run on AWS Lambda in the [examples/aws-cli](examples/aws-cli) folder.
+
 ### Executing Applications
 
 Applications available in the Docker image can be directly executed:
