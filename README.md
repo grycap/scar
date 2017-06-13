@@ -29,7 +29,7 @@ You need:
 
 * Valid AWS [IAM](https://aws.amazon.com/iam/) user credentials (Access Key and Secret Key ID) with permissions to deploy Lambda functions.
 
-* An IAM Role for the Lambda function be authorized to access other AWS services during its execution.
+* An IAM Role for the Lambda function to be authorized to access other AWS services during its execution.
 
 ### IAM User Credentials
 
@@ -196,13 +196,13 @@ Creates a Lambda function to execute the shell-script `user-defined-script.sh` i
 
 The following workflow summarises the programming model, which heavily uses the [convention over configuration](https://en.wikipedia.org/wiki/Convention_over_configuration) pattern:
 
-1. The Amazon S3 bucket `bucket-name` will be created if it does not exist.
+1. The Amazon S3 bucket `bucket-name` will be created if it does not exist, and the `input` and `output` folders inside.
 1. The Lambda function is triggered upon uploading a file into the `input` folder of the `bucket-name` bucket.
-1. The Lambda function retrieves the file(s) from the Amazon S3 bucket and makes it/them available for the shell-script running inside the container in the `/tmp/$REQUEST_ID/input` folder.
-1. The shell-script processes the input file(s) and produces the output (either one or multiple files) in the folder `/tmp/$REQUEST_ID/output`.
+1. The Lambda function retrieves the file from the Amazon S3 bucket and makes it available for the shell-script running inside the container in the `/tmp/$REQUEST_ID/input` folder.
+1. The shell-script processes the input file and produces the output (either one or multiple files) in the folder `/tmp/$REQUEST_ID/output`.
 1. The output files are automatically uploaded by the Lambda function into the `output` folder of `bucket-name`.
 
-Many instances of the Lambda function may run concurrently and independently, depending on the files to be processed in the S3 bucket. Initial executions of the Lambda may require retrieving the Docker image from Docker Hub but this will be cached for subsequent invocations, thus speeding up the process.
+Many instances of the Lambda function may run concurrently and independently, depending on the files to be processed in the S3 bucket. Initial executions of the Lambda may require retrieving the Docker image from Docker Hub but this will be cached for subsequent invocations, thus speeding up the execution process.
 
 For further information, an example of such application is included in the [examples/ffmpeg](examples/ffmpeg) folder, in order to run the [FFmpeg](https://ffmpeg.org/) video codification tool on AWS Lambda.
 
