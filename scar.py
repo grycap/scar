@@ -427,7 +427,8 @@ class Config(object):
     lambda_handler = lambda_name + ".lambda_handler"      
     lambda_role = "arn:aws:iam::974349055189:role/lambda-s3-execution-role"
     lambda_region = 'us-east-1'
-    lambda_env_variables = {"Variables" : {"UDOCKER_DIR":"/tmp/home/.udocker", "UDOCKER_TARBALL":"/var/task/udocker-1.1.0-RC2.tar.gz"}}
+    lambda_env_variables = {"Variables" : {"UDOCKER_DIR":"/tmp/home/.udocker", 
+                                           "UDOCKER_TARBALL":"/var/task/udocker-1.1.0-RC2.tar.gz"}}
     lambda_memory = 128
     lambda_time = 300
     lambda_description = "Automatically generated lambda function"

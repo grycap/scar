@@ -25,8 +25,9 @@ print('Loading function')
 udocker_bin = "/tmp/udocker/udocker"
 lambda_output = "/tmp/lambda-stdout.txt"
 script = "/tmp/udocker/script.sh"
-name = 'lambda_cont'
+container_name = 'lambda_cont'
 init_script_path = "/tmp/udocker/init_script.sh"
+script_exec = "/bin/sh"
 
 def prepare_environment():
     # Install udocker in /tmp
@@ -48,13 +49,19 @@ def prepare_container(container_image):
         print("SCAR: Container image '%s' already available" % container_image)
     # Download and create container
     cmd_out = check_output([udocker_bin, "ps"]).decode("utf-8")
-    if name not in cmd_out:
-        print("SCAR: Creating container with name '%s' based on image '%s'." % (name, container_image))
-        call([udocker_bin, "create", "--name=%s" % name, container_image])
+    if container_name not in cmd_out:
+        print("SCAR: Creating container with name '%s' based on image '%s'." % (container_name, container_image))
+        call([udocker_bin, "create", "--name=%s" % container_name, container_image])
         # Set container execution engine to Fakechroot
-        call([udocker_bin, "setup", "--execmode=F1", name])
+        call([udocker_bin, "setup", "--execmode=F1", container_name])
     else:
-        print("SCAR: Container '" + name + "' already available")
+        print("SCAR: Container '" + container_name + "' already available")
+
+def check_alpine_image():
+    home = os.environ['UDOCKER_DIR']
+    musl_path = home + "%s/containers/%s/ROOT/lib/libc.musl-x86_64.so.1" %(home, container_name)
+    if os.path.isfile(musl_path):
+        script_exec = "/bin/busybox sh"
 
 def add_global_variable(variables, key, value):
     variables.append('--env')
@@ -111,38 +118,42 @@ def post_process(event, context):
         S3_Bucket().upload_output(event['Records'][0]['s3'], request_id)
         call(["rm", "-rf", "/tmp/%s/output/" % request_id])
                 
+def create_command(event, context):
+    # Create container execution command
+    command = [udocker_bin, "--quiet", "run"]
+    container_dirs = ["-v", "/tmp", "-v", "/dev", "-v", "/proc", "-v", "/etc", "--nosysdirs"]
+    container_vars = ["--env", "REQUEST_ID=%s" % context.aws_request_id]
+    command.extend(container_dirs)
+    command.extend(container_vars)
+    # Add global variables (if any)
+    global_variables = get_global_variables()
+    if global_variables:
+        command.extend(global_variables)
+
+    # Container running script
+    if ('script' in event) and event['script']:
+        create_file(event['script'], script)
+        command.extend(["--entrypoint=%s %s" % (script_exec, script), container_name])
+    # Container with args
+    elif ('cmd_args' in event) and event['cmd_args']:
+        args = map(lambda x: x.encode('ascii'), event['cmd_args'])
+        command.append(container_name)
+        command.extend(args)
+    # Script to be executed every time (if defined)
+    elif ('INIT_SCRIPT_PATH' in os.environ) and os.environ['INIT_SCRIPT_PATH']:
+        command.extend(["--entrypoint=%s %s" % (script_exec, init_script_path), container_name])
+    # Only container
+    else:
+        command.append(container_name)
+    return command
+    
 def lambda_handler(event, context):
     print("SCAR: Received event: " + json.dumps(event))
     stdout = prepare_output(context)
     try:
         pre_process(event, context)
         # Create container execution command
-        command = [udocker_bin, "--quiet", "run"]
-        container_dirs = ["-v", "/tmp", "-v", "/dev", "-v", "/proc", "--nosysdirs"]
-        container_vars = ["--env", "REQUEST_ID=%s" % context.aws_request_id]
-        command.extend(container_dirs)
-        command.extend(container_vars)
-        # Add global variables (if any)
-        global_variables = get_global_variables()
-        if global_variables:
-            command.extend(global_variables)
-
-        # Container running script
-        if ('script' in event) and event['script']:
-            create_file(event['script'], script)
-            command.extend(["--entrypoint=/bin/sh %s" % script, name])
-        # Container with args
-        elif ('cmd_args' in event) and event['cmd_args']:
-            args = map(lambda x: x.encode('ascii'), event['cmd_args'])
-            command.append(name)
-            command.extend(args)
-        # Script to be executed every time (if defined)
-        elif ('INIT_SCRIPT_PATH' in os.environ) and os.environ['INIT_SCRIPT_PATH']:
-            command.extend(["--entrypoint=/bin/sh %s" % init_script_path, name])
-        # Only container
-        else:
-            command.append(name)
-        #print("UDOCKER command: %s" % command)
+        command = create_command(event, context)
         # Execute script
         call(command, stderr=STDOUT, stdout=open(lambda_output, "w"))
 
