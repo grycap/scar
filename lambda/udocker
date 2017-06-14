@@ -1707,7 +1707,17 @@ class ExecutionEngineCommon(object):
             status = FileUtil(mountpoint).mkdir()
         return status
 
+    def _remove_invalid_volumes(self):
+        for vol in list(self.opt["vol"]):
+            if ":" in vol:
+                (_, cont_path) = vol.split(":")
+                if cont_path == "{}":           
+                    self.opt["vol"].remove(vol)        
+
     def _check_volumes(self):
+        print(self.opt["vol"])        
+        self._remove_invalid_volumes()
+        print(self.opt["vol"])
         """Check volume paths"""
         for vol in list(self.opt["vol"]):
             if ":" in vol:
