@@ -27,7 +27,6 @@ lambda_output = "/tmp/lambda-stdout.txt"
 script = "/tmp/udocker/script.sh"
 container_name = 'lambda_cont'
 init_script_path = "/tmp/udocker/init_script.sh"
-script_exec = "/bin/sh"
 
 def prepare_environment():
     # Install udocker in /tmp
@@ -59,9 +58,13 @@ def prepare_container(container_image):
 
 def check_alpine_image():
     home = os.environ['UDOCKER_DIR']
-    musl_path = home + "%s/containers/%s/ROOT/lib/libc.musl-x86_64.so.1" %(home, container_name)
+    musl_path = "%s/containers/%s/ROOT/lib/libc.musl-x86_64.so.1" % (home, container_name)
+    print("PATH: %s" % musl_path)
     if os.path.isfile(musl_path):
-        script_exec = "/bin/busybox sh"
+        print("Alpine image found. Using busybox to execute scripts.")
+        return "/bin/busybox sh"
+    else:
+        return "/bin/sh"        
 
 def add_global_variable(variables, key, value):
     variables.append('--env')
@@ -125,10 +128,14 @@ def create_command(event, context):
     container_vars = ["--env", "REQUEST_ID=%s" % context.aws_request_id]
     command.extend(container_dirs)
     command.extend(container_vars)
+    
     # Add global variables (if any)
     global_variables = get_global_variables()
     if global_variables:
         command.extend(global_variables)
+
+    # Use the correct script executable 
+    script_exec = check_alpine_image()
 
     # Container running script
     if ('script' in event) and event['script']:
@@ -154,6 +161,7 @@ def lambda_handler(event, context):
         pre_process(event, context)
         # Create container execution command
         command = create_command(event, context)
+        print ("Udocker command: %s" % command)
         # Execute script
         call(command, stderr=STDOUT, stdout=open(lambda_output, "w"))
 
@@ -161,7 +169,6 @@ def lambda_handler(event, context):
         
         post_process(event, context)
         
-        #bucket.upload_output(context.aws_request_id)
     except Exception:
         stdout += "ERROR: Exception launched:\n %s" % traceback.format_exc()
     print(stdout)
@@ -196,8 +203,8 @@ class S3_Bucket():
         bucket_name = self.get_bucket_name(s3_record)
         file_key = s3_record['object']['key']
         download_path = '/tmp/%s/%s' % (request_id, file_key)
-        print ("Downloading item from bucket %s with key %s" %(bucket_name, file_key))
-        os.makedirs(os.path.dirname(download_path), exist_ok = True)        
+        print ("Downloading item from bucket %s with key %s" % (bucket_name, file_key))
+        os.makedirs(os.path.dirname(download_path), exist_ok=True)        
         self.get_s3_client().download_file(bucket_name, file_key, download_path)
 
     def upload_output(self, s3_record, request_id):
@@ -205,7 +212,7 @@ class S3_Bucket():
         output_folder = "/tmp/%s/output/" % request_id
         output_files_path = self.get_all_files_in_directory(output_folder)
         for file_path in output_files_path:
-            file_key = "output/%s" % file_path.replace(output_folder,"")
+            file_key = "output/%s" % file_path.replace(output_folder, "")
             print ("Uploading file to bucket %s with key %s" % (bucket_name, file_key))
             self.get_s3_client().upload_file(file_path, bucket_name, file_key)
             print ("Changing ACLs for public-read for object in bucket %s with key %s" % (bucket_name, file_key))
