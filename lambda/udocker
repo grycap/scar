@@ -1715,9 +1715,7 @@ class ExecutionEngineCommon(object):
                     self.opt["vol"].remove(vol)        
 
     def _check_volumes(self):
-        print(self.opt["vol"])        
         self._remove_invalid_volumes()
-        print(self.opt["vol"])
         """Check volume paths"""
         for vol in list(self.opt["vol"]):
             if ":" in vol:
