@@ -26,10 +26,12 @@
 INPUT_DIR="/tmp/$REQUEST_ID/input"
 OUTPUT_DIR="/tmp/$REQUEST_ID/output"
 
+echo "SCRIPT: Creating output directory: $OUTPUT_DIR"
+mkdir -p $OUTPUT_DIR
 echo "SCRIPT: Invoked Image Grayifier. Files(s) available in $INPUT_DIR"
 for INPUT_FILE in $INPUT_DIR/*; do
    FILENAME=`basename $INPUT_FILE`
    OUTPUT_FILE=$OUTPUT_DIR/$FILENAME
-  echo "SCRIPT: Converting input video file $INPUT_FILE to grayscale to output file $OUTPUT_FILE"
-  convert -i $INPUT_FILE -type Grayscale $OUTPUT_FILE
+  echo "SCRIPT: Converting input image file $INPUT_FILE to grayscale to output file $OUTPUT_FILE"
+  convert $INPUT_FILE -type Grayscale $OUTPUT_FILE
 done
