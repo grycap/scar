@@ -44,11 +44,14 @@ while getopts ':me:s:' OPTION; do
   esac
 done
 
+# SCAR-dependent. Copy file to /tmp that will be writable.
+cp /etc/condor/condor_config /tmp/condor_config 
+
 # Prepare HTCondor configuration
 sed -i \
   -e 's/@CONDOR_HOST@/'"$CONDOR_HOST"'/' \
   -e 's/@ROLE_DAEMONS@/'"$ROLE_DAEMONS"'/' \
-  /etc/condor/condor_config
+  /tmp/condor_config
 
 mkdir -p /tmp/log/condor
 mkdir -p /tmp/lock/condor
