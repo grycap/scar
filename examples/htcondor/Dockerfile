@@ -25,4 +25,5 @@ COPY files/condor-wrapper.sh /usr/local/sbin/condor-wrapper.sh
 COPY files/condor_config /etc/condor/condor_config
 COPY files/run.sh /usr/local/sbin/run.sh
 
-ENTRYPOINT ["/sbin/tini", "--", "/usr/local/sbin/run.sh"]
+#ENTRYPOINT ["/sbin/tini", "--", "/usr/local/sbin/run.sh"]
+ENTRYPOINT ["/usr/local/sbin/run.sh"]
