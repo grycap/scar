@@ -772,8 +772,6 @@ class CmdParser(object):
         group = parser_rm.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name", help="Lambda function name")
         group.add_argument("-a", "--all", help="Delete all lambda functions", action="store_true")        
-        # parser_rm.add_argument("name", help="Lambda function name")
-        # parser_rm.add_argument("-a", "--all", help="Delete all lambda functions", action="store_true")        
         parser_rm.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         parser_rm.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
         
