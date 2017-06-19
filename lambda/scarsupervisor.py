@@ -124,7 +124,7 @@ def post_process(event, context):
 def create_command(event, context):
     # Create container execution command
     command = [udocker_bin, "--quiet", "run"]
-    container_dirs = ["-v", "/tmp", "-v", "/dev", "-v", "/proc", "-v", "/etc", "--nosysdirs"]
+    container_dirs = ["-v", "/tmp", "-v", "/dev", "-v", "/proc", "-v", "/etc/hosts", "--nosysdirs"]
     container_vars = ["--env", "REQUEST_ID=%s" % context.aws_request_id]
     command.extend(container_dirs)
     command.extend(container_vars)
