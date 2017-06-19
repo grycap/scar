@@ -28,12 +28,13 @@ script = "/tmp/udocker/script.sh"
 container_name = 'lambda_cont'
 init_script_path = "/tmp/udocker/init_script.sh"
 
-def prepare_environment():
+def prepare_environment(aws_request_id):
     # Install udocker in /tmp
-    call(["mkdir", "-p", "/tmp/udocker"])
+    os.makedirs("/tmp/udocker", exist_ok=True)    
     call(["cp", "/var/task/udocker", udocker_bin])
     call(["chmod", "u+rx", udocker_bin])
-    call(["mkdir", "-p", "/tmp/home/.udocker"])
+    os.makedirs("/tmp/home/.udocker", exist_ok=True)    
+    os.makedirs("/tmp/%s/output" % aws_request_id, exist_ok=True)  
     if ('INIT_SCRIPT_PATH' in os.environ) and os.environ['INIT_SCRIPT_PATH']:
         call(["cp", "/var/task/init_script.sh", init_script_path])
 
@@ -99,12 +100,12 @@ def create_file(content, path):
 
 def create_event_file(event, request_id):
     event_file_path = "/tmp/%s/" % request_id
-    call(["mkdir", "-p", event_file_path])
+    os.makedirs(event_file_path, exist_ok=True)     
     create_file(event, event_file_path + "/event.json")
 
 def pre_process(event, context):
     create_event_file(json.dumps(event), context.aws_request_id)
-    prepare_environment()
+    prepare_environment(context.aws_request_id)
     prepare_container(os.environ['IMAGE_ID'])
     check_event_records(event, context)
 
