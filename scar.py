@@ -144,28 +144,17 @@ class Scar(object):
         result = Result()
         try:
             # Get the filtered resources from AWS
-            client = aws_client.get_resource_groups_tagging_api()
-            tag_filters = [ { 'Key': 'owner', 'Values': [ aws_client.get_user_name() ] },
-                            { 'Key': 'createdby', 'Values': ['scar'] } ]
-            response = client.get_resources(TagFilters=tag_filters,
-                                             TagsPerPage=100)
-            
-            
-            
-            filtered_functions = response['ResourceTagMappingList']
-            
+            lambda_functions = aws_client.get_all_functions()
             # Create the data structure
             functions_parsed_info = []
             functions_full_info = []
-            for function_arn in filtered_functions:
-                lambda_function_info = aws_client.get_lambda().get_function(FunctionName=function_arn['ResourceARN'])
-                function = {'Name' : lambda_function_info['Configuration']['FunctionName'],
-                            'Memory' : lambda_function_info['Configuration']['MemorySize'],
-                            'Timeout' : lambda_function_info['Configuration']['Timeout'],
-                            'Image_id': lambda_function_info['Configuration']['Environment']['Variables']['IMAGE_ID']}
-                functions_full_info.append(lambda_function_info)
-                functions_parsed_info.append(function)
-                
+            for lambda_function in lambda_functions:
+                parsed_function = {'Name' : lambda_function['Configuration']['FunctionName'],
+                            'Memory' : lambda_function['Configuration']['MemorySize'],
+                            'Timeout' : lambda_function['Configuration']['Timeout'],
+                            'Image_id': lambda_function['Configuration']['Environment']['Variables']['IMAGE_ID']}
+                functions_full_info.append(lambda_function)
+                functions_parsed_info.append(parsed_function)
             
             result.append_to_verbose('LambdaOutput', functions_full_info)
             result.append_to_json('Functions', functions_parsed_info)
@@ -262,35 +251,12 @@ class Scar(object):
         
     def rm(self, args):
         aws_client = self.get_aws_client()
-        aws_client.check_function_name_not_exists(args.name, (True if args.verbose or args.json else False))       
-        
-        result = Result()
-        try:
-            # Delete the lambda function
-            lambda_response = aws_client.get_lambda().delete_function(FunctionName=args.name)
-            result.append_to_verbose('LambdaOutput', lambda_response)
-            result.append_to_json('LambdaOutput', { 'RequestId' : lambda_response['ResponseMetadata']['RequestId'],
-                                         'HTTPStatusCode' : lambda_response['ResponseMetadata']['HTTPStatusCode'] })
-            result.append_to_plain_text("Function '%s' correctly deleted." % args.name)
-        except ClientError as ce:
-            print ("Error deleting the lambda function: %s" % ce)
-            
-        try:           
-            # Delete the cloudwatch log group
-            log_group_name = '/aws/lambda/' + args.name
-            cw_response = aws_client.get_log().delete_log_group(logGroupName=log_group_name)
-            result.append_to_verbose('CloudWatchOuput', cw_response)
-            result.append_to_json('CloudWatchOutput', { 'RequestId' : cw_response['ResponseMetadata']['RequestId'],
-                                             'HTTPStatusCode' : cw_response['ResponseMetadata']['HTTPStatusCode'] })
-            result.append_to_plain_text("Log group '%s' correctly deleted." % args.name)
-        except ClientError as ce:
-            if ce.response['Error']['Code'] == 'ResourceNotFoundException':
-                result.add_warning_message("Cannot delete log group '%s'. Group not found." % log_group_name)
-            else:
-                print ("Error deleting the cloudwatch log: %s" % ce)
-       
-        # Show results
-        result.print_results(json=args.json, verbose=args.verbose)       
+        if args.all:
+            lambda_functions = aws_client.get_all_functions()
+            for function in lambda_functions:
+                aws_client.delete_resources(function['Configuration']['FunctionName'], args.json, args.verbose)
+        else:
+            aws_client.delete_resources(args.name, args.json, args.verbose)
         
     def check_memory(self, lambda_memory):
         """ Check if the memory introduced by the user is correct.
@@ -630,6 +596,66 @@ class AwsClient(object):
             self.get_s3().put_object(Bucket=bucket_name, Key="output/")
         except ClientError as ce:
             print ("Error creating the S3 bucket '%s' folders: %s" % (bucket_name, ce))
+            
+    def get_functions_arn_list(self):
+        arn_list = []
+        # Creation of a function filter by tags
+        client = self.get_resource_groups_tagging_api()
+        tag_filters = [ { 'Key': 'owner', 'Values': [ self.get_user_name() ] }, 
+                        { 'Key': 'createdby', 'Values': ['scar'] } ]
+        try:        
+            response = client.get_resources(TagFilters=tag_filters,
+                                                 TagsPerPage=100)
+        except ClientError as ce:
+            print ("Error getting function arn by tag: %s" % ce)         
+        for function in response['ResourceTagMappingList']:
+            arn_list.append(function['ResourceARN'])
+        return arn_list
+
+    def get_all_functions(self):
+        function_list = []
+        # Get the filtered resources from AWS
+        filtered_functions = self.get_functions_arn_list()
+        try:
+            for function_arn in filtered_functions:
+                function_list.append(self.get_lambda().get_function(FunctionName=function_arn))
+        except ClientError as ce:
+            print ("Error getting function info by arn: %s" % ce)                
+        return function_list
+    
+    def delete_lambda_function(self, function_name, result):
+        try:
+            # Delete the lambda function
+            lambda_response = self.get_lambda().delete_function(FunctionName=function_name)
+            result.append_to_verbose('LambdaOutput', lambda_response)
+            result.append_to_json('LambdaOutput', { 'RequestId' : lambda_response['ResponseMetadata']['RequestId'],
+                                         'HTTPStatusCode' : lambda_response['ResponseMetadata']['HTTPStatusCode'] })
+            result.append_to_plain_text("Function '%s' successfully deleted." % function_name)
+        except ClientError as ce:
+            print ("Error deleting the lambda function: %s" % ce)
+
+    def delete_cloudwatch_group(self, function_name, result):
+        try:           
+            # Delete the cloudwatch log group
+            log_group_name = '/aws/lambda/%s' % function_name
+            cw_response = self.get_log().delete_log_group(logGroupName=log_group_name)
+            result.append_to_verbose('CloudWatchOuput', cw_response)
+            result.append_to_json('CloudWatchOutput', { 'RequestId' : cw_response['ResponseMetadata']['RequestId'],
+                                             'HTTPStatusCode' : cw_response['ResponseMetadata']['HTTPStatusCode'] })
+            result.append_to_plain_text("Log group '%s' successfully deleted." % function_name)
+        except ClientError as ce:
+            if ce.response['Error']['Code'] == 'ResourceNotFoundException':
+                result.add_warning_message("Cannot delete log group '%s'. Group not found." % log_group_name)
+            else:
+                print ("Error deleting the cloudwatch log: %s" % ce)
+
+    def delete_resources(self, function_name, json, verbose):
+        result = Result()
+        self.check_function_name_not_exists(function_name, json or verbose)       
+        self.delete_lambda_function(function_name, result)
+        self.delete_cloudwatch_group(function_name, result)
+        # Show results
+        result.print_results(json, verbose)        
 
 class Result(object):
 
@@ -683,6 +709,7 @@ class Result(object):
 class CmdParser(object):
     
     def __init__(self):
+        scar = Scar()
         self.parser = argparse.ArgumentParser(prog="scar",
                                               description="Deploy containers in serverless architectures",
                                               epilog="Run 'scar COMMAND --help' for more information on a command.")
@@ -694,7 +721,7 @@ class CmdParser(object):
         # 'init' command
         parser_init = subparsers.add_parser('init', help="Create lambda function")
         # Set default function
-        parser_init.set_defaults(func=Scar().init)
+        parser_init.set_defaults(func=scar.init)
         # Set the positional arguments
         parser_init.add_argument("image_id", help="Container image id (i.e. centos:7)") 
         # Set the optional arguments
@@ -710,13 +737,13 @@ class CmdParser(object):
     
         # 'ls' command
         parser_ls = subparsers.add_parser('ls', help="List lambda functions")
-        parser_ls.set_defaults(func=Scar().ls)
+        parser_ls.set_defaults(func=scar.ls)
         parser_ls.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         parser_ls.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
         
         # 'run' command
         parser_run = subparsers.add_parser('run', help="Deploy function")
-        parser_run.set_defaults(func=Scar().run)
+        parser_run.set_defaults(func=scar.run)
         parser_run.add_argument("name", help="Lambda function name")
         parser_run.add_argument("-m", "--memory", type=int, help="Lambda function memory in megabytes. Range from 128 to 1536 in increments of 64")
         parser_run.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 300.")
@@ -729,14 +756,18 @@ class CmdParser(object):
         
         # Create the parser for the 'rm' command
         parser_rm = subparsers.add_parser('rm', help="Delete function")
-        parser_rm.set_defaults(func=Scar().rm)
-        parser_rm.add_argument("name", help="Lambda function name")
+        parser_rm.set_defaults(func=scar.rm)
+        group = parser_rm.add_mutually_exclusive_group(required=True)
+        group.add_argument("-n", "--name", help="Lambda function name")
+        group.add_argument("-a", "--all", help="Delete all lambda functions", action="store_true")        
+        #parser_rm.add_argument("name", help="Lambda function name")
+        #parser_rm.add_argument("-a", "--all", help="Delete all lambda functions", action="store_true")        
         parser_rm.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         parser_rm.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
         
         # 'log' command
         parser_log = subparsers.add_parser('log', help="Show the logs for the lambda function")
-        parser_log.set_defaults(func=Scar().log)
+        parser_log.set_defaults(func=scar.log)
         parser_log.add_argument("log_group_name", help="The name of the log group.")
         parser_log.add_argument("log_stream_name", help="The name of the log stream.")
         parser_log.add_argument("-ri", "--request_id", help="Id of the request that generated the log.")
@@ -747,7 +778,8 @@ class CmdParser(object):
         args = self.parser.parse_args()
         try:
             args.func(args)
-        except AttributeError:
+        except AttributeError as ae:
+            print("Error: %s" % ae)
             print("Use scar -h to see the options available")                    
         
 if __name__ == "__main__":
