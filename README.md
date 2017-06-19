@@ -108,7 +108,7 @@ These values are shown in the output when executing `scar run`. Do not forget to
 You can remove the Lambda function together with the logs generated in CloudWatch by:
 
 ```sh
-scar rm lambda-docker-cowsay
+scar rm -n lambda-docker-cowsay
 ```
 
 ## Advanced Usage
