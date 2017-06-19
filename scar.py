@@ -38,7 +38,10 @@ class Scar(object):
     
     def init(self, args):
         # Set lambda name
-        Config.lambda_name = args.name if args.name else Config.lambda_name
+        if not args.name:
+            Config.lambda_name = StringUtils().create_image_based_name(args.image_id)
+        else:
+            Config.lambda_name = args.name
         # Validate function name
         if not StringUtils().validate_function_name(Config.lambda_name):
             if args.verbose or args.json:
@@ -335,6 +338,15 @@ class Scar(object):
 
 class StringUtils(object):
 
+    def create_image_based_name(self, image_id):
+        parsed_id = image_id.replace('/', ',,,').replace(':', ',,,').split(',,,')
+        name = 'scar-%s' % '-'.join(parsed_id)
+        i = 1
+        while AwsClient().find_function_name(name):
+            name = 'scar-%s-%s' % ('-'.join(parsed_id), str(i))
+            i = i + 1
+        return name
+
     def validate_function_name(self, name):
         aws_name_regex = "((arn:(aws|aws-us-gov):lambda:)?([a-z]{2}(-gov)?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-]+)(:($LATEST|[a-zA-Z0-9-]+))?)"
         pattern = re.compile(aws_name_regex)
@@ -394,7 +406,7 @@ class Config(object):
     lambda_handler = lambda_name + ".lambda_handler"      
     lambda_role = "arn:aws:iam::974349055189:role/lambda-s3-execution-role"
     lambda_region = 'us-east-1'
-    lambda_env_variables = {"Variables" : {"UDOCKER_DIR":"/tmp/home/.udocker", 
+    lambda_env_variables = {"Variables" : {"UDOCKER_DIR":"/tmp/home/.udocker",
                                            "UDOCKER_TARBALL":"/var/task/udocker-1.1.0-RC2.tar.gz"}}
     lambda_memory = 128
     lambda_time = 300
@@ -601,7 +613,7 @@ class AwsClient(object):
         arn_list = []
         # Creation of a function filter by tags
         client = self.get_resource_groups_tagging_api()
-        tag_filters = [ { 'Key': 'owner', 'Values': [ self.get_user_name() ] }, 
+        tag_filters = [ { 'Key': 'owner', 'Values': [ self.get_user_name() ] },
                         { 'Key': 'createdby', 'Values': ['scar'] } ]
         try:        
             response = client.get_resources(TagFilters=tag_filters,
@@ -760,8 +772,8 @@ class CmdParser(object):
         group = parser_rm.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name", help="Lambda function name")
         group.add_argument("-a", "--all", help="Delete all lambda functions", action="store_true")        
-        #parser_rm.add_argument("name", help="Lambda function name")
-        #parser_rm.add_argument("-a", "--all", help="Delete all lambda functions", action="store_true")        
+        # parser_rm.add_argument("name", help="Lambda function name")
+        # parser_rm.add_argument("-a", "--all", help="Delete all lambda functions", action="store_true")        
         parser_rm.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         parser_rm.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
         
