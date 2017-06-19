@@ -186,7 +186,7 @@ class Scar(object):
             log_type = 'None' 
         # Modify memory if necessary
         if args.memory:
-            aws_client.update_function_timeout(args.name, args.memory)
+            aws_client.update_function_memory(args.name, args.memory)
         # Modify timeout if necessary            
         if args.time:
             aws_client.update_function_timeout(args.name, args.time)
@@ -216,10 +216,14 @@ class Scar(object):
         response = StringUtils().parse_payload(response)
         if "FunctionError" in response:
             if "Task timed out" in response['Payload']:
+                # Find the timeout time
+                message = StringUtils().find_expression('(Task timed out .* seconds)', str(response['Payload']))
+                # Modify the error message
+                message = message.replace("Task", "Function '%s'" % args.name)
                 if args.verbose or args.json:
-                    StringUtils().print_json({"Error" : "Funtion'%s' timed out." % args.name})               
+                    StringUtils().print_json({"Error" : message})               
                 else:
-                    print ("Error: Function '%s' timed out." % args.name)
+                    print ("Error: %s" % message)
             else:
                 print ("Error in function response: %s" % response['Payload'])
             sys.exit(1)
@@ -261,24 +265,6 @@ class Scar(object):
         else:
             aws_client.delete_resources(args.name, args.json, args.verbose)
         
-    def check_memory(self, lambda_memory):
-        """ Check if the memory introduced by the user is correct.
-        If the memory is not specified in 64mb increments, 
-        transforms the request to the next available increment."""
-        if (lambda_memory < 128) or (lambda_memory > 1536):
-            raise Exception('Incorrect memory size specified')       
-        else:
-            res = lambda_memory % 64
-            if (res == 0):
-                return lambda_memory
-            else:
-                return lambda_memory - res + 64
-
-    def check_time(self, lambda_time):
-        if (lambda_time <= 0) or (lambda_time > 300):
-            raise Exception('Incorrect time specified')
-        return lambda_time
-    
     def create_zip_file(self, file_name, script_path=None):
         # Set generic lambda function name
         function_name = file_name + '.py'
@@ -458,6 +444,24 @@ class Config(object):
         Config.lambda_description = scar_config.get('lambda_description', fallback=Config.lambda_description)
         
 class AwsClient(object):
+    
+    def check_memory(self, lambda_memory):
+        """ Check if the memory introduced by the user is correct.
+        If the memory is not specified in 64mb increments, 
+        transforms the request to the next available increment."""
+        if (lambda_memory < 128) or (lambda_memory > 1536):
+            raise Exception('Incorrect memory size specified')       
+        else:
+            res = lambda_memory % 64
+            if (res == 0):
+                return lambda_memory
+            else:
+                return lambda_memory - res + 64
+
+    def check_time(self, lambda_time):
+        if (lambda_time <= 0) or (lambda_time > 300):
+            raise Exception('Incorrect time specified')
+        return lambda_time    
     
     def get_user_name(self):
         try:

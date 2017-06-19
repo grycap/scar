@@ -23,8 +23,6 @@ import traceback
 print('Loading function')
 
 udocker_bin = "/tmp/udocker/udocker"
-lambda_output = "/tmp/lambda-stdout.txt"
-script = "/tmp/udocker/script.sh"
 container_name = 'lambda_cont'
 init_script_path = "/tmp/udocker/init_script.sh"
 
@@ -120,12 +118,13 @@ def post_process(event, context):
     request_id = context.aws_request_id
     if(Utils().is_s3_event(event)):
         S3_Bucket().upload_output(event['Records'][0]['s3'], request_id)
-        call(["rm", "-rf", "/tmp/%s/output/" % request_id])
+    # Delete all the temporal folders created for the invocation
+    call(["rm", "-rf", "/tmp/%s" % request_id])
                 
 def create_command(event, context):
     # Create container execution command
     command = [udocker_bin, "--quiet", "run"]
-    container_dirs = ["-v", "/tmp", "-v", "/dev", "-v", "/proc", "-v", "/etc/hosts", "--nosysdirs"]
+    container_dirs = ["-v", "/tmp/%s" % context.aws_request_id, "-v", "/dev", "-v", "/proc", "-v", "/etc/hosts", "--nosysdirs"]
     container_vars = ["--env", "REQUEST_ID=%s" % context.aws_request_id]
     command.extend(container_dirs)
     command.extend(container_vars)
@@ -139,6 +138,7 @@ def create_command(event, context):
     script_exec = check_alpine_image()
 
     # Container running script
+    script = "/tmp/%s/script.sh" % context.aws_request_id
     if ('script' in event) and event['script']:
         create_file(event['script'], script)
         command.extend(["--entrypoint=%s %s" % (script_exec, script), container_name])
@@ -163,9 +163,10 @@ def lambda_handler(event, context):
         # Create container execution command
         command = create_command(event, context)
         print ("Udocker command: %s" % command)
-        # Execute script
+        
+        # Execute container
+        lambda_output = "/tmp/%s/lambda-stdout.txt" % context.aws_request_id
         call(command, stderr=STDOUT, stdout=open(lambda_output, "w"))
-
         stdout += check_output(["cat", lambda_output]).decode("utf-8")
         
         post_process(event, context)
