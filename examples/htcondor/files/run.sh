@@ -118,22 +118,6 @@ if [ -n "$USER" -a -n "$PASSWORD" -a -n "$SSH_ACCESS" ]; then
   mkdir /home/$USER && useradd $USER -d /home/$USER -s /bin/bash && echo "$USER:$PASSWORD" | chpasswd && chown -R $USER. /home/$USER/
 fi;
 
-if [ -n "$SSH_ACCESS" ]; then
-
-  cat >> /etc/supervisor/conf.d/supervisord.conf << EOL
-[program:sshd]
-command=/usr/sbin/sshd -D
-autostart=true
-stdout_logfile=/var/log/ssh/sshd.stdout.log
-stdout_logfile_maxbytes=1MB
-stdout_logfile_backups=10
-stderr_logfile=/var/log/ssh/sshd.stderr.log
-stderr_logfile_maxbytes=1MB
-stderr_logfile_backups=10
-EOL
-
-fi;
-
 # Prepare external config
 if [ -n "$CONFIG_MODE" ]; then
   wget -O - "$CONFIG_URL" > /etc/condor/condor_config
@@ -145,10 +129,6 @@ sed -i \
   -e 's/@ROLE_DAEMONS@/'"$ROLE_DAEMONS"'/' \
   /etc/condor/condor_config
 
-# Prepare right HTCondor healthchecks
-sed -i \
-  -e 's/@ROLE@/'"$HEALTH_CHECK"'/' \
-  /etc/supervisor/conf.d/supervisord.conf
 
 # Prepare HTCondor to CCB connection
 if [ -n "$CCB" -a -n "$PRIVATE_NETWORK_NAME" -a -n "$SHARED_SECRET" ]; then
@@ -165,4 +145,4 @@ _EOF_
   condor_store_cred -f /etc/condor/condorSharedSecret -p $SHARED_SECRET
 fi
 
-exec /usr/local/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+exec /usr/bin/supervisord -c /etc/supervisord.conf

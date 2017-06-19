@@ -87,4 +87,4 @@ CONDOR_HOST = @CONDOR_HOST@
 DAEMON_LIST = MASTER, @ROLE_DAEMONS@
 DISCARD_SESSION_KEYRING_ON_STARTUP = False
 
-# Condor Connection Brocker (CCB) - if present
+# Condor Connection Broker (CCB) - if present
