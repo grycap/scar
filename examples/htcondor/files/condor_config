@@ -39,7 +39,7 @@ LOCAL_CONFIG_DIR = /etc/condor/config.d
 #LOCAL_CONFIG_DIR_EXCLUDE_REGEXP = ^((\..*)|(.*~)|(#.*)|(.*\.rpmsave)|(.*\.rpmnew))$
 
 ##  Use a host-based security policy. By default CONDOR_HOST and the local machine will be allowed
-use SECURITY : HOST_BASED
+#use SECURITY : HOST_BASED
 ##  To expand your condor pool beyond a single host, set ALLOW_WRITE to match all of the hosts
 ALLOW_READ = *
 ALLOW_WRITE = *
