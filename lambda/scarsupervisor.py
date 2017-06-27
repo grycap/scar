@@ -211,8 +211,9 @@ class S3_Bucket():
         file_key = s3_record['object']['key']
         download_path = '/tmp/%s/%s' % (request_id, file_key)
         print ("Downloading item from bucket %s with key %s" % (bucket_name, file_key))
-        os.makedirs(os.path.dirname(download_path), exist_ok=True)        
-        self.get_s3_client().download_file(bucket_name, file_key, download_path)
+        os.makedirs(os.path.dirname(download_path), exist_ok=True)       
+        with open(download_path, 'wb') as data:
+            self.get_s3_client().download_fileobj(bucket_name, file_key, data)
         return download_path
 
     def upload_output(self, s3_record, request_id):
