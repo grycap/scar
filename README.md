@@ -23,24 +23,6 @@ SCAR can optionally define a trigger so that the Lambda function is executed whe
   * Those based on Alpine Linux (due to the use of MUSL instead of GLIBC, which is not supported by Fakechroot).
 * Installation of packages in the user-defined script (i.e. using `yum`, `apt-get`, etc.) is currently not possible.
 
-## Configuration
-
-You need:
-
-* Valid AWS [IAM](https://aws.amazon.com/iam/) user credentials (Access Key and Secret Key ID) with permissions to deploy Lambda functions.
-
-* An IAM Role for the Lambda function to be authorized to access other AWS services during its execution.
-
-### IAM User Credentials
-
- The credentials have to be configured in your ```$HOME/.aws/credentials``` file (as when using [AWS CLI](https://aws.amazon.com/cli/)). Check the AWS CLI documentation, specially section ["Configuration and Credential Files"](http://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html).
-
-### IAM Role
-
-The Lambda functions require a role in order to acquire the required permissions to access the different AWS services during its execution.
-
-There is a sample policy in the [lambda-execute-role.json](docs/aws/lambda-execute-role.json) file. This role should be created beforehand. There is further documentation on this topic in the ["Creating IAM roles"](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create.html) section of the AWS documentation.
-
 ## Installation
 
 1. Clone the GitHub repository:
@@ -66,6 +48,45 @@ sudo pip install -r requirements.txt
 cd scar
 alias scar=`pwd`/scar.py
 ```
+
+## Configuration
+
+You need:
+
+* Valid AWS [IAM](https://aws.amazon.com/iam/) user credentials (Access Key and Secret Key ID) with permissions to deploy Lambda functions.
+
+* An IAM Role for the Lambda function to be authorized to access other AWS services during its execution.
+
+### IAM User Credentials
+
+ The credentials have to be configured in your ```$HOME/.aws/credentials``` file (as when using [AWS CLI](https://aws.amazon.com/cli/)). Check the AWS CLI documentation, specially section ["Configuration and Credential Files"](http://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html).
+
+### IAM Role
+
+The Lambda functions require an [IAM Role](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html) in order to acquire the required permissions to access the different AWS services during its execution.
+
+There is a sample policy in the [lambda-execute-role.json](docs/aws/lambda-execute-role.json) file. This IAM Role should be created beforehand. There is further documentation on this topic in the ["Creating IAM roles"](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create.html) section of the AWS documentation.
+
+### Configuration file
+
+Create the file `~/.scar/scar.cfg` with the following structure (sample values are included, please customize it to your environment):
+
+```sh
+[scar]
+lambda_description = SCAR Lambda function
+lambda_memory = 256
+lambda_time = 200
+lambda_region = us-east-1
+lambda_role = arn:aws:iam::974349055189:role/lambda-s3-execution-role
+```
+
+The values represent:
+
+* lambda_description: Default description of the AWS Lambda function (can be customized with the `-d` parameter in `scar init`)
+* lambda_memory: Default maximum memory allocated to the AWS Lambda function (can be customized with the `-m` parameter in `scar init`)
+* lambda_time: Default maximum execution time of the AWS Lambda function (can be customized with the `-t` parameter in `scar init`).
+* lambda_region: The [AWS region](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html) on which the AWS Lambda function will be created
+* lambda_role: The [ARN](http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html) of the IAM Role that you just created in the previous section
 
 ## Basic Usage
 
