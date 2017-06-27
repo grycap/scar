@@ -24,7 +24,6 @@ print('Loading function')
 
 udocker_bin = "/tmp/udocker/udocker"
 container_name = 'lambda_cont'
-init_script_path = "/tmp/udocker/init_script.sh"
 
 def prepare_environment(aws_request_id):
     # Install udocker in /tmp
@@ -34,7 +33,7 @@ def prepare_environment(aws_request_id):
     os.makedirs("/tmp/home/.udocker", exist_ok=True)    
     os.makedirs("/tmp/%s/output" % aws_request_id, exist_ok=True)  
     if ('INIT_SCRIPT_PATH' in os.environ) and os.environ['INIT_SCRIPT_PATH']:
-        call(["cp", "/var/task/init_script.sh", init_script_path])
+        call(["cp", "/var/task/init_script.sh", "/tmp/%s/init_script.sh" % aws_request_id])
 
 def prepare_container(container_image):
     # Check if the container is already downloaded
@@ -58,7 +57,6 @@ def prepare_container(container_image):
 def check_alpine_image():
     home = os.environ['UDOCKER_DIR']
     musl_path = "%s/containers/%s/ROOT/lib/libc.musl-x86_64.so.1" % (home, container_name)
-    print("PATH: %s" % musl_path)
     if os.path.isfile(musl_path):
         print("Alpine image found. Using busybox to execute scripts.")
         return "/bin/busybox sh"
@@ -149,7 +147,7 @@ def create_command(event, context):
         command.extend(args)
     # Script to be executed every time (if defined)
     elif ('INIT_SCRIPT_PATH' in os.environ) and os.environ['INIT_SCRIPT_PATH']:
-        command.extend(["--entrypoint=%s %s" % (script_exec, init_script_path), container_name])
+        command.extend(["--entrypoint=%s %s" % (script_exec, "/tmp/%s/init_script.sh" % context.aws_request_id), container_name])
     # Only container
     else:
         command.append(container_name)
@@ -162,7 +160,7 @@ def lambda_handler(event, context):
         pre_process(event, context)
         # Create container execution command
         command = create_command(event, context)
-        print ("Udocker command: %s" % command)
+        # print ("Udocker command: %s" % command)
         
         # Execute container
         lambda_output = "/tmp/%s/lambda-stdout.txt" % context.aws_request_id

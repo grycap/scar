@@ -286,22 +286,55 @@ class Scar(object):
         with open(Config.zif_file_path, 'rb') as f:
             return f.read()
 
+    def get_log_streams(self, log_group_name):
+        log_streams = []
+        response = self.get_aws_client().get_log().describe_log_streams(logGroupName=log_group_name)
+        for log_stream in response['logStreams']:
+            log_streams.append(log_stream['logStreamName'])
+            
+        while(('nextToken' in response) and response['nextToken']):
+            response = self.get_aws_client().get_log().describe_log_streams(logGroupName=log_group_name,
+                                                                            nextToken=response['nextToken'])
+            for log_stream in response['logStreams']:
+                log_streams.append(log_stream['logStreamName'])
+        return log_streams
+
     def log(self, args):
         try:
-            response = self.get_aws_client().get_log().get_log_events(
-                logGroupName=args.log_group_name,
-                logStreamName=args.log_stream_name,
-                startFromHead=True
-            )
-            full_msg = ""
-            for event in response['events']:
-                full_msg += event['message']
+            log_group_name = "/aws/lambda/%s" % args.name
+            full_msg = ""            
+            if args.log_stream_name:   
+                response = self.get_aws_client().get_log().filter_log_events(logGroupName=log_group_name)
+                data = []
+
+                for event in response['events']:
+                    data.append((event['message'], event['timestamp']))
+           
+                while(('nextToken' in response) and response['nextToken']):
+                    response = self.get_aws_client().get_log().filter_log_events(logGroupName=log_group_name, 
+                                                                                 nextToken=response['nextToken'])
+                    for event in response['events']:
+                        data.append((event['message'], event['timestamp']))
+                
+                sorted_data = sorted(data, key=lambda time: time[1])
+                for sdata in sorted_data:
+                    full_msg += sdata[0]
+            
+            else:
+                response = self.get_aws_client().get_log().get_log_events(
+                    logGroupName=log_group_name,
+                    logStreamName=args.log_stream_name,
+                    startFromHead=True
+                )
+                for event in response['events']:
+                    full_msg += event['message']
+
             response['completeMessage'] = full_msg
             if args.request_id:
                 print (self.parse_logs(full_msg, args.request_id))
             else:
                 print (full_msg)
-
+                
         except ClientError as ce:
             print(ce)
 
@@ -325,7 +358,7 @@ class Scar(object):
 class StringUtils(object):
 
     def create_image_based_name(self, image_id):
-        parsed_id = image_id.replace('/', ',,,').replace(':', ',,,').split(',,,')
+        parsed_id = image_id.replace('/', ',,,').replace(':', ',,,').replace('.', ',,,').split(',,,')
         name = 'scar-%s' % '-'.join(parsed_id)
         i = 1
         while AwsClient().find_function_name(name):
@@ -781,11 +814,12 @@ class CmdParser(object):
 
         # 'log' command
         parser_log = subparsers.add_parser('log', help="Show the logs for the lambda function")
-        parser_log.set_defaults(func=scar.log)
-        parser_log.add_argument("log_group_name", help="The name of the log group.")
-        parser_log.add_argument("log_stream_name", help="The name of the log stream.")
-        parser_log.add_argument("-ri", "--request_id", help="Id of the request that generated the log.")
-
+        parser_log.set_defaults(func=scar.log)        
+        parser_log.add_argument("name", help="Lambda function name")
+        parser_log.add_argument("-a", "--all", help="Return all the log streams", action="store_true")         
+        parser_log.add_argument("-ls", "--log_stream_name", help="Return the output for the log stream specified.")
+        parser_log.add_argument("-ri", "--request_id", help="Return the output for the request id specified.")
+        
     def execute(self):
         Config().check_config_file()
         """Command parsing and selection"""
