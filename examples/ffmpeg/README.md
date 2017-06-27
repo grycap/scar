@@ -17,17 +17,17 @@ In this example, the goal is that videos uploaded to an Amazon S3 bucket are aut
 A sample script to be executed inside the Docker container running on AWS Lambda is shown in the file [grayify-video.sh](grayify-video.sh). This script is agnostic to the Lambda function and it assumes that:
 
 1. The user will upload the video into the `input` folder of an Amazon S3 bucket.
-2. The input video file will automatically be made available in  `tmp/$REQUEST_ID/input`.
+2. The input video file will automatically be made available in `tmp/$REQUEST_ID/input`, as specified by the `$SCAR_INPUT_FILE` environment variable.
 3. The script will convert to video to grayscale.
-4. The output file will be saved in `/tmp/$REQUEST_ID/output`.
-5. The file will be automatically uploaded to the `output` folder of the Amazon S3 bucket and deleted from the underlying storage.
+4. The output video file will be saved in `/tmp/$REQUEST_ID/output`.
+5. The video file will be automatically uploaded to the `output` folder of the Amazon S3 bucket and deleted from the underlying storage.
 
 ## Create the Lambda function
 
 This example assumes that the Amazon S3 bucket is `scar-test`. Since there is a flat namespace, please change this name for your tests.
 
 ```sh
-scar init -s grayify-video.sh -n lambda-ffmpeg-01 -es scar-test sameersbn/ffmpeg
+scar init -s examples/ffmpeg/grayify-video.sh -n lambda-ffmpeg -es scar-test sameersbn/ffmpeg
 ```
 
 ## Test the Lambda function
@@ -38,11 +38,11 @@ Upload a video to the S3 bucket. For these examples we are using sample videos f
 aws s3 cp s3://scar-data/sdha2010/seq1.avi s3://scar-test/input/seq1.avi
 ```
 
-The converted video to grayscale will be available in `s3://scar-test/output/seq2.avi`.
+The converted video to grayscale will be available in `s3://scar-test/output/seq2.avi`. You can upload multiple videos to S3. Multiple concurrent Lambda invocations of the same function will process in parallel the video files. Notice that the first invocation(s) will take considerably longer until caching of the Docker container is performed.
 
 ## Limitations
 
 Those of AWS Lambda:
 
 * Maximum execution time of 5 minutes.
-* Maximum temporary storage space in /tmp of 512 MB.
+* Maximum temporary storage space in /tmp of 512 MB (which may be possible shared across different executions of the same Lambda function).
