@@ -42,7 +42,7 @@ class Supervisor():
         # Check if the container is already downloaded
         cmd_out = check_output([Supervisor.udocker_bin, "images"]).decode("utf-8")
         if container_image not in cmd_out:
-            print("SCAR: Pulling container '%s' from dockerhub" % container_image)
+            print("SCAR: Pulling container '%s' from Docker Hub" % container_image)
             # If the container doesn't exist
             call([Supervisor.udocker_bin, "pull", container_image])
         else:
@@ -171,7 +171,7 @@ def lambda_handler(event, context):
         
         # Execute container
         lambda_output = "/tmp/%s/lambda-stdout.txt" % context.aws_request_id
-        call(command, stderr=STDOUT, stdout=open(lambda_output, "w"))
+        call(command, stderr=STDOUT, stdout=open(lambda_output, "w"))        
         stdout += check_output(["cat", lambda_output]).decode("utf-8")
         
         supervisor.post_process(event, context)
@@ -214,6 +214,7 @@ class S3_Bucket():
         os.makedirs(os.path.dirname(download_path), exist_ok=True)       
         with open(download_path, 'wb') as data:
             self.get_s3_client().download_fileobj(bucket_name, file_key, data)
+        print ("Successfully downloaded item from bucket %s with key %s" % (bucket_name, file_key))    
         return download_path
 
     def upload_output(self, s3_record, request_id):
