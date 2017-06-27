@@ -358,7 +358,7 @@ class Scar(object):
 class StringUtils(object):
 
     def create_image_based_name(self, image_id):
-        parsed_id = image_id.replace('/', ',,,').replace(':', ',,,').split(',,,')
+        parsed_id = image_id.replace('/', ',,,').replace(':', ',,,').replace('.', ',,,').split(',,,')
         name = 'scar-%s' % '-'.join(parsed_id)
         i = 1
         while AwsClient().find_function_name(name):
