@@ -11,7 +11,7 @@ docker run --rm -v /tmp:/tmp grycap/imagemagick convert
 
 ## Usage in AWS Lambda via SCAR
 
-You can run ImageMagick in AWS Lambda via SCAR to automatically perform image manipulation (for example to convert to grayscale) on files uploaded to the `input` folder of the `scar-test` S3 bucket by using the following procedure:
+You can run ImageMagick in AWS Lambda via SCAR to automatically perform image manipulation (for example to convert to grayscale) on images uploaded to the `input` folder of the `scar-test` S3 bucket by using the following procedure:
 
 1. Create the Lambda function
 
@@ -27,3 +27,5 @@ aws s3 cp /tmp/homer.png s3://scar-test/input/homer.png
 The converted image to grayscale will be available in `s3://scar-test/output/homer.png`
 
 The first invocation will take considerable longer time than most of the subsequent invocations since the container will be cached.
+
+You can upload as many images as you want. Multiple concurrent Lambda invocations will be performed to transform in parallel the images.
