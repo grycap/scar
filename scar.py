@@ -303,7 +303,15 @@ class Scar(object):
         try:
             log_group_name = "/aws/lambda/%s" % args.name
             full_msg = ""            
-            if args.log_stream_name:   
+            if args.log_stream_name:
+                response = self.get_aws_client().get_log().get_log_events(
+                    logGroupName=log_group_name,
+                    logStreamName=args.log_stream_name,
+                    startFromHead=True
+                )
+                for event in response['events']:
+                    full_msg += event['message']
+            else:
                 response = self.get_aws_client().get_log().filter_log_events(logGroupName=log_group_name)
                 data = []
 
@@ -319,15 +327,6 @@ class Scar(object):
                 sorted_data = sorted(data, key=lambda time: time[1])
                 for sdata in sorted_data:
                     full_msg += sdata[0]
-            
-            else:
-                response = self.get_aws_client().get_log().get_log_events(
-                    logGroupName=log_group_name,
-                    logStreamName=args.log_stream_name,
-                    startFromHead=True
-                )
-                for event in response['events']:
-                    full_msg += event['message']
 
             response['completeMessage'] = full_msg
             if args.request_id:
@@ -819,7 +818,6 @@ class CmdParser(object):
         parser_log = subparsers.add_parser('log', help="Show the logs for the lambda function")
         parser_log.set_defaults(func=scar.log)        
         parser_log.add_argument("name", help="Lambda function name")
-        parser_log.add_argument("-a", "--all", help="Return all the log streams", action="store_true")         
         parser_log.add_argument("-ls", "--log_stream_name", help="Return the output for the log stream specified.")
         parser_log.add_argument("-ri", "--request_id", help="Return the output for the request id specified.")
         
