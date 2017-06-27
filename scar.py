@@ -420,10 +420,10 @@ class StringUtils(object):
 
 class Config(object):
 
-    lambda_name = "scar-%s" % str(uuid.uuid4())
+    lambda_name = ""
     lambda_runtime = "python3.6"
     lambda_handler = lambda_name + ".lambda_handler"
-    lambda_role = "arn:aws:iam::974349055189:role/lambda-s3-execution-role"
+    lambda_role = ""
     lambda_region = 'us-east-1'
     lambda_env_variables = {"Variables" : {"UDOCKER_DIR":"/tmp/home/.udocker",
                                            "UDOCKER_TARBALL":"/var/task/udocker-1.1.0-RC2.tar.gz"}}
@@ -432,7 +432,7 @@ class Config(object):
     lambda_description = "Automatically generated lambda function"
     lambda_tags = { 'createdby' : 'scar' }
 
-    version = "v0.0.1"
+    version = "v1.0.0"
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -442,11 +442,11 @@ class Config(object):
 
     def create_config_file(self, file_dir):
 
-        self.config['scar'] = {'lambda_name' : "scar_function",
-                          'lambda_description' : "Automatically generated lambda function",
+        self.config['scar'] = {'lambda_description' : "Automatically generated lambda function",
                           'lambda_memory' : Config.lambda_memory,
                           'lambda_time' : Config.lambda_time,
-                          'lambda_region' : 'us-east-1'}
+                          'lambda_region' : 'us-east-1',
+                          'lambda_role' : ''}
         with open(file_dir + "/scar.cfg", "w") as configfile:
             self.config.write(configfile)
 
@@ -460,6 +460,8 @@ class Config(object):
                 self.parse_config_file_values()
             else:
                 self.create_config_file(scar_dir)
+                print ("Config file ~/.scar/scar.cfg created.\nPlease, set first a valid lambda role to be used.")
+                sys.exit(1)
         else:
             # Create scar dir
             call(["mkdir", "-p", scar_dir])
@@ -467,10 +469,10 @@ class Config(object):
 
     def parse_config_file_values(self):
         scar_config = Config.config['scar']
-        if 'lambda_name' in scar_config:
-            self.lambda_name = scar_config.get('lambda_name')
-            self.lambda_handler = Config.lambda_name + ".lambda_handler"
         Config.lambda_role = scar_config.get('lambda_role', fallback=Config.lambda_role)
+        if not Config.lambda_role or Config.lambda_role == "":
+            print ("Please, specify first a lambda role in the ~/.scar/scar.cfg file.")
+            sys.exit(1)         
         Config.lambda_region = scar_config.get('lambda_region', fallback=Config.lambda_region)
         Config.lambda_memory = scar_config.getint('lambda_memory', fallback=Config.lambda_memory)
         Config.lambda_time = scar_config.getint('lambda_time', fallback=Config.lambda_time)
@@ -783,6 +785,7 @@ class CmdParser(object):
         parser_init.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
         parser_init.add_argument("-s", "--script", help="Path to the input file passed to the function")
         parser_init.add_argument("-es", "--event_source", help="Name specifying the source of the events that will launch the lambda function. Only supporting buckets right now.")
+        parser_init.add_argument("-lr", "--lambda-role", help="Lambda role used in the management of the functions")
 
         # 'ls' command
         parser_ls = subparsers.add_parser('ls', help="List lambda functions")
