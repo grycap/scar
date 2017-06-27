@@ -17,20 +17,16 @@
 
 #
 # 1. An image uploaded to the input folder of the S3 bucket will be made available 
-# for the container in /tmp/$REQUEST_ID/input 
+# for the container in /tmp/$REQUEST_ID/input. The path to the file is in $SCAR_INPUT_FILE
 # 2. The image will be converted to grayscale using ImageMagick
-# 3. The output image will be stored /tmp/$REQUEST_ID/output, and will be automatically uploaded to the output 
-# folder of the S3 bucket.
-#
+# 3. The output image will be stored /tmp/$REQUEST_ID/output, and will be
+#    automatically uploaded by the Lambda function to the output folder of the S3 bucket.
+#    
 
-INPUT_DIR="/tmp/$REQUEST_ID/input"
 OUTPUT_DIR="/tmp/$REQUEST_ID/output"
 
-echo "SCRIPT: Creating output directory: $OUTPUT_DIR" 
-mkdir -p $OUTPUT_DIR
-echo "SCRIPT: Invoked Image Grayifier. File available in $INPUT_DIR"
-INPUT_FILE = $INPUT_DIR/*
-FILENAME=`basename $INPUT_FILE`
-OUTPUT_FILE=$OUTPUT_DIR/$FILENAME
-echo "SCRIPT: Converting input image file $INPUT_FILE to grayscale to output file $OUTPUT_FILE"
-convert $INPUT_FILE -type Grayscale $OUTPUT_FILE
+echo "SCRIPT: Invoked Image Grayifier. File available in $SCAR_INPUT_FILE"
+FILE_NAME=`basename $SCAR_INPUT_FILE`
+OUTPUT_FILE=$OUTPUT_DIR/$FILE_NAME
+echo "SCRIPT: Converting input image file $SCAR_INPUT_FILE to grayscale to output file $OUTPUT_FILE"
+convert $SCAR_INPUT_FILE -type Grayscale $OUTPUT_FILE
