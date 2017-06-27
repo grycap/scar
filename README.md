@@ -233,13 +233,13 @@ The following workflow summarises the programming model, which heavily uses the 
 
 1. The Amazon S3 bucket `bucket-name` will be created if it does not exist, and the `input` and `output` folders inside.
 1. The Lambda function is triggered upon uploading a file into the `input` folder of the `bucket-name` bucket.
-1. The Lambda function retrieves the file from the Amazon S3 bucket and makes it available for the shell-script running inside the container in the `/tmp/$REQUEST_ID/input` folder.
+1. The Lambda function retrieves the file from the Amazon S3 bucket and makes it available for the shell-script running inside the container in the `/tmp/$REQUEST_ID/input` folder. The `$SCAR_INPUT_FILE` environment variable will point to the location of the input file.
 1. The shell-script processes the input file and produces the output (either one or multiple files) in the folder `/tmp/$REQUEST_ID/output`.
 1. The output files are automatically uploaded by the Lambda function into the `output` folder of `bucket-name`.
 
 Many instances of the Lambda function may run concurrently and independently, depending on the files to be processed in the S3 bucket. Initial executions of the Lambda may require retrieving the Docker image from Docker Hub but this will be cached for subsequent invocations, thus speeding up the execution process.
 
-For further information, an example of such application is included in the [examples/ffmpeg](examples/ffmpeg) folder, in order to run the [FFmpeg](https://ffmpeg.org/) video codification tool on AWS Lambda.
+For further information, examples of such application are included in the [examples/ffmpeg](examples/ffmpeg) folder, in order to run the [FFmpeg](https://ffmpeg.org/) video codification tool, and in the [examples/imagemagick](examples/imagemagick), in order to run the [ImageMagick](https://www.imagemagick.org) image manipulation tool, both on AWS Lambda.
 
 ### Local Testing of the Docker images via udocker
 
