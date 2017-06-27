@@ -1,7 +1,7 @@
 #! /usr/bin/python
 
 # SCAR - Serverless Container-aware ARchitectures
-# Copyright (C) GRyCAP - I3M - UPV 
+# Copyright (C) GRyCAP - I3M - UPV
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ class Scar(object):
     These methods correspond directly to the commands that can
     be invoked via the command line interface.
     """
-    
+
     def init(self, args):
         # Set lambda name
         if not args.name:
@@ -48,10 +48,10 @@ class Scar(object):
                 StringUtils().print_json({"Error" : "Function name '%s' is not valid." % Config.lambda_name})
             else:
                 print ("Error: Function name '%s' is not valid." % Config.lambda_name)
-            sys.exit(1)         
+            sys.exit(1)
         aws_client = self.get_aws_client()
         # Check if function exists
-        aws_client.check_function_name_exists(Config.lambda_name, (True if args.verbose or args.json else False))       
+        aws_client.check_function_name_exists(Config.lambda_name, (True if args.verbose or args.json else False))
         # Set the rest of the parameters
         Config.lambda_handler = Config.lambda_name + ".lambda_handler"
         if args.script:
@@ -60,19 +60,19 @@ class Scar(object):
         else:
             Config.lambda_zip_file = {"ZipFile": self.create_zip_file(Config.lambda_name)}
         if args.memory:
-            Config.lambda_memory = self.check_memory(args.memory)
+            Config.lambda_memory = aws_client.check_memory(args.memory)
         if args.time:
-            Config.lambda_time = self.check_time(args.time)
+            Config.lambda_time = aws_client.check_time(args.time)
         if args.description:
-            Config.lambda_description = args.description  
+            Config.lambda_description = args.description
         if args.image_id:
             Config.lambda_env_variables['Variables']['IMAGE_ID'] = args.image_id
-        # Modify environment vars if necessary   
+        # Modify environment vars if necessary
         if args.env:
-            StringUtils().parse_environment_variables(args.env)            
+            StringUtils().parse_environment_variables(args.env)
         # Update lambda tags
         Config.lambda_tags['owner'] = aws_client.get_user_name()
-       
+
         # Call the AWS service
         result = Result()
         function_arn = ""
@@ -96,12 +96,12 @@ class Scar(object):
                                                    'MemorySize' : lambda_response['MemorySize'],
                                                    'FunctionName' : lambda_response['FunctionName']})
             result.append_to_plain_text("Function '%s' successfully created." % Config.lambda_name)
-                
+
         except ClientError as ce:
             print ("Error initializing lambda function: %s" % ce)
             sys.exit(1)
-        finally:       
-            # Remove the zip created in the operation   
+        finally:
+            # Remove the zip created in the operation
             os.remove(Config.zif_file_path)
 
         # Create log group
@@ -113,32 +113,32 @@ class Scar(object):
                        'createdby' : 'scar' }
             )
             # Parse results
-            result.append_to_verbose('CloudWatchOuput', cw_response)         
+            result.append_to_verbose('CloudWatchOuput', cw_response)
             result.append_to_json('CloudWatchOutput', {'RequestId' : cw_response['ResponseMetadata']['RequestId'],
                                                        'HTTPStatusCode' : cw_response['ResponseMetadata']['HTTPStatusCode']})
             result.append_to_plain_text("Log group '/aws/lambda/%s' successfully created." % Config.lambda_name)
-            
+
         except ClientError as ce:
             if ce.response['Error']['Code'] == 'ResourceAlreadyExistsException':
-                result.add_warning_message("Using existent log group '%s'" % log_group_name)                
+                result.add_warning_message("Using existent log group '%s'" % log_group_name)
             else:
                 print ("Error creating log groups: %s" % ce)
         # Set retention policy into the log group
-        try:        
+        try:
             aws_client.get_log().put_retention_policy(logGroupName=log_group_name,
-                                                        retentionInDays=30)                
+                                                        retentionInDays=30)
         except ClientError as ce:
             print ("Error setting log retention policy: %s" % ce)
-        
+
         # Add even source to lambda function
         if args.event_source:
             try:
                 aws_client.check_and_create_s3_bucket(args.event_source)
                 aws_client.add_lambda_permissions(args.event_source)
-                aws_client.create_trigger_from_bucket(args.event_source, function_arn)                
+                aws_client.create_trigger_from_bucket(args.event_source, function_arn)
             except ClientError as ce:
-                print ("Error creating the event source: %s" % ce)        
-        
+                print ("Error creating the event source: %s" % ce)
+
         # Show results
         result.print_results(json=args.json, verbose=args.verbose)
 
@@ -158,7 +158,7 @@ class Scar(object):
                             'Image_id': lambda_function['Configuration']['Environment']['Variables']['IMAGE_ID']}
                 functions_full_info.append(lambda_function)
                 functions_parsed_info.append(parsed_function)
-            
+
             result.append_to_verbose('LambdaOutput', functions_full_info)
             result.append_to_json('Functions', functions_parsed_info)
 
@@ -167,13 +167,13 @@ class Scar(object):
                 result.print_verbose_result()
             elif args.json:
                 result.print_json_result()
-            else:  
+            else:
                 result.generate_table(functions_parsed_info)
-                
+
         except ClientError as ce:
             print ("Error listing the resources: %s" % ce)
 
-        
+
     def run(self, args):
         aws_client = self.get_aws_client()
         # Check if function not exists
@@ -183,17 +183,17 @@ class Scar(object):
         log_type = 'Tail'
         if args.async:
             invocation_type = 'Event'
-            log_type = 'None' 
+            log_type = 'None'
         # Modify memory if necessary
         if args.memory:
             aws_client.update_function_memory(args.name, args.memory)
-        # Modify timeout if necessary            
+        # Modify timeout if necessary
         if args.time:
             aws_client.update_function_timeout(args.name, args.time)
-        # Modify environment vars if necessary   
+        # Modify environment vars if necessary
         if args.env:
             aws_client.update_function_env_variables(args.name, args.env)
-            
+
         script = ""
         # Parse the function script
         if args.script:
@@ -201,17 +201,17 @@ class Scar(object):
         # Or parse the container arguments
         elif args.cont_args:
             script = "{ \"cmd_args\" : %s }" % StringUtils().escape_list(args.cont_args)
-            
+
         # Invoke lambda function
         response = {}
-        try: 
+        try:
             response = aws_client.get_lambda().invoke(FunctionName=args.name,
                                                   InvocationType=invocation_type,
                                                   LogType=log_type,
                                                   Payload=script)
         except ClientError as ce:
             print ("Error invoking lambda function: %s" % ce)
-        
+
         # Decode and parse the payload
         response = StringUtils().parse_payload(response)
         if "FunctionError" in response:
@@ -221,22 +221,22 @@ class Scar(object):
                 # Modify the error message
                 message = message.replace("Task", "Function '%s'" % args.name)
                 if args.verbose or args.json:
-                    StringUtils().print_json({"Error" : message})               
+                    StringUtils().print_json({"Error" : message})
                 else:
                     print ("Error: %s" % message)
             else:
                 print ("Error in function response: %s" % response['Payload'])
             sys.exit(1)
-                
-        
-        result = Result()    
+
+
+        result = Result()
         if args.async:
             # Prepare the outputs
             result.append_to_verbose('LambdaOutput', response)
             result.append_to_json('LambdaOutput', {'StatusCode' : response['StatusCode'],
-                                                       'RequestId' : response['ResponseMetadata']['RequestId']})           
+                                                       'RequestId' : response['ResponseMetadata']['RequestId']})
             result.append_to_plain_text("Function '%s' launched correctly" % args.name)
-                
+
         else:
             # Transform the base64 encoded results to something legible
             response = StringUtils().parse_base64_response_values(response)
@@ -248,14 +248,14 @@ class Scar(object):
                                                    'Payload' : response['Payload'],
                                                    'LogGroupName' : response['LogGroupName'],
                                                    'LogStreamName' : response['LogStreamName'],
-                                                   'RequestId' : response['ResponseMetadata']['RequestId']}) 
-            
+                                                   'RequestId' : response['ResponseMetadata']['RequestId']})
+
             result.append_to_plain_text('SCAR: Request Id: %s' % response['ResponseMetadata']['RequestId'])
-            result.append_to_plain_text(response['Payload'])            
-                
+            result.append_to_plain_text(response['Payload'])
+
         # Show results
-        result.print_results(json=args.json, verbose=args.verbose)                
-        
+        result.print_results(json=args.json, verbose=args.verbose)
+
     def rm(self, args):
         aws_client = self.get_aws_client()
         if args.all:
@@ -264,7 +264,7 @@ class Scar(object):
                 aws_client.delete_resources(function['Configuration']['FunctionName'], args.json, args.verbose)
         else:
             aws_client.delete_resources(args.name, args.json, args.verbose)
-        
+
     def create_zip_file(self, file_name, script_path=None):
         # Set generic lambda function name
         function_name = file_name + '.py'
@@ -301,10 +301,10 @@ class Scar(object):
                 print (self.parse_logs(full_msg, args.request_id))
             else:
                 print (full_msg)
-            
+
         except ClientError as ce:
             print(ce)
-        
+
     def parse_logs(self, logs, request_id):
         full_msg = ""
         logging = False
@@ -314,11 +314,11 @@ class Scar(object):
                 full_msg += line + '\n'
                 return full_msg
             if logging:
-                full_msg += line + '\n' 
+                full_msg += line + '\n'
             if line.startswith('START') and request_id in line:
                 full_msg += line + '\n'
                 logging = True
-                
+
     def get_aws_client(self):
         return AwsClient()
 
@@ -345,16 +345,16 @@ class StringUtils(object):
         match = pattern.search(string_to_search)
         if  match :
             return match.group()
-        
+
     def base64_to_utf8(self, value):
         return base64.b64decode(value).decode('utf8')
-    
+
     def escape_list(self, values):
         result = []
         for value in values:
-            result.append(self.escape_string(value)) 
+            result.append(self.escape_string(value))
         return str(result).replace("'", "\"")
-        
+
     def escape_string(self, value):
         value = value.replace("\\", "\\/").replace('\n', '\\n')
         value = value.replace('"', '\\"').replace("\/", "\\/")
@@ -364,9 +364,9 @@ class StringUtils(object):
     def parse_payload(self, value):
         value['Payload'] = value['Payload'].read().decode("utf-8")[1:-1].replace('\\n', '\n')
         return value
-    
+
     def parse_base64_response_values(self, value):
-        value['LogResult'] = self.base64_to_utf8(value['LogResult'])        
+        value['LogResult'] = self.base64_to_utf8(value['LogResult'])
         value['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'] = self.base64_to_utf8(value['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'])
         return value
 
@@ -375,7 +375,7 @@ class StringUtils(object):
         value['LogGroupName'] = parsed_output[1][22:]
         value['LogStreamName'] = parsed_output[2][23:]
         return value
-    
+
     def print_json(self, value):
         print(json.dumps(value))
 
@@ -383,13 +383,13 @@ class StringUtils(object):
         for var in env_vars:
             var_parsed = var.split("=")
             # Add an specific prefix to be able to find the variables defined by the user
-            Config.lambda_env_variables['Variables']['CONT_VAR_' + var_parsed[0]] = var_parsed[1]          
+            Config.lambda_env_variables['Variables']['CONT_VAR_' + var_parsed[0]] = var_parsed[1]
 
 class Config(object):
-    
+
     lambda_name = "scar-%s" % str(uuid.uuid4())
     lambda_runtime = "python3.6"
-    lambda_handler = lambda_name + ".lambda_handler"      
+    lambda_handler = lambda_name + ".lambda_handler"
     lambda_role = "arn:aws:iam::974349055189:role/lambda-s3-execution-role"
     lambda_region = 'us-east-1'
     lambda_env_variables = {"Variables" : {"UDOCKER_DIR":"/tmp/home/.udocker",
@@ -398,17 +398,17 @@ class Config(object):
     lambda_time = 300
     lambda_description = "Automatically generated lambda function"
     lambda_tags = { 'createdby' : 'scar' }
-        
+
     version = "v0.0.1"
-        
+
     dir_path = os.path.dirname(os.path.realpath(__file__))
-        
-    zif_file_path = dir_path + '/function.zip'        
-        
-    config = configparser.ConfigParser()    
-    
+
+    zif_file_path = dir_path + '/function.zip'
+
+    config = configparser.ConfigParser()
+
     def create_config_file(self, file_dir):
-        
+
         self.config['scar'] = {'lambda_name' : "scar_function",
                           'lambda_description' : "Automatically generated lambda function",
                           'lambda_memory' : Config.lambda_memory,
@@ -416,7 +416,7 @@ class Config(object):
                           'lambda_region' : 'us-east-1'}
         with open(file_dir + "/scar.cfg", "w") as configfile:
             self.config.write(configfile)
-    
+
     def check_config_file(self):
         scar_dir = os.path.expanduser("~") + "/.scar"
         # Check if the scar directory exists
@@ -431,7 +431,7 @@ class Config(object):
             # Create scar dir
             call(["mkdir", "-p", scar_dir])
             self.create_config_file(scar_dir)
-    
+
     def parse_config_file_values(self):
         scar_config = Config.config['scar']
         if 'lambda_name' in scar_config:
@@ -442,15 +442,15 @@ class Config(object):
         Config.lambda_memory = scar_config.getint('lambda_memory', fallback=Config.lambda_memory)
         Config.lambda_time = scar_config.getint('lambda_time', fallback=Config.lambda_time)
         Config.lambda_description = scar_config.get('lambda_description', fallback=Config.lambda_description)
-        
+
 class AwsClient(object):
-    
+
     def check_memory(self, lambda_memory):
         """ Check if the memory introduced by the user is correct.
-        If the memory is not specified in 64mb increments, 
+        If the memory is not specified in 64mb increments,
         transforms the request to the next available increment."""
         if (lambda_memory < 128) or (lambda_memory > 1536):
-            raise Exception('Incorrect memory size specified')       
+            raise Exception('Incorrect memory size specified')
         else:
             res = lambda_memory % 64
             if (res == 0):
@@ -461,53 +461,53 @@ class AwsClient(object):
     def check_time(self, lambda_time):
         if (lambda_time <= 0) or (lambda_time > 300):
             raise Exception('Incorrect time specified')
-        return lambda_time    
-    
+        return lambda_time
+
     def get_user_name(self):
         try:
             return self.get_iam().get_user()['User']['UserName']
         except ClientError as ce:
             # If the user doesn't have access rights to IAM
             return StringUtils().find_expression('(?<=user\/)(\S+)', str(ce))
-        
+
     def get_access_key(self):
         session = boto3.Session()
         credentials = session.get_credentials()
         return credentials.access_key
-    
-    def get_boto3_client(self, client_name, region=None): 
+
+    def get_boto3_client(self, client_name, region=None):
         if region is None:
             region = Config.lambda_region
-        return boto3.client(client_name, region_name=region)    
-    
+        return boto3.client(client_name, region_name=region)
+
     def get_lambda(self, region=None):
         return self.get_boto3_client('lambda', region)
-    
+
     def get_log(self, region=None):
         return self.get_boto3_client('logs', region)
-    
+
     def get_iam(self, region=None):
         return self.get_boto3_client('iam', region)
-    
+
     def get_resource_groups_tagging_api(self, region=None):
         return self.get_boto3_client('resourcegroupstaggingapi', region)
-    
+
     def get_s3(self, region=None):
-        return self.get_boto3_client('s3', region)    
-    
+        return self.get_boto3_client('s3', region)
+
     def find_function_name(self, function_name):
         try:
-            paginator = AwsClient().get_lambda().get_paginator('list_functions')  
-            for functions in paginator.paginate():         
+            paginator = AwsClient().get_lambda().get_paginator('list_functions')
+            for functions in paginator.paginate():
                 for lfunction in functions['Functions']:
                     if function_name == lfunction['FunctionName']:
                         return True
             return False
         except ClientError as ce:
             print ("Error listing the lambda functions: %s" % ce)
-            sys.exit(1)  
-    
-    def check_function_name_not_exists(self, function_name, json):     
+            sys.exit(1)
+
+    def check_function_name_not_exists(self, function_name, json):
         if not self.find_function_name(function_name):
             if json:
                 StringUtils().print_json({"Error" : "Function '%s' doesn't exist." % function_name})
@@ -522,16 +522,16 @@ class AwsClient(object):
             else:
                 print ("Error: Function '%s' already exists." % function_name)
             sys.exit(1)
-            
+
     def update_function_timeout(self, function_name, timeout):
-        try:           
+        try:
             self.get_lambda().update_function_configuration(FunctionName=function_name,
                                                                    Timeout=self.check_time(timeout))
         except ClientError as ce:
             print ("Error updating lambda function timeout: %s" % ce)
 
     def update_function_memory(self, function_name, memory):
-        try:           
+        try:
             self.get_lambda().update_function_configuration(FunctionName=function_name,
                                                                    MemorySize=self.check_memory(memory))
         except ClientError as ce:
@@ -539,7 +539,7 @@ class AwsClient(object):
 
     def get_function_environment_variables(self, function_name):
         return self.get_lambda().get_function(FunctionName=function_name)['Configuration']['Environment']
-            
+
     def update_function_env_variables(self, function_name, env_vars):
         try:
             # Retrieve the global variables already defined
@@ -549,9 +549,9 @@ class AwsClient(object):
                                                                     Environment=Config.lambda_env_variables)
         except ClientError as ce:
             print ("Error updating the environment variables of the lambda function: %s" % ce)
-            
+
     def create_trigger_from_bucket(self, bucket_name, function_arn):
-        try:           
+        try:
             self.get_s3().put_bucket_notification_configuration(Bucket=bucket_name,
                                                                  NotificationConfiguration={
                                                                      "LambdaFunctionConfigurations": [
@@ -572,10 +572,10 @@ class AwsClient(object):
                                                                         }
                                                                      ]}
                                                                 )
-                                                                 
+
         except ClientError as ce:
             print ("Error configuring S3 bucket: %s" % ce)
-        
+
     def add_lambda_permissions(self, bucket_name):
         try:
             self.get_lambda().add_permission(FunctionName=Config.lambda_name,
@@ -585,7 +585,7 @@ class AwsClient(object):
                                              SourceArn='arn:aws:s3:::%s' % bucket_name
                                             )
         except ClientError as ce:
-            print ("Error setting lambda permissions: %s" % ce)         
+            print ("Error setting lambda permissions: %s" % ce)
 
     def check_and_create_s3_bucket(self, bucket_name):
         try:
@@ -598,32 +598,32 @@ class AwsClient(object):
             # Add folder structure
             self.add_s3_bucket_folders(bucket_name)
         except ClientError as ce:
-            print ("Error getting the S3 buckets list: %s" % ce) 
+            print ("Error getting the S3 buckets list: %s" % ce)
 
     def create_s3_bucket(self, bucket_name):
         try:
             self.get_s3().create_bucket(ACL='private', Bucket=bucket_name)
         except ClientError as ce:
             print ("Error creating the S3 bucket '%s': %s" % (bucket_name, ce))
-            
+
     def add_s3_bucket_folders(self, bucket_name):
         try:
             self.get_s3().put_object(Bucket=bucket_name, Key="input/")
             self.get_s3().put_object(Bucket=bucket_name, Key="output/")
         except ClientError as ce:
             print ("Error creating the S3 bucket '%s' folders: %s" % (bucket_name, ce))
-            
+
     def get_functions_arn_list(self):
         arn_list = []
         # Creation of a function filter by tags
         client = self.get_resource_groups_tagging_api()
         tag_filters = [ { 'Key': 'owner', 'Values': [ self.get_user_name() ] },
                         { 'Key': 'createdby', 'Values': ['scar'] } ]
-        try:        
+        try:
             response = client.get_resources(TagFilters=tag_filters,
                                                  TagsPerPage=100)
         except ClientError as ce:
-            print ("Error getting function arn by tag: %s" % ce)         
+            print ("Error getting function arn by tag: %s" % ce)
         for function in response['ResourceTagMappingList']:
             arn_list.append(function['ResourceARN'])
         return arn_list
@@ -636,9 +636,9 @@ class AwsClient(object):
             for function_arn in filtered_functions:
                 function_list.append(self.get_lambda().get_function(FunctionName=function_arn))
         except ClientError as ce:
-            print ("Error getting function info by arn: %s" % ce)                
+            print ("Error getting function info by arn: %s" % ce)
         return function_list
-    
+
     def delete_lambda_function(self, function_name, result):
         try:
             # Delete the lambda function
@@ -651,7 +651,7 @@ class AwsClient(object):
             print ("Error deleting the lambda function: %s" % ce)
 
     def delete_cloudwatch_group(self, function_name, result):
-        try:           
+        try:
             # Delete the cloudwatch log group
             log_group_name = '/aws/lambda/%s' % function_name
             cw_response = self.get_log().delete_log_group(logGroupName=log_group_name)
@@ -667,11 +667,11 @@ class AwsClient(object):
 
     def delete_resources(self, function_name, json, verbose):
         result = Result()
-        self.check_function_name_not_exists(function_name, json or verbose)       
+        self.check_function_name_not_exists(function_name, json or verbose)
         self.delete_lambda_function(function_name, result)
         self.delete_cloudwatch_group(function_name, result)
         # Show results
-        result.print_results(json, verbose)        
+        result.print_results(json, verbose)
 
 class Result(object):
 
@@ -679,34 +679,34 @@ class Result(object):
         self.verbose = {}
         self.json = {}
         self.plain_text = ""
-    
+
     def append_to_verbose(self, key, value):
         self.verbose[key] = value
-    
+
     def append_to_json(self, key, value):
         self.json[key] = value
-        
+
     def append_to_plain_text(self, value):
-        self.plain_text += value + "\n"        
-    
+        self.plain_text += value + "\n"
+
     def print_verbose_result(self):
         print(json.dumps(self.verbose))
-        
+
     def print_json_result(self):
         print(json.dumps(self.json))
-        
+
     def print_plain_text_result(self):
-        print(self.plain_text)        
-    
+        print(self.plain_text)
+
     def print_results(self, json=False, verbose=False):
         # Verbose output has precedence against json output
         if verbose:
             self.print_verbose_result()
-        elif json:        
+        elif json:
             self.print_json_result()
         else:
             self.print_plain_text_result()
-    
+
     def generate_table(self, functions_info):
         headers = ['NAME', 'MEMORY', 'TIME', 'IMAGE_ID']
         table = []
@@ -714,34 +714,34 @@ class Result(object):
             table.append([function['Name'],
                           function['Memory'],
                           function['Timeout'],
-                          function['Image_id']])            
+                          function['Image_id']])
         print (tabulate(table, headers))
-        
+
     def add_warning_message(self, message):
         self.append_to_verbose('Warning', message)
         self.append_to_json('Warning', message)
-        self.append_to_plain_text ("Warning: %s" % message)  
-    
+        self.append_to_plain_text ("Warning: %s" % message)
+
 class CmdParser(object):
-    
+
     def __init__(self):
         scar = Scar()
         self.parser = argparse.ArgumentParser(prog="scar",
                                               description="Deploy containers in serverless architectures",
                                               epilog="Run 'scar COMMAND --help' for more information on a command.")
         subparsers = self.parser.add_subparsers(title='Commands')
-        
+
         # Create the parser for the 'version' command
-        self.parser.add_argument('--version', action='version', version='%(prog)s ' + Config.version)        
-                
+        self.parser.add_argument('--version', action='version', version='%(prog)s ' + Config.version)
+
         # 'init' command
         parser_init = subparsers.add_parser('init', help="Create lambda function")
         # Set default function
         parser_init.set_defaults(func=scar.init)
         # Set the positional arguments
-        parser_init.add_argument("image_id", help="Container image id (i.e. centos:7)") 
+        parser_init.add_argument("image_id", help="Container image id (i.e. centos:7)")
         # Set the optional arguments
-        parser_init.add_argument("-d", "--description", help="Lambda function description.")  
+        parser_init.add_argument("-d", "--description", help="Lambda function description.")
         parser_init.add_argument("-e", "--env", action='append', help="Pass environment variable to the container (VAR=val). Can be defined multiple times.")
         parser_init.add_argument("-n", "--name", help="Lambda function name")
         parser_init.add_argument("-m", "--memory", type=int, help="Lambda function memory in megabytes. Range from 128 to 1536 in increments of 64")
@@ -749,14 +749,14 @@ class CmdParser(object):
         parser_init.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         parser_init.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
         parser_init.add_argument("-s", "--script", help="Path to the input file passed to the function")
-        parser_init.add_argument("-es", "--event_source", help="Name specifying the source of the events that will launch the lambda function. Only supporting buckets right now.")                  
-    
+        parser_init.add_argument("-es", "--event_source", help="Name specifying the source of the events that will launch the lambda function. Only supporting buckets right now.")
+
         # 'ls' command
         parser_ls = subparsers.add_parser('ls', help="List lambda functions")
         parser_ls.set_defaults(func=scar.ls)
         parser_ls.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         parser_ls.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
-        
+
         # 'run' command
         parser_run = subparsers.add_parser('run', help="Deploy function")
         parser_run.set_defaults(func=scar.run)
@@ -765,27 +765,27 @@ class CmdParser(object):
         parser_run.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 300.")
         parser_run.add_argument("-e", "--env", action='append', help="Pass environment variable to the container (VAR=val). Can be defined multiple times.")
         parser_run.add_argument("--async", help="Tell Scar to wait or not for the lambda function return", action="store_true")
-        parser_run.add_argument("-s", "--script", nargs='?', type=argparse.FileType('r'), help="Path to the input file passed to the function")        
+        parser_run.add_argument("-s", "--script", nargs='?', type=argparse.FileType('r'), help="Path to the input file passed to the function")
         parser_run.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         parser_run.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
         parser_run.add_argument('cont_args', nargs=argparse.REMAINDER, help="Arguments passed to the container.")
-        
+
         # Create the parser for the 'rm' command
         parser_rm = subparsers.add_parser('rm', help="Delete function")
         parser_rm.set_defaults(func=scar.rm)
         group = parser_rm.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name", help="Lambda function name")
-        group.add_argument("-a", "--all", help="Delete all lambda functions", action="store_true")        
+        group.add_argument("-a", "--all", help="Delete all lambda functions", action="store_true")
         parser_rm.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         parser_rm.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
-        
+
         # 'log' command
         parser_log = subparsers.add_parser('log', help="Show the logs for the lambda function")
         parser_log.set_defaults(func=scar.log)
         parser_log.add_argument("log_group_name", help="The name of the log group.")
         parser_log.add_argument("log_stream_name", help="The name of the log stream.")
         parser_log.add_argument("-ri", "--request_id", help="Id of the request that generated the log.")
-        
+
     def execute(self):
         Config().check_config_file()
         """Command parsing and selection"""
@@ -794,7 +794,7 @@ class CmdParser(object):
             args.func(args)
         except AttributeError as ae:
             print("Error: %s" % ae)
-            print("Use scar -h to see the options available")                    
-        
+            print("Use scar -h to see the options available")
+
 if __name__ == "__main__":
-    CmdParser().execute()        
+    CmdParser().execute()
