@@ -58,7 +58,6 @@ def prepare_container(container_image):
 def check_alpine_image():
     home = os.environ['UDOCKER_DIR']
     musl_path = "%s/containers/%s/ROOT/lib/libc.musl-x86_64.so.1" % (home, container_name)
-    print("PATH: %s" % musl_path)
     if os.path.isfile(musl_path):
         print("Alpine image found. Using busybox to execute scripts.")
         return "/bin/busybox sh"
@@ -162,7 +161,7 @@ def lambda_handler(event, context):
         pre_process(event, context)
         # Create container execution command
         command = create_command(event, context)
-        print ("Udocker command: %s" % command)
+        # print ("Udocker command: %s" % command)
         
         # Execute container
         lambda_output = "/tmp/%s/lambda-stdout.txt" % context.aws_request_id
