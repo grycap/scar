@@ -16,22 +16,17 @@
 # limitations under the License.
 
 #
-# 1. Videos uploaded to the input folder of the S3 bucket will be made available 
-# for the container in /tmp/$REQUEST_ID/input 
-# 2. Videos will be converted using ffmpeg
-# 3. Videos generated in /tmp/$REQUEST_ID/output will be automatically uploaded to the output 
+# 1. The video uploaded to the "input" folder of the S3 bucket will be made available 
+# for the container in /tmp/$REQUEST_ID/input (path indicated in the $SCAR_INPUT_FILE variable)
+# 2. The video will be converted using ffmpeg
+# 3. The output video generated in /tmp/$REQUEST_ID/output will be automatically uploaded to the output 
 # folder of the S3 bucket.
 #
 
-INPUT_DIR="/tmp/$REQUEST_ID/input"
 OUTPUT_DIR="/tmp/$REQUEST_ID/output"
 
-echo "SCRIPT: Invoked Video Grayifier. Files available in $INPUT_DIR"
-echo "SCRIPT: Creating output directory: $OUTPUT_DIR"
-mkdir -p $OUTPUT_DIR
-for INPUT_FILE in $INPUT_DIR/*; do
-   FILENAME=`basename $INPUT_FILE`
-   OUTPUT_FILE=$OUTPUT_DIR/$FILENAME
-  echo "SCRIPT: Converting input video file $INPUT_FILE to grayscale to output file $OUTPUT_FILE"
-  ffmpeg -i $INPUT_FILE -vf format=gray $OUTPUT_FILE
-done
+echo "SCRIPT: Invoked Video Grayifier. File available in $SCAR_INPUT_FILE"
+FILENAME=`basename $SCAR_INPUT_FILE`
+OUTPUT_FILE=$OUTPUT_DIR/$FILENAME
+echo "SCRIPT: Converting input video file $SCAR_INPUT_FILE to grayscale to output file $OUTPUT_FILE"
+ffmpeg -i $SCAR_INPUT_FILE -vf format=gray $OUTPUT_FILE
