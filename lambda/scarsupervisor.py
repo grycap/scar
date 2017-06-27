@@ -42,7 +42,7 @@ class Supervisor():
         # Check if the container is already downloaded
         cmd_out = check_output([Supervisor.udocker_bin, "images"]).decode("utf-8")
         if container_image not in cmd_out:
-            print("SCAR: Pulling container '%s' from dockerhub" % container_image)
+            print("SCAR: Pulling container '%s' from Docker Hub" % container_image)
             # If the container doesn't exist
             call([Supervisor.udocker_bin, "pull", container_image])
         else:
