@@ -656,10 +656,18 @@ class AwsClient(object):
         try:
             response = client.get_resources(TagFilters=tag_filters,
                                                  TagsPerPage=100)
+            for function in response['ResourceTagMappingList']:
+                arn_list.append(function['ResourceARN'])
+            if ('PaginationToken' in response) and (response['PaginationToken']):
+                response = client.get_resources(PaginationToken=response['PaginationToken'],
+                                                TagFilters=tag_filters,
+                                                TagsPerPage=100)
+                for function in response['ResourceTagMappingList']:
+                    arn_list.append(function['ResourceARN'])
+                 
         except ClientError as ce:
             print ("Error getting function arn by tag: %s" % ce)
-        for function in response['ResourceTagMappingList']:
-            arn_list.append(function['ResourceARN'])
+        
         return arn_list
 
     def get_all_functions(self):
