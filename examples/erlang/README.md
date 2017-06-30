@@ -14,7 +14,7 @@ You can run this image in AWS Lambda via [SCAR](https://github.com/grycap/scar) 
 scar init -n scar-grycap-erlang grycap/erlang
 ```
 
-1. Execute the Lambda function with an script to compile and run an Erlang application
+2. Execute the Lambda function with an script to compile and run an Erlang application
 
 ```sh
 scar run -s examples/erlang/erlang-hw.sh scar-grycap-erlang
