@@ -1,3 +1,5 @@
+# Original Dockerfile from https://github.com/c0b/docker-erlang-otp/blob/8128be859f47c39473be9fa2c2ae33af28f74279/20/Dockerfile
+# Slightly adapted by @gmolto for reduced footprint to be run on AWS Lambda via SCAR
 FROM bitnami/minideb:jessie
 
 ENV OTP_VERSION="20.0"
@@ -48,4 +50,4 @@ RUN set -xe \
     && apt-get purge -y --auto-remove $buildDeps $fetchDeps \
     && rm -rf $ERL_TOP /var/lib/apt/lists/*
 
-CMD ["erl"]
+CMD ["/bin/sh","/usr/local/bin/erl"]
