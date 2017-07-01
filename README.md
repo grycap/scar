@@ -1,8 +1,8 @@
 # SCAR - Serverless Container-aware ARchitectures
 
-SCAR is a framework to transparently execute Docker containers in AWS Lambda, in order to run your favourite applications (see examples for [ImageMagick](examples/imagemagick), [FFmpeg](examples/ffmpeg) and [AWS CLI](examples/aws-cli)) and code in virtually any programming language (see an example for [Erlang](examples/erlang)) on AWS Lambda.
+SCAR is a framework to transparently execute Docker containers in AWS Lambda, in order to run applications (see examples for [ImageMagick](examples/imagemagick), [FFmpeg](examples/ffmpeg) and [AWS CLI](examples/aws-cli)) and code in virtually any programming language (see an example for [Erlang](examples/erlang)) on AWS Lambda.
 
-SCAR provides the benefits of AWS Lambda with the execution environment you decide, provided as a Docker image available in Docker Hub. It is probably the easiest, most convenient approach to run generic applications on AWS Lambda, as well as code in your favourite programming language, not only in the programming languages supported by AWS Lambda.
+SCAR provides the benefits of AWS Lambda with the execution environment you decide, provided as a Docker image available in Docker Hub. It is probably the easiest, most convenient approach to run generic applications on AWS Lambda, as well as code in your favourite programming language, not only in those languages supported by AWS Lambda.
 
 SCAR also supports a High Throughput Computing [Programming Model](#programming-model) to create highly-parallel event-driven file-processing serverless applications that execute on customized runtime environments provided by Docker containers run on AWS Lambda.
 
