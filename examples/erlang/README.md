@@ -17,5 +17,6 @@ scar init -n scar-grycap-erlang grycap/erlang
 ```sh
 scar run -s examples/erlang/erlang-hw.sh scar-grycap-erlang
 ```
+The first invocation will take considerably longer than the subsequent ones, where the container will be cached. You can modify the script and perform another `scar run`.
 
 You can also run multiple concurrent invocations of this Lambda function to perform highly-parallel event-driven processing. See the [SCAR Programming Model](https://github.com/grycap/scar/blob/master/README.md#programming-model).
