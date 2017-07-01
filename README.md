@@ -228,7 +228,7 @@ SCAR supports an event-driven programming model suitable for the execution of hi
 The following command:
 
 ```sh
-scar init -s user-defined-script.sh -n lambda-ffmpeg-01 -es bucket-name repo/image:latest
+scar init -s user-defined-script.sh -n lambda-function-name -es bucket-name repo/image:latest
 ```
 
 Creates a Lambda function to execute the shell-script `user-defined-script.sh` inside a Docker container created out of the `repo/image:latest` Docker image stored in Docker Hub.
