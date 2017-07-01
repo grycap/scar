@@ -1,4 +1,3 @@
-
 # Original Dockerfile from https://github.com/c0b/docker-elixir/blob/8f1888ae05506b9ad12e1b97f084a15e7588f442/1.4/slim/Dockerfile
 # Modified by @gmolto for reduced size to be used on AWS Lambda with SCAR
 FROM grycap/erlang
@@ -24,4 +23,4 @@ RUN set -xe \
 	&& apt-get purge -y --auto-remove $buildDeps \
 	&& rm -rf /var/lib/apt/lists/*
 
-CMD ["iex"]
+CMD ["/bin/sh","/usr/local/bin/iex"]
