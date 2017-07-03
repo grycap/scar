@@ -1,10 +1,10 @@
-# Running Erlang in AWS Lambda
+# Running Erlang on AWS Lambda
 
 You can run [Erlang](https://www.erlang.org/) in AWS Lambda via [SCAR](https://github.com/grycap/scar) using the [grycap/erlang](https://hub.docker.com/r/grycap/erlang/) Docker image, based on the [bitnami/minideb:jessie](https://hub.docker.com/r/bitnami/minideb/) one.
 
-## Usage in AWS Lambda via SCAR
+## Usage on AWS Lambda via SCAR
 
-You can run a container out of this image in AWS Lambda via [SCAR](https://github.com/grycap/scar) using the following procedure:
+You can run a container out of this image on AWS Lambda via [SCAR](https://github.com/grycap/scar) using the following procedure:
 
 1. Create the Lambda function
 

@@ -9,5 +9,6 @@ This directory includes different use cases of applications packaged as Docker i
 * [FFmpeg](https://ffmpeg.org/), a tool to transcode and manipulate videos.
 * [ImageMagick](https://www.imagemagick.org), a tool to manipulate images.
 * [MrBayes](http://mrbayes.sourceforge.net/), a scientific application for bayesian inference of Phylogeny.
+* [Theano](http://deeplearning.net/software/theano/), a Python library that allows you to define, optimize, and evaluate mathematical expressions involving multi-dimensional arrays efficiently.
 
 Are you using SCAR for another application? Let us know by creating an issue.
