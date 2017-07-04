@@ -17,7 +17,7 @@ import boto3
 import json
 import os
 import re
-from subprocess import call, check_output, STDOUT
+from subprocess import call, check_output, STDOUT, TimeoutExpired
 import traceback
 
 print('Loading function')
@@ -176,8 +176,10 @@ def lambda_handler(event, context):
         lambda_output = "/tmp/%s/lambda-stdout.txt" % context.aws_request_id
         
         remaining_seconds = context.get_remaining_time_in_millis()/1000 - supervisor.timeout_threshold
-        
-        call(command, timeout=remaining_seconds, stderr=STDOUT, stdout=open(lambda_output, "w"))  
+        try:
+            call(command, timeout=remaining_seconds, stderr=STDOUT, stdout=open(lambda_output, "w"))
+        except TimeoutExpired:
+            print("WARNING: Container timeout")  
               
         stdout += check_output(["cat", lambda_output]).decode("utf-8")
         
