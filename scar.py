@@ -27,6 +27,7 @@ import sys
 import uuid
 import zipfile
 from botocore.exceptions import ClientError
+from botocore.vendored.requests.exceptions import ReadTimeout
 from subprocess import call
 from tabulate import tabulate
 
@@ -211,6 +212,11 @@ class Scar(object):
                                                   Payload=script)
         except ClientError as ce:
             print ("Error invoking lambda function: %s" % ce)
+            sys.exit(1)
+            
+        except ReadTimeout as rt:
+            print ("Timeout reading connection pool: %s" % rt)
+            sys.exit(1)
 
         # Decode and parse the payload
         response = StringUtils().parse_payload(response)
@@ -285,19 +291,6 @@ class Scar(object):
         # Return the zip as an array of bytes
         with open(Config.zif_file_path, 'rb') as f:
             return f.read()
-
-    def get_log_streams(self, log_group_name):
-        log_streams = []
-        response = self.get_aws_client().get_log().describe_log_streams(logGroupName=log_group_name)
-        for log_stream in response['logStreams']:
-            log_streams.append(log_stream['logStreamName'])
-            
-        while(('nextToken' in response) and response['nextToken']):
-            response = self.get_aws_client().get_log().describe_log_streams(logGroupName=log_group_name,
-                                                                            nextToken=response['nextToken'])
-            for log_stream in response['logStreams']:
-                log_streams.append(log_stream['logStreamName'])
-        return log_streams
 
     def log(self, args):
         try:

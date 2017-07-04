@@ -27,6 +27,9 @@ class Supervisor():
     udocker_bin = "/tmp/udocker/udocker"
     container_name = "lambda_cont"
     s3_file_name = ""
+    # Extra time used to close the container and process the output
+    # The lambda function time available is 300 - timeout_threshold
+    timeout_threshold = 30
     
     def prepare_environment(self, aws_request_id):
         # Install udocker in /tmp
@@ -171,7 +174,11 @@ def lambda_handler(event, context):
         
         # Execute container
         lambda_output = "/tmp/%s/lambda-stdout.txt" % context.aws_request_id
-        call(command, stderr=STDOUT, stdout=open(lambda_output, "w"))        
+        
+        remaining_seconds = context.get_remaining_time_in_millis()/1000 - supervisor.timeout_threshold
+        
+        call(command, timeout=remaining_seconds, stderr=STDOUT, stdout=open(lambda_output, "w"))  
+              
         stdout += check_output(["cat", lambda_output]).decode("utf-8")
         
         supervisor.post_process(event, context)
