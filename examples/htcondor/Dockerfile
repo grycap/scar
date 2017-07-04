@@ -13,8 +13,8 @@ RUN set -ex \
         && yum --disablerepo=htcondor-stable -y install wget epel-release \
         && wget -qO /etc/pki/rpm-gpg/RPM-GPG-KEY-HTCondor http://research.cs.wisc.edu/htcondor/yum/RPM-GPG-KEY-HTCondor \
         && rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-HTCondor \
-        && wget -qO /sbin/tini https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini \
-        && chmod +x /sbin/tini \
+    #    && wget -qO /sbin/tini https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini \
+    #    && chmod +x /sbin/tini \
         && yum -y remove wget \
         && yum -y install condor supervisor \
         && yum clean all
