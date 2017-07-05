@@ -68,6 +68,12 @@ class Scar(object):
             Config.lambda_description = args.description
         if args.image_id:
             Config.lambda_env_variables['Variables']['IMAGE_ID'] = args.image_id
+        if args.lambda_role:
+            Config.lambda_role = args.lambda_role
+        if args.time_threshold:
+            Config.lambda_env_variables['Variables']['TIME_THRESHOLD'] = str(args.time_threshold)    
+        else:
+            Config.lambda_env_variables['Variables']['TIME_THRESHOLD'] = str(Config.lambda_timeout_threshold)
         # Modify environment vars if necessary
         if args.env:
             StringUtils().parse_environment_variables(args.env)
@@ -421,6 +427,7 @@ class Config(object):
                                            "UDOCKER_TARBALL":"/var/task/udocker-1.1.0-RC2.tar.gz"}}
     lambda_memory = 128
     lambda_time = 300
+    lambda_timeout_threshold = 10
     lambda_description = "Automatically generated lambda function"
     lambda_tags = { 'createdby' : 'scar' }
 
@@ -438,7 +445,8 @@ class Config(object):
                           'lambda_memory' : Config.lambda_memory,
                           'lambda_time' : Config.lambda_time,
                           'lambda_region' : 'us-east-1',
-                          'lambda_role' : ''}
+                          'lambda_role' : '',
+                          'lambda_timeout_threshold' : Config.lambda_timeout_threshold}
         with open(file_dir + "/scar.cfg", "w") as configfile:
             self.config.write(configfile)
 
@@ -469,6 +477,7 @@ class Config(object):
         Config.lambda_memory = scar_config.getint('lambda_memory', fallback=Config.lambda_memory)
         Config.lambda_time = scar_config.getint('lambda_time', fallback=Config.lambda_time)
         Config.lambda_description = scar_config.get('lambda_description', fallback=Config.lambda_description)
+        Config.lambda_timeout_threshold = scar_config.get('lambda_timeout_threshold', fallback=Config.lambda_timeout_threshold)
 
 class AwsClient(object):
 
@@ -781,11 +790,12 @@ class CmdParser(object):
         parser_init.add_argument("-n", "--name", help="Lambda function name")
         parser_init.add_argument("-m", "--memory", type=int, help="Lambda function memory in megabytes. Range from 128 to 1536 in increments of 64")
         parser_init.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 300.")
+        parser_init.add_argument("-tt", "--time_threshold", type=int, help="Extra time used to postprocess the data. This time is extracted from the total time of the lambda function.")
         parser_init.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         parser_init.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
         parser_init.add_argument("-s", "--script", help="Path to the input file passed to the function")
         parser_init.add_argument("-es", "--event_source", help="Name specifying the source of the events that will launch the lambda function. Only supporting buckets right now.")
-        parser_init.add_argument("-lr", "--lambda-role", help="Lambda role used in the management of the functions")
+        parser_init.add_argument("-lr", "--lambda_role", help="Lambda role used in the management of the functions")
 
         # 'ls' command
         parser_ls = subparsers.add_parser('ls', help="List lambda functions")

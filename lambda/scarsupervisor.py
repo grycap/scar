@@ -17,7 +17,7 @@ import boto3
 import json
 import os
 import re
-from subprocess import call, check_output, STDOUT
+from subprocess import call, check_output, STDOUT, TimeoutExpired
 import traceback
 
 print('Loading function')
@@ -27,9 +27,6 @@ class Supervisor():
     udocker_bin = "/tmp/udocker/udocker"
     container_name = "lambda_cont"
     s3_file_name = ""
-    # Extra time used to close the container and process the output
-    # The lambda function time available is 300 - timeout_threshold
-    timeout_threshold = 30
     
     def prepare_environment(self, aws_request_id):
         # Install udocker in /tmp
@@ -175,9 +172,12 @@ def lambda_handler(event, context):
         # Execute container
         lambda_output = "/tmp/%s/lambda-stdout.txt" % context.aws_request_id
         
-        remaining_seconds = context.get_remaining_time_in_millis()/1000 - supervisor.timeout_threshold
-        
-        call(command, timeout=remaining_seconds, stderr=STDOUT, stdout=open(lambda_output, "w"))  
+        remaining_seconds = int(context.get_remaining_time_in_millis()/1000) - int(os.environ['TIME_THRESHOLD'])
+        print("Executing the container. Timeout set to %s seconds" % str(remaining_seconds))
+        try:
+            call(command, timeout=remaining_seconds, stderr=STDOUT, stdout=open(lambda_output, "w"))
+        except TimeoutExpired:
+            print("WARNING: Container timeout")  
               
         stdout += check_output(["cat", lambda_output]).decode("utf-8")
         
