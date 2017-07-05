@@ -9,15 +9,17 @@ Since we are using Darknet on the CPU it takes around 6-12 seconds per image, us
 
 ## Usage in AWS Lambda via SCAR
 
+> WARNING:  To work properly this software needs at least a lambda function with 1024MB of RAM
+
 You can run a container out of this image on AWS Lambda via [SCAR](https://github.com/grycap/scar) using the following procedure:
 
 1. Create the Lambda function
 
 ```sh
-scar init -s yolo-sample-object-detection.sh -es s3-bucket grycap/darknet
+scar init -s yolo-sample-object-detection.sh -es s3-bucket -m 1024 grycap/darknet
 ```
 
-2. Launch the Lambda function uploading a file to the input folder of the specified S3 bucket
+2. Launch the Lambda function uploading a file to the `/input` folder of the specified S3 bucket
 
 Take into consideration than the first invocation will take considerably longer than the subsequent ones, where the container will be cached.
 
