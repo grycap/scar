@@ -68,6 +68,8 @@ class Scar(object):
             Config.lambda_description = args.description
         if args.image_id:
             Config.lambda_env_variables['Variables']['IMAGE_ID'] = args.image_id
+        if args.lambda_role:
+            Config.lambda_role = args.lambda_role
         if args.time_threshold:
             Config.lambda_env_variables['Variables']['TIME_THRESHOLD'] = str(args.time_threshold)    
         else:
@@ -793,7 +795,7 @@ class CmdParser(object):
         parser_init.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
         parser_init.add_argument("-s", "--script", help="Path to the input file passed to the function")
         parser_init.add_argument("-es", "--event_source", help="Name specifying the source of the events that will launch the lambda function. Only supporting buckets right now.")
-        parser_init.add_argument("-lr", "--lambda-role", help="Lambda role used in the management of the functions")
+        parser_init.add_argument("-lr", "--lambda_role", help="Lambda role used in the management of the functions")
 
         # 'ls' command
         parser_ls = subparsers.add_parser('ls', help="List lambda functions")

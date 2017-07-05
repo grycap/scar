@@ -82,8 +82,8 @@ lambda_memory = 256
 lambda_time = 200
 lambda_region = us-east-1
 lambda_role = arn:aws:iam::974349055189:role/lambda-s3-execution-role
+lambda_timeout_threshold = 10
 ```
-
 The values represent:
 
 * lambda_description: Default description of the AWS Lambda function (can be customized with the `-d` parameter in `scar init`)
@@ -91,6 +91,7 @@ The values represent:
 * lambda_time: Default maximum execution time of the AWS Lambda function (can be customized with the `-t` parameter in `scar init`).
 * lambda_region: The [AWS region](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html) on which the AWS Lambda function will be created
 * lambda_role: The [ARN](http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html) of the IAM Role that you just created in the previous section
+* lambda_timeout_threshold: Default time used to postprocess the container output. Also used to avoid getting timeout error in case the execution of the container takes more time than the lambda_time 
 
 ## Basic Usage
 
