@@ -1,6 +1,9 @@
 FROM bitnami/minideb
 
-COPY system /opt/darknet/
+COPY darknet.tar.gz /tmp/ 
+
+RUN tar xvzf /tmp/darknet.tar.gz -C /opt/ \
+  && rm /tmp/darknet.tar.gz
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends wget ca-certificates \
