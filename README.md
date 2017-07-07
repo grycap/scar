@@ -246,7 +246,32 @@ Many instances of the Lambda function may run concurrently and independently, de
 
 For further information, examples of such application are included in the [examples/ffmpeg](examples/ffmpeg) folder, in order to run the [FFmpeg](https://ffmpeg.org/) video codification tool, and in the [examples/imagemagick](examples/imagemagick), in order to run the [ImageMagick](https://www.imagemagick.org) image manipulation tool, both on AWS Lambda.
 
-### Local Testing of the Docker images via udocker
+## More Event-Driven File-Processing thingies
+
+SCAR also supports another way of executing highly-parallel file-processing applications that require a customized runtime environment.
+
+After creating a function with the command:
+
+```sh
+scar init -s user-defined-script.sh -n lambda-function-name repo/image:latest
+```
+You can activate the SCAR event launcher using the `run` command like this:
+
+```sh
+scar run -es bucket-name -n lambda-function-name
+```
+This command lists the files in the `input` folder of the specified bucket and sends the required events (one per file) to the lambda function.
+
+The following workflow summarises the programming model, the differences with the main programming model are in bold:
+
+1. **The folder `input` inside the amazon S3 bucket `bucket-name` will be searched for files.**
+1. **The Lambda function is triggered once for each file found in the `input` folder. The first execution is of type `request-response` and the rest are `asynchronous`(this is done to ensure the caching and accelerate the execution).**
+1. The Lambda function retrieves the file from the Amazon S3 bucket and makes it available for the shell-script running inside the container in the `/tmp/$REQUEST_ID/input` folder. The `$SCAR_INPUT_FILE` environment variable will point to the location of the input file.
+1. The shell-script processes the input file and produces the output (either one or multiple files) in the folder `/tmp/$REQUEST_ID/output`.
+1. The output files are automatically uploaded by the Lambda function into the `output` folder of `bucket-name`.
+
+
+## Local Testing of the Docker images via udocker
 
 You can test locally if the Docker image will be able to run in AWS Lambda by means of udocker (available in the `lambda` directory) and taking into account the following limitations:
 
@@ -297,7 +322,7 @@ Further information is available in the udocker documentation:
 udocker help
 ```
 
-### Local Testing of the Lambda functions with emulambda
+## Local Testing of the Lambda functions with emulambda
 
 For easier debugging of the Lambda functions, [emulambda](https://github.com/fugue/emulambda) can be employed to locally execute them.
 
