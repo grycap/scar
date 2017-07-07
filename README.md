@@ -258,7 +258,7 @@ scar init -s user-defined-script.sh -n lambda-function-name repo/image:latest
 You can activate the SCAR event launcher using the `run` command like this:
 
 ```sh
-scar run -es bucket-name -n lambda-function-name
+scar run -es bucket-name lambda-function-name
 ```
 This command lists the files in the `input` folder of the specified bucket and sends the required events (one per file) to the lambda function.
 
