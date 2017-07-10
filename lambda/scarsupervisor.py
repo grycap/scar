@@ -158,9 +158,7 @@ class Supervisor():
         return command
     
 def lambda_handler(event, context):
-    if context.client_context:
-        event = context.client_context.custom
-    print("SCAR: Received event: " + json.dumps(event))
+    print("SCAR: Received event: " + json.dumps(event))    
     supervisor = Supervisor()
     stdout = supervisor.prepare_output(context)
     try:

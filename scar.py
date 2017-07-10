@@ -201,13 +201,13 @@ class Scar(object):
         if args.env:
             aws_client.update_function_env_variables(args.name, args.env)
 
-        script = ""
+        payload = {}
         # Parse the function script
         if args.script:
-            script = "{ \"script\" : \"%s\"}" % StringUtils().escape_string(args.script.read())
+            payload = { "script" : StringUtils().escape_string(args.script.read()) }
         # Or parse the container arguments
         elif args.cont_args:
-            script = "{ \"cmd_args\" : %s }" % StringUtils().escape_list(args.cont_args)
+            payload = { "cmd_args" : StringUtils().escape_list(args.cont_args) }
             
         # Use the event source to launch the function
         if args.event_source:
@@ -217,12 +217,7 @@ class Scar(object):
             print("Files found '%s'" % s3_files)
             for index, file in enumerate(s3_files):
                 event['Records'][0]['s3']['object']['key'] = file
-                ctx = {
-                    "custom":  event 
-                };
-                payload = json.dumps(ctx)
-                payloadBase64 = base64.b64encode(str.encode(payload))
-                # Invoke lambda function
+                payload = json.dumps(event)
                 print("Sending event for file '%s'" % file)
                 async = False
                 if(index == 0):
@@ -232,11 +227,11 @@ class Scar(object):
                     invocation_type = 'Event'
                     log_type = 'None'
                     async = True
-                response = aws_client.invoke_function(args.name, invocation_type, log_type, script, payloadBase64.decode())
+                response = aws_client.invoke_function(args.name, invocation_type, log_type, payload)
                 self.parse_run_response(response, args.name, async, args.json, args.verbose)
                  
         else:
-            response = aws_client.invoke_function(args.name, invocation_type, log_type, script)
+            response = aws_client.invoke_function(args.name, invocation_type, log_type, payload)
             self.parse_run_response(response, args.name, args.async, args.json, args.verbose)
 
 
@@ -753,20 +748,13 @@ class AwsClient(object):
         # Show results
         result.print_results(json, verbose)
         
-    def invoke_function(self, function_name, invocation_type, log_type, payload, client_context=None):
+    def invoke_function(self, function_name, invocation_type, log_type, payload):
         response = {}
         try:
-            if client_context:
-                response = self.get_lambda().invoke(FunctionName=function_name,
-                                                    InvocationType=invocation_type,
-                                                    LogType=log_type,
-                                                    Payload=payload,
-                                                    ClientContext=client_context)
-            else:
-                response = self.get_lambda().invoke(FunctionName=function_name,
-                                                    InvocationType=invocation_type,
-                                                    LogType=log_type,
-                                                    Payload=payload)               
+            response = self.get_lambda().invoke(FunctionName=function_name,
+                                                InvocationType=invocation_type,
+                                                LogType=log_type,
+                                                Payload=payload)               
         except ClientError as ce:
             print ("Error invoking lambda function: %s" % ce)
             sys.exit(1)
