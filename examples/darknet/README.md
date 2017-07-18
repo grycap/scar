@@ -31,6 +31,7 @@ aws s3 cp /tmp/dog.jpg s3://s3-bucket/input/dog.jpg
 Take into consideration than the first invocation will take considerably longer than the subsequent ones, where the container will be cached.
 
 3. In the output folder of the S3 bucket you will see the output of the yolo system with the name of the image that you uploaded.
+
 In our case the output file is dog.out and the content:
 
 ```sh
