@@ -28,6 +28,7 @@ import uuid
 import zipfile
 from botocore.exceptions import ClientError
 from botocore.vendored.requests.exceptions import ReadTimeout
+from multiprocessing.pool import ThreadPool
 from subprocess import call
 from tabulate import tabulate
 
@@ -215,25 +216,61 @@ class Scar(object):
             event['Records'][0]['s3']['bucket']['name'] = args.event_source
             s3_files = aws_client.get_s3_file_list(args.event_source)
             print("Files found '%s'" % s3_files)
-            for index, file in enumerate(s3_files):
-                event['Records'][0]['s3']['object']['key'] = file
-                payload = json.dumps(event)
-                print("Sending event for file '%s'" % file)
-                async = False
-                if(index == 0):
-                    invocation_type = 'RequestResponse'
-                    log_type = 'Tail'
+       
+            if len(s3_files) == 1:
+                self.launch_request_response_event(s3_files[0], event, aws_client, args)
+       
+            if len(s3_files) > 1:
+                self.launch_request_response_event(s3_files[0], event, aws_client, args)
+                s3_files = s3_files[1:]
+                size = len(s3_files)
+                
+                chunk_size = 1000
+                if size > chunk_size:
+                    s3_file_chunks = self.chunks(s3_files, chunk_size)
+                    for s3_file_chunk in s3_file_chunks:
+                        pool = ThreadPool(processes=len(s3_file_chunk))
+                        pool.map(
+                            lambda s3_file: self.launch_async_event(s3_file, event, aws_client, args),
+                            s3_file_chunk
+                        )
+                        pool.close()                      
                 else:
-                    invocation_type = 'Event'
-                    log_type = 'None'
-                    async = True
-                response = aws_client.invoke_function(args.name, invocation_type, log_type, payload)
-                self.parse_run_response(response, args.name, async, args.json, args.verbose)
-                 
+                    pool = ThreadPool(processes=len(s3_files))
+                    pool.map(
+                        lambda s3_file: self.launch_async_event(s3_file, event, aws_client, args),
+                        s3_files
+                    )
+                    pool.close() 
         else:
-            response = aws_client.invoke_function(args.name, invocation_type, log_type, payload)
+            response = aws_client.invoke_function(args.name, invocation_type, log_type, json.dumps(payload))
             self.parse_run_response(response, args.name, args.async, args.json, args.verbose)
 
+    def chunks(self, list, chunk_size):
+        """Yield successive n-sized chunks from l."""
+        for i in range(0, len(list), chunk_size):
+            yield list[i:i + chunk_size]
+
+    def launch_request_response_event(self, s3_file, event, aws_client, args):
+        event['Records'][0]['s3']['object']['key'] = s3_file
+        payload = json.dumps(event)
+        print("Sending event for file '%s'" % s3_file)
+        async = False
+        invocation_type = 'RequestResponse'
+        log_type = 'Tail'
+        response = aws_client.invoke_function(args.name, invocation_type, log_type, payload)
+        self.parse_run_response(response, args.name, async, args.json, args.verbose)
+
+
+    def launch_async_event(self, s3_file, event, aws_client, args):
+        event['Records'][0]['s3']['object']['key'] = s3_file
+        payload = json.dumps(event)
+        print("Sending event for file '%s'" % s3_file)
+        invocation_type = 'Event'
+        log_type = 'None'
+        async = True
+        response = aws_client.invoke_function(args.name, invocation_type, log_type, payload)
+        self.parse_run_response(response, args.name, async, args.json, args.verbose)
 
     def parse_run_response(self, response, function_name, async, json, verbose):
         # Decode and parse the payload
