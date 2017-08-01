@@ -79,7 +79,7 @@ class Scar(object):
         if args.env:
             StringUtils().parse_environment_variables(args.env)
         # Update lambda tags
-        Config.lambda_tags['owner'] = aws_client.get_user_name()
+        Config.lambda_tags['owner'] = aws_client.get_user_name_or_id()
 
         # Call the AWS service
         result = Result()
@@ -117,7 +117,7 @@ class Scar(object):
         try:
             cw_response = aws_client.get_log().create_log_group(
                 logGroupName=log_group_name,
-                tags={ 'owner' : aws_client.get_user_name(),
+                tags={ 'owner' : aws_client.get_user_name_or_id(),
                        'createdby' : 'scar' }
             )
             # Parse results
@@ -559,9 +559,10 @@ class AwsClient(object):
             raise Exception('Incorrect time specified')
         return lambda_time
 
-    def get_user_name(self):
+    def get_user_name_or_id(self):
         try:
-            return self.get_iam().get_user()['User']['UserName']
+            user = self.get_iam().get_user()['User']
+            return user.get('UserName', user['UserId'])
         except ClientError as ce:
             # If the user doesn't have access rights to IAM
             return StringUtils().find_expression('(?<=user\/)(\S+)', str(ce))
@@ -721,7 +722,7 @@ class AwsClient(object):
         arn_list = []
         # Creation of a function filter by tags
         client = self.get_resource_groups_tagging_api()
-        tag_filters = [ { 'Key': 'owner', 'Values': [ self.get_user_name() ] },
+        tag_filters = [ { 'Key': 'owner', 'Values': [ self.get_user_name_or_id() ] },
                         { 'Key': 'createdby', 'Values': ['scar'] } ]
         try:
             response = client.get_resources(TagFilters=tag_filters,
