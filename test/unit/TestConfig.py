@@ -27,13 +27,13 @@ class TestConfig(unittest.TestCase):
         
     def test_create_config_file(self):
         self.read_config_file()
-        self.assertTrue(TestConfig.config.config_parser.sections() == ['scar'])
-        self.assertTrue(TestConfig.config.config_parser['scar']['lambda_time'] == "300")
-        self.assertTrue(TestConfig.config.config_parser['scar']['lambda_memory'] == "128")
-        self.assertTrue(TestConfig.config.config_parser['scar']['lambda_region'] == "us-east-1")
-        self.assertTrue(TestConfig.config.config_parser['scar']['lambda_timeout_threshold'] == "10")
-        self.assertTrue(TestConfig.config.config_parser['scar']['lambda_role'] == "")
-        self.assertTrue(TestConfig.config.config_parser['scar']['lambda_description'] == "Automatically generated lambda function")
+        self.assertEqual(TestConfig.config.config_parser.sections(), ['scar'])
+        self.assertEqual(TestConfig.config.config_parser['scar']['lambda_time'], "300")
+        self.assertEqual(TestConfig.config.config_parser['scar']['lambda_memory'], "128")
+        self.assertEqual(TestConfig.config.config_parser['scar']['lambda_region'], "us-east-1")
+        self.assertEqual(TestConfig.config.config_parser['scar']['lambda_timeout_threshold'], "10")
+        self.assertEqual(TestConfig.config.config_parser['scar']['lambda_role'], "")
+        self.assertEqual(TestConfig.config.config_parser['scar']['lambda_description'], "Automatically generated lambda function")
         
     @unittest.mock.patch('scar.Config.create_config_file')
     @unittest.mock.patch('os.makedirs')
@@ -43,10 +43,10 @@ class TestConfig(unittest.TestCase):
         mock_expanduser.return_value = "."
         mock_isdir.return_value = False
         Config().check_config_file()
-        self.assertTrue(mock_makedirs.call_count == 1)
-        self.assertTrue(mock_create_config_file.call_count == 1)
-        self.assertTrue(mock_makedirs.call_args, ('./scar'))
-        self.assertTrue(mock_create_config_file.call_args, ('./scar'))
+        self.assertEqual(mock_makedirs.call_count, 1)
+        self.assertEqual(mock_create_config_file.call_count, 1)
+        self.assertEqual(mock_makedirs.call_args, call('./.scar'))
+        self.assertEqual(mock_create_config_file.call_args, call('./.scar'))
         
     @unittest.mock.patch('scar.Config.create_config_file')
     @unittest.mock.patch('os.path.isfile')
@@ -57,8 +57,8 @@ class TestConfig(unittest.TestCase):
         mock_isdir.return_value = True
         mock_isfile.return_value = False
         Config().check_config_file()
-        self.assertTrue(mock_create_config_file.call_count == 1)
-        self.assertTrue(mock_create_config_file.call_args, call('./scar'))
+        self.assertEqual(mock_create_config_file.call_count, 1)
+        self.assertEqual(mock_create_config_file.call_args, call('./.scar'))
         
     @unittest.mock.patch('scar.Config.config_parser.read')
     @unittest.mock.patch('scar.Config.parse_config_file_values')
@@ -71,9 +71,9 @@ class TestConfig(unittest.TestCase):
         mock_isfile.return_value = True
         mock_config_file_values.return_value = ""
         Config().check_config_file()
-        self.assertTrue(mock_config_file_values.call_count == 1)
-        self.assertTrue(mock_config_parser_read.call_count == 1)
-        self.assertTrue(mock_config_parser_read.call_args, call('./scar/scar.cfg'))
+        self.assertEqual(mock_config_file_values.call_count, 1)
+        self.assertEqual(mock_config_parser_read.call_count, 1)
+        self.assertEqual(mock_config_parser_read.call_args, call('./.scar/scar.cfg'))
          
     def test_parse_config_file_values_no_role(self):
         self.read_config_file()
@@ -85,12 +85,12 @@ class TestConfig(unittest.TestCase):
         self.read_config_file()
         TestConfig.config.config_parser['scar']['lambda_role'] = "some role"
         TestConfig.config.parse_config_file_values()
-        self.assertTrue(TestConfig.config.lambda_time == 300)
-        self.assertTrue(TestConfig.config.lambda_memory == 128)
-        self.assertTrue(TestConfig.config.lambda_region == "us-east-1")
-        self.assertTrue(TestConfig.config.lambda_timeout_threshold == "10")
-        self.assertTrue(TestConfig.config.lambda_role == "some role")
-        self.assertTrue(TestConfig.config.lambda_description == "Automatically generated lambda function")             
+        self.assertEqual(TestConfig.config.lambda_time, 300)
+        self.assertEqual(TestConfig.config.lambda_memory, 128)
+        self.assertEqual(TestConfig.config.lambda_region, "us-east-1")
+        self.assertEqual(TestConfig.config.lambda_timeout_threshold, "10")
+        self.assertEqual(TestConfig.config.lambda_role, "some role")
+        self.assertEqual(TestConfig.config.lambda_description, "Automatically generated lambda function")             
 
 if __name__ == '__main__':
     unittest.main()

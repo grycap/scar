@@ -13,17 +13,17 @@ class TestStringUtils(unittest.TestCase):
     def test_create_image_based_name(self, mock_find_function_name):
         mock_find_function_name.side_effect = [False, False, True, False, False]
         result = scar.StringUtils().create_image_based_name("")
-        self.assertTrue(result == "scar-")
+        self.assertEqual(result, "scar-")
         result = scar.StringUtils().create_image_based_name("test")
-        self.assertTrue(result == "scar-test")
+        self.assertEqual(result, "scar-test")
         result = scar.StringUtils().create_image_based_name("test")
-        self.assertTrue(result == "scar-test-1")
+        self.assertEqual(result, "scar-test-1")
         result = scar.StringUtils().create_image_based_name("grycap/ubuntu:16.04")
-        self.assertTrue(result == "scar-grycap-ubuntu-16-04") 
+        self.assertEqual(result, "scar-grycap-ubuntu-16-04") 
 
     def test_validate_function_name(self):
         result = scar.StringUtils().validate_function_name("")
-        self.assertTrue(result is None)
+        self.assertEqual(result, None)
         result = scar.StringUtils().validate_function_name("scar-test")
         self.assertTrue(result)
         result = scar.StringUtils().validate_function_name("sc.ar")
@@ -31,15 +31,15 @@ class TestStringUtils(unittest.TestCase):
         
     def test_find_expression(self):
         result = scar.StringUtils().find_expression("","")
-        self.assertTrue(result == "")
+        self.assertEqual(result, "")
         result = scar.StringUtils().find_expression("","scar-test")
-        self.assertTrue(result == "")
+        self.assertEqual(result, "")
         result = scar.StringUtils().find_expression("scar","scar-test")
-        self.assertTrue(result == "scar")
+        self.assertEqual(result, "scar")
         result = scar.StringUtils().find_expression("ub.*","scar-test-ubuntu-16-04")
-        self.assertTrue(result == "ubuntu-16-04")
+        self.assertEqual(result, "ubuntu-16-04")
         result = scar.StringUtils().find_expression("cen.*","scar-test-ubuntu-16-04")
-        self.assertTrue(result is None)
+        self.assertEqual(result, None)
         
     def test_base64_to_utf8(self):
         aux = base64.b64encode('test'.encode('utf-8'))
@@ -50,21 +50,21 @@ class TestStringUtils(unittest.TestCase):
         test = ["echo", "'hello world'"]
         result = scar.StringUtils().escape_list(test)
         aux = str(test).replace("'", "\"")
-        self.assertTrue(result == aux)
+        self.assertEqual(result, aux)
 
     def test_escape_string(self):
         result = scar.StringUtils().escape_string("")
-        self.assertTrue(result == "")
+        self.assertEqual(result, "")
         result = scar.StringUtils().escape_string('\\\n"\/')
-        self.assertTrue(result == '\\/\\n\\"\\//')        
+        self.assertEqual(result, '\\/\\n\\"\\//')        
         result = scar.StringUtils().escape_string('\b\f\r\t')
-        self.assertTrue(result == '\\b\\f\\r\\t')
+        self.assertEqual(result, '\\b\\f\\r\\t')
 
     def test_parse_payload(self):
         attrs = {'read.return_value' : 'test1\\n test2\\n test3'.encode('utf-8')}
         aux = { 'Payload' : MagicMock(**attrs) }
         scar.StringUtils().parse_payload(aux)
-        self.assertTrue(aux['Payload'] == "est1\n test2\n test")
+        self.assertEqual(aux['Payload'], "est1\n test2\n test")
 
     def test_parse_base64_response_values(self):
         aux = {'LogResult' : base64.b64encode('test1'.encode('utf-8')),
@@ -72,14 +72,14 @@ class TestStringUtils(unittest.TestCase):
                    'HTTPHeaders' : {
                        'x-amz-log-result' : base64.b64encode('test2'.encode('utf-8'))}}}
         scar.StringUtils().parse_base64_response_values(aux)
-        self.assertTrue(aux['LogResult'] == 'test1')
-        self.assertTrue(aux['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'] == 'test2')
+        self.assertEqual(aux['LogResult'], 'test1')
+        self.assertEqual(aux['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'], 'test2')
         
     def test_parse_log_ids(self):
         aux = { "Payload" : "\nLorem ipsum dolor sit amet\n Suspendisse a mollis diam."}
         scar.StringUtils().parse_log_ids(aux)
-        self.assertTrue(aux['LogGroupName'] == 'amet')
-        self.assertTrue(aux['LogStreamName'] == 'iam.')
+        self.assertEqual(aux['LogGroupName'], 'amet')
+        self.assertEqual(aux['LogStreamName'], 'iam.')
         
     def test_parse_environment_variables(self):
         config = scar.Config()
@@ -89,7 +89,7 @@ class TestStringUtils(unittest.TestCase):
                         "CONT_VAR_VAR1":"VAL1",
                         "CONT_VAR_VAR2":"VAL2",
                         "CONT_VAR_VAR3":"VAL3"}}
-        self.assertTrue(config.lambda_env_variables == aux)
+        self.assertEqual(config.lambda_env_variables, aux)
         
 
 if __name__ == '__main__':
