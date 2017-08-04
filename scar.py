@@ -215,7 +215,7 @@ class Scar(object):
             event = Config.lambda_event
             event['Records'][0]['s3']['bucket']['name'] = args.event_source
             s3_files = aws_client.get_s3_file_list(args.event_source)
-            print("Files found '%s'" % s3_files)
+            print("Files found: '%s'" % s3_files)
        
             if len(s3_files) == 1:
                 self.launch_request_response_event(s3_files[0], event, aws_client, args)
@@ -497,18 +497,21 @@ class Config(object):
 
     zif_file_path = dir_path + '/function.zip'
 
-    config = configparser.ConfigParser()
+    config_parser = configparser.ConfigParser()
 
     def create_config_file(self, file_dir):
 
-        self.config['scar'] = {'lambda_description' : "Automatically generated lambda function",
+        self.config_parser['scar'] = {'lambda_description' : "Automatically generated lambda function",
                           'lambda_memory' : Config.lambda_memory,
                           'lambda_time' : Config.lambda_time,
                           'lambda_region' : 'us-east-1',
                           'lambda_role' : '',
                           'lambda_timeout_threshold' : Config.lambda_timeout_threshold}
         with open(file_dir + "/scar.cfg", "w") as configfile:
-            self.config.write(configfile)
+            self.config_parser.write(configfile)
+        
+        print ("Config file %s/scar.cfg created.\nPlease, set first a valid lambda role to be used." % file_dir)
+        sys.exit(0)     
 
     def check_config_file(self):
         scar_dir = os.path.expanduser("~") + "/.scar"
@@ -516,19 +519,18 @@ class Config(object):
         if os.path.isdir(scar_dir):
             # Check if the config file exists
             if os.path.isfile(scar_dir + "/scar.cfg"):
-                self.config.read(scar_dir + "/scar.cfg")
+                self.config_parser.read(scar_dir + "/scar.cfg")
                 self.parse_config_file_values()
             else:
                 self.create_config_file(scar_dir)
-                print ("Config file ~/.scar/scar.cfg created.\nPlease, set first a valid lambda role to be used.")
-                sys.exit(1)
         else:
             # Create scar dir
-            call(["mkdir", "-p", scar_dir])
+            os.makedirs(scar_dir)
             self.create_config_file(scar_dir)
+         
 
     def parse_config_file_values(self):
-        scar_config = Config.config['scar']
+        scar_config = Config.config_parser['scar']
         Config.lambda_role = scar_config.get('lambda_role', fallback=Config.lambda_role)
         if not Config.lambda_role or Config.lambda_role == "":
             print ("Please, specify first a lambda role in the ~/.scar/scar.cfg file.")
