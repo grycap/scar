@@ -596,9 +596,10 @@ class AwsClient(object):
     def get_s3_file_list(self, bucket_name):
         file_list = []
         result = self.get_s3().list_objects_v2(Bucket=bucket_name, Prefix='input/')
-        for content in result['Contents']:
-            if content['Key'] and content['Key'] != "input/": 
-                file_list.append(content['Key'])
+        if 'Contents' in result:
+            for content in result['Contents']:
+                if content['Key'] and content['Key'] != "input/": 
+                    file_list.append(content['Key'])
         return file_list
 
     def find_function_name(self, function_name):

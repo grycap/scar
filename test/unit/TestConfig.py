@@ -1,7 +1,7 @@
 import os
-from unittest.mock import call
 import unittest.mock
 import sys
+from unittest.mock import call
 from scar import Config
 
 sys.path.append(".")
