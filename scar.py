@@ -658,27 +658,23 @@ class AwsClient(object):
             print ("Error updating the environment variables of the lambda function: %s" % ce)
 
     def create_trigger_from_bucket(self, bucket_name, function_arn):
+        notification = { "LambdaFunctionConfigurations": [
+                            { "Id": "string",
+                              "LambdaFunctionArn": function_arn,
+                              "Events": [ "s3:ObjectCreated:*" ],
+                              "Filter": 
+                                { "Key": 
+                                    { "FilterRules": [
+                                        { "Name": "prefix",
+                                          "Value": "input/"
+                                        }]
+                                    }
+                                }
+                            }]
+                        }
         try:
-            self.get_s3().put_bucket_notification_configuration(Bucket=bucket_name,
-                                                                 NotificationConfiguration={
-                                                                     "LambdaFunctionConfigurations": [
-                                                                        {
-                                                                            "Id": "string",
-                                                                            "LambdaFunctionArn": function_arn,
-                                                                            "Events": [ "s3:ObjectCreated:*" ],
-                                                                            "Filter": {
-                                                                                "Key": {
-                                                                                    "FilterRules": [
-                                                                                        {
-                                                                                            "Name": "prefix",
-                                                                                            "Value": "input/"
-                                                                                        }
-                                                                                    ]
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                     ]}
-                                                                )
+            self.get_s3().put_bucket_notification_configuration( Bucket=bucket_name,
+                                                                 NotificationConfiguration=notification )
 
         except ClientError as ce:
             print ("Error configuring S3 bucket: %s" % ce)
@@ -722,16 +718,18 @@ class AwsClient(object):
 
     def get_functions_arn_list(self):
         arn_list = []
-        # Creation of a function filter by tags
-        client = self.get_resource_groups_tagging_api()
-        tag_filters = [ { 'Key': 'owner', 'Values': [ self.get_user_name() ] },
-                        { 'Key': 'createdby', 'Values': ['scar'] } ]
         try:
+            # Creation of a function filter by tags
+            client = self.get_resource_groups_tagging_api()
+            tag_filters = [ { 'Key': 'owner', 'Values': [ self.get_user_name() ] },
+                            { 'Key': 'createdby', 'Values': ['scar'] } ]            
             response = client.get_resources(TagFilters=tag_filters,
                                                  TagsPerPage=100)
+            
             for function in response['ResourceTagMappingList']:
                 arn_list.append(function['ResourceARN'])
-            if ('PaginationToken' in response) and (response['PaginationToken']):
+                
+            while ('PaginationToken' in response) and (response['PaginationToken']):
                 response = client.get_resources(PaginationToken=response['PaginationToken'],
                                                 TagFilters=tag_filters,
                                                 TagsPerPage=100)
@@ -746,9 +744,9 @@ class AwsClient(object):
     def get_all_functions(self):
         function_list = []
         # Get the filtered resources from AWS
-        filtered_functions = self.get_functions_arn_list()
+        functions_arn = self.get_functions_arn_list()
         try:
-            for function_arn in filtered_functions:
+            for function_arn in functions_arn:
                 function_list.append(self.get_lambda().get_function(FunctionName=function_arn))
         except ClientError as ce:
             print ("Error getting function info by arn: %s" % ce)
@@ -770,7 +768,7 @@ class AwsClient(object):
             # Delete the cloudwatch log group
             log_group_name = '/aws/lambda/%s' % function_name
             cw_response = self.get_log().delete_log_group(logGroupName=log_group_name)
-            result.append_to_verbose('CloudWatchOuput', cw_response)
+            result.append_to_verbose('CloudWatchOutput', cw_response)
             result.append_to_json('CloudWatchOutput', { 'RequestId' : cw_response['ResponseMetadata']['RequestId'],
                                              'HTTPStatusCode' : cw_response['ResponseMetadata']['HTTPStatusCode'] })
             result.append_to_plain_text("Log group '%s' successfully deleted." % function_name)
