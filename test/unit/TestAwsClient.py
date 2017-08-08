@@ -15,7 +15,7 @@ sys.path.append("..")
 
 class TestAwsClient(unittest.TestCase):
 
-    capturedOutput = io.StringIO()
+    capturedOutput = None
 
     def setUp(self):
         TestAwsClient.capturedOutput = io.StringIO()
