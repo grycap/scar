@@ -2,13 +2,8 @@ import sys
 import io
 import unittest.mock
 
-from botocore.exceptions import ClientError
-from botocore.vendored.requests.exceptions import ReadTimeout
-from mock import MagicMock
-from scar import AwsClient
 from scar import Result
 from unittest.mock import call
-from unittest.mock import PropertyMock
 
 sys.path.append(".")
 sys.path.append("..")

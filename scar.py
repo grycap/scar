@@ -247,7 +247,9 @@ class Scar(object):
             self.parse_run_response(response, args.name, args.async, args.json, args.verbose)
 
     def chunks(self, list, chunk_size):
-        """Yield successive n-sized chunks from l."""
+        """Yield successive n-sized chunks from list."""
+        if len(list) == 0:
+            yield []
         for i in range(0, len(list), chunk_size):
             yield list[i:i + chunk_size]
 
@@ -255,9 +257,9 @@ class Scar(object):
         event['Records'][0]['s3']['object']['key'] = s3_file
         payload = json.dumps(event)
         print("Sending event for file '%s'" % s3_file)
-        async = False
         invocation_type = 'RequestResponse'
         log_type = 'Tail'
+        async = False
         response = aws_client.invoke_function(args.name, invocation_type, log_type, payload)
         self.parse_run_response(response, args.name, async, args.json, args.verbose)
 
@@ -378,14 +380,16 @@ class Scar(object):
 
             response['completeMessage'] = full_msg
             if args.request_id:
-                print (self.parse_logs(full_msg, args.request_id))
+                print (self.parse_aws_logs(full_msg, args.request_id))
             else:
                 print (full_msg)
                 
         except ClientError as ce:
             print(ce)
 
-    def parse_logs(self, logs, request_id):
+    def parse_aws_logs(self, logs, request_id):
+        if (logs is None) or (request_id is None):
+            return None
         full_msg = ""
         logging = False
         lines = logs.split('\n')
