@@ -151,9 +151,9 @@ class Scar(object):
         result.print_results(json=args.json, verbose=args.verbose)
 
     def ls(self, args):
-        aws_client = self.get_aws_client()
-        result = Result()
         try:
+            aws_client = self.get_aws_client()
+            result = Result()            
             # Get the filtered resources from AWS
             lambda_functions = aws_client.get_all_functions()
             # Create the data structure

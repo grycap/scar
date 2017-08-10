@@ -7,7 +7,6 @@ import zipfile
 
 from botocore.exceptions import ClientError
 from botocore.vendored.requests.exceptions import ReadTimeout
-from mock import MagicMock
 from scar import Scar
 from unittest.mock import call
 from unittest.mock import PropertyMock
@@ -269,7 +268,96 @@ class TestScar(unittest.TestCase):
         with self.assertRaises(SystemExit):
             Scar().parse_run_response('test_response', 'test_function', True, True, False)
         output = TestScar.capturedOutput.getvalue()
-        self.assertEquals(output, '{"Error": "Function \'test_function\' timed out after 280 seconds"}\n')                                 
+        self.assertEquals(output, '{"Error": "Function \'test_function\' timed out after 280 seconds"}\n')
+
+    @unittest.mock.patch('scar.AwsClient.get_log')        
+    def test_log(self, mock_aws_client):
+        mock_aws_client.return_value.filter_log_events.side_effect = [{'events' : [{'message':'val1', 'timestamp':'123456'},
+                                                                                   {'message':'val3', 'timestamp':'123458'},
+                                                                                   {'message':'val2', 'timestamp':'123457'}],
+                                                                       'nextToken' : '1'},
+                                                                      {'events' : [{'message':'val6', 'timestamp':'123461'},
+                                                                                   {'message':'val5', 'timestamp':'123460'},
+                                                                                   {'message':'val4', 'timestamp':'123459'}],
+                                                                       'nextToken' : '2'},
+                                                                      {'events' : [{'message':'val7', 'timestamp':'123462'},
+                                                                                   {'message':'val8', 'timestamp':'123463'},
+                                                                                   {'message':'val9', 'timestamp':'123464'}]}]
+        args = Args()
+        setattr(args, 'log_stream_name', False)
+        setattr(args, 'request_id', False)
+        Scar().log(args)
+        output = TestScar.capturedOutput.getvalue()
+        self.assertEquals(output, 'val1val2val3val4val5val6val7val8val9\n')
+    
+    @unittest.mock.patch('scar.AwsClient.get_log')        
+    def test_log_with_log_stream_name(self, mock_aws_client):
+        mock_aws_client.return_value.get_log_events.return_value = {'events' : [{'message':'val1'},
+                                                                                {'message':'val2'},
+                                                                                {'message':'val3'}]}
+        args = Args()
+        setattr(args, 'log_stream_name', True)
+        setattr(args, 'request_id', False)
+        Scar().log(args)
+        output = TestScar.capturedOutput.getvalue()
+        self.assertEqual(output, 'val1val2val3\n')
+        
+
+    @unittest.mock.patch('scar.Scar.parse_aws_logs')
+    @unittest.mock.patch('scar.AwsClient.get_log')        
+    def test_log_with_request_id(self, mock_aws_client, mock_parse_aws_logs):
+        mock_aws_client.return_value.get_log_events.return_value = {'events' : [{'message':'val1'},
+                                                                                {'message':'val2'},
+                                                                                {'message':'val3'}]}
+        args = Args()
+        setattr(args, 'log_stream_name', True)
+        setattr(args, 'request_id', 42)
+        Scar().log(args)
+        self.assertEqual(mock_parse_aws_logs.call_count, 1)
+        self.assertTrue(call('val1val2val3', 42) in mock_parse_aws_logs.mock_calls)
+        
+    @unittest.mock.patch('scar.AwsClient.get_log')
+    def test_log_error(self, mock_aws_client):
+        mock_aws_client.side_effect = ClientError({'Error' : {'Code' : '42', 'Message' : 'test_message'}}, 'test2')
+        args = Args()
+        setattr(args, 'log_stream_name', True)
+        Scar().log(args)
+        output = TestScar.capturedOutput.getvalue()
+        self.assertTrue('An error occurred (42) when calling the test2 operation: test_message' in output)
+
+    @unittest.mock.patch('scar.AwsClient.get_all_functions')
+    def test_ls(self, mock_get_all_functions):
+        mock_get_all_functions.return_value = [{'Configuration' : {
+                                                    'FunctionName' : 'test_function',
+                                                    'MemorySize' : '512',
+                                                    'Timeout' : '300',
+                                                    'Environment' : { 'Variables' : {'IMAGE_ID' : 'test_image'}}},
+                                               'Extra' : 'test_verbose'},
+                                               {'Configuration' : {
+                                                    'FunctionName' : 'test_function_2',
+                                                    'MemorySize' : '2014',
+                                                    'Timeout' : '200',
+                                                    'Environment' : { 'Variables' : {'IMAGE_ID' : 'test_image_2'}}},
+                                               'Extra' : 'test_verbose_2'}
+                                               ]
+        args = Args()
+        args.verbose = False
+        Scar().ls(args)
+        output = TestScar.capturedOutput.getvalue()
+        result_table = 'NAME               MEMORY    TIME  IMAGE_ID\n'
+        result_table += '---------------  --------  ------  ------------\n'
+        result_table += 'test_function         512     300  test_image\n'
+        result_table += 'test_function_2      2014     200  test_image_2\n'
+        self.assertEqual(output, result_table)
+
+    @unittest.mock.patch('scar.Scar.get_aws_client')
+    def test_ls_error(self, mock_aws_client):
+        mock_aws_client.side_effect = ClientError({'Error' : {'Code' : '42', 'Message' : 'test_message'}}, 'test2')
+        Scar().ls(Args())
+        output = TestScar.capturedOutput.getvalue()
+        self.assertTrue('Error listing the resources:' in output)          
+        self.assertTrue('An error occurred (42) when calling the test2 operation: test_message' in output)        
+                                  
                         
 if __name__ == '__main__':
     unittest.main()
