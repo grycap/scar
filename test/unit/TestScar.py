@@ -27,11 +27,11 @@ class TestScar(unittest.TestCase):
         sys.stdout = sys.__stdout__                    
         
     def test_chunks(self):
-        test_list = [1,2,3,4,5,6,7,8,9,0]
+        test_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
         chunks = Scar().chunks(test_list, 3)
-        self.assertEqual(next(chunks), [1,2,3])
-        self.assertEqual(next(chunks), [4,5,6])
-        self.assertEqual(next(chunks), [7,8,9])
+        self.assertEqual(next(chunks), [1, 2, 3])
+        self.assertEqual(next(chunks), [4, 5, 6])
+        self.assertEqual(next(chunks), [7, 8, 9])
         self.assertEqual(next(chunks), [0])
         
     def test_chunks_empty(self):
@@ -39,8 +39,8 @@ class TestScar(unittest.TestCase):
         self.assertEqual(next(chunks), [])
         
     def test_chunks_big_chunk(self):
-        chunks = Scar().chunks([1,2,3], 5)
-        self.assertEqual(next(chunks), [1,2,3])        
+        chunks = Scar().chunks([1, 2, 3], 5)
+        self.assertEqual(next(chunks), [1, 2, 3])        
         
     @unittest.mock.patch('scar.AwsClient')        
     def test_get_aws_client(self, mock_aws_client):
@@ -87,7 +87,7 @@ class TestScar(unittest.TestCase):
         zip_file_path = '../../function.zip'
         Scar().create_zip_file('test', 'files/test_script.sh')
         self.assertTrue(os.path.isfile(zip_file_path))
-        self.assertEqual(zipfile.ZipFile(zip_file_path).namelist(), ['test.py', 'udocker', 'udocker-1.1.0-RC2.tar.gz','init_script.sh'])
+        self.assertEqual(zipfile.ZipFile(zip_file_path).namelist(), ['test.py', 'udocker', 'udocker-1.1.0-RC2.tar.gz', 'init_script.sh'])
         os.remove(zip_file_path)
 
     @unittest.mock.patch('scar.AwsClient.delete_resources')
@@ -96,20 +96,20 @@ class TestScar(unittest.TestCase):
         setattr(args, 'all', False)
         Scar().rm(args)
         self.assertEqual(mock_delete_resources.call_count, 1)        
-        self.assertEqual(mock_delete_resources.call_args, call('test_name', False, True))
+        self.assertEqual(mock_delete_resources.call_args, call('test-name', False, True))
                
     @unittest.mock.patch('scar.AwsClient.delete_resources')               
     @unittest.mock.patch('scar.AwsClient.get_all_functions')
     def test_rm_all(self, mock_get_all_functions, mock_delete_resources):
         args = Args()
         setattr(args, 'all', True)
-        mock_get_all_functions.return_value = [{'Configuration' : {'FunctionName' : 'test_name_1'}}, 
-                                               {'Configuration' : {'FunctionName' : 'test_name_2'}}]
+        mock_get_all_functions.return_value = [{'Configuration' : {'FunctionName' : 'test-name_1'}},
+                                               {'Configuration' : {'FunctionName' : 'test-name_2'}}]
         Scar().rm(args)
         self.assertEqual(mock_get_all_functions.call_count, 1) 
         self.assertEqual(mock_delete_resources.call_count, 2)        
-        self.assertTrue(call('test_name_1', False, True) in mock_delete_resources.mock_calls)
-        self.assertTrue(call('test_name_2', False, True) in mock_delete_resources.mock_calls)             
+        self.assertTrue(call('test-name_1', False, True) in mock_delete_resources.mock_calls)
+        self.assertTrue(call('test-name_2', False, True) in mock_delete_resources.mock_calls)             
 
     @unittest.mock.patch('scar.Scar.parse_run_response')               
     @unittest.mock.patch('scar.AwsClient.invoke_function')                 
@@ -118,10 +118,10 @@ class TestScar(unittest.TestCase):
         mock_aws_client.invoke_function.return_value = 'invoke_return'
         Scar().launch_request_response_event('s3_test_file', event, mock_aws_client, Args())
         self.assertEqual(mock_parse_response.call_count, 1)
-        self.assertTrue(call.invoke_function('test_name', 'RequestResponse', 
+        self.assertTrue(call.invoke_function('test-name', 'RequestResponse',
                                              'Tail', '{"Records": [{"s3": {"object": {"key": "s3_test_file"}}}]}')
                  in mock_aws_client.mock_calls) 
-        self.assertTrue(call('invoke_return', 'test_name', False, False, True) in mock_parse_response.mock_calls)
+        self.assertTrue(call('invoke_return', 'test-name', False, False, True) in mock_parse_response.mock_calls)
         output = TestScar.capturedOutput.getvalue()
         self.assertTrue("Sending event for file 's3_test_file'" in output)
         
@@ -132,10 +132,10 @@ class TestScar(unittest.TestCase):
         mock_aws_client.invoke_function.return_value = 'invoke_return'
         Scar().launch_async_event('s3_test_file', event, mock_aws_client, Args())
         self.assertEqual(mock_parse_response.call_count, 1)
-        self.assertTrue(call.invoke_function('test_name', 'Event', 
+        self.assertTrue(call.invoke_function('test-name', 'Event',
                                              'None', '{"Records": [{"s3": {"object": {"key": "s3_test_file"}}}]}')
                  in mock_aws_client.mock_calls) 
-        self.assertTrue(call('invoke_return', 'test_name', True, False, True) in mock_parse_response.mock_calls)
+        self.assertTrue(call('invoke_return', 'test-name', True, False, True) in mock_parse_response.mock_calls)
         output = TestScar.capturedOutput.getvalue()
         self.assertTrue("Sending event for file 's3_test_file'" in output)
         
@@ -173,10 +173,10 @@ class TestScar(unittest.TestCase):
                                            'Extra' : 'test_verbose'}
         Scar().parse_run_response('test_response', 'test_function', False, True, False)
         self.assertEqual(mock_result.call_count, 1)
-        self.assertTrue(call().append_to_json('LambdaOutput', {'Payload': 'test payload', 
-                                                                'LogGroupName': 'test log group', 
-                                                                'LogStreamName': 'test log stream', 
-                                                                'StatusCode': '42', 
+        self.assertTrue(call().append_to_json('LambdaOutput', {'Payload': 'test payload',
+                                                                'LogGroupName': 'test log group',
+                                                                'LogStreamName': 'test log stream',
+                                                                'StatusCode': '42',
                                                                 'RequestId': '99'}) in mock_result.mock_calls)       
         self.assertTrue(call().print_results(json=True, verbose=False) in mock_result.mock_calls)
 
@@ -195,11 +195,11 @@ class TestScar(unittest.TestCase):
                                            'Extra' : 'test_verbose'}
         Scar().parse_run_response('test_response', 'test_function', False, False, True)
         self.assertEqual(mock_result.call_count, 1)
-        self.assertTrue(call().append_to_verbose('LambdaOutput', {'LogGroupName': 'test log group', 
-                                                                   'ResponseMetadata': {'RequestId': '99'}, 
-                                                                   'Payload': 'test payload', 
-                                                                   'LogStreamName': 'test log stream', 
-                                                                   'StatusCode': '42', 
+        self.assertTrue(call().append_to_verbose('LambdaOutput', {'LogGroupName': 'test log group',
+                                                                   'ResponseMetadata': {'RequestId': '99'},
+                                                                   'Payload': 'test payload',
+                                                                   'LogStreamName': 'test log stream',
+                                                                   'StatusCode': '42',
                                                                    'Extra': 'test_verbose'}) in mock_result.mock_calls)
         self.assertTrue(call().print_results(json=False, verbose=True) in mock_result.mock_calls)
         
@@ -223,7 +223,7 @@ class TestScar(unittest.TestCase):
                                            'Extra' : 'test_verbose'}
         Scar().parse_run_response('test_response', 'test_function', True, True, False)
         self.assertEqual(mock_result.call_count, 1)
-        self.assertTrue(call().append_to_json('LambdaOutput', {'StatusCode': '42', 
+        self.assertTrue(call().append_to_json('LambdaOutput', {'StatusCode': '42',
                                                                'RequestId': '99'}) in mock_result.mock_calls)       
         self.assertTrue(call().print_results(json=True, verbose=False) in mock_result.mock_calls)        
         
@@ -358,11 +358,160 @@ class TestScar(unittest.TestCase):
         self.assertTrue('Error listing the resources:' in output)          
         self.assertTrue('An error occurred (42) when calling the test2 operation: test_message' in output)        
                                   
+    def test_init_name_error(self):
+        args = Args()
+        args.name = 'error_name.'
+        with self.assertRaises(SystemExit):
+            Scar().init(args)        
+        output = TestScar.capturedOutput.getvalue()
+        self.assertTrue('{"Error": "Function name \'error_name.\' is not valid."}\n' in output)
+        args.verbose = False
+        with self.assertRaises(SystemExit):
+            Scar().init(args)        
+        output = TestScar.capturedOutput.getvalue()
+        self.assertTrue("Error: Function name 'error_name.' is not valid.\n" in output)            
+        
+    @unittest.mock.patch('scar.AwsClient')   
+    def test_init_error(self, mock_aws_client):
+        mock_aws_client.return_value.get_lambda.return_value.create_function.side_effect = ClientError({'Error' : {'Code' : '42', 'Message' : 'test_message'}}, 'test2')
+        args = Args()
+        args.verbose = False
+        with self.assertRaises(SystemExit):
+            Scar().init(args)        
+        output = TestScar.capturedOutput.getvalue()
+        self.assertTrue("Error initializing lambda function:" in output)
+        self.assertTrue("An error occurred (42) when calling the test2 operation: test_message" in output)  
+
+    @unittest.mock.patch('scar.AwsClient')   
+    def test_init(self, mock_aws_client):
+        mock_aws_client.return_value.get_access_key.return_value = 'test_key'
+        mock_aws_client.return_value.get_lambda.return_value.create_function.return_value = {'FunctionArn':'arn123',
+                                                                                            'Timeout':'300',
+                                                                                            'MemorySize':'512',
+                                                                                            'FunctionName':'f1-name',
+                                                                                            'Extra1':'e1',
+                                                                                            'Extra2':'e2'}
+        args = Args()
+        args.verbose = False
+        Scar().init(args)        
+        output = TestScar.capturedOutput.getvalue()
+        self.assertTrue("Function 'test-name' successfully created.\n" in output)
+        self.assertTrue("Log group '/aws/lambda/test-name' successfully created.\n\n" in output)
+        
+    @unittest.mock.patch('scar.AwsClient')   
+    def test_init_retention_policy_error(self, mock_aws_client):
+        mock_aws_client.return_value.get_access_key.return_value = 'test_key'
+        mock_aws_client.return_value.get_lambda.return_value.create_function.return_value = {'FunctionArn':'arn123',
+                                                                                            'Timeout':'300',
+                                                                                            'MemorySize':'512',
+                                                                                            'FunctionName':'f1-name',
+                                                                                            'Extra1':'e1',
+                                                                                            'Extra2':'e2'}
+        mock_aws_client.return_value.get_log.return_value.put_retention_policy.side_effect = ClientError({'Error' : {'Code' : '42', 'Message' : 'test_message'}}, 'test2')
+        
+        args = Args()
+        args.verbose = False
+        Scar().init(args)        
+        output = TestScar.capturedOutput.getvalue()
+        self.assertTrue("Error setting log retention policy:" in output)
+        self.assertTrue("An error occurred (42) when calling the test2 operation: test_message" in output)  
+
+    @unittest.mock.patch('scar.AwsClient')   
+    def test_init_event_source_error(self, mock_aws_client):
+        mock_aws_client.return_value.get_access_key.return_value = 'test_key'
+        mock_aws_client.return_value.get_lambda.return_value.create_function.return_value = {'FunctionArn':'arn123',
+                                                                                            'Timeout':'300',
+                                                                                            'MemorySize':'512',
+                                                                                            'FunctionName':'f1-name',
+                                                                                            'Extra1':'e1',
+                                                                                            'Extra2':'e2'}
+        mock_aws_client.return_value.check_and_create_s3_bucket.side_effect = ClientError({'Error' : {'Code' : '42', 'Message' : 'test_message'}}, 'test2')
+        
+        args = Args()
+        args.verbose = False
+        args.event_source = True       
+        Scar().init(args)        
+        output = TestScar.capturedOutput.getvalue()
+        self.assertTrue("Error creating the event source:" in output)
+        self.assertTrue("An error occurred (42) when calling the test2 operation: test_message" in output)  
+
+    @unittest.mock.patch('scar.AwsClient')   
+    def test_init_log_group_error(self, mock_aws_client):
+        mock_aws_client.return_value.get_access_key.return_value = 'test_key'
+        mock_aws_client.return_value.get_lambda.return_value.create_function.return_value = {'FunctionArn':'arn123',
+                                                                                            'Timeout':'300',
+                                                                                            'MemorySize':'512',
+                                                                                            'FunctionName':'f1-name',
+                                                                                            'Extra1':'e1',
+                                                                                            'Extra2':'e2'}
+        mock_aws_client.return_value.get_log.return_value.create_log_group.side_effect = ClientError({'Error' : {'Code' : '42', 'Message' : 'test_message'}}, 'test2')
+        
+        args = Args()
+        args.verbose = False
+        Scar().init(args)        
+        output = TestScar.capturedOutput.getvalue()
+        self.assertTrue("Error creating log groups:" in output)
+        self.assertTrue("An error occurred (42) when calling the test2 operation: test_message" in output) 
+
+    @unittest.mock.patch('scar.AwsClient')   
+    def test_init_existing_log_group(self, mock_aws_client):
+        mock_aws_client.return_value.get_access_key.return_value = 'test_key'
+        mock_aws_client.return_value.get_lambda.return_value.create_function.return_value = {'FunctionArn':'arn123',
+                                                                                            'Timeout':'300',
+                                                                                            'MemorySize':'512',
+                                                                                            'FunctionName':'f1-name',
+                                                                                            'Extra1':'e1',
+                                                                                            'Extra2':'e2'}
+        mock_aws_client.return_value.get_log.return_value.create_log_group.side_effect = ClientError({'Error' : {'Code' : 'ResourceAlreadyExistsException', 'Message' : 'test_message'}}, 'test2')
+        
+        args = Args()
+        args.verbose = False
+        Scar().init(args)        
+        output = TestScar.capturedOutput.getvalue()
+        self.assertTrue("Function 'test-name' successfully created.\n" in output)
+        self.assertTrue("Warning: Using existent log group '/aws/lambda/test-name'\n\n" in output) 
+
+    @unittest.mock.patch('scar.Scar.parse_run_response')
+    @unittest.mock.patch('scar.AwsClient')                    
+    def test_run(self, mock_aws_client, mock_parse_response):
+        args = Args()
+        args.verbose = False
+        Scar().run(args)        
+        self.assertEqual(mock_aws_client.call_count, 1)
+        self.assertEqual(mock_parse_response.call_count, 1)
+        self.assertTrue(call().check_function_name_not_exists('test-name', False) in mock_aws_client.mock_calls)
+        self.assertTrue(call().invoke_function('test-name', 'RequestResponse', 'Tail', '{}') in mock_aws_client.mock_calls)  
+
+    @unittest.mock.patch('scar.Scar.launch_async_event')
+    @unittest.mock.patch('scar.Scar.launch_request_response_event')
+    @unittest.mock.patch('scar.AwsClient')                    
+    def test_run_event_source(self, mock_aws_client, mock_launch_request_response_event, mock_launch_async_event):
+        mock_aws_client.return_value.get_s3_file_list.return_value = ['test_file_1','test_file_2','test_file_3','test_file_4']
+        args = Args()
+        args.verbose = False
+        args.event_source = 'test_bucket'
+        Scar().run(args)        
+        self.assertEqual(mock_aws_client.call_count, 1)
+        self.assertTrue(call().check_function_name_not_exists('test-name', False) in mock_aws_client.mock_calls)
+        self.assertTrue(call().get_s3_file_list('test_bucket') in mock_aws_client.mock_calls)    
+        self.assertEqual(mock_launch_request_response_event.call_count, 1)
+        self.assertEqual(mock_launch_async_event.call_count, 3)          
                         
 if __name__ == '__main__':
     unittest.main()
     
 class Args(object):
-    name = 'test_name'
-    json =  False
+    name = 'test-name'
+    json = False
     verbose = True
+    script = None
+    memory = None
+    time = None
+    description = None
+    image_id = None
+    lambda_role = None
+    time_threshold = None
+    env = None
+    event_source = None
+    async = None
+    cont_args = None

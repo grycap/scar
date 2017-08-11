@@ -217,11 +217,10 @@ class Scar(object):
             s3_files = aws_client.get_s3_file_list(args.event_source)
             print("Files found: '%s'" % s3_files)
        
-            if len(s3_files) == 1:
+            if len(s3_files) >= 1:
                 self.launch_request_response_event(s3_files[0], event, aws_client, args)
        
             if len(s3_files) > 1:
-                self.launch_request_response_event(s3_files[0], event, aws_client, args)
                 s3_files = s3_files[1:]
                 size = len(s3_files)
                 
