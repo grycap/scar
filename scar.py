@@ -245,12 +245,12 @@ class Scar(object):
             response = aws_client.invoke_function(args.name, invocation_type, log_type, json.dumps(payload))
             self.parse_run_response(response, args.name, args.async, args.json, args.verbose)
 
-    def chunks(self, list, chunk_size):
+    def chunks(self, elements, chunk_size):
         """Yield successive n-sized chunks from list."""
-        if len(list) == 0:
+        if len(elements) == 0:
             yield []
-        for i in range(0, len(list), chunk_size):
-            yield list[i:i + chunk_size]
+        for i in range(0, len(elements), chunk_size):
+            yield elements[i:i + chunk_size]
 
     def launch_request_response_event(self, s3_file, event, aws_client, args):
         event['Records'][0]['s3']['object']['key'] = s3_file

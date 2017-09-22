@@ -158,7 +158,7 @@ class Supervisor():
         return command
     
 def lambda_handler(event, context):
-    print("SCAR: Received event: " + json.dumps(event))    
+    print("SCAR: Received event: " + json.dumps(event))
     supervisor = Supervisor()
     stdout = supervisor.prepare_output(context)
     try:
@@ -166,21 +166,19 @@ def lambda_handler(event, context):
         # Create container execution command
         command = supervisor.create_command(event, context)
         # print ("Udocker command: %s" % command)
-         
+
         # Execute container
         lambda_output = "/tmp/%s/lambda-stdout.txt" % context.aws_request_id
-         
         remaining_seconds = int(context.get_remaining_time_in_millis()/1000) - int(os.environ['TIME_THRESHOLD'])
         print("Executing the container. Timeout set to %s seconds" % str(remaining_seconds))
         try:
             call(command, timeout=remaining_seconds, stderr=STDOUT, stdout=open(lambda_output, "w"))
         except TimeoutExpired:
             print("WARNING: Container timeout")  
-               
+
         stdout += check_output(["cat", lambda_output]).decode("utf-8")
-         
         supervisor.post_process(event, context)
-         
+
     except Exception:
         stdout += "ERROR: Exception launched:\n %s" % traceback.format_exc()
     print(stdout)
@@ -229,7 +227,8 @@ class S3_Bucket():
         for file_path in output_files_path:
             file_key = "output/%s" % file_path.replace(output_folder, "")
             print ("Uploading file to bucket %s with key %s" % (bucket_name, file_key))
-            self.get_s3_client().upload_file(file_path, bucket_name, file_key)
+            with open(file_path, 'rb') as data:
+                self.get_s3_client().upload_fileobj(data, bucket_name, file_key)
             print ("Changing ACLs for public-read for object in bucket %s with key %s" % (bucket_name, file_key))
             s3_resource = boto3.resource('s3')
             obj = s3_resource.Object(bucket_name, file_key)
