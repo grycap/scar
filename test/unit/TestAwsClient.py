@@ -52,18 +52,18 @@ class TestAwsClient(unittest.TestCase):
         self.assertEqual(147, AwsClient().check_time(147))
 
     @unittest.mock.patch('boto3.client')        
-    def test_get_user_name(self, mock_client):
-        mock_client.return_value.get_user.return_value = {'User' : { 'UserName' : 'test1' }}
-        user = AwsClient().get_user_name()
+    def test_get_user_name_or_id(self, mock_client):
+        mock_client.return_value.get_user.return_value = {'User' : { 'UserName' : 'test1', 'UserId' : 'asd123' }}
+        user = AwsClient().get_user_name_or_id()
         self.assertEqual(mock_client.call_count, 1)
         self.assertEqual(mock_client.call_args, call('iam', region_name='us-east-1'))       
         self.assertTrue(call().get_user() in mock_client.mock_calls)
         self.assertEqual(user, 'test1')
 
     @unittest.mock.patch('boto3.client')        
-    def test_get_user_name_error(self, mock_client):
+    def test_get_user_name_or_id_error(self, mock_client):
         mock_client.side_effect = ClientError({'Error' : {'Code' : '42', 'Message' : 'user/testu bla'}}, 'test2')
-        user = AwsClient().get_user_name()
+        user = AwsClient().get_user_name_or_id()
         self.assertEqual(user, 'testu')
 
     @unittest.mock.patch('boto3.Session')        
@@ -345,10 +345,10 @@ class TestAwsClient(unittest.TestCase):
         self.assertTrue("Error creating the S3 bucket 'test_bucket' folders:" in output)
         self.assertTrue('An error occurred (42) when calling the test2 operation: test_message' in output)
         
-    @unittest.mock.patch('scar.AwsClient.get_user_name')        
+    @unittest.mock.patch('scar.AwsClient.get_user_name_or_id')        
     @unittest.mock.patch('scar.AwsClient.get_resource_groups_tagging_api')
-    def test_get_functions_arn_list(self, mock_resource_groups_client, mock_get_user_name):
-        mock_get_user_name.return_value = 'test_user'
+    def test_get_functions_arn_list(self, mock_resource_groups_client, mock_get_user_name_or_id):
+        mock_get_user_name_or_id.return_value = 'test_user'
         mock_resource_groups_client.return_value.get_resources.side_effect = [{'ResourceTagMappingList' : [{'ResourceARN' : 'res1'}, {'ResourceARN' : 'res2'}],
                                                                                'PaginationToken' : 'token1'}, 
                                                                               {'ResourceTagMappingList' : [{'ResourceARN' : 'res3'}, {'ResourceARN' : 'res4'}],

@@ -1,4 +1,3 @@
-import base64
 import io
 import os
 import unittest.mock
@@ -6,10 +5,8 @@ import sys
 import zipfile
 
 from botocore.exceptions import ClientError
-from botocore.vendored.requests.exceptions import ReadTimeout
 from scar import Scar
 from unittest.mock import call
-from unittest.mock import PropertyMock
 
 sys.path.append(".")
 sys.path.append("..")
@@ -24,7 +21,7 @@ class TestScar(unittest.TestCase):
 
     def tearDown(self):
         TestScar.capturedOutput.close()
-        sys.stdout = sys.__stdout__                    
+        sys.stdout = sys.__stdout__
         
     def test_chunks(self):
         test_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
@@ -77,15 +74,17 @@ class TestScar(unittest.TestCase):
         self.assertEqual(result, None)
         
     def test_create_zip_file(self):
-        zip_file_path = '../../function.zip'
+        test_file_path = os.path.dirname(os.path.abspath(__file__))
+        zip_file_path = "%s/../../function.zip" % test_file_path
         Scar().create_zip_file('test')
         self.assertTrue(os.path.isfile(zip_file_path))
         self.assertEqual(zipfile.ZipFile(zip_file_path).namelist(), ['test.py', 'udocker', 'udocker-1.1.0-RC2.tar.gz'])
         os.remove(zip_file_path)
         
     def test_create_zip_file_with_script(self):
-        zip_file_path = '../../function.zip'
-        Scar().create_zip_file('test', 'files/test_script.sh')
+        test_file_path = os.path.dirname(os.path.abspath(__file__))
+        zip_file_path = "%s/../../function.zip" % test_file_path
+        Scar().create_zip_file('test', "%s/files/test_script.sh" % test_file_path)
         self.assertTrue(os.path.isfile(zip_file_path))
         self.assertEqual(zipfile.ZipFile(zip_file_path).namelist(), ['test.py', 'udocker', 'udocker-1.1.0-RC2.tar.gz', 'init_script.sh'])
         os.remove(zip_file_path)

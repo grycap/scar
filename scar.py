@@ -725,7 +725,7 @@ class AwsClient(object):
         try:
             # Creation of a function filter by tags
             client = self.get_resource_groups_tagging_api()
-            tag_filters = [ { 'Key': 'owner', 'Values': [ self.get_user_name() ] },
+            tag_filters = [ { 'Key': 'owner', 'Values': [ self.get_user_name_or_id() ] },
                             { 'Key': 'createdby', 'Values': ['scar'] } ]            
             response = client.get_resources(TagFilters=tag_filters,
                                                  TagsPerPage=100)
