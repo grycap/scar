@@ -79,7 +79,7 @@ class Scar(object):
         if args.env:
             StringUtils().parse_environment_variables(args.env)
         # Update lambda tags
-        Config.lambda_tags['owner'] = aws_client.get_user_name()
+        Config.lambda_tags['owner'] = aws_client.get_user_name_or_id()
 
         # Call the AWS service
         result = Result()
@@ -117,7 +117,7 @@ class Scar(object):
         try:
             cw_response = aws_client.get_log().create_log_group(
                 logGroupName=log_group_name,
-                tags={ 'owner' : aws_client.get_user_name(),
+                tags={ 'owner' : aws_client.get_user_name_or_id(),
                        'createdby' : 'scar' }
             )
             # Parse results
@@ -256,9 +256,9 @@ class Scar(object):
         event['Records'][0]['s3']['object']['key'] = s3_file
         payload = json.dumps(event)
         print("Sending event for file '%s'" % s3_file)
+        async = False
         invocation_type = 'RequestResponse'
         log_type = 'Tail'
-        async = False
         response = aws_client.invoke_function(args.name, invocation_type, log_type, payload)
         self.parse_run_response(response, args.name, async, args.json, args.verbose)
 
@@ -564,9 +564,10 @@ class AwsClient(object):
             raise Exception('Incorrect time specified')
         return lambda_time
 
-    def get_user_name(self):
+    def get_user_name_or_id(self):
         try:
-            return self.get_iam().get_user()['User']['UserName']
+            user = self.get_iam().get_user()['User']
+            return user.get('UserName', user['UserId'])
         except ClientError as ce:
             # If the user doesn't have access rights to IAM
             return StringUtils().find_expression('(?<=user\/)(\S+)', str(ce))
