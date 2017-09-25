@@ -1,6 +1,6 @@
-# SCAR - Serverless Container-aware ARchitectures
+Build Status [![Build Status](http://jenkins.i3m.upv.es/buildStatus/icon?job=grycap/scar)](http://jenkins.i3m.upv.es/job/grycap/job/scar/)
 
-* Build Status [![Build Status](http://jenkins.i3m.upv.es/buildStatus/icon?job=grycap/scar)](http://jenkins.i3m.upv.es/job/grycap/job/scar/)
+# SCAR - Serverless Container-aware ARchitectures
 
 SCAR is a framework to transparently execute containers out of Docker images in AWS Lambda, in order to run applications (see examples for [ImageMagick](examples/imagemagick/README.md), [FFmpeg](examples/ffmpeg/README.md) and [AWS CLI](examples/aws-cli/README.md), as well as deep learning frameworks such as [Theano](examples/theano/README.md) and [Darknet](examples/darknet/README.md)) and code in virtually any programming language (see examples for [Erlang](examples/erlang) and [Elixir](examples/elixir)) on AWS Lambda.
 
