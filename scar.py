@@ -151,9 +151,9 @@ class Scar(object):
         result.print_results(json=args.json, verbose=args.verbose)
 
     def ls(self, args):
-        aws_client = self.get_aws_client()
-        result = Result()
         try:
+            aws_client = self.get_aws_client()
+            result = Result()            
             # Get the filtered resources from AWS
             lambda_functions = aws_client.get_all_functions()
             # Create the data structure
@@ -215,13 +215,12 @@ class Scar(object):
             event = Config.lambda_event
             event['Records'][0]['s3']['bucket']['name'] = args.event_source
             s3_files = aws_client.get_s3_file_list(args.event_source)
-            print("Files found '%s'" % s3_files)
+            print("Files found: '%s'" % s3_files)
        
-            if len(s3_files) == 1:
+            if len(s3_files) >= 1:
                 self.launch_request_response_event(s3_files[0], event, aws_client, args)
        
             if len(s3_files) > 1:
-                self.launch_request_response_event(s3_files[0], event, aws_client, args)
                 s3_files = s3_files[1:]
                 size = len(s3_files)
                 
@@ -246,10 +245,12 @@ class Scar(object):
             response = aws_client.invoke_function(args.name, invocation_type, log_type, json.dumps(payload))
             self.parse_run_response(response, args.name, args.async, args.json, args.verbose)
 
-    def chunks(self, list, chunk_size):
-        """Yield successive n-sized chunks from l."""
-        for i in range(0, len(list), chunk_size):
-            yield list[i:i + chunk_size]
+    def chunks(self, elements, chunk_size):
+        """Yield successive n-sized chunks from list."""
+        if len(elements) == 0:
+            yield []
+        for i in range(0, len(elements), chunk_size):
+            yield elements[i:i + chunk_size]
 
     def launch_request_response_event(self, s3_file, event, aws_client, args):
         event['Records'][0]['s3']['object']['key'] = s3_file
@@ -378,14 +379,16 @@ class Scar(object):
 
             response['completeMessage'] = full_msg
             if args.request_id:
-                print (self.parse_logs(full_msg, args.request_id))
+                print (self.parse_aws_logs(full_msg, args.request_id))
             else:
                 print (full_msg)
                 
         except ClientError as ce:
             print(ce)
 
-    def parse_logs(self, logs, request_id):
+    def parse_aws_logs(self, logs, request_id):
+        if (logs is None) or (request_id is None):
+            return None
         full_msg = ""
         logging = False
         lines = logs.split('\n')
@@ -497,18 +500,21 @@ class Config(object):
 
     zif_file_path = dir_path + '/function.zip'
 
-    config = configparser.ConfigParser()
+    config_parser = configparser.ConfigParser()
 
     def create_config_file(self, file_dir):
 
-        self.config['scar'] = {'lambda_description' : "Automatically generated lambda function",
+        self.config_parser['scar'] = {'lambda_description' : "Automatically generated lambda function",
                           'lambda_memory' : Config.lambda_memory,
                           'lambda_time' : Config.lambda_time,
                           'lambda_region' : 'us-east-1',
                           'lambda_role' : '',
                           'lambda_timeout_threshold' : Config.lambda_timeout_threshold}
         with open(file_dir + "/scar.cfg", "w") as configfile:
-            self.config.write(configfile)
+            self.config_parser.write(configfile)
+        
+        print ("Config file %s/scar.cfg created.\nPlease, set first a valid lambda role to be used." % file_dir)
+        sys.exit(0)     
 
     def check_config_file(self):
         scar_dir = os.path.expanduser("~") + "/.scar"
@@ -516,19 +522,18 @@ class Config(object):
         if os.path.isdir(scar_dir):
             # Check if the config file exists
             if os.path.isfile(scar_dir + "/scar.cfg"):
-                self.config.read(scar_dir + "/scar.cfg")
+                self.config_parser.read(scar_dir + "/scar.cfg")
                 self.parse_config_file_values()
             else:
                 self.create_config_file(scar_dir)
-                print ("Config file ~/.scar/scar.cfg created.\nPlease, set first a valid lambda role to be used.")
-                sys.exit(1)
         else:
             # Create scar dir
-            call(["mkdir", "-p", scar_dir])
+            os.makedirs(scar_dir)
             self.create_config_file(scar_dir)
+         
 
     def parse_config_file_values(self):
-        scar_config = Config.config['scar']
+        scar_config = Config.config_parser['scar']
         Config.lambda_role = scar_config.get('lambda_role', fallback=Config.lambda_role)
         if not Config.lambda_role or Config.lambda_role == "":
             print ("Please, specify first a lambda role in the ~/.scar/scar.cfg file.")
@@ -595,9 +600,10 @@ class AwsClient(object):
     def get_s3_file_list(self, bucket_name):
         file_list = []
         result = self.get_s3().list_objects_v2(Bucket=bucket_name, Prefix='input/')
-        for content in result['Contents']:
-            if content['Key'] and content['Key'] != "input/": 
-                file_list.append(content['Key'])
+        if 'Contents' in result:
+            for content in result['Contents']:
+                if content['Key'] and content['Key'] != "input/": 
+                    file_list.append(content['Key'])
         return file_list
 
     def find_function_name(self, function_name):
@@ -656,27 +662,23 @@ class AwsClient(object):
             print ("Error updating the environment variables of the lambda function: %s" % ce)
 
     def create_trigger_from_bucket(self, bucket_name, function_arn):
+        notification = { "LambdaFunctionConfigurations": [
+                            { "Id": "string",
+                              "LambdaFunctionArn": function_arn,
+                              "Events": [ "s3:ObjectCreated:*" ],
+                              "Filter": 
+                                { "Key": 
+                                    { "FilterRules": [
+                                        { "Name": "prefix",
+                                          "Value": "input/"
+                                        }]
+                                    }
+                                }
+                            }]
+                        }
         try:
-            self.get_s3().put_bucket_notification_configuration(Bucket=bucket_name,
-                                                                 NotificationConfiguration={
-                                                                     "LambdaFunctionConfigurations": [
-                                                                        {
-                                                                            "Id": "string",
-                                                                            "LambdaFunctionArn": function_arn,
-                                                                            "Events": [ "s3:ObjectCreated:*" ],
-                                                                            "Filter": {
-                                                                                "Key": {
-                                                                                    "FilterRules": [
-                                                                                        {
-                                                                                            "Name": "prefix",
-                                                                                            "Value": "input/"
-                                                                                        }
-                                                                                    ]
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                     ]}
-                                                                )
+            self.get_s3().put_bucket_notification_configuration( Bucket=bucket_name,
+                                                                 NotificationConfiguration=notification )
 
         except ClientError as ce:
             print ("Error configuring S3 bucket: %s" % ce)
@@ -720,16 +722,18 @@ class AwsClient(object):
 
     def get_functions_arn_list(self):
         arn_list = []
-        # Creation of a function filter by tags
-        client = self.get_resource_groups_tagging_api()
-        tag_filters = [ { 'Key': 'owner', 'Values': [ self.get_user_name_or_id() ] },
-                        { 'Key': 'createdby', 'Values': ['scar'] } ]
         try:
+            # Creation of a function filter by tags
+            client = self.get_resource_groups_tagging_api()
+            tag_filters = [ { 'Key': 'owner', 'Values': [ self.get_user_name_or_id() ] },
+                            { 'Key': 'createdby', 'Values': ['scar'] } ]            
             response = client.get_resources(TagFilters=tag_filters,
                                                  TagsPerPage=100)
+            
             for function in response['ResourceTagMappingList']:
                 arn_list.append(function['ResourceARN'])
-            if ('PaginationToken' in response) and (response['PaginationToken']):
+                
+            while ('PaginationToken' in response) and (response['PaginationToken']):
                 response = client.get_resources(PaginationToken=response['PaginationToken'],
                                                 TagFilters=tag_filters,
                                                 TagsPerPage=100)
@@ -744,9 +748,9 @@ class AwsClient(object):
     def get_all_functions(self):
         function_list = []
         # Get the filtered resources from AWS
-        filtered_functions = self.get_functions_arn_list()
+        functions_arn = self.get_functions_arn_list()
         try:
-            for function_arn in filtered_functions:
+            for function_arn in functions_arn:
                 function_list.append(self.get_lambda().get_function(FunctionName=function_arn))
         except ClientError as ce:
             print ("Error getting function info by arn: %s" % ce)
@@ -768,7 +772,7 @@ class AwsClient(object):
             # Delete the cloudwatch log group
             log_group_name = '/aws/lambda/%s' % function_name
             cw_response = self.get_log().delete_log_group(logGroupName=log_group_name)
-            result.append_to_verbose('CloudWatchOuput', cw_response)
+            result.append_to_verbose('CloudWatchOutput', cw_response)
             result.append_to_json('CloudWatchOutput', { 'RequestId' : cw_response['ResponseMetadata']['RequestId'],
                                              'HTTPStatusCode' : cw_response['ResponseMetadata']['HTTPStatusCode'] })
             result.append_to_plain_text("Log group '%s' successfully deleted." % function_name)
