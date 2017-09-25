@@ -1,4 +1,4 @@
-Build Status [![Build Status](http://jenkins.i3m.upv.es/buildStatus/icon?job=grycap/scar)](http://jenkins.i3m.upv.es/job/grycap/job/scar/)
+[![Build Status](http://jenkins.i3m.upv.es/buildStatus/icon?job=grycap/scar)](http://jenkins.i3m.upv.es/job/grycap/job/scar/)
 
 # SCAR - Serverless Container-aware ARchitectures
 
