@@ -7,6 +7,6 @@ install:
   - pip install nose mock 'coverage>=4.0,<4.4' codeclimate-test-reporter
   - pip install -r requirements.txt
 
-script: 
+script:
   - nosetests-3.4 test/unit/TestStringUtils.py test/unit/TestScar.py test/unit/TestAwsClient.py test/unit/TestConfig.py test/unit/TestResult.py -v --stop --with-xunit --with-coverage --cover-erase --cover-package=scar
-  - codeclimate-test-reporter
+  - codeclimate-test-reporter --token 9fb3fcd1b7df79ac9357e11fa8dc5df5514704fddd3cfc70807e61109172598a
