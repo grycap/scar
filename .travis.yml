@@ -8,5 +8,4 @@ install:
   - pip install -r requirements.txt
 
 script: 
-  - nosetests-3.4 test/unit/TestStringUtils.py test/unit/TestScar.py test/unit/TestAwsClient.py test/unit/TestConfig.py test/unit/TestResult.py \
--v --stop --with-xunit --with-coverage --cover-erase --cover-xml --cover-package=scar
+  - nosetests-3.4 test/unit/TestStringUtils.py test/unit/TestScar.py test/unit/TestAwsClient.py test/unit/TestConfig.py test/unit/TestResult.py -v --stop --with-xunit --with-coverage --cover-erase --cover-xml --cover-package=scar
