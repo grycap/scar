@@ -29,7 +29,6 @@ import zipfile
 from botocore.exceptions import ClientError
 from botocore.vendored.requests.exceptions import ReadTimeout
 from multiprocessing.pool import ThreadPool
-from subprocess import call
 from tabulate import tabulate
 
 class Scar(object):
