@@ -71,7 +71,7 @@ class Scar(object):
         if args.lambda_role:
             Config.lambda_role = args.lambda_role
         if args.time_threshold:
-            Config.lambda_env_variables['Variables']['TIME_THRESHOLD'] = str(args.time_threshold)    
+            Config.lambda_env_variables['Variables']['TIME_THRESHOLD'] = str(args.time_threshold)
         else:
             Config.lambda_env_variables['Variables']['TIME_THRESHOLD'] = str(Config.lambda_timeout_threshold)
         # Modify environment vars if necessary
@@ -152,7 +152,7 @@ class Scar(object):
     def ls(self, args):
         try:
             aws_client = self.get_aws_client()
-            result = Result()            
+            result = Result()
             # Get the filtered resources from AWS
             lambda_functions = aws_client.get_all_functions()
             # Create the data structure
@@ -208,21 +208,21 @@ class Scar(object):
         # Or parse the container arguments
         elif args.cont_args:
             payload = { "cmd_args" : StringUtils().escape_list(args.cont_args) }
-            
+
         # Use the event source to launch the function
         if args.event_source:
             event = Config.lambda_event
             event['Records'][0]['s3']['bucket']['name'] = args.event_source
             s3_files = aws_client.get_s3_file_list(args.event_source)
             print("Files found: '%s'" % s3_files)
-       
+
             if len(s3_files) >= 1:
                 self.launch_request_response_event(s3_files[0], event, aws_client, args)
-       
+
             if len(s3_files) > 1:
                 s3_files = s3_files[1:]
                 size = len(s3_files)
-                
+
                 chunk_size = 1000
                 if size > chunk_size:
                     s3_file_chunks = self.chunks(s3_files, chunk_size)
@@ -232,14 +232,14 @@ class Scar(object):
                             lambda s3_file: self.launch_async_event(s3_file, event, aws_client, args),
                             s3_file_chunk
                         )
-                        pool.close()                      
+                        pool.close()
                 else:
                     pool = ThreadPool(processes=len(s3_files))
                     pool.map(
                         lambda s3_file: self.launch_async_event(s3_file, event, aws_client, args),
                         s3_files
                     )
-                    pool.close() 
+                    pool.close()
         else:
             response = aws_client.invoke_function(args.name, invocation_type, log_type, json.dumps(payload))
             self.parse_run_response(response, args.name, args.async, args.json, args.verbose)
@@ -251,26 +251,18 @@ class Scar(object):
         for i in range(0, len(elements), chunk_size):
             yield elements[i:i + chunk_size]
 
-    def launch_request_response_event(self, s3_file, event, aws_client, args):
+    def launch_generic_event(self, s3_file, event, aws_client, args, async, invocation_type, log_type):
         event['Records'][0]['s3']['object']['key'] = s3_file
         payload = json.dumps(event)
         print("Sending event for file '%s'" % s3_file)
-        async = False
-        invocation_type = 'RequestResponse'
-        log_type = 'Tail'
         response = aws_client.invoke_function(args.name, invocation_type, log_type, payload)
         self.parse_run_response(response, args.name, async, args.json, args.verbose)
 
+    def launch_request_response_event(self, s3_file, event, aws_client, args):
+        self.launch_generic_event(s3_file, event, aws_client, args, False, 'RequestResponse', 'Tail')
 
     def launch_async_event(self, s3_file, event, aws_client, args):
-        event['Records'][0]['s3']['object']['key'] = s3_file
-        payload = json.dumps(event)
-        print("Sending event for file '%s'" % s3_file)
-        invocation_type = 'Event'
-        log_type = 'None'
-        async = True
-        response = aws_client.invoke_function(args.name, invocation_type, log_type, payload)
-        self.parse_run_response(response, args.name, async, args.json, args.verbose)
+        self.launch_generic_event(s3_file, event, aws_client, args, True, 'Event', 'None')
 
     def parse_run_response(self, response, function_name, async, json, verbose):
         # Decode and parse the payload
@@ -288,8 +280,8 @@ class Scar(object):
             else:
                 print ("Error in function response: %s" % response['Payload'])
             sys.exit(1)
- 
- 
+
+
         result = Result()
         if async:
             # Prepare the outputs
@@ -297,7 +289,7 @@ class Scar(object):
             result.append_to_json('LambdaOutput', {'StatusCode' : response['StatusCode'],
                                                        'RequestId' : response['ResponseMetadata']['RequestId']})
             result.append_to_plain_text("Function '%s' launched correctly" % function_name)
- 
+
         else:
             # Transform the base64 encoded results to something legible
             response = StringUtils().parse_base64_response_values(response)
@@ -310,10 +302,10 @@ class Scar(object):
                                                    'LogGroupName' : response['LogGroupName'],
                                                    'LogStreamName' : response['LogStreamName'],
                                                    'RequestId' : response['ResponseMetadata']['RequestId']})
- 
+
             result.append_to_plain_text('SCAR: Request Id: %s' % response['ResponseMetadata']['RequestId'])
             result.append_to_plain_text(response['Payload'])
- 
+
         # Show results
         result.print_results(json=json, verbose=verbose)
 
@@ -350,7 +342,7 @@ class Scar(object):
     def log(self, args):
         try:
             log_group_name = "/aws/lambda/%s" % args.name
-            full_msg = ""            
+            full_msg = ""
             if args.log_stream_name:
                 response = self.get_aws_client().get_log().get_log_events(
                     logGroupName=log_group_name,
@@ -365,13 +357,13 @@ class Scar(object):
 
                 for event in response['events']:
                     data.append((event['message'], event['timestamp']))
-           
+
                 while(('nextToken' in response) and response['nextToken']):
                     response = self.get_aws_client().get_log().filter_log_events(logGroupName=log_group_name,
                                                                                  nextToken=response['nextToken'])
                     for event in response['events']:
                         data.append((event['message'], event['timestamp']))
-                
+
                 sorted_data = sorted(data, key=lambda time: time[1])
                 for sdata in sorted_data:
                     full_msg += sdata[0]
@@ -381,7 +373,7 @@ class Scar(object):
                 print (self.parse_aws_logs(full_msg, args.request_id))
             else:
                 print (full_msg)
-                
+
         except ClientError as ce:
             print(ce)
 
@@ -481,7 +473,7 @@ class Config(object):
     lambda_timeout_threshold = 10
     lambda_description = "Automatically generated lambda function"
     lambda_tags = { 'createdby' : 'scar' }
-    
+
     lambda_event = { "Records" : [
                         { "eventSource" : "aws:s3",
                           "s3" : {
@@ -489,7 +481,7 @@ class Config(object):
                                   "name" : ""},
                               "object" : {
                                   "key" : "" }
-                            }                   
+                            }
                         }
                     ]}
 
@@ -511,9 +503,9 @@ class Config(object):
                           'lambda_timeout_threshold' : Config.lambda_timeout_threshold}
         with open(file_dir + "/scar.cfg", "w") as configfile:
             self.config_parser.write(configfile)
-        
+
         print ("Config file %s/scar.cfg created.\nPlease, set first a valid lambda role to be used." % file_dir)
-        sys.exit(0)     
+        sys.exit(0)
 
     def check_config_file(self):
         scar_dir = os.path.expanduser("~") + "/.scar"
@@ -529,14 +521,14 @@ class Config(object):
             # Create scar dir
             os.makedirs(scar_dir)
             self.create_config_file(scar_dir)
-         
+
 
     def parse_config_file_values(self):
         scar_config = Config.config_parser['scar']
         Config.lambda_role = scar_config.get('lambda_role', fallback=Config.lambda_role)
         if not Config.lambda_role or Config.lambda_role == "":
             print ("Please, specify first a lambda role in the ~/.scar/scar.cfg file.")
-            sys.exit(1)         
+            sys.exit(1)
         Config.lambda_region = scar_config.get('lambda_region', fallback=Config.lambda_region)
         Config.lambda_memory = scar_config.getint('lambda_memory', fallback=Config.lambda_memory)
         Config.lambda_time = scar_config.getint('lambda_time', fallback=Config.lambda_time)
@@ -595,13 +587,13 @@ class AwsClient(object):
 
     def get_s3(self, region=None):
         return self.get_boto3_client('s3', region)
-    
+
     def get_s3_file_list(self, bucket_name):
         file_list = []
         result = self.get_s3().list_objects_v2(Bucket=bucket_name, Prefix='input/')
         if 'Contents' in result:
             for content in result['Contents']:
-                if content['Key'] and content['Key'] != "input/": 
+                if content['Key'] and content['Key'] != "input/":
                     file_list.append(content['Key'])
         return file_list
 
@@ -665,8 +657,8 @@ class AwsClient(object):
                             { "Id": "string",
                               "LambdaFunctionArn": function_arn,
                               "Events": [ "s3:ObjectCreated:*" ],
-                              "Filter": 
-                                { "Key": 
+                              "Filter":
+                                { "Key":
                                     { "FilterRules": [
                                         { "Name": "prefix",
                                           "Value": "input/"
@@ -725,23 +717,23 @@ class AwsClient(object):
             # Creation of a function filter by tags
             client = self.get_resource_groups_tagging_api()
             tag_filters = [ { 'Key': 'owner', 'Values': [ self.get_user_name_or_id() ] },
-                            { 'Key': 'createdby', 'Values': ['scar'] } ]            
+                            { 'Key': 'createdby', 'Values': ['scar'] } ]
             response = client.get_resources(TagFilters=tag_filters,
                                                  TagsPerPage=100)
-            
+
             for function in response['ResourceTagMappingList']:
                 arn_list.append(function['ResourceARN'])
-                
+
             while ('PaginationToken' in response) and (response['PaginationToken']):
                 response = client.get_resources(PaginationToken=response['PaginationToken'],
                                                 TagFilters=tag_filters,
                                                 TagsPerPage=100)
                 for function in response['ResourceTagMappingList']:
                     arn_list.append(function['ResourceARN'])
-                 
+
         except ClientError as ce:
             print ("Error getting function arn by tag: %s" % ce)
-        
+
         return arn_list
 
     def get_all_functions(self):
@@ -788,23 +780,23 @@ class AwsClient(object):
         self.delete_cloudwatch_group(function_name, result)
         # Show results
         result.print_results(json, verbose)
-        
+
     def invoke_function(self, function_name, invocation_type, log_type, payload):
         response = {}
         try:
             response = self.get_lambda().invoke(FunctionName=function_name,
                                                 InvocationType=invocation_type,
                                                 LogType=log_type,
-                                                Payload=payload)               
+                                                Payload=payload)
         except ClientError as ce:
             print ("Error invoking lambda function: %s" % ce)
             sys.exit(1)
-                     
+
         except ReadTimeout as rt:
             print ("Timeout reading connection pool: %s" % rt)
             sys.exit(1)
         return response
-        
+
 class Result(object):
 
     def __init__(self):
@@ -916,11 +908,11 @@ class CmdParser(object):
 
         # 'log' command
         parser_log = subparsers.add_parser('log', help="Show the logs for the lambda function")
-        parser_log.set_defaults(func=scar.log)        
+        parser_log.set_defaults(func=scar.log)
         parser_log.add_argument("name", help="Lambda function name")
         parser_log.add_argument("-ls", "--log_stream_name", help="Return the output for the log stream specified.")
         parser_log.add_argument("-ri", "--request_id", help="Return the output for the request id specified.")
-        
+
     def execute(self):
         Config().check_config_file()
         """Command parsing and selection"""
