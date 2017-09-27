@@ -146,7 +146,8 @@ class Supervisor():
             command.extend(["--entrypoint=%s %s" % (script_exec, script), Supervisor.container_name])
         # Container with args
         elif ('cmd_args' in event) and event['cmd_args']:
-            args = map(lambda x: x.encode('ascii'), event['cmd_args'])
+            # Parse list of strings
+            args = event['cmd_args'][1:-1].replace('"','').split(', ')
             command.append(Supervisor.container_name)
             command.extend(args)
         # Script to be executed every time (if defined)
