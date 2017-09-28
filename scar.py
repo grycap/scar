@@ -201,7 +201,7 @@ class Scar(object):
         # Modify environment vars if necessary
         if args.env:
             aws_client.update_function_env_variables(args.name, args.env)
-
+            
         payload = {}
         # Parse the function script
         if args.script:

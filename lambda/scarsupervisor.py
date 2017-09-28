@@ -56,16 +56,7 @@ class Supervisor():
             call([Supervisor.udocker_bin, "setup", "--execmode=F1", Supervisor.container_name])
         else:
             print("SCAR: Container '" + Supervisor.container_name + "' already available")
-    
-    def check_alpine_image(self):
-        home = os.environ['UDOCKER_DIR']
-        musl_path = "%s/containers/%s/ROOT/lib/libc.musl-x86_64.so.1" % (home, Supervisor.container_name)
-        if os.path.isfile(musl_path):
-            print("Alpine image found. Using busybox to execute scripts.")
-            return "/bin/busybox sh"
-        else:
-            return "/bin/sh"        
-    
+            
     def add_global_variable(self, variables, key, value):
         variables.append('--env')
         variables.append(key + '=' + value)
@@ -123,6 +114,12 @@ class Supervisor():
         # Delete all the temporal folders created for the invocation
         call(["rm", "-rf", "/tmp/%s" % request_id])
                     
+    def undo_escape_string(self, value):
+        value = value.replace("\\/", "\\").replace('\\n', '\n')
+        value = value.replace('\\"', '"').replace("\\/", "\/")
+        value = value.replace("\\b", "\b").replace("\\f", "\f")
+        return value.replace("\\r", "\r").replace("\\t", "\t")                    
+                    
     def create_command(self, event, context):
         # Create container execution command
         command = [Supervisor.udocker_bin, "--quiet", "run"]
@@ -136,14 +133,14 @@ class Supervisor():
         if global_variables:
             command.extend(global_variables)
     
-        # Use the correct script executable 
-        script_exec = self.check_alpine_image()
-    
+        # Set the script executable 
+        script_exec = "/bin/sh"
         # Container running script
-        script = "/tmp/%s/script.sh" % context.aws_request_id
+        script_path = "/tmp/%s/script.sh" % context.aws_request_id
         if ('script' in event) and event['script']:
-            self.create_file(event['script'], script)
-            command.extend(["--entrypoint=%s %s" % (script_exec, script), Supervisor.container_name])
+            script_content = self.undo_escape_string(event['script'])
+            self.create_file(script_content, script_path)
+            command.extend(["--entrypoint=%s %s" % (script_exec, script_path), Supervisor.container_name])
         # Container with args
         elif ('cmd_args' in event) and event['cmd_args']:
             # Parse list of strings
