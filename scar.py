@@ -18,6 +18,7 @@
 import argparse
 import base64
 import boto3
+import botocore
 import configparser
 import json
 import os
@@ -486,6 +487,7 @@ class Config(object):
                     ]}
 
     version = "v1.0.0"
+    botocore_client_read_timeout=360
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -571,7 +573,8 @@ class AwsClient(object):
     def get_boto3_client(self, client_name, region=None):
         if region is None:
             region = Config.lambda_region
-        return boto3.client(client_name, region_name=region)
+        config = botocore.config.Config(read_timeout=Config.botocore_client_read_timeout)            
+        return boto3.client(client_name, region_name=region, config=config)
 
     def get_lambda(self, region=None):
         return self.get_boto3_client('lambda', region)
