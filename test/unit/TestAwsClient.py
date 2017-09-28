@@ -51,12 +51,14 @@ class TestAwsClient(unittest.TestCase):
         self.assertEqual(300, AwsClient().check_time(300))
         self.assertEqual(147, AwsClient().check_time(147))
 
+    @unittest.mock.patch('botocore.config.Config')
     @unittest.mock.patch('boto3.client')        
-    def test_get_user_name_or_id(self, mock_client):
+    def test_get_user_name_or_id(self, mock_client, mock_config):
         mock_client.return_value.get_user.return_value = {'User' : { 'UserName' : 'test1', 'UserId' : 'asd123' }}
+        mock_config.return_value='config'
         user = AwsClient().get_user_name_or_id()
         self.assertEqual(mock_client.call_count, 1)
-        self.assertEqual(mock_client.call_args, call('iam', region_name='us-east-1'))       
+        self.assertEqual(mock_client.call_args, call('iam', config='config', region_name='us-east-1'))       
         self.assertTrue(call().get_user() in mock_client.mock_calls)
         self.assertEqual(user, 'test1')
 
@@ -75,47 +77,61 @@ class TestAwsClient(unittest.TestCase):
         access_key = AwsClient().get_access_key()
         self.assertEqual(access_key, 'test')
         
+    @unittest.mock.patch('botocore.config.Config')       
     @unittest.mock.patch('boto3.client')
-    def test_get_boto3_client_no_region(self, mock_client):
+    def test_get_boto3_client_no_region(self, mock_client, mock_config):
+        mock_config.return_value = 'config'        
         AwsClient().get_boto3_client('test')
         self.assertEqual(mock_client.call_count, 1)
-        self.assertEqual(mock_client.call_args, call('test', region_name='us-east-1'))
+        self.assertEqual(mock_client.call_args, call('test', config='config', region_name='us-east-1'))
         
+    @unittest.mock.patch('botocore.config.Config')       
     @unittest.mock.patch('boto3.client')
-    def test_get_boto3_client(self, mock_client):
+    def test_get_boto3_client(self, mock_client, mock_config):
+        mock_config.return_value = 'config'        
         AwsClient().get_boto3_client('test', 'test-region')
         self.assertEqual(mock_client.call_count, 1)
-        self.assertEqual(mock_client.call_args, call('test', region_name='test-region'))
+        self.assertEqual(mock_client.call_args, call('test', config='config', region_name='test-region'))
 
+    @unittest.mock.patch('botocore.config.Config')       
     @unittest.mock.patch('boto3.client')
-    def test_get_lambda(self, mock_client):
+    def test_get_lambda(self, mock_client, mock_config):
+        mock_config.return_value = 'config'        
         AwsClient().get_lambda()
         self.assertEqual(mock_client.call_count, 1)
-        self.assertEqual(mock_client.call_args, call('lambda', region_name='us-east-1'))
+        self.assertEqual(mock_client.call_args, call('lambda', config='config', region_name='us-east-1'))
 
+    @unittest.mock.patch('botocore.config.Config')       
     @unittest.mock.patch('boto3.client')
-    def test_get_log(self, mock_client):
+    def test_get_log(self, mock_client, mock_config):
+        mock_config.return_value = 'config'
         AwsClient().get_log()
         self.assertEqual(mock_client.call_count, 1)
-        self.assertEqual(mock_client.call_args, call('logs', region_name='us-east-1'))
-        
+        self.assertEqual(mock_client.call_args, call('logs', config='config', region_name='us-east-1'))
+ 
+    @unittest.mock.patch('botocore.config.Config')       
     @unittest.mock.patch('boto3.client')
-    def test_get_iam(self, mock_client):
+    def test_get_iam(self, mock_client, mock_config):
+        mock_config.return_value = 'config'
         AwsClient().get_iam()
         self.assertEqual(mock_client.call_count, 1)
-        self.assertEqual(mock_client.call_args, call('iam', region_name='us-east-1'))
+        self.assertEqual(mock_client.call_args, call('iam', config='config', region_name='us-east-1'))
 
+    @unittest.mock.patch('botocore.config.Config')
     @unittest.mock.patch('boto3.client')
-    def test_get_resource_groups_tagging_api(self, mock_client):
+    def test_get_resource_groups_tagging_api(self, mock_client, mock_config):
+        mock_config.return_value = 'config'        
         AwsClient().get_resource_groups_tagging_api()
         self.assertEqual(mock_client.call_count, 1)
-        self.assertEqual(mock_client.call_args, call('resourcegroupstaggingapi', region_name='us-east-1'))
+        self.assertEqual(mock_client.call_args, call('resourcegroupstaggingapi', config='config', region_name='us-east-1'))
 
+    @unittest.mock.patch('botocore.config.Config')
     @unittest.mock.patch('boto3.client')
-    def test_get_s3(self, mock_client):
+    def test_get_s3(self, mock_client, mock_config):
+        mock_config.return_value = 'config'        
         AwsClient().get_s3()
         self.assertEqual(mock_client.call_count, 1)
-        self.assertEqual(mock_client.call_args, call('s3', region_name='us-east-1'))
+        self.assertEqual(mock_client.call_args, call('s3', config='config', region_name='us-east-1'))
 
     @unittest.mock.patch('scar.AwsClient.get_s3')
     def test_get_s3_file_list(self, mock_s3_client): 
