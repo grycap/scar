@@ -21,7 +21,7 @@ cat << EOF > batch1.txt
 set autoclose=yes nowarn=yes
 execute cynmix.nex
 lset nst=6 rates=gamma
-mcmc ngen=1000 savebrlens=yes file=cynmix.nex1
+mcmc ngen=10000 savebrlens=yes file=cynmix.nex1
 quit
 EOF
 
