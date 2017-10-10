@@ -18,7 +18,6 @@ import json
 import os
 import re
 from subprocess import call, check_output, STDOUT, TimeoutExpired
-import time
 import traceback
 import tarfile
 
@@ -157,9 +156,9 @@ class Supervisor():
             command.append(Supervisor.container_name)
         return command
     
-    def relaunch_lambda(self, event, context):
+    def relaunch_lambda(self, event, func_name):
         client = boto3.client('lambda', region_name='us-east-1')
-        client.invoke(FunctionName=context.function_name,
+        client.invoke(FunctionName=func_name,
                       InvocationType='Event',
                       LogType='None',
                       Payload=json.dumps(event))
@@ -173,28 +172,36 @@ def lambda_handler(event, context):
         # Create container execution command
         command = supervisor.create_command(event, context)
         # print ("Udocker command: %s" % command)
-    
+
         # Execute container
         lambda_output = "/tmp/%s/lambda-stdout.txt" % context.aws_request_id
         remaining_seconds = int(context.get_remaining_time_in_millis()/1000) - int(os.environ['TIME_THRESHOLD'])
-        print("SCAR: Executing the container. Timeout set to %s seconds" % str(remaining_seconds))
-        try:
-            call(command, timeout=remaining_seconds, stderr=STDOUT, stdout=open(lambda_output, "w"))
-        except TimeoutExpired:
-            if ('RECURSIVE' in os.environ) and eval(os.environ['RECURSIVE']):
-                print("SCAR: Recursively launching lambda function.")                
-                S3_Bucket().upload_recursive_output(event['Records'][0]['s3'], context.aws_request_id)
-                # Delete all the temporal folders created for the invocation
-                # call(["rm", "-rf", "/tmp/%s" % context.aws_request_id])
-            else:
-                print("SCAR WARNING: Container timeout")  
-    
-        stdout += check_output(["cat", lambda_output]).decode("utf-8")
+        print("Executing the container. Timeout set to %s seconds" % str(remaining_seconds))
+        with Popen(command, stderr=STDOUT, stdout=open(lambda_output, "w"), preexec_fn=os.setsid) as process:
+            try:
+                process.wait(timeout=remaining_seconds)
+            except TimeoutExpired:
+		if ('RECURSIVE' in os.environ) and eval(os.environ['RECURSIVE']):
+                	print("SCAR: Recursively launching lambda function.")                
+                	S3_Bucket().upload_recursive_output(event['Records'][0]['s3'], context.aws_request_id)
+                	# Delete all the temporal folders created for the invocation
+                	# call(["rm", "-rf", "/tmp/%s" % context.aws_request_id])
+            	else:
+		        print("SCAR: Stopping container with name '%s'." % (Supervisor.container_name))
+		        # Using SIGKILL instead of SIGTERM to ensure the process finalization 
+		        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+		        supervisor.relaunch_lambda(event=event, func_name=context.function_name)
+		        print("WARNING: Container timeout")  
+
+        if stdout is not None:
+            stdout += check_output(["cat", lambda_output]).decode("utf-8")
         supervisor.post_process(event, context)
-        print("SCAR: Lambda execution successfully finished.")
 
     except Exception:
-        stdout += "SCAR ERROR: Exception launched:\n %s" % traceback.format_exc()
+        if stdout is None:
+            stdout = "ERROR: Exception launched:\n %s" % traceback.format_exc()
+        else:
+            stdout += "ERROR: Exception launched:\n %s" % traceback.format_exc()
     print(stdout)
     return stdout
 
@@ -238,7 +245,7 @@ class S3_Bucket():
                 with tarfile.open(download_path, "w:gz") as tar:
                     tar.extractall(path=input_path)
         return download_path
-      
+
     def upload_output(self, s3_record, request_id):
         bucket_name = self.get_bucket_name(s3_record)
         output_folder = "/tmp/%s/output/" % request_id

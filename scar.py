@@ -711,6 +711,7 @@ class AwsClient(object):
         try:
             self.get_s3().put_bucket_notification_configuration( Bucket=bucket_name,
                                                                  NotificationConfiguration=notification )
+
         except ClientError as ce:
             print ("Error configuring S3 bucket: %s" % ce)            
 
