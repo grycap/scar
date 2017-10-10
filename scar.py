@@ -75,6 +75,8 @@ class Scar(object):
             Config.lambda_env_variables['Variables']['TIME_THRESHOLD'] = str(args.time_threshold)
         else:
             Config.lambda_env_variables['Variables']['TIME_THRESHOLD'] = str(Config.lambda_timeout_threshold)
+        if args.recursive:        
+            Config.lambda_env_variables['Variables']['RECURSIVE'] = str(True)            
         # Modify environment vars if necessary
         if args.env:
             StringUtils().parse_environment_variables(args.env)
@@ -879,6 +881,7 @@ class CmdParser(object):
         parser_init.add_argument("-s", "--script", help="Path to the input file passed to the function")
         parser_init.add_argument("-es", "--event_source", help="Name specifying the source of the events that will launch the lambda function. Only supporting buckets right now.")
         parser_init.add_argument("-lr", "--lambda_role", help="Lambda role used in the management of the functions")
+        parser_init.add_argument("-r", "--recursive", help="Launch a recursive lambda function", action="store_true")
 
         # 'ls' command
         parser_ls = subparsers.add_parser('ls', help="List lambda functions")

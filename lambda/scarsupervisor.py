@@ -17,7 +17,8 @@ import boto3
 import json
 import os
 import re
-from subprocess import call, check_output, STDOUT, TimeoutExpired
+import signal
+from subprocess import call, check_output, Popen, STDOUT, TimeoutExpired
 import traceback
 
 print('Loading function')
@@ -155,6 +156,13 @@ class Supervisor():
             command.append(Supervisor.container_name)
         return command
     
+    def relaunch_lambda(self, event, func_name):
+        client = boto3.client('lambda', region_name='us-east-1')
+        client.invoke(FunctionName=func_name,
+                      InvocationType='Event',
+                      LogType='None',
+                      Payload=json.dumps(event))
+      
 def lambda_handler(event, context):
     print("SCAR: Received event: " + json.dumps(event))
     supervisor = Supervisor()
@@ -169,16 +177,25 @@ def lambda_handler(event, context):
         lambda_output = "/tmp/%s/lambda-stdout.txt" % context.aws_request_id
         remaining_seconds = int(context.get_remaining_time_in_millis()/1000) - int(os.environ['TIME_THRESHOLD'])
         print("Executing the container. Timeout set to %s seconds" % str(remaining_seconds))
-        try:
-            call(command, timeout=remaining_seconds, stderr=STDOUT, stdout=open(lambda_output, "w"))
-        except TimeoutExpired:
-            print("WARNING: Container timeout")  
+        with Popen(command, stderr=STDOUT, stdout=open(lambda_output, "w"), preexec_fn=os.setsid) as process:
+            try:
+                process.wait(timeout=remaining_seconds)
+            except TimeoutExpired:
+                print("SCAR: Stopping container with name '%s'." % (Supervisor.container_name))
+                # Using SIGKILL instead of SIGTERM to ensure the process finalization 
+                os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                supervisor.relaunch_lambda(event=event, func_name=context.function_name)
+                print("WARNING: Container timeout")  
 
-        stdout += check_output(["cat", lambda_output]).decode("utf-8")
+        if stdout is not None:
+            stdout += check_output(["cat", lambda_output]).decode("utf-8")
         supervisor.post_process(event, context)
 
     except Exception:
-        stdout += "ERROR: Exception launched:\n %s" % traceback.format_exc()
+        if stdout is None:
+            stdout = "ERROR: Exception launched:\n %s" % traceback.format_exc()
+        else:
+            stdout += "ERROR: Exception launched:\n %s" % traceback.format_exc()
     print(stdout)
     return stdout
 
