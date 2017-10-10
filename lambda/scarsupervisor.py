@@ -18,15 +18,17 @@ import json
 import os
 import re
 from subprocess import call, check_output, STDOUT, TimeoutExpired
+import time
 import traceback
+import tarfile
 
-print('Loading function')
+print('SCAR: Loading supervisor')
 
 class Supervisor():
 
     udocker_bin = "/tmp/udocker/udocker"
     container_name = "lambda_cont"
-    s3_file_name = ""
+    s3_input_file_name = ""
     
     def prepare_environment(self, aws_request_id):
         # Install udocker in /tmp
@@ -34,7 +36,7 @@ class Supervisor():
         call(["cp", "/var/task/udocker", Supervisor.udocker_bin])
         call(["chmod", "u+rx", Supervisor.udocker_bin])
         os.makedirs("/tmp/home/.udocker", exist_ok=True)    
-        os.makedirs("/tmp/%s/output" % aws_request_id, exist_ok=True)  
+        os.makedirs("/tmp/%s/output" % aws_request_id, exist_ok=True)
         if ('INIT_SCRIPT_PATH' in os.environ) and os.environ['INIT_SCRIPT_PATH']:
             call(["cp", "/var/task/init_script.sh", "/tmp/%s/init_script.sh" % aws_request_id])
     
@@ -76,8 +78,8 @@ class Supervisor():
         # Always add Session and security tokens
         variables = self.add_global_variable(variables, "AWS_SESSION_TOKEN", os.environ["AWS_SESSION_TOKEN"])
         variables = self.add_global_variable(variables, "AWS_SECURITY_TOKEN", os.environ["AWS_SECURITY_TOKEN"])
-        if Supervisor.s3_file_name and Supervisor.s3_file_name != "":
-            variables = self.add_global_variable(variables, "SCAR_INPUT_FILE", Supervisor.s3_file_name)
+        if Supervisor.s3_input_file_name and Supervisor.s3_input_file_name != "":
+            variables = self.add_global_variable(variables, "SCAR_INPUT_FILE", Supervisor.s3_input_file_name)
         return variables
     
     def prepare_output(self, context):
@@ -105,7 +107,7 @@ class Supervisor():
         request_id = context.aws_request_id
         if(Utils().is_s3_event(event)):
             s3_record = Utils().get_s3_record(event)
-            Supervisor.s3_file_name = S3_Bucket().download_input(s3_record, request_id)
+            Supervisor.s3_input_file_name = S3_Bucket().download_input(s3_record, request_id)
     
     def post_process(self, event, context):
         request_id = context.aws_request_id
@@ -155,6 +157,13 @@ class Supervisor():
             command.append(Supervisor.container_name)
         return command
     
+    def relaunch_lambda(self, event, context):
+        client = boto3.client('lambda', region_name='us-east-1')
+        client.invoke(FunctionName=context.function_name,
+                      InvocationType='Event',
+                      LogType='None',
+                      Payload=json.dumps(event))
+    
 def lambda_handler(event, context):
     print("SCAR: Received event: " + json.dumps(event))
     supervisor = Supervisor()
@@ -164,21 +173,28 @@ def lambda_handler(event, context):
         # Create container execution command
         command = supervisor.create_command(event, context)
         # print ("Udocker command: %s" % command)
-
+    
         # Execute container
         lambda_output = "/tmp/%s/lambda-stdout.txt" % context.aws_request_id
         remaining_seconds = int(context.get_remaining_time_in_millis()/1000) - int(os.environ['TIME_THRESHOLD'])
-        print("Executing the container. Timeout set to %s seconds" % str(remaining_seconds))
+        print("SCAR: Executing the container. Timeout set to %s seconds" % str(remaining_seconds))
         try:
             call(command, timeout=remaining_seconds, stderr=STDOUT, stdout=open(lambda_output, "w"))
         except TimeoutExpired:
-            print("WARNING: Container timeout")  
-
+            if ('RECURSIVE' in os.environ) and eval(os.environ['RECURSIVE']):
+                print("SCAR: Recursively launching lambda function.")                
+                S3_Bucket().upload_recursive_output(event['Records'][0]['s3'], context.aws_request_id)
+                # Delete all the temporal folders created for the invocation
+                # call(["rm", "-rf", "/tmp/%s" % context.aws_request_id])
+            else:
+                print("SCAR WARNING: Container timeout")  
+    
         stdout += check_output(["cat", lambda_output]).decode("utf-8")
         supervisor.post_process(event, context)
+        print("SCAR: Lambda execution successfully finished.")
 
     except Exception:
-        stdout += "ERROR: Exception launched:\n %s" % traceback.format_exc()
+        stdout += "SCAR ERROR: Exception launched:\n %s" % traceback.format_exc()
     print(stdout)
     return stdout
 
@@ -194,7 +210,7 @@ class Utils():
     def get_s3_record(self, event):
         if ('Records' in event) and event['Records']:
             if len(event['Records']) > 1:
-                print("WARNING: MULTIPLE RECORDS DETECTED. ONLY PROCESSING THE FIRST ONE.")
+                print("SCAR WARNING: MULTIPLE RECORDS DETECTED. ONLY PROCESSING THE FIRST ONE.")
             record = event['Records'][0]
             if('s3' in record) and record['s3']:
                 return record['s3']
@@ -211,26 +227,45 @@ class S3_Bucket():
         bucket_name = self.get_bucket_name(s3_record)
         file_key = s3_record['object']['key']
         download_path = '/tmp/%s/%s' % (request_id, file_key)
-        print ("Downloading item from bucket %s with key %s" % (bucket_name, file_key))
+        print ("SCAR: Downloading item from bucket %s with key %s" % (bucket_name, file_key))
         os.makedirs(os.path.dirname(download_path), exist_ok=True)       
         with open(download_path, 'wb') as data:
             self.get_s3_client().download_fileobj(bucket_name, file_key, data)
-        print ("Successfully downloaded item from bucket %s with key %s" % (bucket_name, file_key))    
+        print ("SCAR: Successfully downloaded item from bucket %s with key %s" % (bucket_name, file_key))
+        if ('RECURSIVE' in os.environ) and eval(os.environ['RECURSIVE']):
+            if "recursive/" in file_key:
+                input_path = '/tmp/%s/input' % request_id
+                with tarfile.open(download_path, "w:gz") as tar:
+                    tar.extractall(path=input_path)
         return download_path
-
+      
     def upload_output(self, s3_record, request_id):
         bucket_name = self.get_bucket_name(s3_record)
         output_folder = "/tmp/%s/output/" % request_id
         output_files_path = self.get_all_files_in_directory(output_folder)
         for file_path in output_files_path:
             file_key = "output/%s" % file_path.replace(output_folder, "")
-            print ("Uploading file to bucket %s with key %s" % (bucket_name, file_key))
-            with open(file_path, 'rb') as data:
-                self.get_s3_client().upload_fileobj(data, bucket_name, file_key)
-            print ("Changing ACLs for public-read for object in bucket %s with key %s" % (bucket_name, file_key))
-            s3_resource = boto3.resource('s3')
-            obj = s3_resource.Object(bucket_name, file_key)
-            obj.Acl().put(ACL='public-read')
+            self.upload_file_to_s3(bucket_name, file_path, file_key) 
+
+    def upload_recursive_output(self, s3_record, request_id):
+        bucket_name = self.get_bucket_name(s3_record)
+        output_folder = "/tmp/%s/output/" % request_id
+        output_files_path = self.get_all_files_in_directory(output_folder)
+        tmp_output = "/tmp/%s/output/tmp-output.tar.gz" % request_id
+        with tarfile.open(tmp_output, "w:gz") as tar:
+            for file_path in output_files_path:
+                tar.add(file_path, arcname=os.path.basename(file_path))                
+        file_key = "recursive/%s" % tmp_output.replace(output_folder, "")                        
+        self.upload_file_to_s3(bucket_name, tmp_output, file_key) 
+        
+    def upload_file_to_s3(self, bucket_name, file_path, file_key):
+        print ("SCAR: Uploading file to bucket %s with key %s" % (bucket_name, file_key))
+        with open(file_path, 'rb') as data:
+            self.get_s3_client().upload_fileobj(data, bucket_name, file_key)
+        print ("SCAR: Changing ACLs for public-read for object in bucket %s with key %s" % (bucket_name, file_key))
+        s3_resource = boto3.resource('s3')
+        obj = s3_resource.Object(bucket_name, file_key)
+        obj.Acl().put(ACL='public-read')         
 
     def get_all_files_in_directory(self, dir_path):
         files = []
