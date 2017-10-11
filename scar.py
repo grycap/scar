@@ -146,10 +146,10 @@ class Scar(object):
             try:
                 aws_client.check_and_create_s3_bucket(bucket_name)
                 aws_client.add_lambda_permissions(bucket_name)
-                aws_client.create_trigger_from_bucket(bucket_name, "input/", function_arn)
+                aws_client.create_trigger_from_bucket(bucket_name, function_arn)
                 if args.recursive:
                     aws_client.add_s3_bucket_folder(bucket_name, "recursive/")
-                    aws_client.create_recursive_trigger_from_bucket(bucket_name, "recursive/", function_arn)
+                    aws_client.create_recursive_trigger_from_bucket(bucket_name, function_arn)
             except ClientError as ce:
                 print ("Error creating the event source: %s" % ce)
 
@@ -663,7 +663,7 @@ class AwsClient(object):
 
     
     
-    def create_trigger_from_bucket(self, bucket_name, folder_name, function_arn):
+    def create_trigger_from_bucket(self, bucket_name, function_arn):
         notification = { "LambdaFunctionConfigurations": [
                             { "LambdaFunctionArn": function_arn,
                               "Events": [ "s3:ObjectCreated:*" ],
@@ -671,7 +671,7 @@ class AwsClient(object):
                                 { "Key":
                                     { "FilterRules": [
                                         { "Name": "prefix",
-                                          "Value": folder_name
+                                          "Value": "input/"
                                         }]
                                     }
                                 }
@@ -683,7 +683,7 @@ class AwsClient(object):
         except ClientError as ce:
             print ("Error configuring S3 bucket: %s" % ce)
             
-    def create_recursive_trigger_from_bucket(self, bucket_name, folder_name, function_arn):
+    def create_recursive_trigger_from_bucket(self, bucket_name, function_arn):
         notification = { "LambdaFunctionConfigurations": [
                             { "LambdaFunctionArn": function_arn,
                               "Events": [ "s3:ObjectCreated:*" ],
