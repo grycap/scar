@@ -15,13 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+mkdir -p /tmp/mrbayes
+cd /tmp/mrbayes
 
 # Sample configuration file
 cat << EOF > batch1.txt
 set autoclose=yes nowarn=yes
 execute cynmix.nex
 lset nst=6 rates=gamma
-mcmc ngen=10000 savebrlens=yes file=cynmix.nex1
+mcmc ngen=25000 savebrlens=yes file=cynmix.nex1
 quit
 EOF
 
@@ -30,7 +32,7 @@ cat << EOF > batch2.txt
 set autoclose=yes nowarn=yes
 execute cynmix.nex
 lset nst=6 rates=gamma
-mcmc ngen=10000 savebrlens=yes file=cynmix.nex1 append=yes
+mcmc ngen=25000 savebrlens=yes file=cynmix.nex1 append=yes
 quit
 EOF
 
@@ -756,11 +758,11 @@ end;
 
 EOF
 
-#comprobar si existe el fichero de checkpoint
-if [ -e /tmp/mrbayes-3.2.6/src/cynmix.nex1.ckp ]; then
+# Check checkpoint file existence
+if [ -e /tmp/mrbayes/cynmix.nex1.ckp ]; then
         echo "Checkpoint file found. Continue execution..."
-        mb < batch2.txt
+        /opt/mrbayes/mb < batch2.txt
 else
         echo "No checkpoint file found. Starting a new execution..."
-        mb < batch1.txt
+        /opt/mrbayes/mb < batch1.txt
 fi
