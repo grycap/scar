@@ -1,13 +1,36 @@
+# SCAR - Serverless Container-aware ARchitectures
+
 [![Build Status](https://travis-ci.org/grycap/scar.svg?branch=master)](https://travis-ci.org/grycap/scar)
 [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
-# SCAR - Serverless Container-aware ARchitectures
+# ![SCAR](scar-logo.png)
 
 SCAR is a framework to transparently execute containers out of Docker images in AWS Lambda, in order to run applications (see examples for [ImageMagick](examples/imagemagick/README.md), [FFmpeg](examples/ffmpeg/README.md) and [AWS CLI](examples/aws-cli/README.md), as well as deep learning frameworks such as [Theano](examples/theano/README.md) and [Darknet](examples/darknet/README.md)) and code in virtually any programming language (see examples for [Erlang](examples/erlang) and [Elixir](examples/elixir)) on AWS Lambda.
 
 SCAR provides the benefits of AWS Lambda with the execution environment you decide, provided as a Docker image available in Docker Hub. It is probably the easiest, most convenient approach to run generic applications on AWS Lambda, as well as code in your favourite programming language, not only in those languages supported by AWS Lambda.
 
 SCAR also supports a High Throughput Computing [Programming Model](#programming-model) to create highly-parallel event-driven file-processing serverless applications that execute on customized runtime environments provided by Docker containers run on AWS Lambda.
+
+<a name="toc"></a>
+**Related resources**:
+  [Website](https://grycap.github.io/scar/) 
+
+**Table of contents**
+
+  * [Approach](#approach)
+  * [Limitations](#limitations)
+  * [Installation](#installation)
+  * [Configuration](#configuration)
+  * [Basic Usage](#basicusage)
+  * [Advanced Usage](#advancedusage)
+      * [Executing a user defined shell script](#executing_a_user_defined_shell_script)
+      * [Event-Driven File-Processing Programming Model](#programming-model)
+      * [Local Testing of the Docker images via udocker](#localtesting)
+      * [Local Testing of the Docker images via emulambda](#emulambda)  
+  * [Acknowledgements](#acknowledgements)
+  
+
+<a name="approach"></a>
 
 ## Approach
 
@@ -21,6 +44,9 @@ SCAR provides a command-line interface to create a Lambda function to execute a 
 
 SCAR can optionally define a trigger so that the Lambda function is executed whenever a file is uploaded to an Amazon S3 bucket. This file is automatically made available to the underlying Docker container run on AWS Lambda so that an user-provided shell-script can process the file. See the [Programming Model](#programming-model) for more details.
 
+
+<a name="limitations"></a>
+
 ## Limitations
 
 * The Docker container must fit within the current [AWS Lambda limits](http://docs.aws.amazon.com/lambda/latest/dg/limits.html):
@@ -29,6 +55,8 @@ SCAR can optionally define a trigger so that the Lambda function is executed whe
 * The following Docker images cannot be currently used:
   * Those based on Alpine Linux (due to the use of MUSL instead of GLIBC, which is not supported by Fakechroot).
 * Installation of packages in the user-defined script (i.e. using `yum`, `apt-get`, etc.) is currently not possible.
+
+<a name="installation"></a>
 
 ## Installation
 
@@ -55,6 +83,8 @@ sudo pip install -r requirements.txt
 cd scar
 alias scar=`pwd`/scar.py
 ```
+
+<a name="configuration"></a>
 
 ## Configuration
 
@@ -96,6 +126,8 @@ The values represent:
 * lambda_region: The [AWS region](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html) on which the AWS Lambda function will be created
 * lambda_role: The [ARN](http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html) of the IAM Role that you just created in the previous section
 * lambda_timeout_threshold: Default time used to postprocess the container output. Also used to avoid getting timeout error in case the execution of the container takes more time than the lambda_time (can be customized with the `-tt` parameter in `scar init`).
+
+<a name="basicusage"></a>
 
 ## Basic Usage
 
@@ -159,8 +191,11 @@ You can remove the Lambda function together with the logs generated in CloudWatc
 scar rm -n lambda-docker-cowsay
 ```
 
+<a name="advancedusage"></a>
+
 ## Advanced Usage
 
+<a name="executing_a_user_defined_shell_script"></a>
 ### Executing an user-defined shell-script
 
 You can execute the Lambda function and specify a shell-script locally available in your machine to be executed within the container.
@@ -230,7 +265,9 @@ For easier scripting, a JSON output can be obtained by including the `--json` or
 scar run --json lambda-docker-cowsay
 ```
 
-## Event-Driven File-Processing Programming Model<a id="programming-model"></a>
+<a id="programming-model"></a>
+
+## Event-Driven File-Processing Programming Model
 
 SCAR supports an event-driven programming model suitable for the execution of highly-parallel file-processing applications that require a customized runtime environment.
 
@@ -279,6 +316,8 @@ The following workflow summarises the programming model, the differences with th
 1. The Lambda function retrieves the file from the Amazon S3 bucket and makes it available for the shell-script running inside the container in the `/tmp/$REQUEST_ID/input` folder. The `$SCAR_INPUT_FILE` environment variable will point to the location of the input file.
 1. The shell-script processes the input file and produces the output (either one or multiple files) in the folder `/tmp/$REQUEST_ID/output`.
 1. The output files are automatically uploaded by the Lambda function into the `output` folder of `bucket-name`.
+
+<a id="localtesting"></a>
 
 ## Local Testing of the Docker images via udocker
 
@@ -330,6 +369,8 @@ Further information is available in the udocker documentation:
 ```sh
 udocker help
 ```
+
+<a id="emulambda"></a>
 
 ## Local Testing of the Lambda functions with emulambda
 
