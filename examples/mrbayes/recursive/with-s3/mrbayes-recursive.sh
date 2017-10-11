@@ -17,6 +17,7 @@
 
 INPUT_DIR="/tmp/$REQUEST_ID/input"
 OUTPUT_DIR="/tmp/$REQUEST_ID/output"
+ITERATIONS=25000
 
 mkdir -p ~/mrbayes
 cd ~/mrbayes
@@ -26,7 +27,7 @@ cat << EOF > batch1.txt
 set autoclose=yes nowarn=yes
 execute $OUTPUT_DIR/cynmix.nex
 lset nst=6 rates=gamma
-mcmc ngen=25000 savebrlens=yes file=$OUTPUT_DIR/cynmix.nex1
+mcmc ngen=$ITERATIONS savebrlens=yes file=$OUTPUT_DIR/cynmix.nex1
 quit
 EOF
 
@@ -36,7 +37,7 @@ cat << EOF > batch2.txt
 set autoclose=yes nowarn=yes
 execute $OUTPUT_DIR/cynmix.nex
 lset nst=6 rates=gamma
-mcmc ngen=25000 savebrlens=yes file=$OUTPUT_DIR/cynmix.nex1 append=yes
+mcmc ngen=$ITERATIONS savebrlens=yes file=$OUTPUT_DIR/cynmix.nex1 append=yes
 quit
 EOF
 

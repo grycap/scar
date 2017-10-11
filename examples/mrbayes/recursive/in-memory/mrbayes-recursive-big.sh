@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ITERATIONS=25000
+
 mkdir -p /tmp/mrbayes
 cd /tmp/mrbayes
 
@@ -23,7 +25,7 @@ cat << EOF > batch1.txt
 set autoclose=yes nowarn=yes
 execute cynmix.nex
 lset nst=6 rates=gamma
-mcmc ngen=25000 savebrlens=yes file=cynmix.nex1
+mcmc ngen=$ITERATIONS savebrlens=yes file=cynmix.nex1
 quit
 EOF
 
@@ -32,7 +34,7 @@ cat << EOF > batch2.txt
 set autoclose=yes nowarn=yes
 execute cynmix.nex
 lset nst=6 rates=gamma
-mcmc ngen=25000 savebrlens=yes file=cynmix.nex1 append=yes
+mcmc ngen=$ITERATIONS savebrlens=yes file=cynmix.nex1 append=yes
 quit
 EOF
 

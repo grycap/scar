@@ -1,23 +1,7 @@
-FROM ubuntu:14.04
+FROM bitnami/minideb
 
-MAINTAINER Amanda Calatrava <amcaar@i3m.upv.es>
+RUN mkdir -p /opt/mrbayes
 
-ENV LD_LIBRARY_PATH /usr/local/lib
+COPY binary/mb /opt/mrbayes/
 
-# Package and dependencies to install MrBayes
-RUN apt-get update && apt-get install -y \    
-    autoconf \
-    make \ 
-    gcc  \    
-    wget
-
-RUN wget http://sourceforge.net/projects/mrbayes/files/mrbayes/3.2.6/mrbayes-3.2.6.tar.gz -O /tmp/mrbayes-3.2.6.tar.gz && \
-    cd /tmp && \
-    tar zxvf mrbayes-3.2.6.tar.gz  && \
-    cd /tmp/mrbayes-3.2.6/src && \
-    autoconf && \
-    ./configure --with-beagle=no && \
-    make && \
-    make install
-
-ADD mrbayes-sample-run.sh /tmp
+COPY mrbayes-sample-run.sh /tmp
