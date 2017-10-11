@@ -30,7 +30,6 @@ udocker_bin = "/var/task/udocker"
 container_name = "lambda_cont"
 s3_input_file_name = ""
 script_exec = "/bin/sh"
-init_script_path = "/tmp/init_script.sh"
 request_id = ""
 input_folder = ""
 output_folder = ""
@@ -75,23 +74,27 @@ def download_input_from_s3(s3_record):
                 (bucket_name, file_key, download_path))
     if (is_recursive()):
         if "recursive/" in file_key:
-            extract_tar_gz(download_path, input_folder)
-            download_path = download_path.replace("recursive/", "input/");
-            download_path = os.path.dirname(download_path)
+            extract_tar_gz(download_path)
+            download_path = input_folder
+            delete_file_from_s3(s3_record)
     return download_path
+
+def delete_file_from_s3(s3_record):
+    bucket_name = get_s3_bucket_name(s3_record)
+    file_key = get_s3_file_key(s3_record)
+    get_s3_client().delete_object(Bucket=bucket_name, Key=file_key)
 
 def upload_output_to_s3(s3_record):
     bucket_name = get_s3_bucket_name(s3_record)
     output_files_path = get_all_files_in_directory(output_folder)
     for file_path in output_files_path:
-        file_key = "output/%s" % file_path.replace(output_folder, "")
+        file_key = "output/%s" % file_path.replace(output_folder+"/", "")
         upload_file_to_s3(bucket_name, file_path, file_key) 
 
 def upload_recursive_output_to_s3(s3_record):
     bucket_name = get_s3_bucket_name(s3_record)
-    tar_gz_output_path = "%s/tmp-output.tar.gz" % output_folder
-    create_tar_gz(output_folder, tar_gz_output_path)   
-    file_key = "recursive/%s" % tar_gz_output_path.replace(output_folder, "")                        
+    tar_gz_output_path = create_tar_gz()   
+    file_key = "recursive/%s" % tar_gz_output_path.replace(output_folder+"/", "")                        
     upload_file_to_s3(bucket_name, tar_gz_output_path, file_key) 
         
 def upload_file_to_s3(bucket_name, file_path, file_key):
@@ -110,7 +113,7 @@ def get_invocation_remaining_seconds(context):
 
 def launch_recursive_lambda(event, function_name):
     if(is_s3_event(event)):
-        upload_recursive_output_to_s3(get_s3_record(event), request_id)
+        upload_recursive_output_to_s3(get_s3_record(event))
     else:              
         logger.info("Recursively launching lambda function.")
         relaunch_lambda(event, function_name)
@@ -145,7 +148,7 @@ def check_s3_event_records(event):
     
 def post_process(event):
     if(is_s3_event(event)):
-        upload_output_to_s3(get_s3_record(event), request_id)
+        upload_output_to_s3(get_s3_record(event))
     # Delete all the temporal folders created for the invocation
     shutil.rmtree("/tmp/%s" % request_id)
     
@@ -171,27 +174,25 @@ def set_invocation_input_output_folders():
 def prepare_udocker_environment():
     os.makedirs(input_folder, exist_ok=True)
     os.makedirs(output_folder, exist_ok=True)
-    if ('INIT_SCRIPT_PATH' in os.environ) and os.environ['INIT_SCRIPT_PATH']:
-        shutil.copyfile("/var/task/init_script.sh", init_script_path)  
     
 def prepare_udocker_container(container_image_id):
     # Check if the container is already downloaded
     cmd_out = subprocess.check_output([udocker_bin, "images"]).decode("utf-8")
     if container_image_id not in cmd_out:
-        logger.info("SCAR: Pulling container '%s' from Docker Hub" % container_image_id)
+        logger.info("Pulling container '%s' from Docker Hub" % container_image_id)
         # If the container doesn't exist
         subprocess.call([udocker_bin, "pull", container_image_id])
     else:
-        logger.info("SCAR: Container image '%s' already available" % container_image_id)
+        logger.info("Container image '%s' already available" % container_image_id)
     # Download and create container
     cmd_out = subprocess.check_output([udocker_bin, "ps"]).decode("utf-8")
     if container_name not in cmd_out:
-        logger.info("SCAR: Creating container with name '%s' based on image '%s'." % (container_name, container_image_id))
+        logger.info("Creating container with name '%s' based on image '%s'." % (container_name, container_image_id))
         subprocess.call([udocker_bin, "create", "--name=%s" % container_name, container_image_id])
         # Set container execution engine to Fakechroot
         subprocess.call([udocker_bin, "setup", "--execmode=F1", container_name])
     else:
-        logger.info("SCAR: Container '" + container_name + "' already available")
+        logger.info("Container '" + container_name + "' already available")
 
 def add_udocker_container_variable(variables, key, value):
     variables.append('--env')
@@ -248,6 +249,8 @@ def append_args_to_udocker_command(cmd_args, command):
     command.extend(parsed_args)
     
 def append_init_script_to_udocker_command(command):
+    init_script_path = "/tmp/%s/init_script.sh" % request_id
+    shutil.copyfile("/var/task/init_script.sh", init_script_path)    
     command.extend(["--entrypoint=%s %s" % (script_exec, init_script_path), container_name])
     
 def append_udocker_container_volumes_to_udocker_command(command):
@@ -274,7 +277,7 @@ def create_udocker_command(event):
     return command
 
 def kill_udocker_process(process):
-    logger.info("Stopping container with name '%s'." % (container_name))
+    logger.info("Stopping udocker container")
     # Using SIGKILL instead of SIGTERM to ensure the process finalization 
     os.killpg(os.getpgid(process.pid), subprocess.signal.SIGKILL)
     
@@ -318,15 +321,18 @@ def get_all_files_in_directory(dir_path):
             files.append(os.path.join(dirname, filename))
     return files
 
-def create_tar_gz(folder_to_archive, destination_tar_path):
-    output_files_path = get_all_files_in_directory(folder_to_archive) 
+def create_tar_gz():
+    destination_tar_path = "%s/tmp-output.tar.gz" % output_folder
+    files_to_archive = get_all_files_in_directory(output_folder)
     with tarfile.open(destination_tar_path, "w:gz") as tar:
-        for file_path in output_files_path:
+        for file_path in files_to_archive:
             tar.add(file_path, arcname=os.path.basename(file_path))
+    return destination_tar_path
         
-def extract_tar_gz(tar_path, destination_path):
-    with tarfile.open(tar_path, "w:gz") as tar:
-        tar.extractall(path=destination_path)
+def extract_tar_gz(tar_path):
+    with tarfile.open(tar_path, "r:gz") as tar:
+        tar.extractall(path=input_folder)
+    logging.info("Succesfully extracted '%s' in path '%s'" % (tar_path, input_folder))
             
 #######################################
 #         LAMBDA MAIN FUNCTION        #
