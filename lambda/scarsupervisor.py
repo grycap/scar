@@ -39,17 +39,17 @@ logger.info('SCAR: Loading lambda function')
 #        S3 RELATED FUNCTIONS         #
 #######################################
 def is_s3_event(event):
-    if ('Records' in event) and event['Records']:
+    if check_key_existence_in_dictionary('Records', event):
         # Check if the event is an S3 event
         return event['Records'][0]['eventSource'] == "aws:s3"
     return False
 
 def get_s3_record(event):
-    if ('Records' in event) and event['Records']:
+    if check_key_existence_in_dictionary('Records', event):
         if len(event['Records']) > 1:
             logger.warning("Multiple records detected. Only processing the first one.")
         record = event['Records'][0]
-        if('s3' in record) and record['s3']:
+        if check_key_existence_in_dictionary('s3', record):
             return record['s3']    
     
 def get_s3_client():
@@ -206,9 +206,9 @@ def add_user_defined_variables_to_udocker_container_variables(variables):
             
 def add_iam_credentials_to_udocker_container_variables(variables):
         # Add IAM credentials
-    if not ('CONT_VAR_AWS_ACCESS_KEY_ID' in os.environ):
+    if not check_key_existence_in_dictionary('CONT_VAR_AWS_ACCESS_KEY_ID', os.environ):
         add_udocker_container_variable(variables, "AWS_ACCESS_KEY_ID", os.environ["AWS_ACCESS_KEY_ID"])
-    if not ('CONT_VAR_AWS_SECRET_ACCESS_KEY' in os.environ):
+    if not check_key_existence_in_dictionary('CONT_VAR_AWS_SECRET_ACCESS_KEY', os.environ):
         add_udocker_container_variable(variables, "AWS_SECRET_ACCESS_KEY", os.environ["AWS_SECRET_ACCESS_KEY"])       
 
 def add_session_and_security_token_to_udocker_container_variables(variables):
@@ -263,13 +263,13 @@ def create_udocker_command(event):
     append_udocker_container_volumes_to_udocker_command(command)
     append_udocker_container_variables_to_udocker_command(command)
     # Container running script
-    if ('script' in event) and event['script']:
+    if check_key_existence_in_dictionary('script', event): 
         append_script_to_udocker_command(event['script'], command)
     # Container with args
-    elif ('cmd_args' in event) and event['cmd_args']:
+    elif check_key_existence_in_dictionary('cmd_args', event):
         append_args_to_udocker_command(event['cmd_args'], command)
     # Script to be executed every time (if defined)
-    elif ('INIT_SCRIPT_PATH' in os.environ) and os.environ['INIT_SCRIPT_PATH']:
+    elif check_key_existence_in_dictionary('INIT_SCRIPT_PATH', os.environ):
         append_init_script_to_udocker_command(command)
     # Only container
     else:
@@ -304,6 +304,9 @@ def read_udocker_output_file(output_file_path):
 #######################################
 #           USEFUL FUNCTIONS          #
 #######################################
+def check_key_existence_in_dictionary(key, dictionary):
+    return (key in dictionary) and dictionary[key]
+
 def create_file_with_content(path, content):
     with open(path, "w") as f:
         f.write(content)
