@@ -514,3 +514,4 @@ class Args(object):
     event_source = None
     async = None
     cont_args = None
+    recursive = False    
