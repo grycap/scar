@@ -17,7 +17,7 @@ SCAR also supports a High Throughput Computing [Programming Model](#programming-
 
 **Table of contents**
 
-    * [Approach](#approach)
+  * [Approach](#approach)
   * [Limitations](#limitations)
   * [Installation](#installation)
   * [Configuration](#configuration)
@@ -265,7 +265,9 @@ For easier scripting, a JSON output can be obtained by including the `--json` or
 scar run --json lambda-docker-cowsay
 ```
 
-## Event-Driven File-Processing Programming Model<a id="programming-model"></a>
+<a id="programming-model"></a>
+
+## Event-Driven File-Processing Programming Model
 
 SCAR supports an event-driven programming model suitable for the execution of highly-parallel file-processing applications that require a customized runtime environment.
 
@@ -315,7 +317,8 @@ The following workflow summarises the programming model, the differences with th
 1. The shell-script processes the input file and produces the output (either one or multiple files) in the folder `/tmp/$REQUEST_ID/output`.
 1. The output files are automatically uploaded by the Lambda function into the `output` folder of `bucket-name`.
 
-<a href="localtesting"></a>
+<a id="localtesting"></a>
+
 ## Local Testing of the Docker images via udocker
 
 You can test locally if the Docker image will be able to run in AWS Lambda by means of udocker (available in the `lambda` directory) and taking into account the following limitations:
@@ -366,6 +369,8 @@ Further information is available in the udocker documentation:
 ```sh
 udocker help
 ```
+
+<a id="emulambda"></a>
 
 ## Local Testing of the Lambda functions with emulambda
 
