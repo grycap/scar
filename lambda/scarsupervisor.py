@@ -20,6 +20,7 @@ import re
 import signal
 from subprocess import call, check_output, Popen, STDOUT, TimeoutExpired
 import traceback
+from sys import getsizeof
 
 print('Loading function')
 
@@ -106,7 +107,9 @@ class Supervisor():
         request_id = context.aws_request_id
         if(Utils().is_s3_event(event)):
             s3_record = Utils().get_s3_record(event)
-            Supervisor.s3_file_name = S3_Bucket().download_input(s3_record, request_id)
+            # Supervisor.s3_file_name = S3_Bucket().download_input(s3_record, request_id)
+            print("SIZE OF MEMORY FILE: " + str(getsizeof(S3_Bucket().download_to_memory(s3_record))))
+            
     
     def post_process(self, event, context):
         request_id = context.aws_request_id
@@ -170,26 +173,26 @@ def lambda_handler(event, context):
     try:
         supervisor.pre_process(event, context)
         # Create container execution command
-        command = supervisor.create_command(event, context)
-        # print ("Udocker command: %s" % command)
-
-        # Execute container
-        lambda_output = "/tmp/%s/lambda-stdout.txt" % context.aws_request_id
-        remaining_seconds = int(context.get_remaining_time_in_millis()/1000) - int(os.environ['TIME_THRESHOLD'])
-        print("Executing the container. Timeout set to %s seconds" % str(remaining_seconds))
-        with Popen(command, stderr=STDOUT, stdout=open(lambda_output, "w"), preexec_fn=os.setsid) as process:
-            try:
-                process.wait(timeout=remaining_seconds)
-            except TimeoutExpired:
-                print("SCAR: Stopping container with name '%s'." % (Supervisor.container_name))
-                # Using SIGKILL instead of SIGTERM to ensure the process finalization 
-                os.killpg(os.getpgid(process.pid), signal.SIGKILL)
-                supervisor.relaunch_lambda(event=event, func_name=context.function_name)
-                print("WARNING: Container timeout")  
-
-        if stdout is not None:
-            stdout += check_output(["cat", lambda_output]).decode("utf-8")
-        supervisor.post_process(event, context)
+#         command = supervisor.create_command(event, context)
+#         # print ("Udocker command: %s" % command)
+#
+#         # Execute container
+#         lambda_output = "/tmp/%s/lambda-stdout.txt" % context.aws_request_id
+#         remaining_seconds = int(context.get_remaining_time_in_millis()/1000) - int(os.environ['TIME_THRESHOLD'])
+#         print("Executing the container. Timeout set to %s seconds" % str(remaining_seconds))
+#         with Popen(command, stderr=STDOUT, stdout=open(lambda_output, "w"), preexec_fn=os.setsid) as process:
+#             try:
+#                 process.wait(timeout=remaining_seconds)
+#             except TimeoutExpired:
+#                 print("SCAR: Stopping container with name '%s'." % (Supervisor.container_name))
+#                 # Using SIGKILL instead of SIGTERM to ensure the process finalization 
+#                 os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+#                 supervisor.relaunch_lambda(event=event, func_name=context.function_name)
+#                 print("WARNING: Container timeout")  
+# 
+#         if stdout is not None:
+#             stdout += check_output(["cat", lambda_output]).decode("utf-8")
+#         supervisor.post_process(event, context)
 
     except Exception:
         if stdout is None:
@@ -234,6 +237,13 @@ class S3_Bucket():
             self.get_s3_client().download_fileobj(bucket_name, file_key, data)
         print ("Successfully downloaded item from bucket %s with key %s" % (bucket_name, file_key))    
         return download_path
+    
+    def download_to_memory(self, s3_record):
+        bucket_name = self.get_bucket_name(s3_record)
+        file_key = s3_record['object']['key']        
+        obj = boto3.resource('s3').Object(bucket_name=bucket_name, key=file_key)
+        print ("Reading item from bucket %s with key %s" % (bucket_name, file_key))
+        return obj.get()["Body"].read()
 
     def upload_output(self, s3_record, request_id):
         bucket_name = self.get_bucket_name(s3_record)
