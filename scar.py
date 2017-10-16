@@ -76,7 +76,7 @@ class Scar(object):
         else:
             Config.lambda_env_variables['Variables']['TIME_THRESHOLD'] = str(Config.lambda_timeout_threshold)
         if args.recursive:        
-            Config.lambda_env_variables['Variables']['RECURSIVE'] = str(True)            
+            Config.lambda_env_variables['Variables']['RECURSIVE'] = str(True)
         # Modify environment vars if necessary
         if args.env:
             StringUtils().parse_environment_variables(args.env)
@@ -142,10 +142,14 @@ class Scar(object):
 
         # Add even source to lambda function
         if args.event_source:
+            bucket_name = args.event_source
             try:
-                aws_client.check_and_create_s3_bucket(args.event_source)
-                aws_client.add_lambda_permissions(args.event_source)
-                aws_client.create_trigger_from_bucket(args.event_source, function_arn)
+                aws_client.check_and_create_s3_bucket(bucket_name)
+                aws_client.add_lambda_permissions(bucket_name)
+                aws_client.create_trigger_from_bucket(bucket_name, function_arn)
+                if args.recursive:
+                    aws_client.add_s3_bucket_folder(bucket_name, "recursive/")
+                    aws_client.create_recursive_trigger_from_bucket(bucket_name, function_arn)
             except ClientError as ce:
                 print ("Error creating the event source: %s" % ce)
 
@@ -657,10 +661,11 @@ class AwsClient(object):
         except ClientError as ce:
             print ("Error updating the environment variables of the lambda function: %s" % ce)
 
+    
+    
     def create_trigger_from_bucket(self, bucket_name, function_arn):
         notification = { "LambdaFunctionConfigurations": [
-                            { "Id": "string",
-                              "LambdaFunctionArn": function_arn,
+                            { "LambdaFunctionArn": function_arn,
                               "Events": [ "s3:ObjectCreated:*" ],
                               "Filter":
                                 { "Key":
@@ -675,9 +680,40 @@ class AwsClient(object):
         try:
             self.get_s3().put_bucket_notification_configuration( Bucket=bucket_name,
                                                                  NotificationConfiguration=notification )
-
         except ClientError as ce:
             print ("Error configuring S3 bucket: %s" % ce)
+            
+    def create_recursive_trigger_from_bucket(self, bucket_name, function_arn):
+        notification = { "LambdaFunctionConfigurations": [
+                            { "LambdaFunctionArn": function_arn,
+                              "Events": [ "s3:ObjectCreated:*" ],
+                              "Filter":
+                                { "Key":
+                                    { "FilterRules": [
+                                        { "Name": "prefix",
+                                          "Value": "input/"
+                                        }]
+                                    }
+                                }
+                            },
+                            { "LambdaFunctionArn": function_arn,
+                              "Events": [ "s3:ObjectCreated:*" ],
+                              "Filter":
+                                { "Key":
+                                    { "FilterRules": [
+                                        { "Name": "prefix",
+                                          "Value": "recursive/"
+                                        }]
+                                    }
+                                }
+                            }]
+                        }
+        try:
+            self.get_s3().put_bucket_notification_configuration( Bucket=bucket_name,
+                                                                 NotificationConfiguration=notification )
+
+        except ClientError as ce:
+            print ("Error configuring S3 bucket: %s" % ce)            
 
     def add_lambda_permissions(self, bucket_name):
         try:
@@ -699,7 +735,8 @@ class AwsClient(object):
                 # Create the bucket if not found
                 self.create_s3_bucket(bucket_name)
             # Add folder structure
-            self.add_s3_bucket_folders(bucket_name)
+            self.add_s3_bucket_folder(bucket_name, "input/")
+            self.add_s3_bucket_folder(bucket_name, "output/")
         except ClientError as ce:
             print ("Error getting the S3 buckets list: %s" % ce)
 
@@ -709,10 +746,9 @@ class AwsClient(object):
         except ClientError as ce:
             print ("Error creating the S3 bucket '%s': %s" % (bucket_name, ce))
 
-    def add_s3_bucket_folders(self, bucket_name):
+    def add_s3_bucket_folder(self, bucket_name, folder_name):
         try:
-            self.get_s3().put_object(Bucket=bucket_name, Key="input/")
-            self.get_s3().put_object(Bucket=bucket_name, Key="output/")
+            self.get_s3().put_object(Bucket=bucket_name, Key=folder_name)
         except ClientError as ce:
             print ("Error creating the S3 bucket '%s' folders: %s" % (bucket_name, ce))
 

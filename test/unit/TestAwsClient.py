@@ -275,7 +275,7 @@ class TestAwsClient(unittest.TestCase):
         AwsClient().create_trigger_from_bucket('test_bucket', 'arn:test2')
         self.assertEqual(mock_s3_client.call_count, 1)
         self.assertTrue(call().put_bucket_notification_configuration(Bucket='test_bucket',
-                                                                     NotificationConfiguration={'LambdaFunctionConfigurations': [{'LambdaFunctionArn': 'arn:test2', 'Events': ['s3:ObjectCreated:*'], 'Id': 'string', 'Filter': {'Key': {'FilterRules': [{'Value': 'input/', 'Name': 'prefix'}]}}}]}) 
+                                                                     NotificationConfiguration={'LambdaFunctionConfigurations': [{'LambdaFunctionArn': 'arn:test2', 'Events': ['s3:ObjectCreated:*'], 'Filter': {'Key': {'FilterRules': [{'Value': 'input/', 'Name': 'prefix'}]}}}]}) 
                         in mock_s3_client.mock_calls)
 
     @unittest.mock.patch('scar.AwsClient.get_s3')        
@@ -305,22 +305,24 @@ class TestAwsClient(unittest.TestCase):
         self.assertTrue('Error setting lambda permissions:' in output)
         self.assertTrue('An error occurred (42) when calling the test2 operation: test_message' in output)            
                         
-    @unittest.mock.patch('scar.AwsClient.add_s3_bucket_folders')
+    @unittest.mock.patch('scar.AwsClient.add_s3_bucket_folder')
     @unittest.mock.patch('scar.AwsClient.get_s3')
     def test_check_and_create_s3_bucket(self, mock_s3_client, mock_s3_bucket_folders):
         mock_s3_client.return_value.list_buckets.return_value = {'Buckets' : [{'Name' : 'test1'}, {'Name' : 'test_bucket'}]}
         AwsClient().check_and_create_s3_bucket('test_bucket')
-        self.assertEqual(mock_s3_bucket_folders.call_count, 1)
-        self.assertTrue(call('test_bucket') in mock_s3_bucket_folders.mock_calls)
+        self.assertEqual(mock_s3_bucket_folders.call_count, 2)
+        self.assertTrue(call('test_bucket', 'input/') in mock_s3_bucket_folders.mock_calls)
+        self.assertTrue(call('test_bucket', 'output/') in mock_s3_bucket_folders.mock_calls)
         
     @unittest.mock.patch('scar.AwsClient.create_s3_bucket')
-    @unittest.mock.patch('scar.AwsClient.add_s3_bucket_folders')
+    @unittest.mock.patch('scar.AwsClient.add_s3_bucket_folder')
     @unittest.mock.patch('scar.AwsClient.get_s3')
     def test_check_and_create_s3_bucket_not_found(self, mock_s3_client, mock_s3_bucket_folders, mock_create_s3_bucket):
         mock_s3_client.return_value.list_buckets.return_value = {'Buckets' : []}
         AwsClient().check_and_create_s3_bucket('test_bucket')
-        self.assertEqual(mock_s3_bucket_folders.call_count, 1)
-        self.assertTrue(call('test_bucket') in mock_s3_bucket_folders.mock_calls)         
+        self.assertEqual(mock_s3_bucket_folders.call_count, 2)
+        self.assertTrue(call('test_bucket', 'input/') in mock_s3_bucket_folders.mock_calls)
+        self.assertTrue(call('test_bucket', 'output/') in mock_s3_bucket_folders.mock_calls)        
         self.assertEqual(mock_create_s3_bucket.call_count, 1)
         self.assertTrue(call('test_bucket') in mock_create_s3_bucket.mock_calls)         
 
@@ -347,16 +349,20 @@ class TestAwsClient(unittest.TestCase):
         self.assertTrue('An error occurred (42) when calling the test2 operation: test_message' in output)  
         
     @unittest.mock.patch('scar.AwsClient.get_s3')
-    def test_add_s3_bucket_folders(self, mock_s3_client):
-        AwsClient().add_s3_bucket_folders('test_bucket')
+    def test_add_s3_bucket_folder(self, mock_s3_client):
+        aws_client = AwsClient()
+        aws_client.add_s3_bucket_folder('test_bucket', 'input/')
+        aws_client.add_s3_bucket_folder('test_bucket', 'output/')
         self.assertEqual(mock_s3_client.call_count, 2)
         self.assertTrue(call().put_object(Bucket='test_bucket', Key="input/") in mock_s3_client.mock_calls)
         self.assertTrue(call().put_object(Bucket='test_bucket', Key="output/") in mock_s3_client.mock_calls)         
 
     @unittest.mock.patch('scar.AwsClient.get_s3')
-    def test_add_s3_bucket_folders_error(self, mock_s3_client):
+    def test_add_s3_bucket_folder_error(self, mock_s3_client):
         mock_s3_client.side_effect = ClientError({'Error' : {'Code' : '42', 'Message' : 'test_message'}}, 'test2')
-        AwsClient().add_s3_bucket_folders('test_bucket')
+        aws_client = AwsClient()
+        aws_client.add_s3_bucket_folder('test_bucket', 'input/')
+        aws_client.add_s3_bucket_folder('test_bucket', 'output/')
         output = TestAwsClient.capturedOutput.getvalue()
         self.assertTrue("Error creating the S3 bucket 'test_bucket' folders:" in output)
         self.assertTrue('An error occurred (42) when calling the test2 operation: test_message' in output)
