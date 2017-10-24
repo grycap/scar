@@ -82,6 +82,9 @@ class Scar(object):
             StringUtils().parse_environment_variables(args.env)
         # Update lambda tags
         Config.lambda_tags['owner'] = aws_client.get_user_name_or_id()
+        
+        if args.ssh_host and args.ssh_port and args.ssh_key:
+            self.add_ssh_variables(args)
 
         # Call the AWS service
         result = Result()
@@ -155,6 +158,11 @@ class Scar(object):
 
         # Show results
         result.print_results(json=args.json, verbose=args.verbose)
+
+    def add_ssh_variables(self, args):
+        Config.lambda_env_variables['Variables']['SSH_REVERSE_HOST'] = args.ssh_host
+        Config.lambda_env_variables['Variables']['SSH_REVERSE_PORT'] = args.ssh_port
+        Config.lambda_env_variables['Variables']['SSH_REVERSE_HOST_KEY'] = args.ssh_key.read()
 
     def ls(self, args):
         try:
@@ -337,6 +345,9 @@ class Scar(object):
             zf.write(function_name)
             # Udocker script code
             zf.write(Config.dir_path + '/lambda/udocker', 'udocker')
+            # Ssh binaries
+            zf.write(Config.dir_path + '/lambda/ssh', 'ssh')
+            zf.write(Config.dir_path + '/lambda/sshserver', 'sshserver')
             # Udocker libs
             zf.write(Config.dir_path + '/lambda/udocker-1.1.0-RC2.tar.gz', 'udocker-1.1.0-RC2.tar.gz')
             os.remove(function_name)
@@ -918,6 +929,10 @@ class CmdParser(object):
         parser_init.add_argument("-es", "--event_source", help="Name specifying the source of the events that will launch the lambda function. Only supporting buckets right now.")
         parser_init.add_argument("-lr", "--lambda_role", help="Lambda role used in the management of the functions")
         parser_init.add_argument("-r", "--recursive", help="Launch a recursive lambda function", action="store_true")
+        
+        parser_init.add_argument("-sh", "--ssh_host", help="Set ssh host where the lambda function is going to connect")
+        parser_init.add_argument("-sp", "--ssh_port", help="Set the ssh port where the lambda function is going to connect")
+        parser_init.add_argument("-sk", "--ssh_key", type=argparse.FileType('r'), help="Set the private key used to connect by the lambda function to the host")
 
         # 'ls' command
         parser_ls = subparsers.add_parser('ls', help="List lambda functions")

@@ -21,6 +21,7 @@ import shutil
 import subprocess
 import traceback
 import tarfile
+from subprocess import check_output
 
 loglevel = logging.INFO
 logger = logging.getLogger()
@@ -254,7 +255,7 @@ def append_init_script_to_udocker_command(command):
     command.extend(["--entrypoint=%s %s" % (script_exec, init_script_path), container_name])
     
 def append_udocker_container_volumes_to_udocker_command(command):
-    container_volumes = ["-v", "/tmp/%s" % request_id, "-v", "/dev", "-v", "/proc", "-v", "/etc/hosts", "--nosysdirs"]
+    container_volumes = ["-v", "/tmp/%s" % request_id, "-v", "/dev", "-v", "/var/task", "-v", "/proc", "-v", "/etc/hosts", "--nosysdirs"]
     command.extend(container_volumes)    
 
 def create_udocker_command(event):
@@ -276,10 +277,10 @@ def create_udocker_command(event):
         command.append(container_name)
     return command
 
-def kill_udocker_process(process):
-    logger.info("Stopping udocker container")
-    # Using SIGKILL instead of SIGTERM to ensure the process finalization 
-    os.killpg(os.getpgid(process.pid), subprocess.signal.SIGKILL)
+def kill_process(process):
+    if process:
+        # Using SIGKILL instead of SIGTERM to ensure the process finalization 
+        os.killpg(os.getpgid(process.pid), subprocess.signal.SIGKILL)
     
 def launch_udocker_container(event, context, command):
     lambda_output = "/tmp/%s/lambda-stdout.txt" % request_id
@@ -289,7 +290,8 @@ def launch_udocker_container(event, context, command):
         try:
             process.wait(timeout=remaining_seconds)
         except subprocess.TimeoutExpired:
-            kill_udocker_process(process)
+            logger.info("Stopping udocker container")
+            kill_process(process)
             # Processing recursive function
             if (is_recursive()):
                 launch_recursive_lambda(event, context.function_name)
@@ -336,7 +338,22 @@ def extract_tar_gz(tar_path):
     with tarfile.open(tar_path, "r:gz") as tar:
         tar.extractall(path=input_folder)
     logging.info("Succesfully extracted '%s' in path '%s'" % (tar_path, input_folder))
-            
+
+def create_ssh_connection():
+    if check_key_existence_in_dictionary('SSH_REVERSE_PORT', os.environ) and check_key_existence_in_dictionary('SSH_REVERSE_HOST', os.environ):
+        internal_ssh_server_port = "2022"
+        # Parse environment variables
+        reverse_port = os.environ["SSH_REVERSE_PORT"]
+        reverse_host = os.environ["SSH_REVERSE_HOST"]
+        reverse_host_key_path = "/tmp/private_key"
+        create_file_with_content(reverse_host_key_path, os.environ["SSH_REVERSE_HOST_KEY"])
+        subprocess.call(["chmod","0400",reverse_host_key_path])
+        # Create ssh server
+        ssh_server_process = subprocess.Popen(["/var/task/sshserver","-port", internal_ssh_server_port, "-i", reverse_host_key_path])
+        # Create reverse ssh connection
+        reverse_ssh_process = subprocess.Popen(["/var/task/ssh", "-fN", "-oStrictHostKeyChecking=no", "-i", reverse_host_key_path, "-R", "%s:localhost:%s" % (reverse_port, internal_ssh_server_port), reverse_host])
+        return (ssh_server_process, reverse_ssh_process)
+    
 #######################################
 #         LAMBDA MAIN FUNCTION        #
 #######################################
@@ -346,6 +363,8 @@ def lambda_handler(event, context):
     set_invocation_input_output_folders()
     stdout = ""
     stdout += prepare_output(context)
+    if check_key_existence_in_dictionary('SSH_REVERSE_PORT', os.environ) and check_key_existence_in_dictionary('SSH_REVERSE_HOST', os.environ) and check_key_existence_in_dictionary('SSH_REVERSE_HOST_KEY', os.environ):
+        ssh_server_process, reverse_ssh_process = create_ssh_connection()
     try:
         pre_process(event)
         # Create container execution command
@@ -355,9 +374,11 @@ def lambda_handler(event, context):
         output_file_path = launch_udocker_container(event, context, command)                                       
         stdout += read_udocker_output_file(output_file_path)
         post_process(event)
-  
+   
     except Exception:
         logger.error("Exception launched:\n %s" % traceback.format_exc())
-        stdout += "SCAR ERROR: Exception launched:\n %s" % traceback.format_exc()
+        stdout += "SCAR ERROR: Exception launched:\n %s" % traceback.format_exc()        
     logger.info(stdout)
+    kill_process(ssh_server_process)
+    kill_process(reverse_ssh_process)
     return stdout
