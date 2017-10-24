@@ -1,6 +1,6 @@
 FROM bitnami/minideb:jessie
 
-MAINTAINER Germán Moltó - gmolto@dsic.upv.es
+LABEL maintainer=Germán Moltó - gmolto@dsic.upv.es
 
 RUN install_packages imagemagick
 
