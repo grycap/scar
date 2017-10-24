@@ -1,6 +1,6 @@
 # Running R on AWS Lambda
 
-You can run the software environment for statistical computing [R](https://www.r-project.org/) in AWS Lambda via [SCAR](https://github.com/grycap/scar) using the [grycap/r-base-lambda](https://hub.docker.com/r/grycap/erlang/) Docker image, based on the [debian:stretch-slim](https://hub.docker.com/_/debian/) one.
+You can run the software environment for statistical computing [R](https://www.r-project.org/) in AWS Lambda via [SCAR](https://github.com/grycap/scar) using the [grycap/r-base-lambda](https://hub.docker.com/r/grycap/r-base-lambda/) Docker image, based on the [debian:stretch-slim](https://hub.docker.com/_/debian/) one.
 
 ## Usage on AWS Lambda via SCAR
 
@@ -12,7 +12,7 @@ You can run a container out of this image on AWS Lambda via SCAR using the follo
 scar init grycap/r-base-lambda
 ```
 
-2. Execute the Lambda function with an script to compile and run an Erlang application
+2. Execute the Lambda function with an script to compile and run R commands
 
 ```sh
 scar run -s examples/r/r-demo.sh scar-grycap-r-base-lambda
