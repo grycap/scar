@@ -5,12 +5,6 @@
 
 # ![SCAR](scar-logo.png)
 
-SCAR is a framework to transparently execute containers out of Docker images in AWS Lambda, in order to run applications (see examples for [ImageMagick](examples/imagemagick/README.md), [FFmpeg](examples/ffmpeg/README.md) and [AWS CLI](examples/aws-cli/README.md), as well as deep learning frameworks such as [Theano](examples/theano/README.md) and [Darknet](examples/darknet/README.md)) and code in virtually any programming language (see examples for [Erlang](examples/erlang) and [Elixir](examples/elixir)) on AWS Lambda.
-
-SCAR provides the benefits of AWS Lambda with the execution environment you decide, provided as a Docker image available in Docker Hub. It is probably the easiest, most convenient approach to run generic applications on AWS Lambda, as well as code in your favourite programming language, not only in those languages supported by AWS Lambda.
-
-SCAR also supports a High Throughput Computing [Programming Model](#programming-model) to create highly-parallel event-driven file-processing serverless applications that execute on customized runtime environments provided by Docker containers run on AWS Lambda.
-
 A complete usage manual can be found in the [main branch of the project](https://github.com/grycap/scar).
 
 ## WARNING !!
