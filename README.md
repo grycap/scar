@@ -13,7 +13,7 @@ A complete usage manual can be found in the [main branch of the project](https:/
 
 ## Usage
 
-The following commands will create a lambda function that connects to the host specified using a reverse ssh connection:
+The following commands will create a lambda function that connects to the specified host using a reverse ssh connection:
 ```
 SSH_HOST=ec2-user@25.16.235.145
 SSH_PORT=7022
@@ -23,10 +23,10 @@ scar init -n sshl -sh $SSH_HOST -sp $SSH_PORT -sk $SSH_KEY_PATH $CONTAINER_IMAGE
 scar run sshl sleep 50000
 ```
 * In this example we are using an ec2 machine but you can use any machine with the `SSH_PORT` open and an ssh server running.
-* The `SSH_KEY_PATH` is the path to the key that lambda is going to use to create the reverse connection to your machine.
-* The lambda function is launched with an sleep so the functions doesn't finish, but you can execute any script or container that scar allows. For more information check the [scar webpage](https://grycap.github.io/scar/).
+* The `SSH_KEY_PATH` is the path to the key that lambda is going to be used to create the reverse connection to your machine.
+* The lambda function is launched executing an sleep command so the function doesn't finish, but you can execute any script or container allowed by scar. For more information check the [scar webpage](https://grycap.github.io/scar/).
 
-To connect to lambda, in our case from the ec2 machine you have to execute:
+To connect to lambda (in our case from the ec2 machine), you have to execute:
 ```
 ssh -p 7022 scar@localhost
 scar@localhost's password:
