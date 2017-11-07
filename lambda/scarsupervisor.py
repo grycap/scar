@@ -21,6 +21,7 @@ import shutil
 import subprocess
 import traceback
 import tarfile
+import socket
 
 loglevel = logging.INFO
 logger = logging.getLogger()
@@ -174,7 +175,7 @@ def set_invocation_input_output_folders():
 def prepare_udocker_environment():
     os.makedirs(input_folder, exist_ok=True)
     os.makedirs(output_folder, exist_ok=True)
-    
+
 def prepare_udocker_container(container_image_id):
     # Check if the container is already downloaded
     cmd_out = subprocess.check_output([udocker_bin, "images"]).decode("utf-8")
@@ -220,12 +221,16 @@ def add_input_file_path_to_udocker_container_variables(variables):
     if s3_input_file_name and s3_input_file_name != "":
         add_udocker_container_variable(variables, "SCAR_INPUT_FILE", s3_input_file_name)      
             
+def add_instance_ip_to_udocker_container_variables(variables):
+    add_udocker_container_variable(variables, "INSTANCE_IP", socket.gethostbyname(socket.gethostname()))                
+            
 def get_udocker_container_global_variables():
     variables = []
     add_user_defined_variables_to_udocker_container_variables(variables)
     add_iam_credentials_to_udocker_container_variables(variables)
     add_session_and_security_token_to_udocker_container_variables(variables)
     add_input_file_path_to_udocker_container_variables(variables)
+    add_instance_ip_to_udocker_container_variables(variables)
     return variables
 
 def append_script_to_udocker_command(script, command):
@@ -355,7 +360,7 @@ def lambda_handler(event, context):
         output_file_path = launch_udocker_container(event, context, command)                                       
         stdout += read_udocker_output_file(output_file_path)
         post_process(event)
-  
+   
     except Exception:
         logger.error("Exception launched:\n %s" % traceback.format_exc())
         stdout += "SCAR ERROR: Exception launched:\n %s" % traceback.format_exc()
