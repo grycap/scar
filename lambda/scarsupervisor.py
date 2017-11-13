@@ -222,7 +222,10 @@ def add_input_file_path_to_udocker_container_variables(variables):
         add_udocker_container_variable(variables, "SCAR_INPUT_FILE", s3_input_file_name)      
             
 def add_instance_ip_to_udocker_container_variables(variables):
-    add_udocker_container_variable(variables, "INSTANCE_IP", socket.gethostbyname(socket.gethostname()))                
+    add_udocker_container_variable(variables, "INSTANCE_IP", socket.gethostbyname(socket.gethostname()))
+    
+def add_extra_payload_path_to_udocker_container_variables(variables):
+    add_udocker_container_variable(variables, "EXTRA_PAYLOAD", os.environ["EXTRA_PAYLOAD"])
             
 def get_udocker_container_global_variables():
     variables = []
@@ -231,6 +234,7 @@ def get_udocker_container_global_variables():
     add_session_and_security_token_to_udocker_container_variables(variables)
     add_input_file_path_to_udocker_container_variables(variables)
     add_instance_ip_to_udocker_container_variables(variables)
+    add_extra_payload_path_to_udocker_container_variables(variables)    
     return variables
 
 def append_script_to_udocker_command(script, command):
@@ -260,6 +264,8 @@ def append_init_script_to_udocker_command(command):
     
 def append_udocker_container_volumes_to_udocker_command(command):
     container_volumes = ["-v", "/tmp/%s" % request_id, "-v", "/dev", "-v", "/proc", "-v", "/etc/hosts", "--nosysdirs"]
+    if check_key_existence_in_dictionary('EXTRA_PAYLOAD', os.environ):
+        container_volumes.extend(["-v", "/var/task/extra"])
     command.extend(container_volumes)    
 
 def create_udocker_command(event):
@@ -324,7 +330,7 @@ def undo_escape_string(value):
 
 def get_all_files_in_directory(dir_path):
     files = []
-    for dirname, dirnames, filenames in os.walk(dir_path):
+    for dirname, _, filenames in os.walk(dir_path):
         for filename in filenames:
             files.append(os.path.join(dirname, filename))
     return files
