@@ -76,15 +76,17 @@ class TestScar(unittest.TestCase):
     def test_create_zip_file(self):
         test_file_path = os.path.dirname(os.path.abspath(__file__))
         zip_file_path = "%s/../../function.zip" % test_file_path
-        Scar().create_zip_file('test')
+        Scar().create_zip_file('test', Args())
         self.assertTrue(os.path.isfile(zip_file_path))
         self.assertEqual(zipfile.ZipFile(zip_file_path).namelist(), ['test.py', 'udocker', 'udocker-1.1.0-RC2.tar.gz'])
         os.remove(zip_file_path)
         
     def test_create_zip_file_with_script(self):
+        args = Args()
         test_file_path = os.path.dirname(os.path.abspath(__file__))
         zip_file_path = "%s/../../function.zip" % test_file_path
-        Scar().create_zip_file('test', "%s/files/test_script.sh" % test_file_path)
+        args.script = "%s/files/test_script.sh" % test_file_path
+        Scar().create_zip_file('test', args)
         self.assertTrue(os.path.isfile(zip_file_path))
         self.assertEqual(zipfile.ZipFile(zip_file_path).namelist(), ['test.py', 'udocker', 'udocker-1.1.0-RC2.tar.gz', 'init_script.sh'])
         os.remove(zip_file_path)
@@ -349,16 +351,5 @@ class Args(object):
     name = 'test-name'
     json = False
     verbose = True
-    script = None
-    memory = None
-    time = None
-    description = None
-    image_id = None
-    lambda_role = None
-    time_threshold = None
-    env = None
-    event_source = None
-    async = None
-    cont_args = None
     recursive = False
     preheat = False          
