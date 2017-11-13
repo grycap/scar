@@ -57,24 +57,24 @@ class Scar(object):
         # Set the rest of the parameters
         Config.lambda_handler = Config.lambda_name + ".lambda_handler"
         Config.lambda_zip_file = {"ZipFile": self.create_zip_file(Config.lambda_name, args)}
-        if args.memory:
+        if hasattr(args, 'memory'):
             Config.lambda_memory = aws_client.check_memory(args.memory)
-        if args.time:
+        if hasattr(args, 'time'):
             Config.lambda_time = aws_client.check_time(args.time)
-        if args.description:
+        if hasattr(args, 'description'):
             Config.lambda_description = args.description
-        if args.image_id:
+        if hasattr(args, 'image_id'):
             Config.lambda_env_variables['Variables']['IMAGE_ID'] = args.image_id
-        if args.lambda_role:
+        if hasattr(args, 'lambda_role'):
             Config.lambda_role = args.lambda_role
-        if args.time_threshold:
+        if hasattr(args, 'time_threshold'):
             Config.lambda_env_variables['Variables']['TIME_THRESHOLD'] = str(args.time_threshold)
         else:
             Config.lambda_env_variables['Variables']['TIME_THRESHOLD'] = str(Config.lambda_timeout_threshold)
-        if args.recursive:        
+        if hasattr(args, 'recursive'):
             Config.lambda_env_variables['Variables']['RECURSIVE'] = str(True)
         # Modify environment vars if necessary
-        if args.env:
+        if hasattr(args, 'env'):
             StringUtils().parse_environment_variables(args.env)
         # Update lambda tags
         Config.lambda_tags['owner'] = aws_client.get_user_name_or_id()
@@ -137,7 +137,7 @@ class Scar(object):
             print ("Error setting log retention policy: %s" % ce)
 
         # Add even source to lambda function
-        if args.event_source:
+        if hasattr(args, 'event_source'):
             bucket_name = args.event_source
             try:
                 aws_client.check_and_create_s3_bucket(bucket_name)
@@ -153,7 +153,7 @@ class Scar(object):
         result.print_results(json=args.json, verbose=args.verbose)
 
         # If preheat is activated, the function is launched at the init step
-        if args.preheat:
+        if hasattr(args, 'preheat'):
             aws_client.preheat_function(aws_client, args)
 
     def ls(self, args):
@@ -195,29 +195,28 @@ class Scar(object):
         # Set call parameters
         invocation_type = 'RequestResponse'
         log_type = 'Tail'
-        if args.async:
+        if hasattr(args, 'async'):
             invocation_type = 'Event'
             log_type = 'None'
         # Modify memory if necessary
-        if args.memory:
+        if hasattr(args, 'memory'):
             aws_client.update_function_memory(args.name, args.memory)
         # Modify timeout if necessary
-        if args.time:
+        if hasattr(args, 'time'):
             aws_client.update_function_timeout(args.name, args.time)
         # Modify environment vars if necessary
-        if args.env:
+        if hasattr(args, 'env'):
             aws_client.update_function_env_variables(args.name, args.env)
-            
         payload = {}
         # Parse the function script
-        if args.script:
+        if hasattr(args, 'script'):
             payload = { "script" : StringUtils().escape_string(args.script.read()) }
         # Or parse the container arguments
-        elif args.cont_args:
+        elif hasattr(args, 'cont_args'):
             payload = { "cmd_args" : StringUtils().escape_list(args.cont_args) }
 
         # Use the event source to launch the function
-        if args.event_source:
+        if hasattr(args, 'event_source'):
             log_type = 'None'
             event = Config.lambda_event
             event['Records'][0]['s3']['bucket']['name'] = args.event_source
@@ -340,8 +339,8 @@ class Scar(object):
             # Udocker libs
             zf.write(Config.dir_path + '/lambda/udocker-1.1.0-RC2.tar.gz', 'udocker-1.1.0-RC2.tar.gz')
             os.remove(function_name)
-            if hasattr(args, 'script_path'):
-                zf.write(args.script_path, 'init_script.sh')
+            if hasattr(args, 'script'):
+                zf.write(args.script, 'init_script.sh')
                 Config.lambda_env_variables['Variables']['INIT_SCRIPT_PATH'] = "/var/task/init_script.sh"
         if hasattr(args, 'extra_payload'):
             self.zipfolder(Config.zip_file_path, args.extra_payload)
