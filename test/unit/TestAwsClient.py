@@ -513,6 +513,179 @@ class TestAwsClient(unittest.TestCase):
             AwsClient().invoke_function('f1', 'test_inv', 'test_log', 'test_payload')
         output = TestAwsClient.capturedOutput.getvalue()
         self.assertTrue("Timeout reading connection pool:" in output)
+        
+    @unittest.mock.patch('scar.StringUtils.parse_log_ids')
+    @unittest.mock.patch('scar.StringUtils.parse_base64_response_values')        
+    @unittest.mock.patch('scar.StringUtils.parse_payload')    
+    def test_parse_response_plain_text(self, mock_parse_payload, mock_parse_base64_response_values, mock_parse_log_ids):
+        mock_parse_payload.return_value = 'test payload'
+        mock_parse_base64_response_values.return_value = 'test base 64'
+        mock_parse_log_ids.return_value = {'StatusCode' : '42',
+                                           'Payload' : 'test payload',
+                                           'LogGroupName' : 'test log group',
+                                           'LogStreamName' : 'test log stream',
+                                           'ResponseMetadata' : {'RequestId' : '99'},
+                                           'Extra' : 'test_verbose'}
+        AwsClient().parse_response('test_response', 'test_function', False, False, False)
+        output = TestAwsClient.capturedOutput.getvalue()
+        self.assertEquals(output, 'SCAR: Request Id: 99\ntest payload\n\n')         
+
+    @unittest.mock.patch('scar.Result')
+    @unittest.mock.patch('scar.StringUtils.parse_log_ids')
+    @unittest.mock.patch('scar.StringUtils.parse_base64_response_values')        
+    @unittest.mock.patch('scar.StringUtils.parse_payload')    
+    def test_parse_response_json(self, mock_parse_payload, mock_parse_base64_response_values, mock_parse_log_ids, mock_result):
+        mock_parse_payload.return_value = 'test payload'
+        mock_parse_base64_response_values.return_value = 'test base 64'
+        mock_parse_log_ids.return_value = {'StatusCode' : '42',
+                                           'Payload' : 'test payload',
+                                           'LogGroupName' : 'test log group',
+                                           'LogStreamName' : 'test log stream',
+                                           'ResponseMetadata' : {'RequestId' : '99'},
+                                           'Extra' : 'test_verbose'}
+        AwsClient().parse_response('test_response', 'test_function', False, True, False)
+        self.assertEqual(mock_result.call_count, 1)
+        self.assertTrue(call().append_to_json('LambdaOutput', {'Payload': 'test payload',
+                                                                'LogGroupName': 'test log group',
+                                                                'LogStreamName': 'test log stream',
+                                                                'StatusCode': '42',
+                                                                'RequestId': '99'}) in mock_result.mock_calls)       
+        self.assertTrue(call().print_results(json=True, verbose=False) in mock_result.mock_calls)
+
+    @unittest.mock.patch('scar.Result')        
+    @unittest.mock.patch('scar.StringUtils.parse_log_ids')
+    @unittest.mock.patch('scar.StringUtils.parse_base64_response_values')        
+    @unittest.mock.patch('scar.StringUtils.parse_payload')    
+    def test_parse_response_verbose(self, mock_parse_payload, mock_parse_base64_response_values, mock_parse_log_ids, mock_result):
+        mock_parse_payload.return_value = 'test payload'
+        mock_parse_base64_response_values.return_value = 'test base 64'
+        mock_parse_log_ids.return_value = {'StatusCode' : '42',
+                                           'Payload' : 'test payload',
+                                           'LogGroupName' : 'test log group',
+                                           'LogStreamName' : 'test log stream',
+                                           'ResponseMetadata' : {'RequestId' : '99'},
+                                           'Extra' : 'test_verbose'}
+        AwsClient().parse_response('test_response', 'test_function', False, False, True)
+        self.assertEqual(mock_result.call_count, 1)
+        self.assertTrue(call().append_to_verbose('LambdaOutput', {'LogGroupName': 'test log group',
+                                                                   'ResponseMetadata': {'RequestId': '99'},
+                                                                   'Payload': 'test payload',
+                                                                   'LogStreamName': 'test log stream',
+                                                                   'StatusCode': '42',
+                                                                   'Extra': 'test_verbose'}) in mock_result.mock_calls)
+        self.assertTrue(call().print_results(json=False, verbose=True) in mock_result.mock_calls)
+        
+    @unittest.mock.patch('scar.StringUtils.parse_payload')            
+    def test_parse_response_async(self, mock_parse_payload):
+        mock_parse_payload.return_value = {'StatusCode' : '42',
+                                           'Payload' : 'test payload',
+                                           'ResponseMetadata' : {'RequestId' : '99'},
+                                           'Extra' : 'test_verbose'}
+        AwsClient().parse_response('test_response', 'test_function', True, False, False)
+        output = TestAwsClient.capturedOutput.getvalue()
+        self.assertEquals(output, "Function 'test_function' launched correctly\n\n")     
+
+    @unittest.mock.patch('scar.Result')        
+    @unittest.mock.patch('scar.StringUtils.parse_payload')            
+    def test_parse_response_async_json(self, mock_parse_payload, mock_result):
+        mock_parse_payload.return_value = {'StatusCode' : '42',
+                                           'Payload' : 'test payload',
+                                           'ResponseMetadata' : {'RequestId' : '99'},
+                                           'Extra' : 'test_verbose'}
+        AwsClient().parse_response('test_response', 'test_function', True, True, False)
+        self.assertEqual(mock_result.call_count, 1)
+        self.assertTrue(call().append_to_json('LambdaOutput', {'StatusCode': '42',
+                                                               'RequestId': '99'}) in mock_result.mock_calls)       
+        self.assertTrue(call().print_results(json=True, verbose=False) in mock_result.mock_calls)        
+        
+    @unittest.mock.patch('scar.Result')        
+    @unittest.mock.patch('scar.StringUtils.parse_payload')            
+    def test_parse_response_async_verbose(self, mock_parse_payload, mock_result):
+        mock_parse_payload.return_value = {'StatusCode' : '42',
+                                           'Payload' : 'test payload',
+                                           'ResponseMetadata' : {'RequestId' : '99'},
+                                           'Extra' : 'test_verbose'}
+        AwsClient().parse_response('test_response', 'test_function', True, False, True)
+        self.assertEqual(mock_result.call_count, 1)
+        self.assertTrue(call().append_to_verbose('LambdaOutput', {'StatusCode' : '42',
+                                                                  'Payload' : 'test payload',
+                                                                  'ResponseMetadata' : {'RequestId' : '99'},
+                                                                  'Extra' : 'test_verbose'}) in mock_result.mock_calls)
+        self.assertTrue(call().print_results(json=False, verbose=True) in mock_result.mock_calls)          
+        
+        
+    @unittest.mock.patch('scar.StringUtils.parse_payload')        
+    def test_parse_response_function_error_function(self, mock_parse_payload):
+        mock_parse_payload.return_value = {'FunctionError' : '42',
+                                           'Payload' : 'error payload'}
+        with self.assertRaises(SystemExit):
+            AwsClient().parse_response('test_response', 'test_function', True, False, False)
+        output = TestAwsClient.capturedOutput.getvalue()
+        self.assertEquals(output, "Error in function response: error payload\n")         
+        
+    @unittest.mock.patch('scar.StringUtils.parse_payload')        
+    def test_parse_response_function_error_time_out(self, mock_parse_payload):
+        mock_parse_payload.return_value = {'FunctionError' : '42',
+                                           'Payload' : 'Task timed out after 280 seconds'}
+        with self.assertRaises(SystemExit):
+            AwsClient().parse_response('test_response', 'test_function', True, False, False)
+        output = TestAwsClient.capturedOutput.getvalue()
+        self.assertEquals(output, "Error: Function 'test_function' timed out after 280 seconds\n")
+        
+    @unittest.mock.patch('scar.StringUtils.parse_payload')        
+    def test_parse_response_function_error_time_out_json(self, mock_parse_payload):
+        mock_parse_payload.return_value = {'FunctionError' : '42',
+                                           'Payload' : 'Task timed out after 280 seconds'}
+        with self.assertRaises(SystemExit):
+            AwsClient().parse_response('test_response', 'test_function', True, True, False)
+        output = TestAwsClient.capturedOutput.getvalue()
+        self.assertEquals(output, '{"Error": "Function \'test_function\' timed out after 280 seconds"}\n')
+        
+    @unittest.mock.patch('scar.AwsClient.parse_response')               
+    @unittest.mock.patch('scar.AwsClient.invoke_function')                 
+    def test_launch_event(self, mock_aws_client, mock_parse_response):
+        event = {'Records' : [{'s3' : {'object': {'key' : 'test'}}}]}
+        mock_aws_client.invoke_function.return_value = 'invoke_return'
+        AwsClient().launch_request_response_event('s3_test_file', event, mock_aws_client, Args())
+        self.assertEqual(mock_parse_response.call_count, 1)
+        self.assertTrue(call.invoke_function('test-name', 'RequestResponse',
+                                             'Tail', '{"Records": [{"s3": {"object": {"key": "s3_test_file"}}}]}')
+                 in mock_aws_client.mock_calls) 
+        self.assertTrue(call('invoke_return', 'test-name', False, False, True) in mock_parse_response.mock_calls)
+        output = TestAwsClient.capturedOutput.getvalue()
+        self.assertTrue("Sending event for file 's3_test_file'" in output)
+        
+    @unittest.mock.patch('scar.AwsClient.parse_response')               
+    @unittest.mock.patch('scar.AwsClient.invoke_function')                 
+    def test_launch_lambda_instance(self, mock_aws_client, mock_parse_response):
+        event = {'Records' : [{'s3' : {'object': {'key' : 'test'}}}]}
+        mock_aws_client.invoke_function.return_value = 'invoke_return'
+        AwsClient().launch_async_event('s3_test_file', event, mock_aws_client, Args())
+        self.assertEqual(mock_parse_response.call_count, 1)
+        self.assertTrue(call.invoke_function('test-name', 'Event',
+                                             'None', '{"Records": [{"s3": {"object": {"key": "s3_test_file"}}}]}')
+                 in mock_aws_client.mock_calls) 
+        self.assertTrue(call('invoke_return', 'test-name', True, False, True) in mock_parse_response.mock_calls)
+        output = TestAwsClient.capturedOutput.getvalue()
+        self.assertTrue("Sending event for file 's3_test_file'" in output)              
                         
 if __name__ == '__main__':
     unittest.main()
+    
+class Args(object):
+    name = 'test-name'
+    json = False
+    verbose = True
+    script = None
+    memory = None
+    time = None
+    description = None
+    image_id = None
+    lambda_role = None
+    time_threshold = None
+    env = None
+    event_source = None
+    async = None
+    cont_args = None
+    recursive = False
+    preheat = False
