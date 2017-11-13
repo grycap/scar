@@ -787,7 +787,7 @@ class AwsClient(object):
 
     def preheat_function(self, aws_client, args):
         args.async = False
-        self.launch_lambda_instance(aws_client, args, 'RequestResponse', 'None', "")
+        self.launch_lambda_instance(aws_client, args, 'RequestResponse', 'Tail', "")
 
     def launch_async_event(self, s3_file, event, aws_client, args):
         args.async = True
