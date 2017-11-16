@@ -57,24 +57,24 @@ class Scar(object):
         # Set the rest of the parameters
         Config.lambda_handler = Config.lambda_name + ".lambda_handler"
         Config.lambda_zip_file = {"ZipFile": self.create_zip_file(Config.lambda_name, args)}
-        if hasattr(args, 'memory'):
+        if hasattr(args, 'memory') and args.memory:
             Config.lambda_memory = aws_client.check_memory(args.memory)
-        if hasattr(args, 'time'):
+        if hasattr(args, 'time') and args.time:
             Config.lambda_time = aws_client.check_time(args.time)
-        if hasattr(args, 'description'):
+        if hasattr(args, 'description') and args.description:
             Config.lambda_description = args.description
-        if hasattr(args, 'image_id'):
+        if hasattr(args, 'image_id') and args.image_id:
             Config.lambda_env_variables['Variables']['IMAGE_ID'] = args.image_id
-        if hasattr(args, 'lambda_role'):
+        if hasattr(args, 'lambda_role') and args.lambda_role:
             Config.lambda_role = args.lambda_role
-        if hasattr(args, 'time_threshold'):
+        if hasattr(args, 'time_threshold') and args.time_threshold:
             Config.lambda_env_variables['Variables']['TIME_THRESHOLD'] = str(args.time_threshold)
         else:
             Config.lambda_env_variables['Variables']['TIME_THRESHOLD'] = str(Config.lambda_timeout_threshold)
-        if hasattr(args, 'recursive'):
+        if hasattr(args, 'recursive') and args.recursive:
             Config.lambda_env_variables['Variables']['RECURSIVE'] = str(True)
         # Modify environment vars if necessary
-        if hasattr(args, 'env'):
+        if hasattr(args, 'env') and args.env:
             StringUtils().parse_environment_variables(args.env)
         # Update lambda tags
         Config.lambda_tags['owner'] = aws_client.get_user_name_or_id()
@@ -137,7 +137,7 @@ class Scar(object):
             print ("Error setting log retention policy: %s" % ce)
 
         # Add even source to lambda function
-        if hasattr(args, 'event_source'):
+        if hasattr(args, 'event_source') and args.event_source:
             bucket_name = args.event_source
             try:
                 aws_client.check_and_create_s3_bucket(bucket_name)
@@ -153,7 +153,7 @@ class Scar(object):
         result.print_results(json=args.json, verbose=args.verbose)
 
         # If preheat is activated, the function is launched at the init step
-        if hasattr(args, 'preheat'):
+        if hasattr(args, 'preheat') and args.preheat:
             aws_client.preheat_function(aws_client, args)
 
     def ls(self, args):
@@ -195,28 +195,28 @@ class Scar(object):
         # Set call parameters
         invocation_type = 'RequestResponse'
         log_type = 'Tail'
-        if hasattr(args, 'async'):
+        if hasattr(args, 'async') and args.async:
             invocation_type = 'Event'
             log_type = 'None'
         # Modify memory if necessary
-        if hasattr(args, 'memory'):
+        if hasattr(args, 'memory') and args.memory:
             aws_client.update_function_memory(args.name, args.memory)
         # Modify timeout if necessary
-        if hasattr(args, 'time'):
+        if hasattr(args, 'time') and args.time:
             aws_client.update_function_timeout(args.name, args.time)
         # Modify environment vars if necessary
-        if hasattr(args, 'env'):
+        if hasattr(args, 'env') and args.env:
             aws_client.update_function_env_variables(args.name, args.env)
         payload = {}
         # Parse the function script
-        if hasattr(args, 'script'):
+        if hasattr(args, 'script') and args.script:
             payload = { "script" : StringUtils().escape_string(args.script.read()) }
         # Or parse the container arguments
-        elif hasattr(args, 'cont_args'):
+        elif hasattr(args, 'cont_args') and args.cont_args:
             payload = { "cmd_args" : StringUtils().escape_list(args.cont_args) }
 
         # Use the event source to launch the function
-        if hasattr(args, 'event_source'):
+        if hasattr(args, 'event_source') and args.event_source:
             log_type = 'None'
             event = Config.lambda_event
             event['Records'][0]['s3']['bucket']['name'] = args.event_source
@@ -339,10 +339,10 @@ class Scar(object):
             # Udocker libs
             zf.write(Config.dir_path + '/lambda/udocker-1.1.0-RC2.tar.gz', 'udocker-1.1.0-RC2.tar.gz')
             os.remove(function_name)
-            if hasattr(args, 'script'):
+            if hasattr(args, 'script') and args.script:
                 zf.write(args.script, 'init_script.sh')
                 Config.lambda_env_variables['Variables']['INIT_SCRIPT_PATH'] = "/var/task/init_script.sh"
-        if hasattr(args, 'extra_payload'):
+        if hasattr(args, 'extra_payload') and args.extra_payload:
             self.zipfolder(Config.zip_file_path, args.extra_payload)
             Config.lambda_env_variables['Variables']['EXTRA_PAYLOAD'] = "/var/task/extra/"
         # Return the zip as an array of bytes
