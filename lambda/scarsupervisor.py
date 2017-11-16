@@ -225,7 +225,8 @@ def add_instance_ip_to_udocker_container_variables(variables):
     add_udocker_container_variable(variables, "INSTANCE_IP", socket.gethostbyname(socket.gethostname()))
     
 def add_extra_payload_path_to_udocker_container_variables(variables):
-    add_udocker_container_variable(variables, "EXTRA_PAYLOAD", os.environ["EXTRA_PAYLOAD"])
+    if check_key_existence_in_dictionary('EXTRA_PAYLOAD', os.environ):
+        add_udocker_container_variable(variables, "EXTRA_PAYLOAD", os.environ["EXTRA_PAYLOAD"])
             
 def get_udocker_container_global_variables():
     variables = []
