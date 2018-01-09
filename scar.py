@@ -148,6 +148,9 @@ class Scar(object):
                     aws_client.create_recursive_trigger_from_bucket(bucket_name, function_arn)
             except ClientError as ce:
                 print ("Error creating the event source: %s" % ce)
+                print ("Deleting all the resources created.")
+                aws_client.delete_resources(Config.lambda_name, args.json, args.verbose)
+                sys.exit(1)
 
         # Show results
         result.print_results(json=args.json, verbose=args.verbose)
@@ -680,31 +683,37 @@ class AwsClient(object):
         except ClientError as ce:
             print ("Error setting lambda permissions: %s" % ce)
 
-    def check_and_create_s3_bucket(self, bucket_name):
+    def find_s3_bucket(self, bucket_name):
         try:
-            buckets = self.get_s3().list_buckets()
             # Search for the bucket
-            found_bucket = [bucket for bucket in buckets['Buckets'] if bucket['Name'] == bucket_name]
-            if not found_bucket:
-                # Create the bucket if not found
-                self.create_s3_bucket(bucket_name)
-            # Add folder structure
-            self.add_s3_bucket_folder(bucket_name, "input/")
-            self.add_s3_bucket_folder(bucket_name, "output/")
+            buckets = self.get_s3().list_buckets()
+            return [bucket for bucket in buckets['Buckets'] if bucket['Name'] == bucket_name]            
         except ClientError as ce:
-            print ("Error getting the S3 buckets list: %s" % ce)
+            print ("Error getting the S3 buckets list: %s" % ce)    
+            raise
 
     def create_s3_bucket(self, bucket_name):
         try:
             self.get_s3().create_bucket(ACL='private', Bucket=bucket_name)
         except ClientError as ce:
             print ("Error creating the S3 bucket '%s': %s" % (bucket_name, ce))
+            raise            
 
     def add_s3_bucket_folder(self, bucket_name, folder_name):
         try:
             self.get_s3().put_object(Bucket=bucket_name, Key=folder_name)
         except ClientError as ce:
             print ("Error creating the S3 bucket '%s' folders: %s" % (bucket_name, ce))
+            raise            
+
+    def check_and_create_s3_bucket(self, bucket_name):
+        found_bucket = self.find_s3_bucket(bucket_name)         
+        if not found_bucket:
+            # Create the bucket if not found
+            self.create_s3_bucket(bucket_name)
+        # Add folder structure
+        self.add_s3_bucket_folder(bucket_name, "input/")
+        self.add_s3_bucket_folder(bucket_name, "output/")
 
     def get_functions_arn_list(self):
         arn_list = []
