@@ -329,7 +329,8 @@ class TestAwsClient(unittest.TestCase):
     @unittest.mock.patch('scar.AwsClient.get_s3')
     def test_check_and_create_s3_bucket_error(self, mock_s3_client):
         mock_s3_client.side_effect = ClientError({'Error' : {'Code' : '42', 'Message' : 'test_message'}}, 'test2')
-        AwsClient().check_and_create_s3_bucket('test_bucket')
+        with self.assertRaises(ClientError): 
+            AwsClient().check_and_create_s3_bucket('test_bucket')
         output = TestAwsClient.capturedOutput.getvalue()
         self.assertTrue('Error getting the S3 buckets list:' in output)
         self.assertTrue('An error occurred (42) when calling the test2 operation: test_message' in output)            
@@ -343,7 +344,8 @@ class TestAwsClient(unittest.TestCase):
     @unittest.mock.patch('scar.AwsClient.get_s3')
     def test_create_s3_bucket_error(self, mock_s3_client):
         mock_s3_client.side_effect = ClientError({'Error' : {'Code' : '42', 'Message' : 'test_message'}}, 'test2')
-        AwsClient().create_s3_bucket('test_bucket')
+        with self.assertRaises(ClientError):
+            AwsClient().create_s3_bucket('test_bucket')
         output = TestAwsClient.capturedOutput.getvalue()
         self.assertTrue("Error creating the S3 bucket 'test_bucket':" in output)
         self.assertTrue('An error occurred (42) when calling the test2 operation: test_message' in output)  
@@ -361,8 +363,9 @@ class TestAwsClient(unittest.TestCase):
     def test_add_s3_bucket_folder_error(self, mock_s3_client):
         mock_s3_client.side_effect = ClientError({'Error' : {'Code' : '42', 'Message' : 'test_message'}}, 'test2')
         aws_client = AwsClient()
-        aws_client.add_s3_bucket_folder('test_bucket', 'input/')
-        aws_client.add_s3_bucket_folder('test_bucket', 'output/')
+        with self.assertRaises(ClientError):        
+            aws_client.add_s3_bucket_folder('test_bucket', 'input/')
+            aws_client.add_s3_bucket_folder('test_bucket', 'output/')
         output = TestAwsClient.capturedOutput.getvalue()
         self.assertTrue("Error creating the S3 bucket 'test_bucket' folders:" in output)
         self.assertTrue('An error occurred (42) when calling the test2 operation: test_message' in output)

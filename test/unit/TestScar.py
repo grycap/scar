@@ -271,8 +271,9 @@ class TestScar(unittest.TestCase):
         
         args = Args()
         args.verbose = False
-        args.event_source = True       
-        Scar().init(args)        
+        args.event_source = True
+        with self.assertRaises(SystemExit):    
+            Scar().init(args)        
         output = TestScar.capturedOutput.getvalue()
         self.assertTrue("Error creating the event source:" in output)
         self.assertTrue("An error occurred (42) when calling the test2 operation: test_message" in output)  
