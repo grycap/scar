@@ -110,7 +110,7 @@ def upload_file_to_s3(bucket_name, file_path, file_key):
 #      LAMBDA RELATED FUNCTIONS       #
 #######################################
 def get_invocation_remaining_seconds(context):
-    return int(context.get_remaining_time_in_millis() / 1000) - int(os.environ['TIME_THRESHOLD'])
+    return int(context.get_remaining_time_in_millis() / 1000) - int(os.environ['TIMEOUT_THRESHOLD'])
 
 def launch_recursive_lambda(event, function_name):
     if(is_s3_event(event)):

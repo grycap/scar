@@ -35,7 +35,8 @@ from enum import Enum
 from multiprocessing.pool import ThreadPool
 from tabulate import tabulate
 
-logging.basicConfig(filename='scar.log', filemode='w', level=logging.INFO)  
+FORMAT='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+logging.basicConfig(filename='scar.log', level=logging.INFO, format=FORMAT)
 config_file_folder = os.path.expanduser("~") + "/.scar"
 config_file_name = "scar.cfg"
 config_file_path = config_file_folder + '/' + config_file_name
@@ -725,7 +726,7 @@ class AWSLambda(object):
         self.timeout_threshold = scar_config.getint('lambda_timeout_threshold', self.timeout_threshold)
         
     def get_scar_abs_path(self):
-        return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        return os.path.dirname(os.path.abspath(__file__))
         
     def create_zip_file(self):
         scar_dir = self.get_scar_abs_path()
