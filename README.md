@@ -9,11 +9,12 @@ SCAR is a framework to transparently execute containers out of Docker images in 
 
 SCAR provides the benefits of AWS Lambda with the execution environment you decide, provided as a Docker image available in Docker Hub. It is probably the easiest, most convenient approach to run generic applications on AWS Lambda, as well as code in your favourite programming language, not only in those languages supported by AWS Lambda.
 
-SCAR also supports a High Throughput Computing [Programming Model](#programming-model) to create highly-parallel event-driven file-processing serverless applications that execute on customized runtime environments provided by Docker containers run on AWS Lambda.
+SCAR also supports a High Throughput Computing [Programming Model](#programming-model) to create highly-parallel event-driven file-processing serverless applications that execute on customized runtime environments provided by Docker containers run on AWS Lambda. The development of SCAR has been published in the [Future Generation Computer Systems](https://www.journals.elsevier.com/future-generation-computer-systems) scientific journal.
 
 <a name="toc"></a>
 **Related resources**:
-  [Website](https://grycap.github.io/scar/) 
+  [Website](https://grycap.github.io/scar/) |
+  [Scientific Paper](http://linkinghub.elsevier.com/retrieve/pii/S0167739X17316485) ([pre-print](http://www.grycap.upv.es/gmolto/publications/preprints/Perez2018scc.pdf)).
 
 **Table of contents**
 
@@ -27,6 +28,7 @@ SCAR also supports a High Throughput Computing [Programming Model](#programming-
       * [Event-Driven File-Processing Programming Model](#programming-model)
       * [Local Testing of the Docker images via udocker](#localtesting)
       * [Local Testing of the Docker images via emulambda](#emulambda)  
+  * [Further Information](#furtherinfo)
   * [Acknowledgements](#acknowledgements)
   
 
@@ -392,6 +394,7 @@ SCAR is licensed under the Apache License, Version 2.0. See
 [LICENSE](https://github.com/grycap/scar/blob/master/LICENSE) for the full
 license text.
 
+<a id="furtherinfo"></a>
 ## Further information
 
 There is further information on the architecture of SCAR and use cases in the scientific publication ["Serverless computing for container-based architectures"](http://linkinghub.elsevier.com/retrieve/pii/S0167739X17316485) (pre-print available [here](http://www.grycap.upv.es/gmolto/publications/preprints/Perez2018scc.pdf)), included in the Future Generation Computer Systems journal. Please acknowledge the use of SCAR by including the following cite:
@@ -400,6 +403,7 @@ There is further information on the architecture of SCAR and use cases in the sc
 A. Pérez, G. Moltó, M. Caballer, and A. Calatrava, “Serverless computing for container-based architectures,” Futur. Gener. Comput. Syst., vol. 83, pp. 50–59, Jun. 2018.
 ```
 
+<a id="acknowledgements"></a>
 ## Acknowledgements
 
 * [udocker](https://github.com/indigo-dc/udocker)
