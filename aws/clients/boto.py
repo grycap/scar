@@ -14,22 +14,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .boto import BotoClient
-from botocore.exceptions import ClientError
-import utils.functionutils as utils
+import boto3
+import botocore
 
-class IAMClient(BotoClient):
-    '''A low-level client representing aws Identity and Access Management (IAMClient).
-    https://boto3.readthedocs.io/en/latest/reference/services/iam.html'''    
+# Default values
+botocore_client_read_timeout = 360
+default_aws_region = "us-east-1"
+
+class BotoClient(object):
     
-    def __init__(self, region=None):
-        super().__init__('iam', region)
-        
-    def get_user_name_or_id(self):
-        try:
-            user = self.get_client().get_user()['User']
-            return user.get('UserName', user['UserId'])
-        except ClientError as ce:
-            # If the user doesn't have access rights to IAMClient
-            return utils.find_expression('(?<=user\/)(\S+)', str(ce)) 
-        
+    def __init__(self, client_name, region=None):
+        if region is None:
+            region = default_aws_region
+        boto_config = botocore.config.Config(read_timeout=botocore_client_read_timeout)            
+        self.__client = boto3.client(client_name, region_name=region, config=boto_config)        
+    
+    def get_access_key(self):
+        session = boto3.Session()
+        credentials = session.get_credentials()
+        return credentials.access_key
+    
+    def get_client(self):
+        return self.__client

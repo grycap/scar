@@ -14,33 +14,33 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .aws import AWS
+from .boto import BotoClient
 from botocore.exceptions import ClientError
 import logging
 import utils.functionutils as utils
 
-class CloudWatchLogs(AWS):
+class CloudWatchLogsClient(BotoClient):
     '''A low-level client representing Amazon CloudWatch Logs.
     https://boto3.readthedocs.io/en/latest/reference/services/logs.html'''
     
     def __init__(self, region=None):
         super().__init__('logs', region)
     
-    def get_cloudwatch_log_events_by_group_name(self, log_group_name, next_token=None):
+    def get_log_events_by_group_name(self, log_group_name, next_token=None):
         try:
             if next_token: 
-                return self.client.filter_log_events(logGroupName=log_group_name,
+                return self.get_client().filter_log_events(logGroupName=log_group_name,
                                                         nextToken=next_token)
             else:
-                return self.client.filter_log_events(logGroupName=log_group_name)                
+                return self.get_client().filter_log_events(logGroupName=log_group_name)                
         except ClientError as ce:
             print("Error getting log events")
             logging.error("Error getting log events for log group '%s': %s" % (log_group_name, ce))
             utils.finish_failed_execution()    
     
-    def get_cloudwatch_log_events_by_group_name_and_stream_name(self, log_group_name, log_stream_name):
+    def get_log_events_by_group_name_and_stream_name(self, log_group_name, log_stream_name):
         try:        
-            return self.client.get_log_events(logGroupName=log_group_name,
+            return self.get_client().get_log_events(logGroupName=log_group_name,
                                                         logStreamName=log_stream_name,
                                                         startFromHead=True)
         except ClientError as ce:
@@ -49,10 +49,10 @@ class CloudWatchLogs(AWS):
                            % (log_group_name, log_stream_name, ce))
             utils.finish_failed_execution()
             
-    def create_cloudwatch_log_group(self, aws_lambda):
+    def create_log_group(self, aws_lambda):
         try:
             logging.info("Creating cloudwatch log group.")
-            return self.client.create_cloudwatch_log_group(logGroupName=aws_lambda.log_group_name,
+            return self.get_client().create_log_group(logGroupName=aws_lambda.log_group_name,
                                                    tags=aws_lambda.tags)
         except ClientError as ce:
             if ce.response['Error']['Code'] == 'ResourceAlreadyExistsException':
@@ -63,20 +63,20 @@ class CloudWatchLogs(AWS):
                 logging.error("Error creating log groups: %s" % ce)   
                 utils.finish_failed_execution() 
     
-    def set_cloudwatch_log_retention_policy(self, aws_lambda):
+    def set_log_retention_policy(self, aws_lambda):
         try:
             logging.info("Setting log group policy.")
-            self.client.put_retention_policy(logGroupName=aws_lambda.log_group_name,
+            self.get_client().put_retention_policy(logGroupName=aws_lambda.log_group_name,
                                            retentionInDays=aws_lambda.log_retention_policy_in_days)
         except ClientError as ce:
             print("Error setting log retention policy")
             logging.error("Error setting log retention policy: %s" % ce)
             
-    def delete_cloudwatch_log_group(self, function_name):
+    def delete_log_group(self, function_name):
         try:
             # Delete the cloudwatch log group
             log_group_name = '/aws/lambda/%s' % function_name
-            return self.client.delete_log_group(logGroupName=log_group_name)
+            return self.get_client().delete_log_group(logGroupName=log_group_name)
         except ClientError as ce:
             if ce.response['Error']['Code'] == 'ResourceNotFoundException':
                 print("Cannot delete log group '%s'. Group not found." % log_group_name)

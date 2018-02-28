@@ -14,8 +14,8 @@
 # limitations under the License.
 
 
-from .clients.awslambda import Lambda as LambdaClient
-from .clients.iam import IAM as IAMClient
+from .clients.lambdac import LambdaClient
+from .clients.iam import IAMClient as IAMClient
 
 import utils.functionutils as utils
 import utils.outputtype as outputType
@@ -333,11 +333,11 @@ class AWSLambda(object):
         self.timeout_threshold = scar_config.getint('lambda_timeout_threshold', self.timeout_threshold)
         
     def get_scar_abs_path(self):
-        return os.path.dirname(os.path.abspath(__file__))
+        return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         
     def create_zip_file(self):
         scar_dir = self.get_scar_abs_path()
-        # Set generic lambda function name
+        # Set lambda function name
         function_name = self.name + '.py'
         # Copy file to avoid messing with the repo files
         # We have to rename the file because the function name affects the handler name
@@ -346,7 +346,7 @@ class AWSLambda(object):
         with zipfile.ZipFile(self.zip_file_path, 'w', zipfile.ZIP_DEFLATED) as zf:
             # AWSLambda function code
             zf.write(function_name)
-            os.remove(function_name)
+            utils.delete_file(function_name)
             # Udocker script code
             zf.write(scar_dir + '/lambda/udocker', 'udocker')
             # Udocker libs
@@ -367,8 +367,7 @@ class AWSLambda(object):
         self.check_payload_size()
 
     def add_image_file(self):
-        with zipfile.ZipFile(self.zip_file_path, 'a', zipfile.ZIP_DEFLATED) as zf:
-            zf.write(self.image_file, 'extra/' + self.name)
+        utils.add_file_to_zip(self.zip_file_path, self.image_file, self.name)
 
     def check_payload_size(self):
         if((not self.deployment_bucket) and (os.path.getsize(self.zip_file_path) > MAX_PAYLOAD_SIZE)):

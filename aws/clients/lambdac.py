@@ -14,16 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .aws import AWS
-from .resourcegroups import ResourceGroups
+from .boto import BotoClient
+from .resourcegroups import ResourceGroupsClient
 from botocore.exceptions import ClientError
 from botocore.vendored.requests.exceptions import ReadTimeout
 import logging
 import utils.functionutils as utils
 import uuid
 
-class Lambda(AWS):
-    '''A low-level client representing aws Lambda.
+
+class LambdaClient(BotoClient):
+    '''A low-level client representing aws LambdaClient.
     https://boto3.readthedocs.io/en/latest/reference/services/lambda.htmll'''    
     
     def __init__(self, region=None):
@@ -40,7 +41,7 @@ class Lambda(AWS):
     
     def find_function_name(self, function_name):
         try:
-            paginator = self.client.get_paginator('list_functions')
+            paginator = self.get_client().get_paginator('list_functions')
             for functions in paginator.paginate():
                 for lfunction in functions['Functions']:
                     if function_name == lfunction['FunctionName']:
@@ -65,7 +66,7 @@ class Lambda(AWS):
     
     def update_function_timeout(self, function_name, timeout):
         try:
-            self.client.update_function_configuration(FunctionName=function_name,
+            self.get_client().update_function_configuration(FunctionName=function_name,
                                                                    Timeout=self.check_time(timeout))
         except ClientError as ce:
             print("Error updating lambda function timeout")
@@ -73,7 +74,7 @@ class Lambda(AWS):
     
     def update_function_memory(self, function_name, memory):
         try:
-            self.client.update_function_configuration(FunctionName=function_name,
+            self.get_client().update_function_configuration(FunctionName=function_name,
                                                                    MemorySize=memory)
         except ClientError as ce:
             print("Error updating lambda function memory")
@@ -82,16 +83,16 @@ class Lambda(AWS):
     def create_function(self, aws_lambda): 
         try:
             logging.info("Creating lambda function.")
-            response = self.client.create_function(FunctionName=aws_lambda.name,
-                                                     Runtime=aws_lambda.runtime,
-                                                     Role=aws_lambda.role,
-                                                     Handler=aws_lambda.handler,
-                                                     Code=aws_lambda.code,
-                                                     Environment=aws_lambda.environment,
-                                                     Description=aws_lambda.description,
-                                                     Timeout=aws_lambda.time,
-                                                     MemorySize=aws_lambda.memory,
-                                                     Tags=aws_lambda.tags)
+            response = self.get_client().create_function(FunctionName=aws_lambda.name,
+                                                         Runtime=aws_lambda.runtime,
+                                                         Role=aws_lambda.role,
+                                                         Handler=aws_lambda.handler,
+                                                         Code=aws_lambda.code,
+                                                         Environment=aws_lambda.environment,
+                                                         Description=aws_lambda.description,
+                                                         Timeout=aws_lambda.time,
+                                                         MemorySize=aws_lambda.memory,
+                                                         Tags=aws_lambda.tags)
             aws_lambda.function_arn = response['FunctionArn']
             return response
         except ClientError as ce:
@@ -99,14 +100,14 @@ class Lambda(AWS):
             logging.error("Error creating lambda function: %s" % ce)        
         
     def get_function_environment_variables(self, function_name):
-        return self.client.get_function(FunctionName=function_name)['Configuration']['Environment']
+        return self.get_client().get_function(FunctionName=function_name)['Configuration']['Environment']
     
     def update_function_env_variables(self, function_name, env_vars):
         try:
             # Retrieve the global variables already defined
             lambda_env_variables = self.get_function_environment_variables(function_name)
             self.parse_environment_variables(lambda_env_variables, env_vars)
-            self.client.update_function_configuration(FunctionName=function_name,
+            self.get_client().update_function_configuration(FunctionName=function_name,
                                                                     Environment=lambda_env_variables)
         except ClientError as ce:
             print("Error updating the environment variables of the lambda function")
@@ -114,7 +115,7 @@ class Lambda(AWS):
     
     def add_lambda_permissions(self, lambda_name, bucket_name):
         try:
-            self.client.add_permission(FunctionName=lambda_name,
+            self.get_client().add_permission(FunctionName=lambda_name,
                                              StatementId=str(uuid.uuid4()),
                                              Action="lambda:InvokeFunction",
                                              Principal="s3.amazonaws.com",
@@ -126,7 +127,7 @@ class Lambda(AWS):
     
     def get_function_info_by_arn(self, function_arn):
         try:
-            return self.client.get_function(FunctionName=function_arn)
+            return self.get_client().get_function(FunctionName=function_arn)
         except ClientError as ce:
             print("Error getting function info by arn")
             logging.error("Error getting function info by arn: %s" % ce)
@@ -134,7 +135,7 @@ class Lambda(AWS):
     def get_all_functions(self):
         function_list = []
         # Get the filtered resources from aws
-        functions_arn_list = ResourceGroups().get_lambda_functions_arn_list()
+        functions_arn_list = ResourceGroupsClient().get_lambda_functions_arn_list()
         try:
             for function_arn in functions_arn_list:
                 function_info = self.get_function_info_by_arn(function_arn)
@@ -147,20 +148,15 @@ class Lambda(AWS):
     def delete_lambda_function(self, function_name):
         try:
             # Delete the lambda function
-            return self.client.delete_function(FunctionName=function_name)
+            return self.get_client().delete_function(FunctionName=function_name)
         except ClientError as ce:
             print("Error deleting the lambda function")
             logging.error("Error deleting the lambda function: %s" % ce)
     
-    def delete_all_resources(self, aws_lambda):
-        lambda_functions = self.get_all_functions()
-        for function in lambda_functions:
-            self.delete_resources(function['Configuration']['FunctionName'], aws_lambda.output)
-            
     def invoke_lambda_function(self, aws_lambda):
         response = {}
         try:
-            response = self.client.invoke(FunctionName=aws_lambda.name,
+            response = self.get_client().invoke(FunctionName=aws_lambda.name,
                                                 InvocationType=aws_lambda.invocation_type,
                                                 LogType=aws_lambda.log_type,
                                                 Payload=aws_lambda.payload)

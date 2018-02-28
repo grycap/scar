@@ -14,12 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .aws import AWS
-from .iam import IAM
+from .boto import BotoClient
+from .iam import IAMClient
 from botocore.exceptions import ClientError
 import logging
 
-class ResourceGroups(AWS):
+class ResourceGroupsClient(BotoClient):
     '''A low-level client representing aws Resource Groups Tagging API.
     https://boto3.readthedocs.io/en/latest/reference/services/resourcegroupstaggingapi.html'''
     
@@ -30,10 +30,10 @@ class ResourceGroups(AWS):
         arn_list = []
         try:
             # Creation of a function filter by tags
-            user_id = IAM().get_user_name_or_id()
+            user_id = IAMClient().get_user_name_or_id()
             tag_filters = [ { 'Key': 'owner', 'Values': [ user_id ] },
                             { 'Key': 'createdby', 'Values': ['scar'] } ]
-            response = self.client.get_resources(TagFilters=tag_filters,
+            response = self.get_client().get_resources(TagFilters=tag_filters,
                                             TagsPerPage=100,
                                             ResourceTypeFilters=['lambda'])
     
@@ -41,7 +41,7 @@ class ResourceGroups(AWS):
                 arn_list.append(function['ResourceARN'])
     
             while ('PaginationToken' in response) and (response['PaginationToken']):
-                response = self.client.get_resources(PaginationToken=response['PaginationToken'],
+                response = self.get_client().get_resources(PaginationToken=response['PaginationToken'],
                                                 TagFilters=tag_filters,
                                                 TagsPerPage=100)
                 for function in response['ResourceTagMappingList']:
