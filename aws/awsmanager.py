@@ -82,16 +82,16 @@ class AWSManager(object):
 
     def preheat_function(self):
         self.aws_lambda.set_request_response_call_parameters()
-        return self.lambda_client.invoke_lambda_function(self.aws_lambda)
+        return self.lambda_client.invoke_function(self.aws_lambda)
                 
     def launch_s3_event(self, s3_file):
         self.aws_lambda.set_event_source_file_name(s3_file)
         self.aws_lambda.set_payload(self.aws_lambda.event)
         logging.info("Sending event for file '%s'" % s3_file)
-        return self.lambda_client.invoke_lambda_function(self.aws_lambda)
+        return self.lambda_client.invoke_function(self.aws_lambda)
         
     def process_event_source_calls(self):
-        s3_file_list = self.s3_client.get_s3_file_list(self.aws_lambda.event_source)
+        s3_file_list = self.s3_client.get_bucket_file_list(self.aws_lambda.event_source)
         logging.info("Files found: '%s'" % s3_file_list)
         # First do a request response invocation to prepare the lambda environment
         if s3_file_list:
@@ -120,18 +120,23 @@ class AWSManager(object):
         pool.close()
     
     def launch_lambda_instance(self):
-        response = self.lambda_client.invoke_lambda_function(self.aws_lambda)
-        self.parse_invocation_response(response)   
+        response = self.lambda_client.invoke_function(self.aws_lambda)
+        self.response_parser.parse_invocation_response(response, 
+                                                       self.aws_lambda.name, 
+                                                       self.aws_lambda.output, 
+                                                       self.aws_lambda.is_asynchronous())
         
     def add_event_source(self):
+        # To ease the readability
         bucket_name = self.aws_lambda.event_source
+        function_arn = self.aws_lambda.function_arn
         try:
-            self.s3_client.check_and_create_s3_bucket(bucket_name)
-            self.lambda_client.add_lambda_permissions(self.aws_lambda.name, bucket_name)
-            self.s3_client.create_trigger_from_bucket(bucket_name, self.aws_lambda.function_arn)
+            self.s3_client.check_and_create_bucket(bucket_name)
+            self.lambda_client.add_lambda_invocation_permission_from_s3_bucket(self.aws_lambda.name, bucket_name)
+            self.s3_client.create_trigger_from_bucket(bucket_name, function_arn)
             if self.aws_lambda.recursive:
-                self.s3_client.add_s3_bucket_folder(bucket_name, "recursive/")
-                self.s3_client.create_recursive_trigger_from_bucket(bucket_name, self.aws_lambda.function_arn)
+                self.s3_client.add_bucket_folder(bucket_name, "recursive/")
+                self.s3_client.create_recursive_trigger_from_bucket(bucket_name, function_arn)
         except ClientError as ce:
             print ("Error creating the event source: %s" % ce)
 
@@ -181,7 +186,7 @@ class AWSManager(object):
     def delete_function_resources(self):
         self.lambda_client.check_function_name_not_exists(self.aws_lambda.name)
         # Delete lambda function
-        lambda_response = self.lambda_client.delete_lambda_function(self.aws_lambda.name)
+        lambda_response = self.lambda_client.delete_function(self.aws_lambda.name)
         self.response_parser.parse_delete_function_response(lambda_response, self.aws_lambda.name, self.aws_lambda.output)
         # Delete associated log
         cw_response = self.cloudwatch_logs_client.delete_log_group(self.aws_lambda.name)

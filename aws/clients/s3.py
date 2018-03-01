@@ -25,7 +25,7 @@ class S3Client(BotoClient):
     def __init__(self, region=None):
         super().__init__('s3', region)
          
-    def get_s3_file_list(self, bucket_name):
+    def get_bucket_file_list(self, bucket_name):
         file_list = []
         result = self.get_client().list_objects_v2(Bucket=bucket_name, Prefix='input/')
         if 'Contents' in result:
@@ -42,34 +42,34 @@ class S3Client(BotoClient):
             print("Error configuring S3Client bucket")
             logging.error("Error configuring S3Client bucket: %s" % ce)
     
-    def check_and_create_s3_bucket(self, bucket_name):
+    def check_and_create_bucket(self, bucket_name):
         try:
             buckets = self.get_client().list_buckets()
             # Search for the bucket
             found_bucket = [bucket for bucket in buckets['Buckets'] if bucket['Name'] == bucket_name]
             if not found_bucket:
                 # Create the bucket if not found
-                self.create_s3_bucket(bucket_name)
+                self.create_bucket(bucket_name)
             # Add folder structure
-            self.add_s3_bucket_folder(bucket_name, "input/")
-            self.add_s3_bucket_folder(bucket_name, "output/")
+            self.add_bucket_folder(bucket_name, "input/")
+            self.add_bucket_folder(bucket_name, "output/")
         except ClientError as ce:
             print("Error getting the S3Client buckets list")
             logging.error("Error getting the S3Client buckets list: %s" % ce)
     
-    def create_s3_bucket(self, bucket_name):
+    def create_bucket(self, bucket_name):
         try:
             self.get_client().create_bucket(ACL='private', Bucket=bucket_name)
         except ClientError as ce:
             print("Error creating the S3Client bucket '%s'" % bucket_name)
             logging.error("Error creating the S3Client bucket '%s': %s" % (bucket_name, ce))
     
-    def add_s3_bucket_folder(self, bucket_name, folder_name):
+    def add_bucket_folder(self, bucket_name, folder_name):
         try:
             self.get_client().put_object(Bucket=bucket_name, Key=folder_name)
         except ClientError as ce:
-            print("Error creating the S3Client bucket '%s' folder '%s'" % (bucket_name, folder_name))
-            logging.error("Error creating the S3Client bucket '%s' folder '%s': %s" % (bucket_name, folder_name, ce))    
+            print("Error creating the folder '%s' in the bucket '%s'" % (folder_name, bucket_name))
+            logging.error("Error creating the folder '%s' in the bucket '%s': %s" % (folder_name, bucket_name, ce))    
     
     def get_trigger_configuration(self, function_arn, folder_name):
         return { "LambdaFunctionArn": function_arn,

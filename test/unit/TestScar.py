@@ -267,7 +267,7 @@ class TestScar(unittest.TestCase):
                                                                                             'FunctionName':'f1-name',
                                                                                             'Extra1':'e1',
                                                                                             'Extra2':'e2'}
-        mock_aws_client.return_value.check_and_create_s3_bucket.side_effect = ClientError({'Error' : {'Code' : '42', 'Message' : 'test_message'}}, 'test2')
+        mock_aws_client.return_value.check_and_create_bucket.side_effect = ClientError({'Error' : {'Code' : '42', 'Message' : 'test_message'}}, 'test2')
         
         args = Args()
         args.verbose = False
@@ -326,7 +326,7 @@ class TestScar(unittest.TestCase):
 
     @unittest.mock.patch('scar.AwsClient')                    
     def test_run_event_source(self, mock_aws_client):
-        mock_aws_client.return_value.get_s3_file_list.return_value = ['test_file_1','test_file_2','test_file_3','test_file_4']
+        mock_aws_client.return_value.get_bucket_file_list.return_value = ['test_file_1','test_file_2','test_file_3','test_file_4']
         args = Args()
         args.verbose = False
         args.event_source = 'test_bucket'
@@ -334,7 +334,7 @@ class TestScar(unittest.TestCase):
         self.assertEqual(mock_aws_client.call_count, 1)
         # check_function_name_not_exists
         mock_aws_client.mock_calls[1].assert_called_with('test-name', False)
-        # get_s3_file_list
+        # get_bucket_file_list
         mock_aws_client.mock_calls[2].assert_called_with('test_bucket')
         # launch_request_response_event
         mock_aws_client.mock_calls[3].assert_called_with('test_file_1', {'Records': [{'eventSource': 'aws:s3', 's3': {'bucket': {'name': 'test_bucket'}, 'object': {'key': ''}}}]}, ANY, ANY)

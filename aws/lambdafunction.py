@@ -123,7 +123,7 @@ class AWSLambda(object):
         return self.asynchronous_call
 
     def has_event_source(self):
-        return self.event_source is not None
+        return (self.event_source is not None)
     
     def delete_all(self):
         return self.delete_all
@@ -163,7 +163,7 @@ class AWSLambda(object):
         self.log_type = "Tail"
 
     def set_name(self, name):
-        if not utils.is_valid_name(name):
+        if not utils.is_valid_aws_name(name):
             print("'%s' is an invalid lambda function name." % name)
             logging.error("'%s' is an invalid lambda function name." % name)
             utils.finish_failed_execution()            
@@ -216,6 +216,7 @@ class AWSLambda(object):
         self.script = script
         
     def set_event_source(self, event_source):
+        ''' Sets the S3 bucket name from where the events are going to be launched'''
         self.event_source = event_source
         self.event['Records'][0]['s3']['bucket']['name'] = event_source
         

@@ -19,9 +19,6 @@ from botocore.exceptions import ClientError
 from botocore.vendored.requests.exceptions import ReadTimeout
 import logging
 import utils.functionutils as utils
-import uuid
-from boto.awslambda.exceptions import ResourceNotFoundException
-
 
 class LambdaClient(BotoClient):
     '''A low-level client representing aws LambdaClient.
@@ -68,7 +65,7 @@ class LambdaClient(BotoClient):
     def update_function_timeout(self, function_name, timeout):
         try:
             self.get_client().update_function_configuration(FunctionName=function_name,
-                                                                   Timeout=self.check_time(timeout))
+                                                            Timeout=self.check_time(timeout))
         except ClientError as ce:
             print("Error updating lambda function timeout")
             logging.error("Error updating lambda function timeout: %s" % ce)
@@ -76,7 +73,7 @@ class LambdaClient(BotoClient):
     def update_function_memory(self, function_name, memory):
         try:
             self.get_client().update_function_configuration(FunctionName=function_name,
-                                                                   MemorySize=memory)
+                                                            MemorySize=memory)
         except ClientError as ce:
             print("Error updating lambda function memory")
             logging.error("Error updating lambda function memory: %s" % ce)
@@ -109,19 +106,18 @@ class LambdaClient(BotoClient):
             lambda_env_variables = self.get_function_environment_variables(function_name)
             self.parse_environment_variables(lambda_env_variables, env_vars)
             self.get_client().update_function_configuration(FunctionName=function_name,
-                                                                    Environment=lambda_env_variables)
+                                                            Environment=lambda_env_variables)
         except ClientError as ce:
             print("Error updating the environment variables of the lambda function")
             logging.error("Error updating the environment variables of the lambda function: %s" % ce)
     
-    def add_lambda_permissions(self, lambda_name, bucket_name):
+    def add_lambda_invocation_permission_from_s3_bucket(self, lambda_name, bucket_name):
         try:
             self.get_client().add_permission(FunctionName=lambda_name,
-                                             StatementId=str(uuid.uuid4()),
+                                             StatementId=utils.get_random_uuid4_str(),
                                              Action="lambda:InvokeFunction",
                                              Principal="s3.amazonaws.com",
-                                             SourceArn='arn:aws:s3:::%s' % bucket_name
-                                            )
+                                             SourceArn='arn:aws:s3:::%s' % bucket_name )
         except ClientError as ce:
             print("Error setting lambda permissions")
             logging.error("Error setting lambda permissions: %s" % ce)
@@ -133,7 +129,7 @@ class LambdaClient(BotoClient):
             print("Error getting function info by arn")
             logging.error("Error getting function info by arn: %s" % ce)
             
-    def delete_lambda_function(self, function_name):
+    def delete_function(self, function_name):
         try:
             # Delete the lambda function
             return self.get_client().delete_function(FunctionName=function_name)
@@ -141,7 +137,7 @@ class LambdaClient(BotoClient):
             print("Error deleting the lambda function")
             logging.error("Error deleting the lambda function: %s" % ce)
     
-    def invoke_lambda_function(self, aws_lambda):
+    def invoke_function(self, aws_lambda):
         response = {}
         try:
             response = self.get_client().invoke(FunctionName=aws_lambda.name,

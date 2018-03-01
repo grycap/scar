@@ -18,11 +18,8 @@
 from aws.lambdafunction import AWSLambda
 from aws.awsmanager import AWSManager
 from utils.commandparser import CommandParser
-import logging
+import utils.logger as logger 
 
-FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-logging.basicConfig(filename='scar.log', level=logging.INFO, format=FORMAT)
-                  
 class Scar(object):
     
     def __init__(self, aws_lambda):
@@ -41,9 +38,9 @@ class Scar(object):
     
     def run(self):
         if self.aws_lambda.has_event_source():
-            self.process_event_source_calls()               
+            self.aws_manager.process_event_source_calls()               
         else:
-            self.launch_lambda_instance()
+            self.aws_manager.launch_lambda_instance()
     
     def ls(self):
         lambda_function_info_list = self.aws_manager.get_all_functions_info()
@@ -57,16 +54,17 @@ class Scar(object):
     
     def log(self):
         print(self.aws_manager.get_function_log())
+        
+    def parse_command_arguments(self):
+        self.ws_lambda.set_attributes(args)
 
 
 if __name__ == "__main__":
-    logging.info('----------------------------------------------------')
-    logging.info('SCAR execution started')
+    logger.init_execution_trace()
     aws_lambda = AWSLambda()
     scar = Scar(aws_lambda)
     args = CommandParser(scar).parse_arguments()
-    aws_lambda.set_attributes(args)
+    scar.parse_command_arguments()
     args.func()
-    logging.info('SCAR execution finished')
-    logging.info('----------------------------------------------------')   
+    logger.end_execution_trace()  
     

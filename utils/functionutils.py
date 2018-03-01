@@ -20,9 +20,10 @@ import logging
 import os
 import re
 import sys
+import uuid
 import zipfile
 
-def is_valid_name(function_name):
+def is_valid_aws_name(function_name):
     if function_name:
         aws_name_regex = "(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}(-gov)?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\$LATEST|[a-zA-Z0-9-_]+))?"           
         pattern = re.compile(aws_name_regex)
@@ -113,3 +114,6 @@ def get_file_as_byte_array(file_path):
     # Return the zip as an array of bytes
     with open(file_path, 'rb') as f:
         return f.read()
+    
+def get_random_uuid4_str():
+    return str(uuid.uuid4())
