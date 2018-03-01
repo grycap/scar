@@ -132,19 +132,6 @@ class LambdaClient(BotoClient):
             print("Error getting function info by arn")
             logging.error("Error getting function info by arn: %s" % ce)
             
-    def get_all_functions(self):
-        function_list = []
-        # Get the filtered resources from aws
-        functions_arn_list = ResourceGroupsClient().get_lambda_functions_arn_list()
-        try:
-            for function_arn in functions_arn_list:
-                function_info = self.get_function_info_by_arn(function_arn)
-                function_list.append(function_info)
-        except ClientError as ce:
-            print("Error getting all functions")
-            logging.error("Error getting all functions: %s" % ce)
-        return function_list
-    
     def delete_lambda_function(self, function_name):
         try:
             # Delete the lambda function

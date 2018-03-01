@@ -483,7 +483,7 @@ class TestAwsClient(unittest.TestCase):
     def test_delete_resources(self, mock_result, mock_function_name, mock_delete_function, mock_delete_group):
         aux_result = Result()
         mock_result.return_value = aux_result
-        AwsClient().delete_resources('f1', False, False)
+        AwsClient().delete_function_resources('f1', False, False)
         self.assertEqual(mock_function_name.call_count, 1)
         self.assertTrue(call('f1', False) in mock_function_name.mock_calls)
         self.assertEqual(mock_delete_function.call_count, 1)

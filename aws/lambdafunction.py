@@ -15,13 +15,12 @@
 
 
 from .clients.lambdac import LambdaClient
-from .clients.iam import IAMClient as IAMClient
+from .clients.iam import IAMClient
 
 import utils.functionutils as utils
 import utils.outputtype as outputType
+from utils.config import Config
 
-
-import configparser
 import json
 import logging
 import os
@@ -29,62 +28,90 @@ import shutil
 import tempfile
 import zipfile
 
-config_file_folder = os.path.expanduser("~") + "/.scar"
-config_file_name = "scar.cfg"
-config_file_path = config_file_folder + '/' + config_file_name
-
 MAX_PAYLOAD_SIZE = 50 * 1024 * 1024
 MAX_S3_PAYLOAD_SIZE = 250 * 1024 * 1024
+
+default_invocation_type = "RequestResponse"
+default_log_type = "Tail"
+default_output = outputType.PLAIN_TEXT
+default_payload = "{}"
+default_tags = {}
+default_udocker_dir = "/tmp/home/.udocker"
+default_udocker_tarball = "/var/task/udocker-1.1.0-RC2.tar.gz"
+default_zip_file_path = os.path.join(tempfile.gettempdir(), 'function.zip')
+default_recursive_behavior = False 
+default_asynchronous_behavior = False
+s3_event_template = { "Records" : [ 
+                        { "eventSource" : "aws:s3",
+                          "s3" : { "bucket" : { "name" : "" },
+                                   "object" : { "key" : ""  } }
+                        }
+                    ]}
+lambda_environment_template = { 'Variables' : {} }
 
 class AWSLambda(object):
 
     def __init__(self):
+        self.initialize_properties()
+        self.set_config_file_properties()
+        self.validate_lambda_configuration()
+
+    def set_config_file_properties(self):
+        config = Config()
+        self.role = config.get_iam_role()
+        self.name = config.get_lambda_name()
+        self.region = config.get_lambda_region()
+        self.memory = config.get_lambda_memory()
+        self.time = config.get_lambda_execution_time()
+        self.description = config.get_lambda_description()
+        self.timeout_threshold = config.get_lambda_timeout_threshold()
+        self.runtime = config.get_lambda_runtime()
+        self.log_retention_policy_in_days = config.get_cloudwatch_log_retention_policy_in_days()
+
+    def validate_lambda_configuration(self):
+        if not self.role or self.role == "":
+            logging.error("Please, specify a valid iam role in the configuration file (usually located in ~/.scar/scar_aws.cfg).")
+            print("Please, specify a valid iam role in the configuration file (usually located in ~/.scar/scar_aws.cfg).")
+            utils.finish_failed_execution()
+
+    def initialize_properties(self):
         # Parameters needed to create the function in aws
-        self.asynchronous_call = False
+        self.role = None
+        self.region = None
+        self.memory = None
+        self.time = None               
+        self.description = None
+        self.timeout_threshold = None        
         self.code = None
         self.container_arguments = None
-        self.delete_all = False
-        self.description = "Automatically generated lambda function"    
-        self.environment = { 'Variables' : {} }
-        self.event = { "Records" : [
-                    { "eventSource" : "aws:s3",
-                      "s3" : {
-                          "bucket" : {
-                              "name" : ""},
-                          "object" : {
-                              "key" : "" }
-                        }
-                    }
-                ]}
         self.event_source = None
         self.extra_payload = None
         self.function_arn = None
         self.handler = None
         self.image_id = None
         self.image_file = None
-        self.invocation_type = "RequestResponse"
         self.log_group_name = None
-        self.log_retention_policy_in_days = 30
+        self.log_retention_policy_in_days = None
         self.log_stream_name = None
-        self.log_type = "Tail"
-        self.memory = 512
         self.name = None
-        self.output = outputType.PLAIN_TEXT
-        self.payload = "{}"
-        self.recursive = False        
-        self.region = 'us-east-1'
         self.request_id = None
-        self.role = None
-        self.runtime = "python3.6"
+        self.runtime = None
         self.scar_call = None
         self.script = None
-        self.tags = {}
-        self.time = 300
-        self.timeout_threshold = 10
-        self.udocker_dir = "/tmp/home/.udocker"
-        self.udocker_tarball = "/var/task/udocker-1.1.0-RC2.tar.gz"
-        self.zip_file_path = os.path.join(tempfile.gettempdir(), 'function.zip')
-        self.deployment_bucket = None
+        self.deployment_bucket = None   
+        self.delete_all = False
+        self.environment = lambda_environment_template
+        self.event = s3_event_template              
+        self.log_type = default_log_type     
+        self.asynchronous_call = default_asynchronous_behavior        
+        self.invocation_type = default_invocation_type        
+        self.output = default_output
+        self.payload = default_payload
+        self.recursive = default_recursive_behavior        
+        self.tags = default_tags
+        self.udocker_dir = default_udocker_dir
+        self.udocker_tarball = default_udocker_tarball
+        self.zip_file_path = default_zip_file_path
 
     def set_log_stream_name(self, stream_name):
         self.log_stream_name = stream_name
@@ -236,11 +263,6 @@ class AWSLambda(object):
     def set_all(self, value):
         self.delete_all = value
           
-    def validate_lambda_configuration(self):
-        if not self.role or self.role == "":
-            logging.error("Please, specify first a lambda role in the '%s/%s' file." % (config_file_folder, config_file_name))
-            utils.finish_failed_execution()
-
     def get_argument_value(self, args, attr):
         if attr in args.__dict__.keys():
             return args.__dict__[attr]
@@ -296,42 +318,6 @@ class AWSLambda(object):
     def get_parsed_cont_args(self):
         return utils.escape_list(self.container_arguments)
 
-    def get_default_json_config(self):
-        return { 'lambda_description' : self.description,
-                 'lambda_memory' : self.memory,
-                 'lambda_time' : self.time,
-                 'lambda_region' : self.region,
-                 'lambda_role' : '',
-                 'lambda_timeout_threshold' : self.timeout_threshold }
-
-    def check_config_file(self):
-        config_parser = configparser.ConfigParser()
-        # Check if the config file exists
-        if os.path.isfile(config_file_path):
-            config_parser.read(config_file_path)
-            self.parse_config_file_values(config_parser)
-        else:
-            # Create scar config dir
-            os.makedirs(config_file_folder, exist_ok=True)
-            self.create_default_config_file(config_parser, config_file_path)
-        self.validate_lambda_configuration()
-    
-    def create_default_config_file(self, config_parser, config_file_path):
-        config_parser['scar'] = self.get_default_json_config()
-        with open(config_file_path, "w") as config_file:
-            config_parser.write(config_file)
-        logging.warning("Config file '%s' created.\nPlease, set first a valid lambda role to be used." % config_file_path)
-        utils.finish_successful_execution()
-    
-    def parse_config_file_values(self, config_parser):
-        scar_config = config_parser['scar']
-        self.role = scar_config.get('lambda_role', self.role)
-        self.region = scar_config.get('lambda_region', self.region)
-        self.memory = scar_config.getint('lambda_memory', self.memory)
-        self.time = scar_config.getint('lambda_time', self.time)
-        self.description = scar_config.get('lambda_description', self.description)
-        self.timeout_threshold = scar_config.getint('lambda_timeout_threshold', self.timeout_threshold)
-        
     def get_scar_abs_path(self):
         return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         

@@ -80,6 +80,13 @@ def parse_log_ids(value):
 def print_json(value):
     print(json.dumps(value))
     
+def json_to_string(value):
+    # Simple json check
+    if value.startswith("{"):
+        return json.dumps(value)
+    else:
+        return value    
+    
 def divide_list_in_chunks(elements, chunk_size):
     """Yield successive n-sized chunks from th elements list."""
     if len(elements) == 0:

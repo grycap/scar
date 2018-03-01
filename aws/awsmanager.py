@@ -16,6 +16,8 @@
 from .clients.cloudwatchlogs import CloudWatchLogsClient
 from .clients.lambdac import LambdaClient
 from .clients.s3 import S3Client
+from .clients.resourcegroups import ResourceGroupsClient
+from .clients.iam import IAMClient
 from .responseparser import ResponseParser
 from botocore.exceptions import ClientError
 from multiprocessing.pool import ThreadPool
@@ -56,27 +58,37 @@ class AWSManager(object):
         return s3_client      
     
     @lazy_property
+    def resource_groups_client(self):
+        resource_groups_client = ResourceGroupsClient()
+        return resource_groups_client
+    
+    @lazy_property
+    def iam_client(self):
+        iam_client = IAMClient()
+        return iam_client    
+    
+    @lazy_property
     def response_parser(self):
         response_parser = ResponseParser()
-        return response_parser  
+        return response_parser      
 
-    def launch_async_event(self, aws_lambda, s3_file):
-        aws_lambda.set_asynchronous_call_parameters()
-        return self.launch_s3_event(aws_lambda, s3_file)        
+    def launch_async_event(self, s3_file):
+        self.aws_lambda.set_asynchronous_call_parameters()
+        return self.launch_s3_event(s3_file)        
    
-    def launch_request_response_event(self, aws_lambda, s3_file):
-        aws_lambda.set_request_response_call_parameters()
-        return self.launch_s3_event(aws_lambda, s3_file)            
+    def launch_request_response_event(self, s3_file):
+        self.aws_lambda.set_request_response_call_parameters()
+        return self.launch_s3_event(s3_file)            
 
-    def preheat_function(self, aws_lambda):
-        aws_lambda.set_request_response_call_parameters()
-        return self.invoke_lambda_function(aws_lambda)
+    def preheat_function(self):
+        self.aws_lambda.set_request_response_call_parameters()
+        return self.lambda_client.invoke_lambda_function(self.aws_lambda)
                 
-    def launch_s3_event(self, aws_lambda, s3_file):
-        aws_lambda.set_event_source_file_name(s3_file)
-        aws_lambda.set_payload(aws_lambda.event)
+    def launch_s3_event(self, s3_file):
+        self.aws_lambda.set_event_source_file_name(s3_file)
+        self.aws_lambda.set_payload(self.aws_lambda.event)
         logging.info("Sending event for file '%s'" % s3_file)
-        self.invoke_lambda_function(aws_lambda)
+        return self.lambda_client.invoke_lambda_function(self.aws_lambda)
         
     def process_event_source_calls(self):
         s3_file_list = self.s3_client.get_s3_file_list(self.aws_lambda.event_source)
@@ -121,7 +133,7 @@ class AWSManager(object):
                 self.s3_client.add_s3_bucket_folder(bucket_name, "recursive/")
                 self.s3_client.create_recursive_trigger_from_bucket(bucket_name, self.aws_lambda.function_arn)
         except ClientError as ce:
-            print ("Error creating the event source: %s" % ce)                        
+            print ("Error creating the event source: %s" % ce)
 
     def create_lambda_function(self):
         # lambda_validator.validate_function_creation_values(self.aws_lambda)
@@ -147,17 +159,63 @@ class AWSManager(object):
         # Set retention policy into the log group
         self.cloudwatch_logs_client.set_log_retention_policy(self.aws_lambda)
 
-    def delete_all_resources(self, output_type):
-        lambda_functions = self.lambda_client.get_all_functions()
+    def get_all_functions_info(self):
+        function_list = []
+        # Get the filtered resources from aws
+        iam_user_id = self.iam_client.get_user_name_or_id()
+        functions_arn_list = self.resource_groups_client.get_lambda_functions_arn_list(iam_user_id)
+        try:
+            for function_arn in functions_arn_list:
+                function_info = self.lambda_client.get_function_info_by_arn(function_arn)
+                function_list.append(function_info)
+        except ClientError as ce:
+            print("Error getting all functions")
+            logging.error("Error getting all functions: %s" % ce)
+        return function_list
+
+    def delete_all_resources(self):
+        lambda_functions = self.get_all_functions_info()
         for function in lambda_functions:
-            self.delete_resources(function['Configuration']['FunctionName'], output_type)
+            self.delete_function_resources(function['Configuration']['FunctionName'])
         
-    def delete_resources(self, function_name, output_type):
-        self.lambda_client.check_function_name_not_exists(function_name)
+    def delete_function_resources(self):
+        self.lambda_client.check_function_name_not_exists(self.aws_lambda.name)
         # Delete lambda function
-        delete_function_response = self.lambda_client.delete_lambda_function(function_name)
-        self.response_parser.parse_delete_function_response(function_name, delete_function_response, output_type)
+        lambda_response = self.lambda_client.delete_lambda_function(self.aws_lambda.name)
+        self.response_parser.parse_delete_function_response(lambda_response, self.aws_lambda.name, self.aws_lambda.output)
         # Delete associated log
-        delete_log_response = self.cloudwatch_logs_client.delete_log_group(function_name)
-        self.response_parser.parse_delete_log_response(function_name, delete_log_response, output_type)
+        cw_response = self.cloudwatch_logs_client.delete_log_group(self.aws_lambda.name)
+        self.response_parser.parse_delete_log_response(cw_response, self.aws_lambda.log_group_name, self.aws_lambda.output)
+        
+    def get_function_log(self):
+        function_log = ""
+        try:
+            full_msg = ""
+            if self.aws_lambda.log_stream_name:
+                response = self.cloudwatch_logs_client.get_log_events_by_group_name_and_stream_name(
+                    self.aws_lambda.log_group_name,
+                    self.aws_lambda.log_stream_name)
+                for event in response['events']:
+                    full_msg += event['message']
+            else:
+                response = self.cloudwatch_logs_client.get_log_events_by_group_name(self.aws_lambda.log_group_name)
+                data = []
+                for event in response['events']:
+                    data.append((event['message'], event['timestamp']))
+                while(('nextToken' in response) and response['nextToken']):
+                    response = self.cloudwatch_logs_client.get_log_events_by_group_name(self.aws_lambda.log_group_name, response['nextToken'])
+                    for event in response['events']:
+                        data.append((event['message'], event['timestamp']))
+                sorted_data = sorted(data, key=lambda time: time[1])
+                for sdata in sorted_data:
+                    full_msg += sdata[0]
+            response['completeMessage'] = full_msg
+            if self.aws_lambda.request_id:
+                function_log = self.response_parser.parse_aws_logs(full_msg, self.aws_lambda.request_id)
+            else:
+                function_log = full_msg
+        except ClientError as ce:
+            print ("Error getting the function logs: %s" % ce)
+              
+        return function_log
 

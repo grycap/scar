@@ -19,60 +19,62 @@ from tabulate import tabulate
 import json
 import utils.functionutils as utils
 
+def parse_generic_response(response, text_message, output_type, verbose_output=None, json_output=None):
+    if output_type == outputType.PLAIN_TEXT:
+        output = text_message
+    else:
+        if output_type == outputType.VERBOSE:
+            if verbose_output:
+                output = verbose_output
+            else:
+                output = {'CloudWatchOuput': response}
+        elif output_type == outputType.JSON:
+            if json_output:
+                output = json_output
+            else:
+                output = {'CloudWatchOutput': {'RequestId' : response['ResponseMetadata']['RequestId'],
+                                               'HTTPStatusCode' : response['ResponseMetadata']['HTTPStatusCode']}}
+    print(utils.json_to_string(output))
+    logging.info(output)
+
 class ResponseParser(object):
  
     def parse_lambda_function_creation_response(self, lambda_response, function_name, access_key, output_type):
-        if output_type == outputType.PLAIN_TEXT:
-            output = "Function '%s' successfully created." % function_name
-            print(output)
-            logging.info(output)            
-        else:        
-            if output_type == outputType.VERBOSE:
-                output = {'LambdaOutput' : lambda_response}
-            elif output_type == outputType.JSON:
-                output = {'LambdaOutput' : {'AccessKey' : access_key,
-                                            'FunctionArn' : lambda_response['FunctionArn'],
-                                            'Timeout' : lambda_response['Timeout'],
-                                            'MemorySize' : lambda_response['MemorySize'],
-                                            'FunctionName' : lambda_response['FunctionName']}}
-            utils.print_json(output)
-            logging.info(output)
+        text_message = "Function '%s' successfully created." % function_name
+        json_message = {'LambdaOutput' : {'AccessKey' : access_key,
+                                          'FunctionArn' : lambda_response['FunctionArn'],
+                                          'Timeout' : lambda_response['Timeout'],
+                                          'MemorySize' : lambda_response['MemorySize'],
+                                          'FunctionName' : lambda_response['FunctionName']}}
+        parse_generic_response(lambda_response, text_message, output_type, json_output=json_message)
     
     def parse_log_group_creation_response(self, cw_response, log_group_name, output_type):
-        if output_type == outputType.PLAIN_TEXT:
-            output = "Log group '%s' successfully created." % log_group_name
-            print(output)
-            logging.info(output)         
-        else:
-            if output_type == outputType.VERBOSE:
-                output = {'CloudWatchOuput': cw_response}
-            elif output_type == outputType.JSON:
-                output = {'CloudWatchOutput': {'RequestId' : cw_response['ResponseMetadata']['RequestId'],
-                                               'HTTPStatusCode' : cw_response['ResponseMetadata']['HTTPStatusCode']}}
-            utils.print_json(output)
-            logging.info(output)           
+        text_message = "Log group '%s' successfully created." % log_group_name
+        parse_generic_response(cw_response, text_message, output_type)
     
-    def parse_delete_function_response(self, function_name, reponse, output_type):
+    def parse_delete_function_response(self, lambda_response, function_name, output_type):
+        text_message = "Function '%s' successfully deleted." % function_name
+        parse_generic_response(lambda_response, text_message, output_type)
+
+    def parse_delete_log_response(self, cw_response, log_group_name, output_type):
+        text_message = "Log group '%s' successfully deleted." % log_group_name
+        parse_generic_response(cw_response, text_message, output_type)    
+
+    def parse_ls_response(self, lambda_function_info_list, output_type):
+        # Create the data structure
         if output_type == outputType.VERBOSE:
-            logging.info('LambdaOutput', reponse)
-        elif output_type == outputType.JSON:            
-            logging.info('LambdaOutput', { 'RequestId' : reponse['ResponseMetadata']['RequestId'],
-                                         'HTTPStatusCode' : reponse['ResponseMetadata']['HTTPStatusCode'] })
+            functions_full_info = []
+            [functions_full_info.append(function_info) for function_info in lambda_function_info_list]
+            print('LambdaOutput', functions_full_info)
         else:
-            logging.info("Function '%s' successfully deleted." % function_name)
-        print("Function '%s' successfully deleted." % function_name)                 
-    
-    def parse_delete_log_response(self, function_name, response, output_type):
-        if response:
-            log_group_name = '/aws/lambda/%s' % function_name
-            if output_type == outputType.VERBOSE:
-                logging.info('CloudWatchOutput', response)
-            elif output_type == outputType.JSON:            
-                logging.info('CloudWatchOutput', { 'RequestId' : response['ResponseMetadata']['RequestId'],
-                                                                   'HTTPStatusCode' : response['ResponseMetadata']['HTTPStatusCode'] })
+            functions_parsed_info = []
+            for function_info in lambda_function_info_list:
+                lambda_info_parsed = self.parse_lambda_info_json_result(function_info)
+                functions_parsed_info.append(lambda_info_parsed)
+            if output_type == outputType.JSON:
+                print('Functions', functions_parsed_info)
             else:
-                logging.info("Log group '%s' successfully deleted." % log_group_name)
-            print("Log group '%s' successfully deleted." % log_group_name)
+                print(self.get_table(functions_parsed_info))  
             
     def parse_aws_logs(self, logs, request_id):
         if (logs is None) or (request_id is None):
@@ -149,22 +151,6 @@ class ResponseParser(object):
                 'Timeout' : timeout,
                 'Image_id': image_id}
       
-    def parse_ls_response(self, lambda_function_info_list, output_type):
-        # Create the data structure
-        if output_type == outputType.VERBOSE:
-            functions_full_info = []
-            [functions_full_info.append(function_info) for function_info in lambda_function_info_list]
-            print('LambdaOutput', functions_full_info)
-        else:
-            functions_parsed_info = []
-            for function_info in lambda_function_info_list:
-                lambda_info_parsed = self.parse_lambda_info_json_result(function_info)
-                functions_parsed_info.append(lambda_info_parsed)
-            if output_type == outputType.JSON:
-                print('Functions', functions_parsed_info)
-            else:
-                print(self.get_table(functions_parsed_info))            
-
     def get_table(self, functions_info):
         headers = ['NAME', 'MEMORY', 'TIME', 'IMAGE_ID']
         table = []

@@ -22,15 +22,21 @@ class CommandParser(object):
     
     def __init__(self, scar):
         self.scar = scar
+        self.create_parser()
+        self.create_subparsers()
+
+    def create_parser(self):
         self.parser = argparse.ArgumentParser(prog="scar",
-                                         description="Deploy containers in serverless architectures",
-                                         epilog="Run 'scar COMMAND --help' for more information on a command.")
+                                              description="Deploy containers in serverless architectures",
+                                              epilog="Run 'scar COMMAND --help' for more information on a command.")
+
+    def create_subparsers(self):
         self.subparsers = self.parser.add_subparsers(title='Commands')    
         self.create_init_parser()
         self.create_run_parser()
         self.create_rm_parser()
         self.create_ls_parser()
-        self.create_log_parser()
+        self.create_log_parser()        
     
     def create_init_parser(self):
         parser_init = self.subparsers.add_parser('init', help="Create lambda function")

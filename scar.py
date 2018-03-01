@@ -15,11 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from aws.clients.lambdac import LambdaClient
-from aws.clients.cloudwatchlogs import CloudWatchLogsClient
 from aws.lambdafunction import AWSLambda
 from aws.awsmanager import AWSManager
-from botocore.exceptions import ClientError
 from utils.commandparser import CommandParser
 import logging
 
@@ -37,10 +34,10 @@ class Scar(object):
         self.aws_manager.create_lambda_function()
         self.aws_manager.create_log_group()
         if self.aws_lambda.event_source:
-            self.add_event_source()
+            self.aws_manager.add_event_source()
         # If preheat is activated, the function is launched at the init step
         if self.aws_lambda.preheat:    
-            self.preheat_function()
+            self.aws_manager.preheat_function()
     
     def run(self):
         if self.aws_lambda.has_event_source():
@@ -49,57 +46,23 @@ class Scar(object):
             self.launch_lambda_instance()
     
     def ls(self):
-        # Get the filtered resources from aws
-        lambda_function_info_list = LambdaClient().get_all_functions()
-        self.parse_ls_response(lambda_function_info_list)
+        lambda_function_info_list = self.aws_manager.get_all_functions_info()
+        self.aws_manager.response_parser.parse_ls_response(lambda_function_info_list, self.aws_lambda.output)
     
     def rm(self):
         if self.aws_lambda.delete_all:
-            self.aws_manager.delete_all_resources(self.aws_lambda.output)
+            self.aws_manager.delete_all_resources()
         else:
-            self.aws_manager.delete_resources(self.aws_lambda.name, self.aws_lambda.output)
+            self.aws_manager.delete_function_resources()
     
     def log(self):
-        try:
-            log_client = CloudWatchLogsClient()
-            full_msg = ""
-            if self.aws_lambda.log_stream_name:
-                response = log_client.get_log_events_by_group_name_and_stream_name(
-                    self.aws_lambda.log_group_name,
-                    self.aws_lambda.log_stream_name)
-                for event in response['events']:
-                    full_msg += event['message']
-            else:
-                response = log_client.get_log_events_by_group_name(self.aws_lambda.log_group_name)
-                data = []
-    
-                for event in response['events']:
-                    data.append((event['message'], event['timestamp']))
-    
-                while(('nextToken' in response) and response['nextToken']):
-                    response = log_client.get_log_events_by_group_name(self.aws_lambda.log_group_name, response['nextToken'])
-                    for event in response['events']:
-                        data.append((event['message'], event['timestamp']))
-    
-                sorted_data = sorted(data, key=lambda time: time[1])
-                for sdata in sorted_data:
-                    full_msg += sdata[0]
-    
-            response['completeMessage'] = full_msg
-            if self.aws_lambda.request_id:
-                print (self.parse_aws_logs(full_msg, self.aws_lambda.request_id))
-            else:
-                print (full_msg)
-    
-        except ClientError as ce:
-            print(ce)
+        print(self.aws_manager.get_function_log())
 
 
 if __name__ == "__main__":
     logging.info('----------------------------------------------------')
     logging.info('SCAR execution started')
     aws_lambda = AWSLambda()
-    aws_lambda.check_config_file()
     scar = Scar(aws_lambda)
     args = CommandParser(scar).parse_arguments()
     aws_lambda.set_attributes(args)

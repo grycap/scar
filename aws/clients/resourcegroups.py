@@ -15,7 +15,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .boto import BotoClient
-from .iam import IAMClient
 from botocore.exceptions import ClientError
 import logging
 
@@ -26,12 +25,11 @@ class ResourceGroupsClient(BotoClient):
     def __init__(self, region=None):
         super().__init__('resourcegroupstaggingapi', region)
 
-    def get_lambda_functions_arn_list(self):
+    def get_lambda_functions_arn_list(self, iam_user_id):
         arn_list = []
         try:
             # Creation of a function filter by tags
-            user_id = IAMClient().get_user_name_or_id()
-            tag_filters = [ { 'Key': 'owner', 'Values': [ user_id ] },
+            tag_filters = [ { 'Key': 'owner', 'Values': [ iam_user_id ] },
                             { 'Key': 'createdby', 'Values': ['scar'] } ]
             response = self.get_client().get_resources(TagFilters=tag_filters,
                                             TagsPerPage=100,
