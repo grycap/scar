@@ -15,12 +15,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .boto import BotoClient
-from .resourcegroups import ResourceGroupsClient
 from botocore.exceptions import ClientError
 from botocore.vendored.requests.exceptions import ReadTimeout
 import logging
 import utils.functionutils as utils
 import uuid
+from boto.awslambda.exceptions import ResourceNotFoundException
 
 
 class LambdaClient(BotoClient):
@@ -41,16 +41,17 @@ class LambdaClient(BotoClient):
     
     def find_function_name(self, function_name):
         try:
-            paginator = self.get_client().get_paginator('list_functions')
-            for functions in paginator.paginate():
-                for lfunction in functions['Functions']:
-                    if function_name == lfunction['FunctionName']:
-                        return True
-            return False
+            # If this call works the function exists
+            self.get_client().get_function(FunctionName=function_name)
+            return True
         except ClientError as ce:
-            print("Error listing the lambda functions")
-            logging.error("Error listing the lambda functions: %s" % ce)
-            utils.finish_failed_execution()
+            # Function not found
+            if ce.response['Error']['Code'] == 'ResourceNotFoundException':
+                return False
+            else:   
+                print("Error listing the lambda functions")
+                logging.error("Error listing the lambda functions: %s" % ce)
+                utils.finish_failed_execution()
     
     def check_function_name_not_exists(self, function_name):
         if not self.find_function_name(function_name):
