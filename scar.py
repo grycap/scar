@@ -56,7 +56,7 @@ class Scar(object):
         print(self.aws_manager.get_function_log())
         
     def parse_command_arguments(self):
-        self.ws_lambda.set_attributes(args)
+        self.aws_lambda.set_attributes(args)
 
 
 if __name__ == "__main__":

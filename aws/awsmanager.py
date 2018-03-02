@@ -26,48 +26,37 @@ import utils.functionutils as utils
 
 MAX_CONCURRENT_INVOCATIONS = 1000
 
-def lazy_property(fn):
-    '''Decorator that makes a property lazy-evaluated.'''
-    attr_name = '_lazy_' + fn.__name__
-
-    @property
-    def _lazy_property(self):
-        if not hasattr(self, attr_name):
-            setattr(self, attr_name, fn(self))
-        return getattr(self, attr_name)
-    return _lazy_property
-
 class AWSManager(object):
 
     def __init__(self, aws_lambda):
         self.aws_lambda = aws_lambda
 
-    @lazy_property
+    @utils.lazy_property
     def lambda_client(self):
         lambda_client = LambdaClient()
         return lambda_client    
     
-    @lazy_property
+    @utils.lazy_property
     def cloudwatch_logs_client(self):
         cloudwatch_logs_client = CloudWatchLogsClient()
         return cloudwatch_logs_client
     
-    @lazy_property
+    @utils.lazy_property
     def s3_client(self):
         s3_client = S3Client()
         return s3_client      
     
-    @lazy_property
+    @utils.lazy_property
     def resource_groups_client(self):
         resource_groups_client = ResourceGroupsClient()
         return resource_groups_client
     
-    @lazy_property
+    @utils.lazy_property
     def iam_client(self):
         iam_client = IAMClient()
         return iam_client    
     
-    @lazy_property
+    @utils.lazy_property
     def response_parser(self):
         response_parser = ResponseParser()
         return response_parser      

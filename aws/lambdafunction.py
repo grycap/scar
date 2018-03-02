@@ -113,6 +113,11 @@ class AWSLambda(object):
         self.udocker_tarball = default_udocker_tarball
         self.zip_file_path = default_zip_file_path
 
+    @utils.lazy_property
+    def lambda_client(self):
+        lambda_client = LambdaClient()
+        return lambda_client
+
     def set_log_stream_name(self, stream_name):
         self.log_stream_name = stream_name
         
@@ -171,8 +176,6 @@ class AWSLambda(object):
     
     def set_image_id(self, image_id):
         self.image_id = image_id
-        if not hasattr(self, 'name') or self.name == "":
-            self.set_name(LambdaClient().create_function_name(image_id))
     
     def set_image_file(self, image_file):
         self.image_file = image_file
@@ -270,18 +273,18 @@ class AWSLambda(object):
 
     def update_function_attributes(self, args):
         if self.get_argument_value(args, 'memory'):
-            LambdaClient().update_function_memory(self.name, self.memory)
+            self.lambda_client.update_function_memory(self.name, self.memory)
         if self.get_argument_value(args, 'time'):
-            LambdaClient().update_function_timeout(self.name, self.time)
+            self.lambda_client.update_function_timeout(self.name, self.time)
         if self.get_argument_value(args, 'env'):
-            LambdaClient().update_function_env_variables(self.name, self.environment)        
+            self.lambda_client.update_function_env_variables(self.name, self.environment)        
 
     def check_function_name(self):
         if self.name:
             if self.scar_call == 'init':
-                LambdaClient().check_function_name_exists(self.name)
+                self.lambda_client.check_function_name_exists(self.name)
             elif (self.scar_call == 'rm') or (self.scar_call == 'run'):
-                LambdaClient().check_function_name_not_exists(self.name)
+                self.lambda_client.check_function_name_not_exists(self.name)
 
     def set_attributes(self, args):
         # First set command line attributes
@@ -295,6 +298,8 @@ class AWSLambda(object):
             except Exception as ex:
                 logging.error(ex)
         
+        if not args.name:
+            self.set_name(self.lambda_client.create_function_name(args.image_id))        
         self.check_function_name()
         self.set_required_environment_variables()
         if self.name:
