@@ -19,17 +19,19 @@ from .clients.s3 import S3Client
 from .clients.resourcegroups import ResourceGroupsClient
 from .clients.iam import IAMClient
 from .responseparser import ResponseParser
+from .lambdafunction import AWSLambda
 from botocore.exceptions import ClientError
 from multiprocessing.pool import ThreadPool
 import logging
 import utils.functionutils as utils
+from utils.commandtemplate import Commands
 
 MAX_CONCURRENT_INVOCATIONS = 1000
 
-class AWSManager(object):
+class AWSManager(Commands):
 
-    def __init__(self, aws_lambda):
-        self.aws_lambda = aws_lambda
+    def __init__(self):
+        self.aws_lambda = AWSLambda()
 
     @utils.lazy_property
     def lambda_client(self):
@@ -59,7 +61,39 @@ class AWSManager(object):
     @utils.lazy_property
     def response_parser(self):
         response_parser = ResponseParser()
-        return response_parser      
+        return response_parser
+    
+    def init(self):
+        # Call the aws services
+        self.create_lambda_function()
+        self.create_log_group()
+        if self.aws_lambda.event_source:
+            self.add_event_source()
+        # If preheat is activated, the function is launched at the init step
+        if self.aws_lambda.preheat:    
+            self.preheat_function()
+    
+    def run(self):
+        if self.aws_lambda.has_event_source():
+            self.process_event_source_calls()               
+        else:
+            self.launch_lambda_instance()
+    
+    def ls(self):
+        lambda_function_info_list = self.get_all_functions_info()
+        self.response_parser.parse_ls_response(lambda_function_info_list, self.aws_lambda.output)
+    
+    def rm(self):
+        if self.aws_lambda.delete_all:
+            self.delete_all_resources()
+        else:
+            self.delete_function_resources()
+    
+    def log(self):
+        print(self.get_function_log())    
+
+    def parse_command_arguments(self, args):
+        self.aws_lambda.set_attributes(args)
 
     def launch_async_event(self, s3_file):
         self.aws_lambda.set_asynchronous_call_parameters()

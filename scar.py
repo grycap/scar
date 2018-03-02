@@ -15,56 +15,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from aws.lambdafunction import AWSLambda
 from aws.awsmanager import AWSManager
 from utils.commandparser import CommandParser
+from utils.commandtemplate import Commands
 import utils.logger as logger 
 
-class Scar(object):
+class Scar(Commands):
     
-    def __init__(self, aws_lambda):
-        self.aws_lambda = aws_lambda
-        self.aws_manager = AWSManager(aws_lambda)
+    def __init__(self):
+        self.cloud_provider = AWSManager()
      
     def init(self):
-        # Call the aws services
-        self.aws_manager.create_lambda_function()
-        self.aws_manager.create_log_group()
-        if self.aws_lambda.event_source:
-            self.aws_manager.add_event_source()
-        # If preheat is activated, the function is launched at the init step
-        if self.aws_lambda.preheat:    
-            self.aws_manager.preheat_function()
+        self.cloud_provider.init()
     
     def run(self):
-        if self.aws_lambda.has_event_source():
-            self.aws_manager.process_event_source_calls()               
-        else:
-            self.aws_manager.launch_lambda_instance()
+        self.cloud_provider.run()
     
     def ls(self):
-        lambda_function_info_list = self.aws_manager.get_all_functions_info()
-        self.aws_manager.response_parser.parse_ls_response(lambda_function_info_list, self.aws_lambda.output)
+        self.cloud_provider.ls()
     
     def rm(self):
-        if self.aws_lambda.delete_all:
-            self.aws_manager.delete_all_resources()
-        else:
-            self.aws_manager.delete_function_resources()
+        self.cloud_provider.rm()
     
     def log(self):
-        print(self.aws_manager.get_function_log())
+        self.cloud_provider.log()
         
     def parse_command_arguments(self):
-        self.aws_lambda.set_attributes(args)
-
+        args = CommandParser(self).parse_arguments()
+        self.cloud_provider.parse_command_arguments(args)
+        args.func()
 
 if __name__ == "__main__":
     logger.init_execution_trace()
-    aws_lambda = AWSLambda()
-    scar = Scar(aws_lambda)
-    args = CommandParser(scar).parse_arguments()
-    scar.parse_command_arguments()
-    args.func()
+    Scar().parse_command_arguments()
     logger.end_execution_trace()  
     
