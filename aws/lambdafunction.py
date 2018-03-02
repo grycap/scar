@@ -298,7 +298,7 @@ class AWSLambda(object):
             except Exception as ex:
                 logging.error(ex)
         
-        if not args.name:
+        if ((self.scar_call == 'init') and (not hasattr(args, "name"))):
             self.set_name(self.lambda_client.create_function_name(args.image_id))        
         self.check_function_name()
         self.set_required_environment_variables()
