@@ -76,7 +76,7 @@ class TestScar(unittest.TestCase):
     def test_create_zip_file(self):
         test_file_path = os.path.dirname(os.path.abspath(__file__))
         zip_file_path = "%s/../../function.zip" % test_file_path
-        Scar().create_zip_file('test', Args())
+        Scar().create_code_zip('test', Args())
         self.assertTrue(os.path.isfile(zip_file_path))
         self.assertEqual(zipfile.ZipFile(zip_file_path).namelist(), ['test.py', 'udocker', 'udocker-1.1.0-RC2.tar.gz'])
         os.remove(zip_file_path)
@@ -86,7 +86,7 @@ class TestScar(unittest.TestCase):
         test_file_path = os.path.dirname(os.path.abspath(__file__))
         zip_file_path = "%s/../../function.zip" % test_file_path
         args.script = "%s/files/test_script.sh" % test_file_path
-        Scar().create_zip_file('test', args)
+        Scar().create_code_zip('test', args)
         self.assertTrue(os.path.isfile(zip_file_path))
         self.assertEqual(zipfile.ZipFile(zip_file_path).namelist(), ['test.py', 'udocker', 'udocker-1.1.0-RC2.tar.gz', 'init_script.sh'])
         os.remove(zip_file_path)

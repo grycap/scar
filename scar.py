@@ -15,15 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from aws.awsmanager import AWSManager
-from utils.commandparser import CommandParser
-from utils.commandtemplate import Commands
-import utils.logger as logger 
+from src.providers.aws.controller import AWS
+from src.parser.cli import CommandParser
+from src.cmdtemplate import Commands
+import src.logger as logger 
 
 class Scar(Commands):
     
     def __init__(self):
-        self.cloud_provider = AWSManager()
+        self.cloud_provider = AWS()
      
     def init(self):
         self.cloud_provider.init()

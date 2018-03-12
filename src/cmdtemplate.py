@@ -14,7 +14,32 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import abc
 
-__all__ = ['clients','lambdafunction']
-__version__ = '1.0.0'
-__author__ = 'Alfonso Perez'
+class Commands(metaclass=abc.ABCMeta):
+    ''' All the different cloud provider controllers must inherit 
+    from this class to ensure that the commands are defined consistently'''
+
+    @abc.abstractmethod
+    def init(self):
+        pass
+    
+    @abc.abstractmethod    
+    def run(self):
+        pass
+    
+    @abc.abstractmethod    
+    def ls(self):
+        pass
+    
+    @abc.abstractmethod    
+    def rm(self):
+        pass
+
+    @abc.abstractmethod
+    def log(self):
+        pass
+    
+    @abc.abstractmethod
+    def parse_command_arguments(self, args):
+        pass    

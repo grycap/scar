@@ -16,7 +16,24 @@
 
 from .boto import BotoClient
 from botocore.exceptions import ClientError
-import utils.functionutils as utils
+import src.utils as utils
+
+class IAM():
+    
+    @utils.lazy_property
+    def client(self):
+        client = IAMClient()
+        return client
+
+    def get_user_name_or_id(self):
+        try:
+            user = self.client.get_user_info()
+            return user.get('UserName', user['User']['UserId'])
+        except ClientError as ce:
+            # If the user doesn't have access rights to IAMClient
+            # we can find the user name in the error response
+            return utils.find_expression('(?<=user\/)(\S+)', str(ce))     
+    
 
 class IAMClient(BotoClient):
     '''A low-level client representing aws Identity and Access Management (IAMClient).
@@ -25,11 +42,6 @@ class IAMClient(BotoClient):
     def __init__(self, region=None):
         super().__init__('iam', region)
         
-    def get_user_name_or_id(self):
-        try:
-            user = self.get_client().get_user()['User']
-            return user.get('UserName', user['UserId'])
-        except ClientError as ce:
-            # If the user doesn't have access rights to IAMClient
-            return utils.find_expression('(?<=user\/)(\S+)', str(ce)) 
+    def get_user_info(self):
+        return self.get_client().get_user()
         

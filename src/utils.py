@@ -16,12 +16,11 @@
 
 import base64
 import json
-import logging
+import src.logger as logger
 import os
 import re
 import sys
 import uuid
-import zipfile
 
 def lazy_property(fn):
     '''Decorator that makes a property lazy-evaluated.'''
@@ -34,22 +33,20 @@ def lazy_property(fn):
         return getattr(self, attr_name)
     return _lazy_property
 
-def is_valid_aws_name(function_name):
-    if function_name:
-        aws_name_regex = "(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}(-gov)?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\$LATEST|[a-zA-Z0-9-_]+))?"           
-        pattern = re.compile(aws_name_regex)
-        func_name = pattern.match(function_name)
-        return func_name and (func_name.group() == function_name)
+def is_valid_string(value, regex):
+    ''' Check if the passed value is valid using the passed regex'''
+    if value:
+        pattern = re.compile(regex)
+        func_name = pattern.match(value)
+        return func_name and (func_name.group() == value)
     return False    
 
 def finish_failed_execution():
-    logging.info('SCAR execution finished with errors')
-    logging.info('----------------------------------------------------')
+    logger.end_execution_trace_with_errors()
     sys.exit(1)
 
 def finish_successful_execution():
-    logging.info('SCAR execution finished')
-    logging.info('----------------------------------------------------')
+    logger.end_execution_trace()
     sys.exit(0)
 
 def find_expression(rgx_pattern, string_to_search):
@@ -74,30 +71,8 @@ def escape_string(value):
     value = value.replace("\b", "\\b").replace("\f", "\\f")
     return value.replace("\r", "\\r").replace("\t", "\\t")
 
-def parse_payload(value):
-    value['Payload'] = value['Payload'].read().decode("utf-8")[1:-1].replace('\\n', '\n')
-    return value
-
-def parse_base64_response_values(value):
-    value['LogResult'] = base64_to_utf8(value['LogResult'])
-    value['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'] = base64_to_utf8(value['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'])
-    return value
-
-def parse_log_ids(value):
-    parsed_output = value['Payload'].split('\n')
-    value['LogGroupName'] = parsed_output[1][22:]
-    value['LogStreamName'] = parsed_output[2][23:]
-    return value
-
 def print_json(value):
     print(json.dumps(value))
-    
-def json_to_string(value):
-    # Simple json check
-    if value.startswith("{"):
-        return json.dumps(value)
-    else:
-        return value    
     
 def divide_list_in_chunks(elements, chunk_size):
     """Yield successive n-sized chunks from th elements list."""
@@ -109,18 +84,6 @@ def divide_list_in_chunks(elements, chunk_size):
 def delete_file(path):
     os.remove(path)
 
-def add_file_to_zip(zip_path, file_path, file_name):
-    with zipfile.ZipFile(zip_path, 'a', zipfile.ZIP_DEFLATED) as zf:
-        zf.write(file_path, 'extra/' + file_name)
-
-def zip_folder(zip_path, target_dir):            
-    with zipfile.ZipFile(zip_path, 'a', zipfile.ZIP_DEFLATED) as zf:
-        rootlen = len(target_dir) + 1
-        for base, _, files in os.walk(target_dir):
-            for file in files:
-                fn = os.path.join(base, file)
-                zf.write(fn, 'extra/' + fn[rootlen:])
-                
 def get_file_as_byte_array(file_path):
     # Return the zip as an array of bytes
     with open(file_path, 'rb') as f:
@@ -128,3 +91,20 @@ def get_file_as_byte_array(file_path):
     
 def get_random_uuid4_str():
     return str(uuid.uuid4())
+
+def has_dict_prop_value(dictionary, value):
+    if (value in dictionary) and (dictionary[value] != ""):
+        return True
+    else:
+        return False
+
+def load_json_file(file_path):
+    if os.path.isfile(file_path):
+        with open(file_path) as f:
+            return json.load(f)
+        
+def merge_dicts(d1, d2):
+    for k,v in d2.items():
+        if v is not None:
+            d1[k] = v
+    return d1         

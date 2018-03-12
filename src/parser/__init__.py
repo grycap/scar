@@ -15,6 +15,4 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-__all__ = ['commandparser','functionutils','outputtype']
-__version__ = '1.0.0'
-__author__ = 'Alfonso Perez'
+__all__ = ['cfgfile','cli']

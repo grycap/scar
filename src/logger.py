@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import logging
+import json
 
 FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 logging.basicConfig(filename='scar.log', level=logging.INFO, format=FORMAT)
@@ -26,3 +27,42 @@ def end_execution_trace():
     logging.info('SCAR execution finished')
     logging.info('----------------------------------------------------')     
         
+def end_execution_trace_with_errors():
+    logging.info('SCAR execution finished with errors')
+    logging.info('----------------------------------------------------')
+
+def info(cli_msg, log_msg=None):
+    print(cli_msg)
+    if log_msg:
+        logging.info(log_msg)
+    else:
+        logging.info(cli_msg)
+
+def warning(cli_msg, log_msg=None):
+    print(cli_msg)
+    if log_msg:
+        logging.warning(log_msg)
+    else:
+        logging.warning(cli_msg)
+
+def error(cli_msg, log_msg=None):
+    print(cli_msg)
+    if log_msg:
+        logging.error(log_msg)
+    else:
+        logging.error(cli_msg)
+
+def print_json(value):
+    print(json.dumps(value))
+
+def info_json(cli_msg, log_msg):
+    print_json(cli_msg)
+    logging.info(log_msg)
+
+def warning_json(cli_msg, log_msg):
+    print_json(cli_msg)
+    logging.warning(log_msg)
+
+def error_json(cli_msg, log_msg):
+    print_json(cli_msg)
+    logging.error(log_msg)            

@@ -15,8 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse
-import logging
-from . import functionutils as utils
+import src.logger as logger
+import src.utils as utils
 
 class CommandParser(object):
     
@@ -66,7 +66,7 @@ class CommandParser(object):
     def create_run_parser(self):
         parser_run = self.subparsers.add_parser('run', help="Deploy function")
         parser_run.set_defaults(func=self.scar.run)
-        parser_run.add_argument("name", help="Lambda function name")
+        parser_run.add_argument("-n", "--name", help="Lambda function name")
         parser_run.add_argument("-m", "--memory", type=int, help="Lambda function memory in megabytes. Range from 128 to 1536 in increments of 64")
         parser_run.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 300.")
         parser_run.add_argument("-e", "--environment_variables", action='append', help="Pass environment variable to the container (VAR=val). Can be defined multiple times.")
@@ -95,16 +95,16 @@ class CommandParser(object):
     def create_log_parser(self):
         parser_log = self.subparsers.add_parser('log', help="Show the logs for the lambda function")
         parser_log.set_defaults(func=self.scar.log)
-        parser_log.add_argument("name", help="Lambda function name")
+        parser_log.add_argument("-n", "--name", help="Lambda function name")
         parser_log.add_argument("-ls", "--log_stream_name", help="Return the output for the log stream specified.")
         parser_log.add_argument("-ri", "--request_id", help="Return the output for the request id specified.")        
     
     def parse_arguments(self):
+        '''Command parsing and selection'''
         try:
-            """Command parsing and selection"""
             return self.parser.parse_args()        
         except AttributeError as ae:
-            logging.error("Error parsing arguments: %s" % ae)
-            print("Incorrect arguments: use scar -h to see the options available")
+            logger.error("Incorrect arguments: use scar -h to see the options available",
+                             "Error parsing arguments: %s" % ae)            
             utils.finish_failed_execution() 
         
