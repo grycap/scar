@@ -283,10 +283,17 @@ class Lambda(object):
         self.set_property("call_type", get_call_type(call_type))
         return self.properties["call_type"]
 
+    def set_output_type(self):
+        if self.get_property("json"):
+            self.set_property("output", OutputType.JSON)    
+        elif self.get_property("verbose"):
+            self.set_property("output", OutputType.VERBOSE)
+
     def set_properties(self, args):
         # Set the command line parsed properties
         self.properties = utils.merge_dicts(self.properties, vars(args))
         call_type = self.set_call_type(args.func.__name__)
+        self.set_output_type()
         if ((call_type != CallType.LS) and (not self.get_delete_all())):
             if (call_type == CallType.INIT):
                 if (not self.get_property("name")) or (self.get_property("name") == ""):

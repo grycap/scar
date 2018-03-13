@@ -39,7 +39,7 @@ def print_generic_response(response, output_type, aws_output, text_message=None,
                 output = verbose_output
             else:
                 output = { aws_output : response }        
-        logger.info(utils.print_json(output), utils.print_json(output))
+        logger.info_json(output, output)
 
 def parse_lambda_function_creation_response(response, function_name, access_key, output_type):
     aws_output = 'LambdaOutput'
@@ -66,6 +66,7 @@ def parse_delete_log_response(response, log_group_name, output_type):
 def parse_ls_response(lambda_functions, output_type):
     aws_output = 'Functions'
     result = []
+    text_message = ""
     if output_type == OutputType.VERBOSE:
         result = lambda_functions
     else:
