@@ -2366,3 +2366,1286 @@ scar-func-test       512     300  centos:7
 2018-03-13 17:27:58,875 - root - INFO - {'CloudWatchOutput': {'ResponseMetadata': {'RequestId': '7dec46b9-26db-11e8-93a3-d578f1064109', 'HTTPHeaders': {'date': 'Tue, 13 Mar 2018 16:27:57 GMT', 'x-amzn-requestid': '7dec46b9-26db-11e8-93a3-d578f1064109', 'content-length': '0', 'content-type': 'application/x-amz-json-1.1'}, 'HTTPStatusCode': 200, 'RetryAttempts': 0}}}
 2018-03-13 17:27:58,875 - root - INFO - SCAR execution finished
 2018-03-13 17:27:58,875 - root - INFO - ----------------------------------------------------
+2018-03-13 17:54:00,560 - root - INFO - ----------------------------------------------------
+2018-03-13 17:54:00,571 - root - INFO - SCAR execution started
+2018-03-13 17:54:00,642 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:54:00,731 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-13 17:54:01,317 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-13 17:54:02,405 - root - INFO - Creating lambda function.
+2018-03-13 17:54:06,162 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:54:06,163 - root - INFO - Function 'scar-test-function' successfully created.
+2018-03-13 17:54:06,186 - root - INFO - Creating cloudwatch log group.
+2018-03-13 17:54:06,187 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-13 17:54:07,147 - root - INFO - Log group '/aws/lambda/scar-test-function' successfully created.
+2018-03-13 17:54:07,147 - root - INFO - Setting log group policy.
+2018-03-13 17:54:07,308 - root - INFO - SCAR execution finished
+2018-03-13 17:54:07,308 - root - INFO - ----------------------------------------------------
+2018-03-13 17:54:07,535 - root - INFO - ----------------------------------------------------
+2018-03-13 17:54:07,535 - root - INFO - SCAR execution started
+2018-03-13 17:54:07,548 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:54:07,563 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-13 17:54:08,052 - root - ERROR - Function 'scar-func-test' doesn't exist.
+2018-03-13 17:54:08,052 - root - INFO - SCAR execution finished with errors
+2018-03-13 17:54:08,052 - root - INFO - ----------------------------------------------------
+2018-03-13 17:54:08,279 - root - INFO - ----------------------------------------------------
+2018-03-13 17:54:08,279 - root - INFO - SCAR execution started
+2018-03-13 17:54:08,290 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:54:08,312 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-13 17:54:08,803 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-13 17:54:09,311 - root - ERROR - Function name 'scar-test-function' already used.
+2018-03-13 17:54:09,311 - root - INFO - SCAR execution finished with errors
+2018-03-13 17:54:09,311 - root - INFO - ----------------------------------------------------
+2018-03-13 17:54:09,527 - root - INFO - ----------------------------------------------------
+2018-03-13 17:54:09,527 - root - INFO - SCAR execution started
+2018-03-13 17:54:09,539 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:54:09,555 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-13 17:54:10,088 - root - ERROR - Function 'scar-func-test' doesn't exist.
+2018-03-13 17:54:10,088 - root - INFO - SCAR execution finished with errors
+2018-03-13 17:54:10,088 - root - INFO - ----------------------------------------------------
+2018-03-13 17:54:10,309 - root - INFO - ----------------------------------------------------
+2018-03-13 17:54:10,309 - root - INFO - SCAR execution started
+2018-03-13 17:54:10,320 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:54:10,342 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-13 17:54:10,887 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-13 17:54:11,419 - root - ERROR - Function name 'scar-test-function' already used.
+2018-03-13 17:54:11,419 - root - INFO - SCAR execution finished with errors
+2018-03-13 17:54:11,419 - root - INFO - ----------------------------------------------------
+2018-03-13 17:54:11,631 - root - INFO - ----------------------------------------------------
+2018-03-13 17:54:11,631 - root - INFO - SCAR execution started
+2018-03-13 17:54:11,645 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:54:11,661 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-13 17:54:12,140 - root - ERROR - Function 'scar-func-test' doesn't exist.
+2018-03-13 17:54:12,140 - root - INFO - SCAR execution finished with errors
+2018-03-13 17:54:12,140 - root - INFO - ----------------------------------------------------
+2018-03-13 17:55:19,669 - root - INFO - ----------------------------------------------------
+2018-03-13 17:55:19,669 - root - INFO - SCAR execution started
+2018-03-13 17:55:19,682 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:55:19,706 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-13 17:55:20,268 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-13 17:55:21,359 - root - INFO - Creating lambda function.
+2018-03-13 17:55:25,060 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:55:25,060 - root - INFO - Function 'scar-func-test' successfully created.
+2018-03-13 17:55:25,067 - root - INFO - Creating cloudwatch log group.
+2018-03-13 17:55:25,068 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-13 17:55:25,757 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully created.
+2018-03-13 17:55:25,757 - root - INFO - Setting log group policy.
+2018-03-13 17:55:25,894 - root - INFO - SCAR execution finished
+2018-03-13 17:55:25,894 - root - INFO - ----------------------------------------------------
+2018-03-13 17:55:26,121 - root - INFO - ----------------------------------------------------
+2018-03-13 17:55:26,121 - root - INFO - SCAR execution started
+2018-03-13 17:55:26,134 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:55:26,151 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-13 17:55:27,490 - root - INFO - Function 'scar-func-test' successfully deleted.
+2018-03-13 17:55:27,497 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-13 17:55:28,062 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully deleted.
+2018-03-13 17:55:28,062 - root - INFO - SCAR execution finished
+2018-03-13 17:55:28,062 - root - INFO - ----------------------------------------------------
+2018-03-13 17:55:28,323 - root - INFO - ----------------------------------------------------
+2018-03-13 17:55:28,323 - root - INFO - SCAR execution started
+2018-03-13 17:55:28,336 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:55:28,359 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-13 17:55:28,872 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-13 17:55:30,015 - root - INFO - Creating lambda function.
+2018-03-13 17:55:33,592 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:55:33,593 - root - INFO - {'LambdaOutput': {'MemorySize': 512, 'FunctionName': 'scar-func-test', 'FunctionArn': 'arn:aws:lambda:us-east-1:974349055189:function:scar-func-test', 'AccessKey': 'AKIAJIJXRQ46N4JFAQ2A', 'Timeout': 300}}
+2018-03-13 17:55:33,602 - root - INFO - Creating cloudwatch log group.
+2018-03-13 17:55:33,603 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-13 17:55:34,149 - root - INFO - {'CloudWatchOutput': {'RequestId': '588e18fa-26df-11e8-8b4f-ab00c54f1e94', 'HTTPStatusCode': 200}}
+2018-03-13 17:55:34,149 - root - INFO - Setting log group policy.
+2018-03-13 17:55:34,282 - root - INFO - SCAR execution finished
+2018-03-13 17:55:34,283 - root - INFO - ----------------------------------------------------
+2018-03-13 17:55:34,694 - root - INFO - ----------------------------------------------------
+2018-03-13 17:55:34,695 - root - INFO - SCAR execution started
+2018-03-13 17:55:34,734 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:55:34,763 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-13 17:55:36,123 - root - INFO - Function 'scar-func-test' successfully deleted.
+2018-03-13 17:55:36,128 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-13 17:55:36,755 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully deleted.
+2018-03-13 17:55:36,756 - root - INFO - SCAR execution finished
+2018-03-13 17:55:36,756 - root - INFO - ----------------------------------------------------
+2018-03-13 17:55:37,072 - root - INFO - ----------------------------------------------------
+2018-03-13 17:55:37,072 - root - INFO - SCAR execution started
+2018-03-13 17:55:37,102 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:55:37,125 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-13 17:55:37,620 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-13 17:55:38,596 - root - INFO - Creating lambda function.
+2018-03-13 17:55:44,988 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:55:44,988 - root - INFO - {'LambdaOutput': {'MemorySize': 512, 'Timeout': 300, 'CodeSha256': 'VE7R39cf3Y+MOpdZ+IfbwY79JzHkaLt0GQCUyeZm62o=', 'TracingConfig': {'Mode': 'PassThrough'}, 'LastModified': '2018-03-13T16:55:44.544+0000', 'Role': 'arn:aws:iam::974349055189:role/lambda-s3-recursive-role', 'Environment': {'Variables': {'UDOCKER_DIR': '/tmp/home/.udocker', 'UDOCKER_TARBALL': '/var/task/udocker-1.1.0-RC2.tar.gz', 'RECURSIVE': 'False', 'TIMEOUT_THRESHOLD': '10', 'IMAGE_ID': 'centos:7'}}, 'Handler': 'scar-func-test.lambda_handler', 'CodeSize': 10338514, 'Version': '$LATEST', 'ResponseMetadata': {'RequestId': '5b833ce7-26df-11e8-8e03-6b7287924345', 'HTTPStatusCode': 201, 'RetryAttempts': 0, 'HTTPHeaders': {'date': 'Tue, 13 Mar 2018 16:55:44 GMT', 'content-length': '839', 'x-amzn-requestid': '5b833ce7-26df-11e8-8e03-6b7287924345', 'content-type': 'application/json', 'connection': 'keep-alive'}}, 'Runtime': 'python3.6', 'FunctionArn': 'arn:aws:lambda:us-east-1:974349055189:function:scar-func-test', 'FunctionName': 'scar-func-test', 'Description': 'Automatically generated lambda function'}}
+2018-03-13 17:55:44,994 - root - INFO - Creating cloudwatch log group.
+2018-03-13 17:55:44,995 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-13 17:55:45,602 - root - INFO - {'CloudWatchOutput': {'ResponseMetadata': {'RequestId': '5f5d1c37-26df-11e8-8475-07ae3df98984', 'HTTPStatusCode': 200, 'RetryAttempts': 0, 'HTTPHeaders': {'date': 'Tue, 13 Mar 2018 16:55:44 GMT', 'content-length': '0', 'content-type': 'application/x-amz-json-1.1', 'x-amzn-requestid': '5f5d1c37-26df-11e8-8475-07ae3df98984'}}}}
+2018-03-13 17:55:45,602 - root - INFO - Setting log group policy.
+2018-03-13 17:55:45,747 - root - INFO - SCAR execution finished
+2018-03-13 17:55:45,747 - root - INFO - ----------------------------------------------------
+2018-03-13 17:55:46,021 - root - INFO - ----------------------------------------------------
+2018-03-13 17:55:46,021 - root - INFO - SCAR execution started
+2018-03-13 17:55:46,034 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:55:46,051 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-13 17:55:47,394 - root - INFO - Function 'scar-func-test' successfully deleted.
+2018-03-13 17:55:47,401 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-13 17:55:47,976 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully deleted.
+2018-03-13 17:55:47,976 - root - INFO - SCAR execution finished
+2018-03-13 17:55:47,976 - root - INFO - ----------------------------------------------------
+2018-03-13 17:57:23,080 - root - INFO - ----------------------------------------------------
+2018-03-13 17:57:23,081 - root - INFO - SCAR execution started
+2018-03-13 17:57:23,099 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:57:23,136 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-13 17:57:23,717 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-13 17:57:24,893 - root - INFO - Creating lambda function.
+2018-03-13 17:57:28,816 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:57:28,816 - root - INFO - Function 'scar-func-test' successfully created.
+2018-03-13 17:57:28,831 - root - INFO - Creating cloudwatch log group.
+2018-03-13 17:57:28,833 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-13 17:57:29,476 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully created.
+2018-03-13 17:57:29,477 - root - INFO - Setting log group policy.
+2018-03-13 17:57:29,623 - root - INFO - SCAR execution finished
+2018-03-13 17:57:29,623 - root - INFO - ----------------------------------------------------
+2018-03-13 17:57:29,861 - root - INFO - ----------------------------------------------------
+2018-03-13 17:57:29,861 - root - INFO - SCAR execution started
+2018-03-13 17:57:29,878 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:57:29,914 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-13 17:57:31,130 - root - INFO - Function 'scar-func-test' successfully deleted.
+2018-03-13 17:57:31,136 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-13 17:57:31,686 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully deleted.
+2018-03-13 17:57:31,686 - root - INFO - SCAR execution finished
+2018-03-13 17:57:31,686 - root - INFO - ----------------------------------------------------
+2018-03-13 17:57:31,921 - root - INFO - ----------------------------------------------------
+2018-03-13 17:57:31,921 - root - INFO - SCAR execution started
+2018-03-13 17:57:31,941 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:57:31,963 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-13 17:57:32,480 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-13 17:57:33,329 - root - INFO - Creating lambda function.
+2018-03-13 17:57:39,336 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:57:39,336 - root - INFO - {'LambdaOutput': {'MemorySize': 512, 'AccessKey': 'AKIAJIJXRQ46N4JFAQ2A', 'Timeout': 300, 'FunctionArn': 'arn:aws:lambda:us-east-1:974349055189:function:scar-func-test', 'FunctionName': 'scar-func-test'}}
+2018-03-13 17:57:39,342 - root - INFO - Creating cloudwatch log group.
+2018-03-13 17:57:39,344 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-13 17:57:39,928 - root - INFO - {'CloudWatchOutput': {'HTTPStatusCode': 200, 'RequestId': 'a383b38d-26df-11e8-b022-4df9abae873e'}}
+2018-03-13 17:57:39,928 - root - INFO - Setting log group policy.
+2018-03-13 17:57:40,066 - root - INFO - SCAR execution finished
+2018-03-13 17:57:40,066 - root - INFO - ----------------------------------------------------
+2018-03-13 17:57:40,292 - root - INFO - ----------------------------------------------------
+2018-03-13 17:57:40,292 - root - INFO - SCAR execution started
+2018-03-13 17:57:40,305 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:57:40,322 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-13 17:57:41,692 - root - INFO - Function 'scar-func-test' successfully deleted.
+2018-03-13 17:57:41,699 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-13 17:57:42,317 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully deleted.
+2018-03-13 17:57:42,317 - root - INFO - SCAR execution finished
+2018-03-13 17:57:42,318 - root - INFO - ----------------------------------------------------
+2018-03-13 17:57:42,537 - root - INFO - ----------------------------------------------------
+2018-03-13 17:57:42,537 - root - INFO - SCAR execution started
+2018-03-13 17:57:42,549 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:57:42,584 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-13 17:57:43,141 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-13 17:57:43,979 - root - INFO - Creating lambda function.
+2018-03-13 17:57:47,586 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:57:47,586 - root - INFO - {'LambdaOutput': {'Timeout': 300, 'Role': 'arn:aws:iam::974349055189:role/lambda-s3-recursive-role', 'ResponseMetadata': {'RequestId': 'a6373b8b-26df-11e8-9b8d-ffcf023e0215', 'HTTPHeaders': {'date': 'Tue, 13 Mar 2018 16:57:47 GMT', 'content-type': 'application/json', 'connection': 'keep-alive', 'content-length': '839', 'x-amzn-requestid': 'a6373b8b-26df-11e8-9b8d-ffcf023e0215'}, 'RetryAttempts': 0, 'HTTPStatusCode': 201}, 'FunctionArn': 'arn:aws:lambda:us-east-1:974349055189:function:scar-func-test', 'CodeSha256': 'tsHOg4zFZ0RRahfew26ilq9bse4Thv2+gOOPR/iAFGA=', 'Handler': 'scar-func-test.lambda_handler', 'Version': '$LATEST', 'FunctionName': 'scar-func-test', 'TracingConfig': {'Mode': 'PassThrough'}, 'CodeSize': 10338514, 'MemorySize': 512, 'Description': 'Automatically generated lambda function', 'Environment': {'Variables': {'IMAGE_ID': 'centos:7', 'TIMEOUT_THRESHOLD': '10', 'RECURSIVE': 'False', 'UDOCKER_DIR': '/tmp/home/.udocker', 'UDOCKER_TARBALL': '/var/task/udocker-1.1.0-RC2.tar.gz'}}, 'LastModified': '2018-03-13T16:57:47.014+0000', 'Runtime': 'python3.6'}}
+2018-03-13 17:57:47,592 - root - INFO - Creating cloudwatch log group.
+2018-03-13 17:57:47,593 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-13 17:57:48,182 - root - INFO - {'CloudWatchOutput': {'ResponseMetadata': {'RequestId': 'a87089a0-26df-11e8-869a-95666b666ca3', 'HTTPHeaders': {'content-type': 'application/x-amz-json-1.1', 'date': 'Tue, 13 Mar 2018 16:57:47 GMT', 'content-length': '0', 'x-amzn-requestid': 'a87089a0-26df-11e8-869a-95666b666ca3'}, 'RetryAttempts': 0, 'HTTPStatusCode': 200}}}
+2018-03-13 17:57:48,182 - root - INFO - Setting log group policy.
+2018-03-13 17:57:48,329 - root - INFO - SCAR execution finished
+2018-03-13 17:57:48,329 - root - INFO - ----------------------------------------------------
+2018-03-13 17:57:48,569 - root - INFO - ----------------------------------------------------
+2018-03-13 17:57:48,569 - root - INFO - SCAR execution started
+2018-03-13 17:57:48,582 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-13 17:57:48,599 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-13 17:57:49,948 - root - INFO - Function 'scar-func-test' successfully deleted.
+2018-03-13 17:57:49,954 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-13 17:57:50,491 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully deleted.
+2018-03-13 17:57:50,491 - root - INFO - SCAR execution finished
+2018-03-13 17:57:50,491 - root - INFO - ----------------------------------------------------
+2018-03-14 11:36:41,729 - root - INFO - ----------------------------------------------------
+2018-03-14 11:36:41,736 - root - INFO - SCAR execution started
+2018-03-14 11:36:41,833 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:36:41,936 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:36:42,545 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:36:43,721 - root - INFO - Creating lambda function.
+2018-03-14 11:36:47,280 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:36:47,281 - root - INFO - Function 'scar-func-test' successfully created.
+2018-03-14 11:36:47,307 - root - INFO - Creating cloudwatch log group.
+2018-03-14 11:36:47,310 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 11:36:47,931 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully created.
+2018-03-14 11:36:47,931 - root - INFO - Setting log group policy.
+2018-03-14 11:36:48,070 - root - INFO - SCAR execution finished
+2018-03-14 11:36:48,070 - root - INFO - ----------------------------------------------------
+2018-03-14 11:37:25,261 - root - INFO - ----------------------------------------------------
+2018-03-14 11:37:25,262 - root - INFO - SCAR execution started
+2018-03-14 11:37:25,297 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:37:25,342 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:37:25,889 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 11:37:26,491 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:37:27,013 - root - INFO - NAME              MEMORY    TIME  IMAGE_ID
+--------------  --------  ------  ----------
+scar-func-test       512     300  centos:7
+2018-03-14 11:37:27,013 - root - INFO - SCAR execution finished
+2018-03-14 11:37:27,013 - root - INFO - ----------------------------------------------------
+2018-03-14 11:37:28,414 - root - INFO - ----------------------------------------------------
+2018-03-14 11:37:28,414 - root - INFO - SCAR execution started
+2018-03-14 11:37:28,451 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:37:28,483 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:37:29,726 - root - INFO - Function 'scar-func-test' successfully deleted.
+2018-03-14 11:37:29,741 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 11:37:30,299 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully deleted.
+2018-03-14 11:37:30,300 - root - INFO - SCAR execution finished
+2018-03-14 11:37:30,300 - root - INFO - ----------------------------------------------------
+2018-03-14 11:37:57,053 - root - INFO - ----------------------------------------------------
+2018-03-14 11:37:57,053 - root - INFO - SCAR execution started
+2018-03-14 11:37:57,065 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:37:57,098 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:37:57,676 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:37:58,625 - root - INFO - Creating lambda function.
+2018-03-14 11:38:02,200 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:38:02,200 - root - INFO - Function 'scar-func-test' successfully created.
+2018-03-14 11:38:02,206 - root - INFO - Creating cloudwatch log group.
+2018-03-14 11:38:02,208 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 11:38:02,811 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully created.
+2018-03-14 11:38:02,811 - root - INFO - Setting log group policy.
+2018-03-14 11:38:02,956 - root - INFO - SCAR execution finished
+2018-03-14 11:38:02,956 - root - INFO - ----------------------------------------------------
+2018-03-14 11:38:03,162 - root - INFO - ----------------------------------------------------
+2018-03-14 11:38:03,162 - root - INFO - SCAR execution started
+2018-03-14 11:38:03,173 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:38:03,196 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:38:03,696 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 11:38:04,210 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:38:04,715 - root - INFO - NAME              MEMORY    TIME  IMAGE_ID
+--------------  --------  ------  ----------
+scar-func-test       512     300  centos:7
+2018-03-14 11:38:04,715 - root - INFO - SCAR execution finished
+2018-03-14 11:38:04,715 - root - INFO - ----------------------------------------------------
+2018-03-14 11:38:04,956 - root - INFO - ----------------------------------------------------
+2018-03-14 11:38:04,956 - root - INFO - SCAR execution started
+2018-03-14 11:38:04,969 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:38:04,985 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:38:06,219 - root - INFO - Function 'scar-func-test' successfully deleted.
+2018-03-14 11:38:06,224 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 11:38:06,792 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully deleted.
+2018-03-14 11:38:06,792 - root - INFO - SCAR execution finished
+2018-03-14 11:38:06,792 - root - INFO - ----------------------------------------------------
+2018-03-14 11:46:20,613 - root - INFO - ----------------------------------------------------
+2018-03-14 11:46:20,613 - root - INFO - SCAR execution started
+2018-03-14 11:46:20,644 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:46:20,678 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:46:21,243 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 11:46:21,823 - root - INFO - NAME    MEMORY    TIME    IMAGE_ID
+------  --------  ------  ----------
+2018-03-14 11:46:21,823 - root - INFO - SCAR execution finished
+2018-03-14 11:46:21,823 - root - INFO - ----------------------------------------------------
+2018-03-14 11:46:22,026 - root - INFO - ----------------------------------------------------
+2018-03-14 11:46:22,026 - root - INFO - SCAR execution started
+2018-03-14 11:46:22,042 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:46:22,064 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:46:22,560 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 11:46:23,071 - root - INFO - {'Functions': []}
+2018-03-14 11:46:23,071 - root - INFO - SCAR execution finished
+2018-03-14 11:46:23,071 - root - INFO - ----------------------------------------------------
+2018-03-14 11:46:23,413 - root - INFO - ----------------------------------------------------
+2018-03-14 11:46:23,414 - root - INFO - SCAR execution started
+2018-03-14 11:46:23,425 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:46:23,448 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:46:23,957 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 11:46:24,471 - root - INFO - {'Functions': []}
+2018-03-14 11:46:24,471 - root - INFO - SCAR execution finished
+2018-03-14 11:46:24,471 - root - INFO - ----------------------------------------------------
+2018-03-14 11:46:24,685 - root - INFO - ----------------------------------------------------
+2018-03-14 11:46:24,685 - root - INFO - SCAR execution started
+2018-03-14 11:46:24,697 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:46:24,719 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:46:25,225 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:46:26,170 - root - INFO - Creating lambda function.
+2018-03-14 11:46:29,734 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:46:29,734 - root - INFO - Function 'scar-func-test' successfully created.
+2018-03-14 11:46:29,740 - root - INFO - Creating cloudwatch log group.
+2018-03-14 11:46:29,741 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 11:46:30,420 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully created.
+2018-03-14 11:46:30,420 - root - INFO - Setting log group policy.
+2018-03-14 11:46:30,560 - root - INFO - SCAR execution finished
+2018-03-14 11:46:30,560 - root - INFO - ----------------------------------------------------
+2018-03-14 11:46:30,774 - root - INFO - ----------------------------------------------------
+2018-03-14 11:46:30,775 - root - INFO - SCAR execution started
+2018-03-14 11:46:30,786 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:46:30,809 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:46:31,325 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 11:46:31,862 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:46:32,374 - root - INFO - NAME              MEMORY    TIME  IMAGE_ID
+--------------  --------  ------  ----------
+scar-func-test       512     300  centos:7
+2018-03-14 11:46:32,374 - root - INFO - SCAR execution finished
+2018-03-14 11:46:32,374 - root - INFO - ----------------------------------------------------
+2018-03-14 11:46:32,803 - root - INFO - ----------------------------------------------------
+2018-03-14 11:46:32,804 - root - INFO - SCAR execution started
+2018-03-14 11:46:32,822 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:46:32,842 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:46:34,059 - root - INFO - Function 'scar-func-test' successfully deleted.
+2018-03-14 11:46:34,064 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 11:46:34,635 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully deleted.
+2018-03-14 11:46:34,635 - root - INFO - SCAR execution finished
+2018-03-14 11:46:34,635 - root - INFO - ----------------------------------------------------
+2018-03-14 11:46:34,923 - root - INFO - ----------------------------------------------------
+2018-03-14 11:46:34,923 - root - INFO - SCAR execution started
+2018-03-14 11:46:34,936 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:46:34,960 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:46:35,468 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:46:36,360 - root - INFO - Creating lambda function.
+2018-03-14 11:46:39,836 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:46:39,836 - root - INFO - Function 'scar-func-test' successfully created.
+2018-03-14 11:46:39,845 - root - INFO - Creating cloudwatch log group.
+2018-03-14 11:46:39,847 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 11:46:40,401 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully created.
+2018-03-14 11:46:40,401 - root - INFO - Setting log group policy.
+2018-03-14 11:46:40,534 - root - INFO - SCAR execution finished
+2018-03-14 11:46:40,534 - root - INFO - ----------------------------------------------------
+2018-03-14 11:46:40,740 - root - INFO - ----------------------------------------------------
+2018-03-14 11:46:40,740 - root - INFO - SCAR execution started
+2018-03-14 11:46:40,751 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:46:40,779 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:46:41,271 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 11:46:41,783 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:46:42,283 - root - INFO - {'Functions': [{'Timeout': 300, 'Memory': 512, 'Image_id': 'centos:7', 'Name': 'scar-func-test'}]}
+2018-03-14 11:46:42,283 - root - INFO - SCAR execution finished
+2018-03-14 11:46:42,283 - root - INFO - ----------------------------------------------------
+2018-03-14 11:46:42,495 - root - INFO - ----------------------------------------------------
+2018-03-14 11:46:42,495 - root - INFO - SCAR execution started
+2018-03-14 11:46:42,507 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:46:42,524 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:46:43,753 - root - INFO - {'LambdaOutput': {'RequestId': 'fc2f54e4-2774-11e8-95ac-7142fe2f1ae5', 'HTTPStatusCode': 204}}
+2018-03-14 11:46:43,759 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 11:46:44,320 - root - INFO - {'CloudWatchOutput': {'RequestId': 'fc90ae7b-2774-11e8-b728-414b246fb8c7', 'HTTPStatusCode': 200}}
+2018-03-14 11:46:44,320 - root - INFO - SCAR execution finished
+2018-03-14 11:46:44,320 - root - INFO - ----------------------------------------------------
+2018-03-14 11:57:31,727 - root - INFO - ----------------------------------------------------
+2018-03-14 11:57:31,727 - root - INFO - SCAR execution started
+2018-03-14 11:57:31,783 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:57:31,868 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:57:32,449 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 11:57:33,023 - root - INFO - NAME    MEMORY    TIME    IMAGE_ID
+------  --------  ------  ----------
+2018-03-14 11:57:33,023 - root - INFO - SCAR execution finished
+2018-03-14 11:57:33,023 - root - INFO - ----------------------------------------------------
+2018-03-14 11:57:34,689 - root - INFO - ----------------------------------------------------
+2018-03-14 11:57:34,690 - root - INFO - SCAR execution started
+2018-03-14 11:57:34,723 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:57:34,763 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:57:35,305 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 11:57:35,838 - root - INFO - {'Functions': []}
+2018-03-14 11:57:35,838 - root - INFO - SCAR execution finished
+2018-03-14 11:57:35,838 - root - INFO - ----------------------------------------------------
+2018-03-14 11:57:37,318 - root - INFO - ----------------------------------------------------
+2018-03-14 11:57:37,318 - root - INFO - SCAR execution started
+2018-03-14 11:57:37,351 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:57:37,393 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:57:37,919 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 11:57:38,422 - root - INFO - {'Functions': []}
+2018-03-14 11:57:38,422 - root - INFO - SCAR execution finished
+2018-03-14 11:57:38,423 - root - INFO - ----------------------------------------------------
+2018-03-14 11:57:39,832 - root - INFO - ----------------------------------------------------
+2018-03-14 11:57:39,832 - root - INFO - SCAR execution started
+2018-03-14 11:57:39,877 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:57:39,919 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:57:40,456 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:57:41,539 - root - INFO - Creating lambda function.
+2018-03-14 11:57:45,158 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:57:45,159 - root - INFO - Function 'scar-func-test' successfully created.
+2018-03-14 11:57:45,173 - root - INFO - Creating cloudwatch log group.
+2018-03-14 11:57:45,176 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 11:57:45,806 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully created.
+2018-03-14 11:57:45,806 - root - INFO - Setting log group policy.
+2018-03-14 11:57:45,946 - root - INFO - SCAR execution finished
+2018-03-14 11:57:45,946 - root - INFO - ----------------------------------------------------
+2018-03-14 11:57:47,494 - root - INFO - ----------------------------------------------------
+2018-03-14 11:57:47,494 - root - INFO - SCAR execution started
+2018-03-14 11:57:47,530 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:57:47,572 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:57:48,107 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 11:57:48,635 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:57:49,143 - root - INFO - NAME              MEMORY    TIME  IMAGE_ID
+--------------  --------  ------  ----------
+scar-func-test       512     300  centos:7
+2018-03-14 11:57:49,143 - root - INFO - SCAR execution finished
+2018-03-14 11:57:49,143 - root - INFO - ----------------------------------------------------
+2018-03-14 11:57:50,747 - root - INFO - ----------------------------------------------------
+2018-03-14 11:57:50,747 - root - INFO - SCAR execution started
+2018-03-14 11:57:50,802 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:57:50,834 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:57:52,053 - root - INFO - Function 'scar-func-test' successfully deleted.
+2018-03-14 11:57:52,068 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 11:57:52,648 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully deleted.
+2018-03-14 11:57:52,648 - root - INFO - SCAR execution finished
+2018-03-14 11:57:52,648 - root - INFO - ----------------------------------------------------
+2018-03-14 11:57:54,275 - root - INFO - ----------------------------------------------------
+2018-03-14 11:57:54,276 - root - INFO - SCAR execution started
+2018-03-14 11:57:54,315 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:57:54,356 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:57:54,894 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:57:55,738 - root - INFO - Creating lambda function.
+2018-03-14 11:57:59,693 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:57:59,694 - root - INFO - Function 'scar-func-test' successfully created.
+2018-03-14 11:57:59,708 - root - INFO - Creating cloudwatch log group.
+2018-03-14 11:57:59,711 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 11:58:00,268 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully created.
+2018-03-14 11:58:00,268 - root - INFO - Setting log group policy.
+2018-03-14 11:58:00,404 - root - INFO - SCAR execution finished
+2018-03-14 11:58:00,404 - root - INFO - ----------------------------------------------------
+2018-03-14 11:58:01,922 - root - INFO - ----------------------------------------------------
+2018-03-14 11:58:01,923 - root - INFO - SCAR execution started
+2018-03-14 11:58:01,975 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:58:02,027 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:58:02,572 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 11:58:03,111 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:58:03,615 - root - INFO - {'Functions': [{'Name': 'scar-func-test', 'Timeout': 300, 'Memory': 512, 'Image_id': 'centos:7'}]}
+2018-03-14 11:58:03,615 - root - INFO - SCAR execution finished
+2018-03-14 11:58:03,615 - root - INFO - ----------------------------------------------------
+2018-03-14 11:58:05,249 - root - INFO - ----------------------------------------------------
+2018-03-14 11:58:05,250 - root - INFO - SCAR execution started
+2018-03-14 11:58:05,287 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:58:05,318 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:58:06,512 - root - INFO - {'LambdaOutput': {'HTTPStatusCode': 204, 'RequestId': '932a315d-2776-11e8-9fba-7bfa1f5d5b8b'}}
+2018-03-14 11:58:06,527 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 11:58:07,130 - root - INFO - {'CloudWatchOutput': {'HTTPStatusCode': 200, 'RequestId': '9386cff9-2776-11e8-ba0a-6db84de36a78'}}
+2018-03-14 11:58:07,130 - root - INFO - SCAR execution finished
+2018-03-14 11:58:07,130 - root - INFO - ----------------------------------------------------
+2018-03-14 11:58:08,706 - root - INFO - ----------------------------------------------------
+2018-03-14 11:58:08,706 - root - INFO - SCAR execution started
+2018-03-14 11:58:08,744 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:58:08,785 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:58:09,324 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:58:10,498 - root - INFO - Creating lambda function.
+2018-03-14 11:58:14,119 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:58:14,120 - root - INFO - Function 'scar-func-test' successfully created.
+2018-03-14 11:58:14,133 - root - INFO - Creating cloudwatch log group.
+2018-03-14 11:58:14,136 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 11:58:14,695 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully created.
+2018-03-14 11:58:14,695 - root - INFO - Setting log group policy.
+2018-03-14 11:58:14,826 - root - INFO - SCAR execution finished
+2018-03-14 11:58:14,826 - root - INFO - ----------------------------------------------------
+2018-03-14 11:58:16,283 - root - INFO - ----------------------------------------------------
+2018-03-14 11:58:16,283 - root - INFO - SCAR execution started
+2018-03-14 11:58:16,319 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:58:16,361 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:58:16,957 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:58:18,043 - root - INFO - Creating lambda function.
+2018-03-14 11:58:21,606 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:58:21,606 - root - INFO - Function 'scar-func-test-1' successfully created.
+2018-03-14 11:58:21,621 - root - INFO - Creating cloudwatch log group.
+2018-03-14 11:58:21,624 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 11:58:22,191 - root - INFO - Log group '/aws/lambda/scar-func-test-1' successfully created.
+2018-03-14 11:58:22,192 - root - INFO - Setting log group policy.
+2018-03-14 11:58:22,334 - root - INFO - SCAR execution finished
+2018-03-14 11:58:22,334 - root - INFO - ----------------------------------------------------
+2018-03-14 11:58:23,882 - root - INFO - ----------------------------------------------------
+2018-03-14 11:58:23,883 - root - INFO - SCAR execution started
+2018-03-14 11:58:23,915 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:58:23,954 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:58:24,493 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:58:25,490 - root - INFO - Creating lambda function.
+2018-03-14 11:58:29,168 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:58:29,169 - root - INFO - Function 'scar-func-test-2' successfully created.
+2018-03-14 11:58:29,183 - root - INFO - Creating cloudwatch log group.
+2018-03-14 11:58:29,186 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 11:58:29,744 - root - INFO - Log group '/aws/lambda/scar-func-test-2' successfully created.
+2018-03-14 11:58:29,745 - root - INFO - Setting log group policy.
+2018-03-14 11:58:29,883 - root - INFO - SCAR execution finished
+2018-03-14 11:58:29,884 - root - INFO - ----------------------------------------------------
+2018-03-14 11:58:31,443 - root - INFO - ----------------------------------------------------
+2018-03-14 11:58:31,444 - root - INFO - SCAR execution started
+2018-03-14 11:58:31,478 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:58:31,518 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:58:32,065 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 11:58:32,621 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:58:33,451 - root - INFO - NAME                MEMORY    TIME  IMAGE_ID
+----------------  --------  ------  ----------
+scar-func-test         512     300  centos:7
+scar-func-test-1       512     300  centos:7
+scar-func-test-2       512     300  centos:7
+2018-03-14 11:58:33,451 - root - INFO - SCAR execution finished
+2018-03-14 11:58:33,451 - root - INFO - ----------------------------------------------------
+2018-03-14 11:59:02,321 - root - INFO - ----------------------------------------------------
+2018-03-14 11:59:02,321 - root - INFO - SCAR execution started
+2018-03-14 11:59:02,354 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:59:02,395 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:59:02,995 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:59:03,601 - root - ERROR - Function name 'scar-func-test' already used.
+2018-03-14 11:59:03,602 - root - INFO - SCAR execution finished with errors
+2018-03-14 11:59:03,602 - root - INFO - ----------------------------------------------------
+2018-03-14 11:59:46,172 - root - INFO - ----------------------------------------------------
+2018-03-14 11:59:46,173 - root - INFO - SCAR execution started
+2018-03-14 11:59:46,230 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 11:59:46,299 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 11:59:46,848 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 11:59:47,370 - root - ERROR - Function name 'scar-func-test' already used.
+2018-03-14 11:59:47,370 - root - INFO - SCAR execution finished with errors
+2018-03-14 11:59:47,371 - root - INFO - ----------------------------------------------------
+2018-03-14 12:03:30,903 - root - INFO - ----------------------------------------------------
+2018-03-14 12:03:30,903 - root - INFO - SCAR execution started
+2018-03-14 12:03:30,965 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:03:31,010 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:03:31,688 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:03:32,724 - root - INFO - Creating lambda function.
+2018-03-14 12:03:36,172 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:03:36,172 - root - INFO - Function 'scar-func-test' successfully created.
+2018-03-14 12:03:36,187 - root - INFO - Creating cloudwatch log group.
+2018-03-14 12:03:36,190 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:03:36,822 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully created.
+2018-03-14 12:03:36,823 - root - INFO - Setting log group policy.
+2018-03-14 12:03:36,963 - root - INFO - SCAR execution finished
+2018-03-14 12:03:36,963 - root - INFO - ----------------------------------------------------
+2018-03-14 12:03:38,252 - root - INFO - ----------------------------------------------------
+2018-03-14 12:03:38,252 - root - INFO - SCAR execution started
+2018-03-14 12:03:38,287 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:03:38,329 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:03:38,873 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:03:39,676 - root - INFO - Creating lambda function.
+2018-03-14 12:03:43,370 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:03:43,371 - root - INFO - Function 'scar-func-test-1' successfully created.
+2018-03-14 12:03:43,384 - root - INFO - Creating cloudwatch log group.
+2018-03-14 12:03:43,387 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:03:44,025 - root - INFO - Log group '/aws/lambda/scar-func-test-1' successfully created.
+2018-03-14 12:03:44,025 - root - INFO - Setting log group policy.
+2018-03-14 12:03:44,157 - root - INFO - SCAR execution finished
+2018-03-14 12:03:44,158 - root - INFO - ----------------------------------------------------
+2018-03-14 12:03:45,471 - root - INFO - ----------------------------------------------------
+2018-03-14 12:03:45,472 - root - INFO - SCAR execution started
+2018-03-14 12:03:45,506 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:03:45,549 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:03:46,101 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:03:46,950 - root - INFO - Creating lambda function.
+2018-03-14 12:03:50,431 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:03:50,432 - root - INFO - Function 'scar-func-test-2' successfully created.
+2018-03-14 12:03:50,446 - root - INFO - Creating cloudwatch log group.
+2018-03-14 12:03:50,449 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:03:51,002 - root - INFO - Log group '/aws/lambda/scar-func-test-2' successfully created.
+2018-03-14 12:03:51,002 - root - INFO - Setting log group policy.
+2018-03-14 12:03:51,138 - root - INFO - SCAR execution finished
+2018-03-14 12:03:51,138 - root - INFO - ----------------------------------------------------
+2018-03-14 12:03:52,536 - root - INFO - ----------------------------------------------------
+2018-03-14 12:03:52,536 - root - INFO - SCAR execution started
+2018-03-14 12:03:52,571 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:03:52,613 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:03:53,163 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:03:53,743 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:03:54,567 - root - INFO - NAME                MEMORY    TIME  IMAGE_ID
+----------------  --------  ------  ----------
+scar-func-test         512     300  centos:7
+scar-func-test-1       512     300  centos:7
+scar-func-test-2       512     300  centos:7
+2018-03-14 12:03:54,567 - root - INFO - SCAR execution finished
+2018-03-14 12:03:54,567 - root - INFO - ----------------------------------------------------
+2018-03-14 12:03:56,182 - root - INFO - ----------------------------------------------------
+2018-03-14 12:03:56,182 - root - INFO - SCAR execution started
+2018-03-14 12:03:56,272 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:03:56,368 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:03:56,967 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:03:57,497 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:03:58,746 - root - INFO - Function 'scar-func-test' successfully deleted.
+2018-03-14 12:03:58,761 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:03:59,346 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully deleted.
+2018-03-14 12:03:59,720 - root - INFO - Function 'scar-func-test-1' successfully deleted.
+2018-03-14 12:03:59,900 - root - INFO - Log group '/aws/lambda/scar-func-test-1' successfully deleted.
+2018-03-14 12:04:00,274 - root - INFO - Function 'scar-func-test-2' successfully deleted.
+2018-03-14 12:04:00,455 - root - INFO - Log group '/aws/lambda/scar-func-test-2' successfully deleted.
+2018-03-14 12:04:00,455 - root - INFO - SCAR execution finished
+2018-03-14 12:04:00,455 - root - INFO - ----------------------------------------------------
+2018-03-14 12:05:51,058 - root - INFO - ----------------------------------------------------
+2018-03-14 12:05:51,058 - root - INFO - SCAR execution started
+2018-03-14 12:05:51,079 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:05:51,130 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:05:51,693 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:05:52,280 - root - INFO - NAME    MEMORY    TIME    IMAGE_ID
+------  --------  ------  ----------
+2018-03-14 12:05:52,280 - root - INFO - SCAR execution finished
+2018-03-14 12:05:52,280 - root - INFO - ----------------------------------------------------
+2018-03-14 12:05:52,480 - root - INFO - ----------------------------------------------------
+2018-03-14 12:05:52,480 - root - INFO - SCAR execution started
+2018-03-14 12:05:52,491 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:05:52,514 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:05:53,014 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:05:53,514 - root - INFO - {'Functions': []}
+2018-03-14 12:05:53,514 - root - INFO - SCAR execution finished
+2018-03-14 12:05:53,514 - root - INFO - ----------------------------------------------------
+2018-03-14 12:05:53,815 - root - INFO - ----------------------------------------------------
+2018-03-14 12:05:53,815 - root - INFO - SCAR execution started
+2018-03-14 12:05:53,826 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:05:53,863 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:05:54,378 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:05:54,885 - root - INFO - {'Functions': []}
+2018-03-14 12:05:54,885 - root - INFO - SCAR execution finished
+2018-03-14 12:05:54,886 - root - INFO - ----------------------------------------------------
+2018-03-14 12:05:55,106 - root - INFO - ----------------------------------------------------
+2018-03-14 12:05:55,106 - root - INFO - SCAR execution started
+2018-03-14 12:05:55,122 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:05:55,151 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:05:55,659 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:05:56,166 - root - INFO - SCAR execution finished
+2018-03-14 12:05:56,166 - root - INFO - ----------------------------------------------------
+2018-03-14 12:05:56,389 - root - INFO - ----------------------------------------------------
+2018-03-14 12:05:56,389 - root - INFO - SCAR execution started
+2018-03-14 12:05:56,401 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:05:56,424 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:05:56,935 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:05:57,874 - root - INFO - Creating lambda function.
+2018-03-14 12:06:01,449 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:06:01,449 - root - INFO - Function 'scar-func-test' successfully created.
+2018-03-14 12:06:01,456 - root - INFO - Creating cloudwatch log group.
+2018-03-14 12:06:01,457 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:06:02,069 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully created.
+2018-03-14 12:06:02,069 - root - INFO - Setting log group policy.
+2018-03-14 12:06:02,208 - root - INFO - SCAR execution finished
+2018-03-14 12:06:02,208 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:02,420 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:02,420 - root - INFO - SCAR execution started
+2018-03-14 12:06:02,432 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:06:02,454 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:06:02,950 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:06:03,451 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:06:03,961 - root - INFO - NAME              MEMORY    TIME  IMAGE_ID
+--------------  --------  ------  ----------
+scar-func-test       512     300  centos:7
+2018-03-14 12:06:03,961 - root - INFO - SCAR execution finished
+2018-03-14 12:06:03,961 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:04,169 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:04,169 - root - INFO - SCAR execution started
+2018-03-14 12:06:04,181 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:06:04,197 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:06:05,412 - root - INFO - Function 'scar-func-test' successfully deleted.
+2018-03-14 12:06:05,418 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:06:05,979 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully deleted.
+2018-03-14 12:06:05,979 - root - INFO - SCAR execution finished
+2018-03-14 12:06:05,979 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:06,182 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:06,182 - root - INFO - SCAR execution started
+2018-03-14 12:06:06,194 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:06:06,216 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:06:06,707 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:06:07,212 - root - INFO - SCAR execution finished
+2018-03-14 12:06:07,212 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:07,421 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:07,421 - root - INFO - SCAR execution started
+2018-03-14 12:06:07,433 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:06:07,455 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:06:07,955 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:06:08,754 - root - INFO - Creating lambda function.
+2018-03-14 12:06:12,351 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:06:12,351 - root - INFO - Function 'scar-func-test' successfully created.
+2018-03-14 12:06:12,357 - root - INFO - Creating cloudwatch log group.
+2018-03-14 12:06:12,358 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:06:12,909 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully created.
+2018-03-14 12:06:12,909 - root - INFO - Setting log group policy.
+2018-03-14 12:06:13,036 - root - INFO - SCAR execution finished
+2018-03-14 12:06:13,036 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:13,244 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:13,245 - root - INFO - SCAR execution started
+2018-03-14 12:06:13,256 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:06:13,279 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:06:13,767 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:06:14,276 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:06:14,790 - root - INFO - {'Functions': [{'Image_id': 'centos:7', 'Memory': 512, 'Name': 'scar-func-test', 'Timeout': 300}]}
+2018-03-14 12:06:14,790 - root - INFO - SCAR execution finished
+2018-03-14 12:06:14,790 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:15,010 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:15,010 - root - INFO - SCAR execution started
+2018-03-14 12:06:15,021 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:06:15,037 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:06:16,238 - root - INFO - {'LambdaOutput': {'RequestId': 'b70e01cf-2777-11e8-8110-897433bcecd7', 'HTTPStatusCode': 204}}
+2018-03-14 12:06:16,243 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:06:16,802 - root - INFO - {'CloudWatchOutput': {'RequestId': 'b76919d8-2777-11e8-a38f-131a1efdf938', 'HTTPStatusCode': 200}}
+2018-03-14 12:06:16,802 - root - INFO - SCAR execution finished
+2018-03-14 12:06:16,802 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:17,042 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:17,042 - root - INFO - SCAR execution started
+2018-03-14 12:06:17,053 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:06:17,076 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:06:17,570 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:06:18,061 - root - INFO - SCAR execution finished
+2018-03-14 12:06:18,061 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:18,279 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:18,279 - root - INFO - SCAR execution started
+2018-03-14 12:06:18,291 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:06:18,313 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:06:18,807 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:06:19,627 - root - INFO - Creating lambda function.
+2018-03-14 12:06:23,054 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:06:23,054 - root - INFO - Function 'scar-func-test' successfully created.
+2018-03-14 12:06:23,060 - root - INFO - Creating cloudwatch log group.
+2018-03-14 12:06:23,061 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:06:23,624 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully created.
+2018-03-14 12:06:23,624 - root - INFO - Setting log group policy.
+2018-03-14 12:06:23,758 - root - INFO - SCAR execution finished
+2018-03-14 12:06:23,758 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:24,012 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:24,012 - root - INFO - SCAR execution started
+2018-03-14 12:06:24,024 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:06:24,046 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:06:24,560 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:06:25,392 - root - INFO - Creating lambda function.
+2018-03-14 12:06:29,002 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:06:29,002 - root - INFO - Function 'scar-func-test-1' successfully created.
+2018-03-14 12:06:29,017 - root - INFO - Creating cloudwatch log group.
+2018-03-14 12:06:29,018 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:06:29,582 - root - INFO - Log group '/aws/lambda/scar-func-test-1' successfully created.
+2018-03-14 12:06:29,582 - root - INFO - Setting log group policy.
+2018-03-14 12:06:29,719 - root - INFO - SCAR execution finished
+2018-03-14 12:06:29,719 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:30,080 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:30,080 - root - INFO - SCAR execution started
+2018-03-14 12:06:30,131 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:06:30,177 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:06:30,698 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:06:31,620 - root - INFO - Creating lambda function.
+2018-03-14 12:06:34,956 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:06:34,956 - root - INFO - Function 'scar-func-test-2' successfully created.
+2018-03-14 12:06:34,975 - root - INFO - Creating cloudwatch log group.
+2018-03-14 12:06:34,976 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:06:35,559 - root - INFO - Log group '/aws/lambda/scar-func-test-2' successfully created.
+2018-03-14 12:06:35,559 - root - INFO - Setting log group policy.
+2018-03-14 12:06:35,692 - root - INFO - SCAR execution finished
+2018-03-14 12:06:35,692 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:35,895 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:35,895 - root - INFO - SCAR execution started
+2018-03-14 12:06:35,907 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:06:35,928 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:06:36,422 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:06:36,940 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:06:37,766 - root - INFO - NAME                MEMORY    TIME  IMAGE_ID
+----------------  --------  ------  ----------
+scar-func-test         512     300  centos:7
+scar-func-test-1       512     300  centos:7
+scar-func-test-2       512     300  centos:7
+2018-03-14 12:06:37,766 - root - INFO - SCAR execution finished
+2018-03-14 12:06:37,766 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:38,182 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:38,182 - root - INFO - SCAR execution started
+2018-03-14 12:06:38,194 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:06:38,216 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:06:38,723 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:06:39,221 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:06:40,420 - root - INFO - Function 'scar-func-test' successfully deleted.
+2018-03-14 12:06:40,426 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:06:40,993 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully deleted.
+2018-03-14 12:06:41,369 - root - INFO - Function 'scar-func-test-1' successfully deleted.
+2018-03-14 12:06:41,547 - root - INFO - Log group '/aws/lambda/scar-func-test-1' successfully deleted.
+2018-03-14 12:06:41,939 - root - INFO - Function 'scar-func-test-2' successfully deleted.
+2018-03-14 12:06:42,118 - root - INFO - Log group '/aws/lambda/scar-func-test-2' successfully deleted.
+2018-03-14 12:06:42,119 - root - INFO - SCAR execution finished
+2018-03-14 12:06:42,119 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:42,330 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:42,330 - root - INFO - SCAR execution started
+2018-03-14 12:06:42,342 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:06:42,364 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:06:42,863 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:06:43,382 - root - INFO - SCAR execution finished
+2018-03-14 12:06:43,382 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:43,607 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:43,607 - root - INFO - SCAR execution started
+2018-03-14 12:06:43,622 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:06:43,645 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:06:44,163 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:06:44,998 - root - INFO - Creating lambda function.
+2018-03-14 12:06:48,433 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:06:48,445 - root - INFO - Function 'scar-func-test' successfully created.
+2018-03-14 12:06:48,454 - root - INFO - Creating cloudwatch log group.
+2018-03-14 12:06:48,456 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:06:49,035 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully created.
+2018-03-14 12:06:49,035 - root - INFO - Setting log group policy.
+2018-03-14 12:06:49,172 - root - INFO - SCAR execution finished
+2018-03-14 12:06:49,172 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:49,426 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:49,426 - root - INFO - SCAR execution started
+2018-03-14 12:06:49,438 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:06:49,462 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:06:49,953 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:06:50,461 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:06:50,986 - root - INFO - {'Functions': [{'ResponseMetadata': {'RequestId': 'cbd18f18-2777-11e8-a216-25fac30cc281', 'RetryAttempts': 0, 'HTTPStatusCode': 200, 'HTTPHeaders': {'x-amzn-requestid': 'cbd18f18-2777-11e8-a216-25fac30cc281', 'connection': 'keep-alive', 'content-length': '839', 'content-type': 'application/json', 'date': 'Wed, 14 Mar 2018 11:06:50 GMT'}}, 'CodeSize': 10338514, 'Runtime': 'python3.6', 'TracingConfig': {'Mode': 'PassThrough'}, 'Role': 'arn:aws:iam::974349055189:role/lambda-s3-recursive-role', 'Timeout': 300, 'Version': '$LATEST', 'Description': 'Automatically generated lambda function', 'FunctionArn': 'arn:aws:lambda:us-east-1:974349055189:function:scar-func-test', 'LastModified': '2018-03-14T11:06:48.035+0000', 'MemorySize': 512, 'CodeSha256': 'WGodlOR6KijfLhKEQCV3MCofCxFwRdXLZ6sfeBtkx+g=', 'Handler': 'scar-func-test.lambda_handler', 'FunctionName': 'scar-func-test', 'Environment': {'Variables': {'TIMEOUT_THRESHOLD': '10', 'UDOCKER_DIR': '/tmp/home/.udocker', 'RECURSIVE': 'False', 'UDOCKER_TARBALL': '/var/task/udocker-1.1.0-RC2.tar.gz', 'IMAGE_ID': 'centos:7'}}}]}
+2018-03-14 12:06:50,986 - root - INFO - SCAR execution finished
+2018-03-14 12:06:50,986 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:51,186 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:51,187 - root - INFO - SCAR execution started
+2018-03-14 12:06:51,198 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:06:51,214 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:06:52,615 - root - INFO - {'LambdaOutput': {'ResponseMetadata': {'HTTPStatusCode': 204, 'RequestId': 'ccc08338-2777-11e8-8e03-6b7287924345', 'RetryAttempts': 0, 'HTTPHeaders': {'content-type': 'application/json', 'date': 'Wed, 14 Mar 2018 11:06:52 GMT', 'connection': 'keep-alive', 'x-amzn-requestid': 'ccc08338-2777-11e8-8e03-6b7287924345'}}}}
+2018-03-14 12:06:52,620 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:06:53,180 - root - INFO - {'CloudWatchOutput': {'ResponseMetadata': {'HTTPStatusCode': 200, 'RequestId': 'cd1978cb-2777-11e8-83cc-3da35be0ef5c', 'RetryAttempts': 0, 'HTTPHeaders': {'content-length': '0', 'content-type': 'application/x-amz-json-1.1', 'x-amzn-requestid': 'cd1978cb-2777-11e8-83cc-3da35be0ef5c', 'date': 'Wed, 14 Mar 2018 11:06:52 GMT'}}}}
+2018-03-14 12:06:53,180 - root - INFO - SCAR execution finished
+2018-03-14 12:06:53,180 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:53,382 - root - INFO - ----------------------------------------------------
+2018-03-14 12:06:53,382 - root - INFO - SCAR execution started
+2018-03-14 12:06:53,394 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:06:53,417 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:06:53,981 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:06:54,593 - root - INFO - SCAR execution finished
+2018-03-14 12:06:54,594 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:03,624 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:03,624 - root - INFO - SCAR execution started
+2018-03-14 12:13:03,637 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:03,660 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:13:04,209 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:13:04,921 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:13:05,572 - root - INFO - NAME             MEMORY    TIME  IMAGE_ID
+-------------  --------  ------  ----------
+scar-centos-7       512     300  centos:7
+2018-03-14 12:13:05,572 - root - INFO - SCAR execution finished
+2018-03-14 12:13:05,572 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:05,946 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:05,946 - root - INFO - SCAR execution started
+2018-03-14 12:13:05,965 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:06,001 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:13:06,514 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:13:07,038 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:13:07,952 - root - INFO - Function 'scar-centos-7' successfully deleted.
+2018-03-14 12:13:07,958 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:13:08,599 - root - INFO - Log group '/aws/lambda/scar-centos-7' successfully deleted.
+2018-03-14 12:13:08,600 - root - INFO - SCAR execution finished
+2018-03-14 12:13:08,600 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:08,861 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:08,861 - root - INFO - SCAR execution started
+2018-03-14 12:13:08,872 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:08,895 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:13:09,402 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:13:10,286 - root - INFO - Creating lambda function.
+2018-03-14 12:13:13,835 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:13,835 - root - INFO - Function 'scar-func-test' successfully created.
+2018-03-14 12:13:13,860 - root - INFO - Creating cloudwatch log group.
+2018-03-14 12:13:13,868 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:13:14,433 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully created.
+2018-03-14 12:13:14,433 - root - INFO - Setting log group policy.
+2018-03-14 12:13:14,571 - root - INFO - SCAR execution finished
+2018-03-14 12:13:14,571 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:14,779 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:14,779 - root - INFO - SCAR execution started
+2018-03-14 12:13:14,791 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:14,813 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:13:15,320 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:13:15,837 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:13:16,359 - root - INFO - {'Functions': [{'Memory': 512, 'Timeout': 300, 'Name': 'scar-func-test', 'Image_id': 'centos:7'}]}
+2018-03-14 12:13:16,359 - root - INFO - SCAR execution finished
+2018-03-14 12:13:16,359 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:16,590 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:16,591 - root - INFO - SCAR execution started
+2018-03-14 12:13:16,603 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:16,619 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:13:17,827 - root - INFO - {'LambdaOutput': {'HTTPStatusCode': 204, 'RequestId': 'b2547be5-2778-11e8-8e66-57286baa886b'}}
+2018-03-14 12:13:17,833 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:13:18,402 - root - INFO - {'CloudWatchOutput': {'HTTPStatusCode': 200, 'RequestId': 'b2b49d34-2778-11e8-9345-af777a692d5f'}}
+2018-03-14 12:13:18,402 - root - INFO - SCAR execution finished
+2018-03-14 12:13:18,402 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:18,800 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:18,800 - root - INFO - SCAR execution started
+2018-03-14 12:13:18,816 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:18,852 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:13:19,347 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:13:19,859 - root - INFO - SCAR execution finished
+2018-03-14 12:13:19,859 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:20,094 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:20,094 - root - INFO - SCAR execution started
+2018-03-14 12:13:20,106 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:20,129 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:13:20,635 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:13:21,449 - root - INFO - Creating lambda function.
+2018-03-14 12:13:24,928 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:24,928 - root - INFO - Function 'scar-func-test' successfully created.
+2018-03-14 12:13:24,934 - root - INFO - Creating cloudwatch log group.
+2018-03-14 12:13:24,935 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:13:25,501 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully created.
+2018-03-14 12:13:25,501 - root - INFO - Setting log group policy.
+2018-03-14 12:13:25,637 - root - INFO - SCAR execution finished
+2018-03-14 12:13:25,637 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:25,841 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:25,844 - root - INFO - SCAR execution started
+2018-03-14 12:13:25,857 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:25,879 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:13:26,401 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:13:27,215 - root - INFO - Creating lambda function.
+2018-03-14 12:13:30,632 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:30,634 - root - INFO - Function 'scar-func-test-1' successfully created.
+2018-03-14 12:13:30,646 - root - INFO - Creating cloudwatch log group.
+2018-03-14 12:13:30,647 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:13:31,206 - root - INFO - Log group '/aws/lambda/scar-func-test-1' successfully created.
+2018-03-14 12:13:31,207 - root - INFO - Setting log group policy.
+2018-03-14 12:13:31,341 - root - INFO - SCAR execution finished
+2018-03-14 12:13:31,341 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:31,558 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:31,558 - root - INFO - SCAR execution started
+2018-03-14 12:13:31,569 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:31,591 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:13:32,092 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:13:33,094 - root - INFO - Creating lambda function.
+2018-03-14 12:13:36,745 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:36,745 - root - INFO - Function 'scar-func-test-2' successfully created.
+2018-03-14 12:13:36,751 - root - INFO - Creating cloudwatch log group.
+2018-03-14 12:13:36,752 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:13:37,317 - root - INFO - Log group '/aws/lambda/scar-func-test-2' successfully created.
+2018-03-14 12:13:37,317 - root - INFO - Setting log group policy.
+2018-03-14 12:13:37,460 - root - INFO - SCAR execution finished
+2018-03-14 12:13:37,460 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:37,666 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:37,666 - root - INFO - SCAR execution started
+2018-03-14 12:13:37,678 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:37,700 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:13:38,194 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:13:38,767 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:13:39,296 - root - INFO - NAME                MEMORY    TIME  IMAGE_ID
+----------------  --------  ------  ----------
+scar-func-test-2       512     300  centos:7
+2018-03-14 12:13:39,296 - root - INFO - SCAR execution finished
+2018-03-14 12:13:39,296 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:39,704 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:39,704 - root - INFO - SCAR execution started
+2018-03-14 12:13:39,749 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:39,797 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:13:40,736 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:13:41,240 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:13:42,179 - root - INFO - Function 'scar-func-test-2' successfully deleted.
+2018-03-14 12:13:42,185 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:13:42,746 - root - INFO - Log group '/aws/lambda/scar-func-test-2' successfully deleted.
+2018-03-14 12:13:42,746 - root - INFO - SCAR execution finished
+2018-03-14 12:13:42,746 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:43,068 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:43,068 - root - INFO - SCAR execution started
+2018-03-14 12:13:43,098 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:43,132 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:13:43,654 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:13:44,821 - root - INFO - Creating lambda function.
+2018-03-14 12:13:45,250 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:45,250 - root - INFO - SCAR execution started
+2018-03-14 12:13:45,296 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:45,333 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:13:45,882 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:13:46,444 - root - INFO - NAME    MEMORY    TIME    IMAGE_ID
+------  --------  ------  ----------
+2018-03-14 12:13:46,444 - root - INFO - SCAR execution finished
+2018-03-14 12:13:46,444 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:46,742 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:46,743 - root - INFO - SCAR execution started
+2018-03-14 12:13:46,755 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:46,779 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:13:47,272 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:13:47,799 - root - INFO - {'Functions': []}
+2018-03-14 12:13:47,800 - root - INFO - SCAR execution finished
+2018-03-14 12:13:47,800 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:48,246 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:48,246 - root - INFO - SCAR execution started
+2018-03-14 12:13:48,281 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:48,302 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:13:48,376 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:48,376 - root - INFO - Function 'scar-func-test' successfully created.
+2018-03-14 12:13:48,391 - root - INFO - Creating cloudwatch log group.
+2018-03-14 12:13:48,392 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:13:48,809 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:13:49,011 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully created.
+2018-03-14 12:13:49,011 - root - INFO - Setting log group policy.
+2018-03-14 12:13:49,146 - root - INFO - SCAR execution finished
+2018-03-14 12:13:49,146 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:49,342 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:13:49,632 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:49,632 - root - INFO - SCAR execution started
+2018-03-14 12:13:49,687 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:49,733 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:13:49,951 - root - INFO - {'Functions': [{'CodeSha256': 'G6c572Pl/SORNaqb4JwvPPaP8XKVNp9hmfS5+U8rIqg=', 'Role': 'arn:aws:iam::974349055189:role/lambda-s3-recursive-role', 'LastModified': '2018-03-14T11:13:47.877+0000', 'ResponseMetadata': {'HTTPStatusCode': 200, 'RetryAttempts': 0, 'HTTPHeaders': {'date': 'Wed, 14 Mar 2018 11:13:49 GMT', 'content-length': '839', 'x-amzn-requestid': 'c58b0021-2778-11e8-a524-6d980db4cc35', 'connection': 'keep-alive', 'content-type': 'application/json'}, 'RequestId': 'c58b0021-2778-11e8-a524-6d980db4cc35'}, 'Environment': {'Variables': {'TIMEOUT_THRESHOLD': '10', 'IMAGE_ID': 'centos:7', 'RECURSIVE': 'False', 'UDOCKER_TARBALL': '/var/task/udocker-1.1.0-RC2.tar.gz', 'UDOCKER_DIR': '/tmp/home/.udocker'}}, 'MemorySize': 512, 'Description': 'Automatically generated lambda function', 'Handler': 'scar-func-test.lambda_handler', 'Timeout': 300, 'FunctionName': 'scar-func-test', 'Runtime': 'python3.6', 'FunctionArn': 'arn:aws:lambda:us-east-1:974349055189:function:scar-func-test', 'CodeSize': 10338514, 'Version': '$LATEST', 'TracingConfig': {'Mode': 'PassThrough'}}]}
+2018-03-14 12:13:49,951 - root - INFO - SCAR execution finished
+2018-03-14 12:13:49,951 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:50,231 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:13:50,409 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:50,410 - root - INFO - SCAR execution started
+2018-03-14 12:13:50,450 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:50,494 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:13:50,746 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:13:50,992 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:13:51,256 - root - INFO - {'Functions': [{'Role': 'arn:aws:iam::974349055189:role/lambda-s3-recursive-role', 'Environment': {'Variables': {'RECURSIVE': 'False', 'TIMEOUT_THRESHOLD': '10', 'UDOCKER_TARBALL': '/var/task/udocker-1.1.0-RC2.tar.gz', 'IMAGE_ID': 'centos:7', 'UDOCKER_DIR': '/tmp/home/.udocker'}}, 'Runtime': 'python3.6', 'CodeSha256': 'G6c572Pl/SORNaqb4JwvPPaP8XKVNp9hmfS5+U8rIqg=', 'FunctionName': 'scar-func-test', 'MemorySize': 512, 'Description': 'Automatically generated lambda function', 'Handler': 'scar-func-test.lambda_handler', 'CodeSize': 10338514, 'FunctionArn': 'arn:aws:lambda:us-east-1:974349055189:function:scar-func-test', 'LastModified': '2018-03-14T11:13:47.877+0000', 'ResponseMetadata': {'RequestId': 'c65491cb-2778-11e8-81aa-1d2bc3502fca', 'HTTPStatusCode': 200, 'RetryAttempts': 0, 'HTTPHeaders': {'content-type': 'application/json', 'connection': 'keep-alive', 'x-amzn-requestid': 'c65491cb-2778-11e8-81aa-1d2bc3502fca', 'date': 'Wed, 14 Mar 2018 11:13:51 GMT', 'content-length': '839'}}, 'TracingConfig': {'Mode': 'PassThrough'}, 'Timeout': 300, 'Version': '$LATEST'}]}
+2018-03-14 12:13:51,256 - root - INFO - SCAR execution finished
+2018-03-14 12:13:51,256 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:51,501 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:13:51,825 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:51,825 - root - INFO - SCAR execution started
+2018-03-14 12:13:51,886 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:51,928 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:13:52,392 - root - INFO - Function 'scar-func-test' successfully deleted.
+2018-03-14 12:13:52,403 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:13:52,423 - root - ERROR - Function 'scar-func-test' doesn't exist.
+2018-03-14 12:13:52,423 - root - INFO - SCAR execution finished with errors
+2018-03-14 12:13:52,423 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:52,978 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully deleted.
+2018-03-14 12:13:52,978 - root - INFO - SCAR execution finished
+2018-03-14 12:13:52,978 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:53,030 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:53,030 - root - INFO - SCAR execution started
+2018-03-14 12:13:53,086 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:53,124 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:13:53,357 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:53,357 - root - INFO - SCAR execution started
+2018-03-14 12:13:53,371 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:53,392 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:13:53,657 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:13:53,900 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:13:54,153 - root - INFO - SCAR execution finished
+2018-03-14 12:13:54,153 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:54,483 - root - INFO - ----------------------------------------------------
+2018-03-14 12:13:54,483 - root - INFO - SCAR execution started
+2018-03-14 12:13:54,527 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:54,558 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:13:55,043 - root - INFO - Creating lambda function.
+2018-03-14 12:13:55,069 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:13:55,964 - root - INFO - Creating lambda function.
+2018-03-14 12:13:58,567 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:13:58,567 - root - INFO - Function 'scar-func-test' successfully created.
+2018-03-14 12:13:58,581 - root - INFO - Creating cloudwatch log group.
+2018-03-14 12:13:58,610 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:13:59,175 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully created.
+2018-03-14 12:13:59,175 - root - INFO - Setting log group policy.
+2018-03-14 12:13:59,186 - root - ERROR - Error creating lambda function: An error occurred (ResourceConflictException) when calling the CreateFunction operation: Function already exist: scar-func-test
+2018-03-14 12:13:59,307 - root - INFO - SCAR execution finished
+2018-03-14 12:13:59,307 - root - INFO - ----------------------------------------------------
+2018-03-14 12:14:00,100 - root - INFO - ----------------------------------------------------
+2018-03-14 12:14:00,100 - root - INFO - SCAR execution started
+2018-03-14 12:14:00,143 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:14:00,191 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:14:00,458 - root - INFO - ----------------------------------------------------
+2018-03-14 12:14:00,458 - root - INFO - SCAR execution started
+2018-03-14 12:14:00,499 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:14:00,624 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:14:00,700 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:14:01,127 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:14:01,199 - root - INFO - {'Functions': []}
+2018-03-14 12:14:01,199 - root - INFO - SCAR execution finished
+2018-03-14 12:14:01,199 - root - INFO - ----------------------------------------------------
+2018-03-14 12:14:01,627 - root - INFO - SCAR execution finished
+2018-03-14 12:14:01,628 - root - INFO - ----------------------------------------------------
+2018-03-14 12:14:01,661 - root - INFO - ----------------------------------------------------
+2018-03-14 12:14:01,661 - root - INFO - SCAR execution started
+2018-03-14 12:14:01,699 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:14:01,725 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:14:02,257 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:14:02,760 - root - INFO - SCAR execution finished
+2018-03-14 12:14:02,760 - root - INFO - ----------------------------------------------------
+2018-03-14 12:14:03,002 - root - INFO - ----------------------------------------------------
+2018-03-14 12:14:03,002 - root - INFO - SCAR execution started
+2018-03-14 12:14:03,012 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:14:03,033 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:14:03,550 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:14:04,075 - root - ERROR - Function name 'scar-func-test' already used.
+2018-03-14 12:14:04,075 - root - INFO - SCAR execution finished with errors
+2018-03-14 12:14:04,075 - root - INFO - ----------------------------------------------------
+2018-03-14 12:14:04,476 - root - INFO - ----------------------------------------------------
+2018-03-14 12:14:04,476 - root - INFO - SCAR execution started
+2018-03-14 12:14:04,496 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:14:04,542 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:14:05,090 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:14:05,609 - root - INFO - SCAR execution finished
+2018-03-14 12:14:05,609 - root - INFO - ----------------------------------------------------
+2018-03-14 12:14:05,941 - root - INFO - ----------------------------------------------------
+2018-03-14 12:14:05,942 - root - INFO - SCAR execution started
+2018-03-14 12:14:05,954 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:14:05,977 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:14:06,474 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:14:06,984 - root - ERROR - Function name 'scar-func-test' already used.
+2018-03-14 12:14:06,984 - root - INFO - SCAR execution finished with errors
+2018-03-14 12:14:06,984 - root - INFO - ----------------------------------------------------
+2018-03-14 12:14:07,201 - root - INFO - ----------------------------------------------------
+2018-03-14 12:14:07,201 - root - INFO - SCAR execution started
+2018-03-14 12:14:07,212 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:14:07,234 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:14:07,737 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:14:08,233 - root - INFO - SCAR execution finished
+2018-03-14 12:14:08,233 - root - INFO - ----------------------------------------------------
+2018-03-14 12:14:08,453 - root - INFO - ----------------------------------------------------
+2018-03-14 12:14:08,453 - root - INFO - SCAR execution started
+2018-03-14 12:14:08,465 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:14:08,486 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:14:08,996 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:14:09,498 - root - ERROR - Function name 'scar-func-test' already used.
+2018-03-14 12:14:09,498 - root - INFO - SCAR execution finished with errors
+2018-03-14 12:14:09,498 - root - INFO - ----------------------------------------------------
+2018-03-14 12:14:09,721 - root - INFO - ----------------------------------------------------
+2018-03-14 12:14:09,721 - root - INFO - SCAR execution started
+2018-03-14 12:14:09,733 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:14:09,801 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:14:10,295 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:14:10,800 - root - INFO - SCAR execution finished
+2018-03-14 12:14:10,800 - root - INFO - ----------------------------------------------------
+2018-03-14 12:15:09,662 - root - INFO - ----------------------------------------------------
+2018-03-14 12:15:09,663 - root - INFO - SCAR execution started
+2018-03-14 12:15:09,675 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:15:09,698 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:15:10,254 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:15:10,862 - root - ERROR - Function name 'scar-func-test' already used.
+2018-03-14 12:15:10,862 - root - INFO - SCAR execution finished with errors
+2018-03-14 12:15:10,863 - root - INFO - ----------------------------------------------------
+2018-03-14 12:15:11,076 - root - INFO - ----------------------------------------------------
+2018-03-14 12:15:11,076 - root - INFO - SCAR execution started
+2018-03-14 12:15:11,088 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:15:11,111 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:15:11,615 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:15:12,136 - root - INFO - SCAR execution finished
+2018-03-14 12:15:12,136 - root - INFO - ----------------------------------------------------
+2018-03-14 12:18:01,719 - root - INFO - ----------------------------------------------------
+2018-03-14 12:18:01,719 - root - INFO - SCAR execution started
+2018-03-14 12:18:01,732 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:18:01,757 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:18:02,279 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:18:03,277 - root - INFO - Creating lambda function.
+2018-03-14 12:18:06,911 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:18:06,911 - root - INFO - Function 'scar-func-test' successfully created.
+2018-03-14 12:18:06,922 - root - INFO - Creating cloudwatch log group.
+2018-03-14 12:18:06,924 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:18:07,465 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully created.
+2018-03-14 12:18:07,465 - root - INFO - Setting log group policy.
+2018-03-14 12:18:07,597 - root - INFO - SCAR execution finished
+2018-03-14 12:18:07,597 - root - INFO - ----------------------------------------------------
+2018-03-14 12:18:07,819 - root - INFO - ----------------------------------------------------
+2018-03-14 12:18:07,819 - root - INFO - SCAR execution started
+2018-03-14 12:18:07,830 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:18:07,853 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:18:08,358 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:18:08,934 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:18:09,535 - root - INFO - NAME              MEMORY    TIME  IMAGE_ID
+--------------  --------  ------  ----------
+scar-func-test       512     300  centos:7
+2018-03-14 12:18:09,535 - root - INFO - SCAR execution finished
+2018-03-14 12:18:09,535 - root - INFO - ----------------------------------------------------
+2018-03-14 12:18:09,752 - root - INFO - ----------------------------------------------------
+2018-03-14 12:18:09,752 - root - INFO - SCAR execution started
+2018-03-14 12:18:09,765 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:18:09,781 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:18:35,743 - root - INFO - SCAR: Request Id: 60fefe1c-2779-11e8-a9ce-e5d27b3bf2fa
+Log group name: /aws/lambda/scar-func-test
+Log stream name: 2018/03/14/[$LATEST]96395210785c443e95237a2cdbf4e56c
+---------------------------------------------------------------------------
+
+2018-03-14 12:18:35,743 - root - INFO - SCAR execution finished
+2018-03-14 12:18:35,744 - root - INFO - ----------------------------------------------------
+2018-03-14 12:18:36,175 - root - INFO - ----------------------------------------------------
+2018-03-14 12:18:36,175 - root - INFO - SCAR execution started
+2018-03-14 12:18:36,211 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:18:36,235 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:18:36,863 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:18:37,386 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:18:38,291 - root - INFO - Function 'scar-func-test' successfully deleted.
+2018-03-14 12:18:38,297 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:18:39,037 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully deleted.
+2018-03-14 12:18:39,038 - root - INFO - SCAR execution finished
+2018-03-14 12:18:39,038 - root - INFO - ----------------------------------------------------
+2018-03-14 12:19:07,031 - root - INFO - ----------------------------------------------------
+2018-03-14 12:19:07,031 - root - INFO - SCAR execution started
+2018-03-14 12:19:07,099 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:19:07,180 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:19:07,725 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:19:08,549 - root - INFO - Creating lambda function.
+2018-03-14 12:19:12,064 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:19:12,065 - root - INFO - Function 'scar-func-test' successfully created.
+2018-03-14 12:19:12,078 - root - INFO - Creating cloudwatch log group.
+2018-03-14 12:19:12,081 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:19:12,585 - root - WARNING - Using existent log group '/aws/lambda/scar-func-test'
+2018-03-14 12:19:12,585 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully created.
+2018-03-14 12:19:12,586 - root - INFO - Setting log group policy.
+2018-03-14 12:19:12,588 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Resetting dropped connection: logs.us-east-1.amazonaws.com
+2018-03-14 12:19:13,133 - root - INFO - SCAR execution finished
+2018-03-14 12:19:13,133 - root - INFO - ----------------------------------------------------
+2018-03-14 12:19:14,544 - root - INFO - ----------------------------------------------------
+2018-03-14 12:19:14,544 - root - INFO - SCAR execution started
+2018-03-14 12:19:14,578 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:19:14,619 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:19:15,186 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:19:15,771 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:19:16,831 - root - INFO - Function 'scar-func-test' successfully deleted.
+2018-03-14 12:19:16,854 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:19:17,384 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully deleted.
+2018-03-14 12:19:17,384 - root - INFO - SCAR execution finished
+2018-03-14 12:19:17,384 - root - INFO - ----------------------------------------------------
+2018-03-14 12:21:42,321 - root - INFO - ----------------------------------------------------
+2018-03-14 12:21:42,322 - root - INFO - SCAR execution started
+2018-03-14 12:21:42,358 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:21:42,405 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:21:43,028 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:21:43,857 - root - INFO - Creating lambda function.
+2018-03-14 12:21:47,399 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:21:47,400 - root - INFO - Function 'scar-func-test' successfully created.
+2018-03-14 12:21:47,413 - root - INFO - Creating cloudwatch log group.
+2018-03-14 12:21:47,416 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:21:47,973 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully created.
+2018-03-14 12:21:47,973 - root - INFO - Setting log group policy.
+2018-03-14 12:21:48,104 - root - INFO - SCAR execution finished
+2018-03-14 12:21:48,104 - root - INFO - ----------------------------------------------------
+2018-03-14 12:21:49,493 - root - INFO - ----------------------------------------------------
+2018-03-14 12:21:49,493 - root - INFO - SCAR execution started
+2018-03-14 12:21:49,529 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:21:49,571 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:21:50,140 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:21:50,670 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:21:51,198 - root - INFO - NAME              MEMORY    TIME  IMAGE_ID
+--------------  --------  ------  ----------
+scar-func-test       512     300  centos:7
+2018-03-14 12:21:51,198 - root - INFO - SCAR execution finished
+2018-03-14 12:21:51,198 - root - INFO - ----------------------------------------------------
+2018-03-14 12:23:08,979 - root - INFO - ----------------------------------------------------
+2018-03-14 12:23:08,979 - root - INFO - SCAR execution started
+2018-03-14 12:23:09,015 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:23:09,047 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:23:33,374 - root - INFO - SCAR: Request Id: 136bdf74-277a-11e8-9282-b7bbf281a06d
+Log group name: /aws/lambda/scar-func-test
+Log stream name: 2018/03/14/[$LATEST]260590dba15c4d62841bdeeda7db34bc
+---------------------------------------------------------------------------
+
+2018-03-14 12:23:33,375 - root - INFO - SCAR execution finished
+2018-03-14 12:23:33,375 - root - INFO - ----------------------------------------------------
+2018-03-14 12:23:57,241 - root - INFO - ----------------------------------------------------
+2018-03-14 12:23:57,241 - root - INFO - SCAR execution started
+2018-03-14 12:23:57,279 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:23:57,321 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:23:57,913 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:23:58,558 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:23:59,470 - root - INFO - Function 'scar-func-test' successfully deleted.
+2018-03-14 12:23:59,485 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:24:00,099 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully deleted.
+2018-03-14 12:24:00,099 - root - INFO - SCAR execution finished
+2018-03-14 12:24:00,099 - root - INFO - ----------------------------------------------------
+2018-03-14 12:24:31,913 - root - INFO - ----------------------------------------------------
+2018-03-14 12:24:31,913 - root - INFO - SCAR execution started
+2018-03-14 12:24:31,938 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:24:31,993 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:24:32,505 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:24:33,704 - root - INFO - Creating lambda function.
+2018-03-14 12:24:37,300 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:24:37,300 - root - INFO - Function 'scar-func-test' successfully created.
+2018-03-14 12:24:37,306 - root - INFO - Creating cloudwatch log group.
+2018-03-14 12:24:37,307 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:24:37,874 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully created.
+2018-03-14 12:24:37,875 - root - INFO - Setting log group policy.
+2018-03-14 12:24:38,012 - root - INFO - SCAR execution finished
+2018-03-14 12:24:38,012 - root - INFO - ----------------------------------------------------
+2018-03-14 12:24:38,217 - root - INFO - ----------------------------------------------------
+2018-03-14 12:24:38,217 - root - INFO - SCAR execution started
+2018-03-14 12:24:38,230 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:24:38,254 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:24:38,753 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:24:39,259 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:24:39,763 - root - INFO - NAME              MEMORY    TIME  IMAGE_ID
+--------------  --------  ------  ----------
+scar-func-test       512     300  centos:7
+2018-03-14 12:24:39,763 - root - INFO - SCAR execution finished
+2018-03-14 12:24:39,763 - root - INFO - ----------------------------------------------------
+2018-03-14 12:24:40,022 - root - INFO - ----------------------------------------------------
+2018-03-14 12:24:40,022 - root - INFO - SCAR execution started
+2018-03-14 12:24:40,034 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:24:40,051 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:25:04,083 - root - INFO - SCAR: Request Id: 499c8dcf-277a-11e8-95bc-8106ee79ea79
+Log group name: /aws/lambda/scar-func-test
+Log stream name: 2018/03/14/[$LATEST]04ee444920824084b21fde8f3965153c
+---------------------------------------------------------------------------
+
+2018-03-14 12:25:04,084 - root - INFO - SCAR execution finished
+2018-03-14 12:25:04,084 - root - INFO - ----------------------------------------------------
+2018-03-14 12:25:04,282 - root - INFO - ----------------------------------------------------
+2018-03-14 12:25:04,282 - root - INFO - SCAR execution started
+2018-03-14 12:25:04,294 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:25:04,310 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): lambda.us-east-1.amazonaws.com
+2018-03-14 12:25:05,573 - root - INFO - Function 'scar-func-test' successfully deleted.
+2018-03-14 12:25:05,579 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): logs.us-east-1.amazonaws.com
+2018-03-14 12:25:06,183 - root - INFO - Log group '/aws/lambda/scar-func-test' successfully deleted.
+2018-03-14 12:25:06,183 - root - INFO - SCAR execution finished
+2018-03-14 12:25:06,183 - root - INFO - ----------------------------------------------------
+2018-03-14 12:25:06,384 - root - INFO - ----------------------------------------------------
+2018-03-14 12:25:06,384 - root - INFO - SCAR execution started
+2018-03-14 12:25:06,395 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2018-03-14 12:25:06,418 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): iam.amazonaws.com
+2018-03-14 12:25:06,976 - botocore.vendored.requests.packages.urllib3.connectionpool - INFO - Starting new HTTPS connection (1): tagging.us-east-1.amazonaws.com
+2018-03-14 12:25:07,519 - root - INFO - SCAR execution finished
+2018-03-14 12:25:07,520 - root - INFO - ----------------------------------------------------
