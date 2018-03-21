@@ -132,9 +132,9 @@ class Lambda(object):
             error_msg = "Error initializing lambda function."
             logger.error(error_msg, error_msg + ": %s" % ce)
             utils.finish_failed_execution()
-        #finally:
+        finally:
             # Remove the files created in the operation
-            #utils.delete_file(self.properties["zip_file_path"])
+            utils.delete_file(self.properties["zip_file_path"])
         
     def delete_function(self, func_name=None):
         if func_name:
