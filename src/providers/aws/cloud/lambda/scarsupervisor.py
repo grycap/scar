@@ -27,7 +27,7 @@ loglevel = logging.INFO
 logger = logging.getLogger()
 logger.setLevel(loglevel)
 
-udocker_bin = "/var/task/udocker"
+udocker_exec = "/var/task/udockerb"
 container_name = "lambda_cont"
 s3_input_file_name = ""
 script_exec = "/bin/sh"
@@ -40,17 +40,17 @@ logger.info('SCAR: Loading lambda function')
 #        S3 RELATED FUNCTIONS         #
 #######################################
 def is_s3_event(event):
-    if check_key_existence_in_dictionary('Records', event):
+    if check_key_in_dictionary('Records', event):
         # Check if the event is an S3 event
         return event['Records'][0]['eventSource'] == "aws:s3"
     return False
 
 def get_s3_record(event):
-    if check_key_existence_in_dictionary('Records', event):
+    if check_key_in_dictionary('Records', event):
         if len(event['Records']) > 1:
             logger.warning("Multiple records detected. Only processing the first one.")
         record = event['Records'][0]
-        if check_key_existence_in_dictionary('s3', record):
+        if check_key_in_dictionary('s3', record):
             return record['s3']    
     
 def get_s3_client():
@@ -62,15 +62,19 @@ def get_s3_bucket_name(s3_record):
 def get_s3_file_key(s3_record):
     return s3_record['object']['key']
     
+def download_s3_file(bucket_name, file_key, download_path):
+    os.makedirs(os.path.dirname(download_path), exist_ok=True)
+    with open(download_path, 'wb') as data:
+        get_s3_client().download_fileobj(bucket_name, file_key, data)
+    
 def download_input_from_s3(s3_record):
     '''Downloads the file from the S3 bucket and returns the path were the download is placed'''
     bucket_name = get_s3_bucket_name(s3_record)
     file_key = get_s3_file_key(s3_record)
     download_path = '/tmp/%s/%s' % (request_id, file_key)
     logger.info("Downloading item from bucket %s with key %s" % (bucket_name, file_key))
-    os.makedirs(os.path.dirname(download_path), exist_ok=True)      
-    with open(download_path, 'wb') as data:
-        get_s3_client().download_fileobj(bucket_name, file_key, data)
+    os.makedirs(os.path.dirname(download_path), exist_ok=True)  
+    download_s3_file(bucket_name, file_key, download_path)
     logger.info("Successfully downloaded item from bucket '%s' with key '%s' in path '%s'" % 
                 (bucket_name, file_key, download_path))
     if (is_recursive()):
@@ -106,6 +110,11 @@ def upload_file_to_s3(bucket_name, file_path, file_key):
     obj = boto3.resource('s3').Object(bucket_name, file_key)
     obj.Acl().put(ACL='public-read')
 
+def download_to_memory(bucket_name, file_key):
+    obj = boto3.resource('s3').Object(bucket_name=bucket_name, key=file_key)
+    print ("Reading item from bucket %s with key %s" % (bucket_name, file_key))
+    return obj.get()["Body"].read()
+
 #######################################
 #      LAMBDA RELATED FUNCTIONS       #
 #######################################
@@ -137,7 +146,7 @@ def create_event_file(file_content):
 def pre_process(event):
     create_event_file(json.dumps(event))
     prepare_udocker_environment()
-    prepare_udocker_container(os.environ['IMAGE_ID'])
+    prepare_udocker_container()
     check_s3_event_records(event)
     
 def check_s3_event_records(event):
@@ -176,22 +185,39 @@ def prepare_udocker_environment():
     os.makedirs(input_folder, exist_ok=True)
     os.makedirs(output_folder, exist_ok=True)
 
-def prepare_udocker_container(container_image_id):
+def download_container_image(container_image_id):
+    logger.info("Pulling container '%s' from Docker Hub" % container_image_id)
+    # Download the container if it doesn't exist
+    subprocess.call([udocker_exec, "pull", container_image_id])
+
+def load_local_container_image(container_image_id):
+    logger.info("Loading container image '%s'" % container_image_id)
+    
+    if check_key_in_dictionary('S3_DEPLOYMENT_BUCKET', os.environ):
+        #container_image_id = download_to_memory(os.environ['S3_DEPLOYMENT_BUCKET'], os.environ['S3_IMAGE_KEY'])
+        container_image_id = os.environ['IMAGE_FILE']
+        download_s3_file(os.environ['S3_DEPLOYMENT_BUCKET'], os.environ['S3_IMAGE_KEY'], container_image_id)
+    subprocess.call([udocker_exec, "load", "-i", container_image_id])
+
+def prepare_udocker_container():
+    container_image_id = os.environ['IMAGE_ID']
     # Check if the container is already downloaded
-    cmd_out = subprocess.check_output([udocker_bin, "images"]).decode("utf-8")
+    cmd_out = subprocess.check_output([udocker_exec, "images"]).decode("utf-8")
     if container_image_id not in cmd_out:
-        logger.info("Pulling container '%s' from Docker Hub" % container_image_id)
-        # If the container doesn't exist
-        subprocess.call([udocker_bin, "pull", container_image_id])
+        if check_key_in_dictionary('IMAGE_FILE', os.environ):
+            load_local_container_image(os.environ['IMAGE_FILE'])
+        else:
+            download_container_image(container_image_id)
     else:
-        logger.info("Container image '%s' already available" % container_image_id)
-    # Download and create container
-    cmd_out = subprocess.check_output([udocker_bin, "ps"]).decode("utf-8")
+        logger.info("Container image '%s' already available" % container_image_id)         
+
+    # Create container
+    cmd_out = subprocess.check_output([udocker_exec, "ps"]).decode("utf-8")
     if container_name not in cmd_out:
         logger.info("Creating container with name '%s' based on image '%s'." % (container_name, container_image_id))
-        subprocess.call([udocker_bin, "create", "--name=%s" % container_name, container_image_id])
+        subprocess.call([udocker_exec, "create", "--name=%s" % container_name, container_image_id])
         # Set container execution engine to Fakechroot
-        subprocess.call([udocker_bin, "setup", "--execmode=F1", container_name])
+        subprocess.call([udocker_exec, "setup", "--execmode=F1", container_name])
     else:
         logger.info("Container '" + container_name + "' already available")
 
@@ -207,9 +233,9 @@ def add_user_defined_variables_to_udocker_container_variables(variables):
             
 def add_iam_credentials_to_udocker_container_variables(variables):
         # Add IAM credentials
-    if not check_key_existence_in_dictionary('CONT_VAR_AWS_ACCESS_KEY_ID', os.environ):
+    if not check_key_in_dictionary('CONT_VAR_AWS_ACCESS_KEY_ID', os.environ):
         add_udocker_container_variable(variables, "AWS_ACCESS_KEY_ID", os.environ["AWS_ACCESS_KEY_ID"])
-    if not check_key_existence_in_dictionary('CONT_VAR_AWS_SECRET_ACCESS_KEY', os.environ):
+    if not check_key_in_dictionary('CONT_VAR_AWS_SECRET_ACCESS_KEY', os.environ):
         add_udocker_container_variable(variables, "AWS_SECRET_ACCESS_KEY", os.environ["AWS_SECRET_ACCESS_KEY"])       
 
 def add_session_and_security_token_to_udocker_container_variables(variables):
@@ -225,7 +251,7 @@ def add_instance_ip_to_udocker_container_variables(variables):
     add_udocker_container_variable(variables, "INSTANCE_IP", socket.gethostbyname(socket.gethostname()))
     
 def add_extra_payload_path_to_udocker_container_variables(variables):
-    if check_key_existence_in_dictionary('EXTRA_PAYLOAD', os.environ):
+    if check_key_in_dictionary('EXTRA_PAYLOAD', os.environ):
         add_udocker_container_variable(variables, "EXTRA_PAYLOAD", os.environ["EXTRA_PAYLOAD"])
             
 def get_udocker_container_global_variables():
@@ -265,23 +291,23 @@ def append_init_script_to_udocker_command(command):
     
 def append_udocker_container_volumes_to_udocker_command(command):
     container_volumes = ["-v", "/tmp/%s" % request_id, "-v", "/dev", "-v", "/proc", "-v", "/etc/hosts", "--nosysdirs"]
-    if check_key_existence_in_dictionary('EXTRA_PAYLOAD', os.environ):
+    if check_key_in_dictionary('EXTRA_PAYLOAD', os.environ):
         container_volumes.extend(["-v", "/var/task/extra"])
     command.extend(container_volumes)    
 
 def create_udocker_command(event):
     # Create the udocker container execution command
-    command = [udocker_bin, "--quiet", "run"]
+    command = [udocker_exec, "--quiet", "run"]
     append_udocker_container_volumes_to_udocker_command(command)
     append_udocker_container_variables_to_udocker_command(command)
     # Container running script
-    if check_key_existence_in_dictionary('script', event): 
+    if check_key_in_dictionary('script', event): 
         append_script_to_udocker_command(event['script'], command)
     # Container with args
-    elif check_key_existence_in_dictionary('cmd_args', event):
+    elif check_key_in_dictionary('cmd_args', event):
         append_args_to_udocker_command(event['cmd_args'], command)
     # Script to be executed every time (if defined)
-    elif check_key_existence_in_dictionary('INIT_SCRIPT_PATH', os.environ):
+    elif check_key_in_dictionary('INIT_SCRIPT_PATH', os.environ):
         append_init_script_to_udocker_command(command)
     # Only container
     else:
@@ -316,7 +342,7 @@ def read_udocker_output_file(output_file_path):
 #######################################
 #           USEFUL FUNCTIONS          #
 #######################################
-def check_key_existence_in_dictionary(key, dictionary):
+def check_key_in_dictionary(key, dictionary):
     return (key in dictionary) and dictionary[key]
 
 def create_file_with_content(path, content):
@@ -359,6 +385,9 @@ def lambda_handler(event, context):
     stdout = ""
     stdout += prepare_output(context)
     try:
+    #    subprocess.call(["ls", "-la", "/var/task/image_file/"])
+    #   subprocess.call(["du", "-h", "/tmp"])
+        
         pre_process(event)
         # Create container execution command
         command = create_udocker_command(event)
@@ -368,6 +397,9 @@ def lambda_handler(event, context):
         stdout += read_udocker_output_file(output_file_path)
         post_process(event)
    
+    #    subprocess.call(["du", "-d2", "-h", "/tmp/home/.udocker"])
+    #    subprocess.call(["ls", "-la", "/tmp/home/.udocker/layers"])
+        
     except Exception:
         logger.error("Exception launched:\n %s" % traceback.format_exc())
         stdout += "SCAR ERROR: Exception launched:\n %s" % traceback.format_exc()

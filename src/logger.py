@@ -31,8 +31,16 @@ def end_execution_trace_with_errors():
     logging.info('SCAR execution finished with errors')
     logging.info('----------------------------------------------------')
 
-def info(cli_msg, log_msg=None):
+def debug(cli_msg, log_msg=None):
     print(cli_msg)
+    if log_msg:
+        logging.debug(log_msg)
+    else:
+        logging.debug(cli_msg)
+
+def info(cli_msg=None, log_msg=None):
+    if cli_msg:
+        print(cli_msg)
     if log_msg:
         logging.info(log_msg)
     else:

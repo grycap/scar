@@ -19,7 +19,6 @@ from .iam import IAM
 from botocore.exceptions import ClientError
 from botocore.vendored.requests.exceptions import ReadTimeout
 from enum import Enum
-from pprint import pprint
 from src.parser.cfgfile import ConfigFile
 from src.providers.aws.response import OutputType
 import src.providers.aws.client.codezip as codezip
@@ -55,15 +54,15 @@ class Lambda(object):
         "asynchronous_behavior" : False,
         "environment" : { 'Variables' : {} },
         "environment_variables" : {},
-        "name_regex" : "(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}(-gov)?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\$LATEST|[a-zA-Z0-9-_]+))?",
-        "udocker_dir" : "/tmp/home/.udocker",
-        "udocker_tarball" : "/var/task/udocker-1.1.0-RC2.tar.gz",      
+        "name_regex" : "(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}(-gov)?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\$LATEST|[a-zA-Z0-9-_]+))?",    
         "s3_event_template" : { "Records" : [ 
                             { "eventSource" : "aws:s3",
                               "s3" : { "bucket" : { "name" : "" },
                                        "object" : { "key" : ""  } }
                             }]},
         "zip_file_path" : os.path.join(tempfile.gettempdir(), 'function.zip')
+        #"udocker_dir" : "/tmp/home/.udocker",
+        #"udocker_tarball" : "/var/task/udocker-1.1.0-RC2.tar.gz",  
     }    
     
     @utils.lazy_property
@@ -112,7 +111,6 @@ class Lambda(object):
         return self.get_property("event_source") != ""
     
     def create_function(self):
-        # lambda_validator.validate_function_creation_values(self.lambda)
         try:
             response = self.client.create_function(self.get_property("name"),
                                                    self.get_property("runtime"),
@@ -124,7 +122,8 @@ class Lambda(object):
                                                    self.get_property("time"),
                                                    self.get_property("memory"),
                                                    self.get_property("tags"))
-            self.properties["function_arn"] = response['FunctionArn']
+            if response and 'FunctionArn' in response:
+                self.properties["function_arn"] = response['FunctionArn']
             response_parser.parse_lambda_function_creation_response(response,
                                                                     self.get_function_name(),
                                                                     self.client.get_access_key(),
@@ -133,9 +132,9 @@ class Lambda(object):
             error_msg = "Error initializing lambda function."
             logger.error(error_msg, error_msg + ": %s" % ce)
             utils.finish_failed_execution()
-        finally:
+        #finally:
             # Remove the files created in the operation
-            utils.delete_file(self.properties["zip_file_path"])
+            #utils.delete_file(self.properties["zip_file_path"])
         
     def delete_function(self, func_name=None):
         if func_name:
@@ -198,9 +197,6 @@ class Lambda(object):
     def is_asynchronous(self):
         return self.get_property('asynchronous_call')
  
-    def set_payload(self, payload):
-        self.payload = json.dumps(payload)
-        
     def set_async(self, asynchronous_call):
         if asynchronous_call:
             self.set_asynchronous_call_parameters()
@@ -232,19 +228,43 @@ class Lambda(object):
         self.event['Records'][0]['s3']['object']['key'] = file_name        
         
     def set_function_code(self):
+        dbucket = self.get_property("deployment_bucket")
+        func_name = self.get_property("name")
+        bucket_file_key = 'lambda/' + func_name + '.zip'
+        
         # Zip all the files and folders needed
-        codezip.create_code_zip(self.get_property("name"), self.get_property("zip_file_path"))
-        self.properties['code'] = { "ZipFile": utils.get_file_as_byte_array(self.get_property("zip_file_path"))}
+        codezip.create_code_zip(func_name,
+                                self.get_property("environment_variables"),
+                                image_id=self.get_property("image_id"),
+                                image_file=self.get_property("image_file"),
+                                deployment_bucket=dbucket,
+                                file_key=bucket_file_key)
+        
+        if dbucket and dbucket != "":
+            self.properties['code'] = { "S3Bucket": dbucket, "S3Key" : bucket_file_key }
+        else:
+            self.properties['code'] = { "ZipFile": utils.get_file_as_byte_array(self.get_property("zip_file_path"))}
+
+    def has_image_file(self):
+        return (('image_file' in self.properties) and (self.get_property("image_file") != ''))
+    
+    def has_deployment_bucket(self):
+        return (('deployment_bucket' in self.properties) and (self.get_property("deployment_bucket") != ''))    
         
     def set_env_var(self, key, value):
         self.get_property("environment_variables")[key] = value
-        
+
     def set_required_environment_variables(self):
-        self.set_env_var('UDOCKER_DIR', self.get_property("udocker_dir"))
-        self.set_env_var('UDOCKER_TARBALL', self.get_property("udocker_tarball"))
+        #self.set_env_var('UDOCKER_DIR', self.get_property("udocker_dir"))
+        #self.set_env_var('UDOCKER_TARBALL', self.get_property("udocker_tarball"))
         self.set_env_var('TIMEOUT_THRESHOLD', str(self.get_property("timeout_threshold")))
         self.set_env_var('RECURSIVE', str(self.get_property("recursive_behavior")))
-        self.set_env_var('IMAGE_ID', self.get_property("image_id"))        
+        self.set_env_var('IMAGE_ID', self.get_property("image_id"))
+        if self.has_image_file():
+#             if self.has_deployment_bucket():
+#                 self.set_env_var('IMAGE_FILE', '/tmp/home/image_file/' + self.get_property("name") + ".tar")
+#             else:
+            self.set_env_var('IMAGE_FILE', 'image_file/' + self.get_property("name") + ".tar") 
 
     def set_environment_variables(self, variables=None):
         self.set_required_environment_variables()
@@ -307,8 +327,9 @@ class Lambda(object):
             self.set_environment_variables()
             self.properties["handler"] = function_name + ".lambda_handler"
             self.properties["log_group_name"] = '/aws/lambda/' + function_name
-               
-            self.set_function_code()           
+            
+            if (call_type == CallType.INIT):   
+                self.set_function_code()           
                
             if (call_type == CallType.RUN):
                 self.update_function_attributes(args)
@@ -316,8 +337,10 @@ class Lambda(object):
                     parsed_script = utils.escape_string(self.script.read())
                     self.set_payload({"script" : parsed_script})
                 if self.get_argument_value(args, 'cont_args'):
-                    parsed_cont_args = utils.escape_list(self.container_arguments)
-                    self.set_payload({ "cmd_args" : parsed_cont_args })
+                    parsed_cont_args = utils.escape_list(self.get_property("cont_args"))
+                    self.set_property('payload', { "cmd_args" : parsed_cont_args })
+                    #self.properties['payload'] = json.dumps(payload)
+                    #self.set_payload({ "cmd_args" : parsed_cont_args })
                     
 
     def get_all_functions(self, arn_list):

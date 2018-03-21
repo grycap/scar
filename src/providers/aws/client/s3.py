@@ -24,7 +24,10 @@ class S3():
 
     @utils.lazy_property
     def client(self):
-        client = S3Client(self.region)
+        if hasattr(self, 'region'):
+            client = S3Client(self.region)
+        else:
+            client = S3Client()
         return client
     
     @utils.lazy_property
@@ -33,12 +36,12 @@ class S3():
         trigger_configuration = utils.load_json_file(file_path)
         return trigger_configuration
     
-    def __init__(self, aws_lambda):
-        # Get all the log related attributes
-        self.bucket_name = aws_lambda.bucket_name
-        self.function_arn = aws_lambda.function_arn
-        self.is_recursive = aws_lambda.recursive
-        self.region = aws_lambda.region
+    def __init__(self, aws_lambda=None):
+        if aws_lambda:
+            self.bucket_name = aws_lambda.bucket_name
+            self.function_arn = aws_lambda.function_arn
+            self.is_recursive = aws_lambda.recursive
+            self.region = aws_lambda.region
 
     def create_event_source(self):
         try:
@@ -46,8 +49,8 @@ class S3():
                 # Create the bucket if not found
                 self.client.create_bucket(self.bucket_name)
             # Add folder structure
-            self.client.add_bucket_folder(self.bucket_name, "input/")
-            self.client.add_bucket_folder(self.bucket_name, "output/")
+            self.add_bucket_folder(self.bucket_name, "input/")
+            self.add_bucket_folder(self.bucket_name, "output/")
         except ClientError as ce:
             error_msg = "Error creating the bucket '%s'" % self.bucket_name
             logger.error(error_msg, error_msg + ": %s" % ce)
@@ -55,7 +58,7 @@ class S3():
     def set_event_source_notification(self):
         self.create_trigger_from_bucket()
         if self.is_recursive:
-            self.client.add_bucket_folder(self.bucket_name, "recursive/")
+            self.add_bucket_folder(self.bucket_name, "recursive/")
             self.create_recursive_trigger_from_bucket(self.bucket_name, self.function_arn)                               
             
     def create_trigger_from_bucket(self):           
@@ -82,8 +85,20 @@ class S3():
                     file_list.append(content['Key'])
         return file_list         
 
+    def upload_file(self, bucket_name, file_key, file_data):
+        try:
+            self.client.put_object(bucket_name, file_key, file_data)
+        except ClientError as ce:
+            error_msg = "Error uploading the file '%s' to the S3 bucket '%s'" % (file_key, bucket_name)
+            logger.error(error_msg, error_msg + ": %s" % ce)          
 
-
+    def add_bucket_folder(self, bucket_name, folder_name):
+        try:
+            self.client.put_object(bucket_name, folder_name)
+        except ClientError as ce:
+            error_msg = "Error creating the folder '%s' in the bucket '%s'" % (folder_name, bucket_name)
+            logger.error(error_msg, error_msg + ": %s" % (folder_name, bucket_name, ce))              
+            
 class S3Client(BotoClient):
     '''A low-level client representing Amazon Simple Storage Service (S3Client).
     https://boto3.readthedocs.io/en/latest/reference/services/s3.html'''
@@ -111,13 +126,6 @@ class S3Client(BotoClient):
                 error_msg = "Error, bucket '%s' not found" % bucket_name
                 logger.error(error_msg, error_msg + ": %s" % (bucket_name, ce))        
     
-    def add_bucket_folder(self, bucket_name, folder_name):
-        try:
-            self.get_client().put_object(Bucket=bucket_name, Key=folder_name)
-        except ClientError as ce:
-            error_msg = "Error creating the folder '%s' in the bucket '%s'" % (folder_name, bucket_name)
-            logger.error(error_msg, error_msg + ": %s" % (folder_name, bucket_name, ce))  
-    
     def get_bucket_file_list(self, bucket_name, prefix):
         try:
             return  self.get_client().list_objects_v2(Bucket=bucket_name, Prefix=prefix)
@@ -132,5 +140,14 @@ class S3Client(BotoClient):
                                                                     NotificationConfiguration=notification)
         except ClientError as ce:
             error_msg = "Error configuring S3Client bucket"
-            logger.error(error_msg, error_msg + ": %s" % ce)    
+            logger.error(error_msg, error_msg + ": %s" % ce)          
+            
+    def put_object(self, bucket_name, file_key, file_data=None):
+        '''Adds an object to a bucket.
+        https://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Client.put_object'''
+        if file_data:
+            self.get_client().put_object(Bucket=bucket_name, Key=file_key, Body=file_data)
+        else:
+            self.get_client().put_object(Bucket=bucket_name, Key=file_key)
+              
     

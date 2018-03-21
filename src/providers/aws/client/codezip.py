@@ -14,70 +14,106 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
+from .s3 import S3
 import os
 import shutil
+import src.logger as logger
 import src.utils as utils
 import zipfile
+import subprocess
 
 MAX_PAYLOAD_SIZE = 50 * 1024 * 1024
 MAX_S3_PAYLOAD_SIZE = 250 * 1024 * 1024
 aws_src_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 lambda_code_files_path = aws_src_path + "/cloud/lambda/"
+scar_temporal_folder = "/tmp/scar/"
+udocker_exec = "/tmp/scar/udockerb"
+udocker_tarball = ""
+udocker_dir = ""
+zip_file_path = "/tmp/function.zip"
 
-def create_code_zip(function_name, zip_file_path, env_vars=None, script=None, extra_payload=None, image_file=None, deployment_bucket=None):
-    # Set lambda function name
-    supervisor_file_name = function_name + '.py'
-    # Copy file to avoid messing with the repo files
-    # We have to rename the file because the function name affects the handler name
-    shutil.copy(lambda_code_files_path + 'scarsupervisor.py', supervisor_file_name)
-    # Zip the function file
-    with zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED) as zf:
-        # AWSLambda function code
-        zf.write(supervisor_file_name)
-        utils.delete_file(supervisor_file_name)
-        # Udocker script code
-        zf.write(lambda_code_files_path + 'udocker', 'udocker')
-        # Udocker libs
-        zf.write(lambda_code_files_path + 'udocker-1.1.0-RC2.tar.gz', 'udocker-1.1.0-RC2.tar.gz')
+def add_mandatory_files(function_name, env_vars):
+    os.makedirs(scar_temporal_folder, exist_ok=True)
+    shutil.copy(lambda_code_files_path + 'scarsupervisor.py', scar_temporal_folder + function_name + '.py')
+    shutil.copy(lambda_code_files_path + 'udockerb', udocker_exec)
+    env_vars['UDOCKER_DIR'] = "/tmp/home/udocker"
+    env_vars['UDOCKER_LIB'] = "/var/task/udocker/lib/"
+    env_vars['UDOCKER_BIN'] = "/var/task/udocker/bin/"
 
-        if script:
-            zf.write(script, 'init_script.sh')
-            env_vars['INIT_SCRIPT_PATH'] = "/var/task/init_script.sh"
-            
-    if extra_payload:
-        zip_folder(zip_file_path, extra_payload)
-        env_vars['EXTRA_PAYLOAD'] = "/var/task/extra/"
-
-    # Add docker image file
-    if image_file and deployment_bucket:
-        add_file_to_zip(zip_file_path, image_file, function_name)
-    # Check if the payload size fits within the aws limits
+def create_code_zip(function_name, env_vars, script=None, extra_payload=None, image_id=None, image_file=None, deployment_bucket=None, file_key=None):
     
+    add_mandatory_files(function_name, env_vars)
+    create_udocker_files()
+    if (image_id and image_id != "") and (deployment_bucket and deployment_bucket != ""):
+        download_udocker_image(image_id, env_vars)
+        
+    if script:
+        shutil.copy(script, scar_temporal_folder + "init_script.sh")
+        env_vars['INIT_SCRIPT_PATH'] = "/var/task/init_script.sh"
+               
+    zip_scar_folder()
+    
+    # Check if the payload size fits within the aws limits   
     if((not deployment_bucket) and (os.path.getsize(zip_file_path) > MAX_PAYLOAD_SIZE)):
-        error_message = "Error: Payload size greater than 50MB.\nPlease specify an S3 bucket to deploy the function.\n"
-        payload_size_error(zip_file_path, error_message)
+        error_msg = "Payload size greater than 50MB.\nPlease reduce the payload size and try again."
+        payload_size_error(zip_file_path, error_msg)
+        
+    if deployment_bucket and deployment_bucket != "":
+        upload_file_to_S3_bucket(zip_file_path, deployment_bucket, file_key)
+    # Delete created temporal files        
+    shutil.rmtree(scar_temporal_folder)
     
-    if(os.path.getsize(zip_file_path) > MAX_S3_PAYLOAD_SIZE):            
-        error_message = "Error: Payload size greater than 250MB.\nPlease reduce the payload size and try again.\n"
-        payload_size_error(zip_file_path, error_message)
-
+def zip_scar_folder():
+    execute_command(["zip", "-r9y", zip_file_path, "."], cmd_wd=scar_temporal_folder, cli_msg="Creating function package")
+    
+def set_tmp_udocker_env():
+    #Avoid override global variables
+    if utils.has_dict_prop_value(os.environ, 'UDOCKER_TARBALL'):
+        udocker_tarball = os.environ['UDOCKER_TARBALL']
+    if utils.has_dict_prop_value(os.environ, 'UDOCKER_DIR'):
+        udocker_dir = os.environ['UDOCKER_DIR']
+    # Set temporal global vars
+    os.environ['UDOCKER_TARBALL'] = lambda_code_files_path + "udocker-1.1.0-RC2.tar.gz"
+    os.environ['UDOCKER_DIR'] = "/tmp/scar/udocker"        
+    
+def restore_udocker_env():
+    if udocker_tarball != "":
+        os.environ['UDOCKER_TARBALL'] = udocker_tarball
+    if udocker_dir != "":
+        os.environ['UDOCKER_DIR'] = udocker_dir      
+    
+def execute_command(command, cmd_wd=None, cli_msg=None):
+    cmd_out = subprocess.check_output(command, cwd=cmd_wd).decode("utf-8")
+    logger.info(cli_msg, cmd_out)
+    
+def create_udocker_files():
+    set_tmp_udocker_env()
+    execute_command(["python3", udocker_exec, "help"], cli_msg="Setting udocker environment")
+    restore_udocker_env()
+    
+def download_udocker_image(image_id, env_vars):
+    set_tmp_udocker_env()
+    execute_command(["python3", udocker_exec, "pull", image_id], cli_msg="Downloading container image")
+    if(utils.get_tree_size(scar_temporal_folder) < MAX_S3_PAYLOAD_SIZE/2):
+        execute_command(["python3", udocker_exec, "create", "--name=lambda_cont", image_id], cli_msg="Creating container structure")
+    if(utils.get_tree_size(scar_temporal_folder) > MAX_S3_PAYLOAD_SIZE):
+        shutil.rmtree(scar_temporal_folder + "udocker/containers/")
+    env_vars['UDOCKER_REPOS'] = "/var/task/udocker/repos/"
+    env_vars['UDOCKER_LAYERS'] = "/var/task/udocker/layers/"
+    restore_udocker_env()
+    
+def upload_file_to_S3_bucket(image_file, deployment_bucket, file_key):
+    if(utils.get_tree_size(scar_temporal_folder) > MAX_S3_PAYLOAD_SIZE):         
+        error_msg = "Uncompressed image size greater than 250MB.\nPlease reduce the uncompressed image and try again."
+        logger.error(error_msg)
+        utils.finish_failed_execution()
+    
+    logger.info("Uploading '%s' to the '%s' S3 bucket" % (image_file, deployment_bucket))
+    file_data = utils.get_file_as_byte_array(image_file)
+    S3().upload_file(deployment_bucket, file_key, file_data)
 
 def payload_size_error(zip_file_path, message):
-    logging.error(message)
-    print(message)
+    logger.error(message)
     utils.delete_file(zip_file_path)
     utils.finish_failed_execution()
-    
-def add_file_to_zip(zip_path, file_path, file_name):
-    with zipfile.ZipFile(zip_path, 'a', zipfile.ZIP_DEFLATED) as zf:
-        zf.write(file_path, 'extra/' + file_name)
-
-def zip_folder(zip_path, target_dir):            
-    with zipfile.ZipFile(zip_path, 'a', zipfile.ZIP_DEFLATED) as zf:
-        rootlen = len(target_dir) + 1
-        for base, _, files in os.walk(target_dir):
-            for file in files:
-                fn = os.path.join(base, file)
-                zf.write(fn, 'extra/' + fn[rootlen:])    
     
