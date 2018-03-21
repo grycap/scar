@@ -19,7 +19,6 @@ import os
 import shutil
 import src.logger as logger
 import src.utils as utils
-import zipfile
 import subprocess
 
 MAX_PAYLOAD_SIZE = 50 * 1024 * 1024
@@ -41,6 +40,10 @@ def add_mandatory_files(function_name, env_vars):
     env_vars['UDOCKER_BIN'] = "/var/task/udocker/bin/"
 
 def create_code_zip(function_name, env_vars, script=None, extra_payload=None, image_id=None, image_file=None, deployment_bucket=None, file_key=None):
+    
+    # Delete created temporal files
+    if os.path.isdir(scar_temporal_folder):
+        shutil.rmtree(scar_temporal_folder)    
     
     add_mandatory_files(function_name, env_vars)
     create_udocker_files()
