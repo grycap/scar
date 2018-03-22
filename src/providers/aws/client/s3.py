@@ -38,10 +38,10 @@ class S3():
     
     def __init__(self, aws_lambda=None):
         if aws_lambda:
-            self.bucket_name = aws_lambda.bucket_name
-            self.function_arn = aws_lambda.function_arn
-            self.is_recursive = aws_lambda.recursive
-            self.region = aws_lambda.region
+            self.bucket_name = aws_lambda.get_property("event_source")
+            self.function_arn = aws_lambda.get_property("function_arn")
+            self.is_recursive = aws_lambda.get_property("recursive")
+            self.region = aws_lambda.get_property("region")
 
     def create_event_source(self):
         try:
@@ -73,7 +73,7 @@ class S3():
         
     def get_trigger_configuration(self, function_arn, folder_name):
         self.trigger_configuration["LambdaFunctionArn"] = function_arn
-        self.trigger_configuration["LambdaFunctionArn"]["Filter"]["Key"]["FilterRules"][0]["Value"] = folder_name
+        self.trigger_configuration["Filter"]["Key"]["FilterRules"][0]["Value"] = folder_name
         return self.trigger_configuration
         
     def get_processed_bucket_file_list(self):

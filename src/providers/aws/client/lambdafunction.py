@@ -29,6 +29,9 @@ import src.logger as logger
 import src.providers.aws.response as response_parser
 import src.utils as utils
 import tempfile
+from multiprocessing.pool import ThreadPool
+
+MAX_CONCURRENT_INVOCATIONS = 1000
 
 class CallType(Enum):
     INIT = "init"
@@ -55,11 +58,11 @@ class Lambda(object):
         "environment" : { 'Variables' : {} },
         "environment_variables" : {},
         "name_regex" : "(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}(-gov)?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\$LATEST|[a-zA-Z0-9-_]+))?",    
-        "s3_event_template" : { "Records" : [ 
-                            { "eventSource" : "aws:s3",
-                              "s3" : { "bucket" : { "name" : "" },
-                                       "object" : { "key" : ""  } }
-                            }]},
+        "s3_event" : { "Records" : [ 
+                        {"eventSource" : "aws:s3",
+                         "s3" : {"bucket" : { "name" : "" },
+                                 "object" : { "key" : ""  } }
+                        }]},
         "zip_file_path" : os.path.join(tempfile.gettempdir(), 'function.zip')
         #"udocker_dir" : "/tmp/home/.udocker",
         #"udocker_tarball" : "/var/task/udocker-1.1.0-RC2.tar.gz",  
@@ -109,6 +112,9 @@ class Lambda(object):
     
     def has_event_source(self):
         return self.get_property("event_source") != ""
+    
+    def get_event_source(self):
+        return self.get_property("event_source")   
     
     def create_function(self):
         try:
@@ -181,6 +187,35 @@ class Lambda(object):
         self.set_request_response_call_parameters()
         return self.invoke_lambda_function()
 
+    def launch_async_event(self, s3_file):
+        self.set_asynchronous_call_parameters()
+        return self.launch_s3_event(s3_file)        
+   
+    def launch_request_response_event(self, s3_file):
+        self.set_request_response_call_parameters()
+        return self.launch_s3_event(s3_file)            
+               
+    def launch_s3_event(self, s3_file):
+        self.set_s3_event_source(s3_file)
+        self.set_property('payload', self.get_property("s3_event"))
+        logger.info("Sending event for file '%s'" % s3_file)
+        return self.launch_lambda_instance()
+
+    def process_asynchronous_lambda_invocations(self, s3_file_list):
+        if (len(s3_file_list) > MAX_CONCURRENT_INVOCATIONS):
+            s3_file_chunk_list = utils.divide_list_in_chunks(s3_file_list, MAX_CONCURRENT_INVOCATIONS)
+            for s3_file_chunk in s3_file_chunk_list:
+                self.launch_concurrent_lambda_invocations(s3_file_chunk)
+        else:
+            self.launch_concurrent_lambda_invocations(s3_file_list)
+
+    def launch_concurrent_lambda_invocations(self, s3_file_list):
+        pool = ThreadPool(processes=len(s3_file_list))
+        pool.map(
+            lambda s3_file: self.launch_async_event(s3_file), s3_file_list
+        )
+        pool.close()
+
     def launch_lambda_instance(self):
         response = self.invoke_lambda_function()
         response_parser.parse_invocation_response(response,
@@ -206,7 +241,7 @@ class Lambda(object):
     def set_asynchronous_call_parameters(self):
         self.set_property('asynchronous_call', True)
         self.set_property('invocation_type', "Event")
-        self.set_property('log_type', None)
+        self.set_property('log_type', 'None')
 
     def set_request_response_call_parameters(self):
         self.set_property('asynchronous_call', False)
@@ -214,18 +249,14 @@ class Lambda(object):
         self.set_property('log_type', "Tail")        
 
     def set_memory(self, memory):
-        self.memory = validators.validate_memory(memory)
+        self.set_property("memory", validators.validate_memory(memory)) 
         
     def set_time(self, time):
-        self.time = validators.validate_time(time)
+        self.set_property("time",  validators.validate_time(time)) 
         
-    def set_event_source(self, event_source):
-        ''' Sets the S3 bucket name from where the events are going to be launched'''
-        self.event_source = event_source
-        self.event['Records'][0]['s3']['bucket']['name'] = event_source
-        
-    def set_event_source_file_name(self, file_name):
-        self.event['Records'][0]['s3']['object']['key'] = file_name        
+    def set_s3_event_source(self, file_name):
+        self.properties['s3_event']['Records'][0]['s3']['bucket']['name'] = self.get_property('event_source')
+        self.properties['s3_event']['Records'][0]['s3']['object']['key'] = file_name
         
     def set_function_code(self):
         dbucket = self.get_property("deployment_bucket")

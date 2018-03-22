@@ -19,18 +19,14 @@ from .client.s3 import S3
 from .client.iam import IAM
 from .client.resourcegroups import ResourceGroups
 from botocore.exceptions import ClientError
-from multiprocessing.pool import ThreadPool
 from src.cmdtemplate import Commands
 
 import src.logger as logger
 import src.providers.aws.response as response_parser
 import src.utils as utils
 
-MAX_CONCURRENT_INVOCATIONS = 1000
-
 class AWS(Commands):
-    
-    
+
     @utils.lazy_property
     def _lambda(self):
         '''It's called _lambda because 'lambda'
@@ -97,63 +93,29 @@ class AWS(Commands):
         functions_arn_list = self.get_functions_arn_list()
         return self._lambda.get_all_functions(functions_arn_list)        
 
-    def launch_async_event(self, s3_file):
-        self.aws_lambda.set_asynchronous_call_parameters()
-        return self.launch_s3_event(s3_file)        
-   
-    def launch_request_response_event(self, s3_file):
-        self.aws_lambda.set_request_response_call_parameters()
-        return self.launch_s3_event(s3_file)            
-               
-    def launch_s3_event(self, s3_file):
-        self.aws_lambda.set_event_source_file_name(s3_file)
-        self.aws_lambda.set_payload(self.aws_lambda.event)
-        logger.info("Sending event for file '%s'" % s3_file)
-        return self._lambda.invoke_function(self.aws_lambda)
-        
     def get_functions_arn_list(self):
         user_id = self.iam.get_user_name_or_id()
         return self.resource_groups.get_lambda_functions_arn_list(user_id)
         
     def process_event_source_calls(self):
-        s3_file_list = self.s3().get_processed_bucket_file_list()
+        s3_file_list = self.s3.get_processed_bucket_file_list()
         logger.info("Files found: '%s'" % s3_file_list)
         # First do a request response invocation to prepare the lambda environment
         if s3_file_list:
             s3_file = s3_file_list.pop(0)
-            response = self._lambda.launch_request_response_event(self.aws_lambda, s3_file)
-            self.parse_invocation_response(response)
+            self._lambda.launch_request_response_event(s3_file)
         # If the list has more elements, invoke functions asynchronously    
         if s3_file_list:
-            self.process_asynchronous_lambda_invocations(s3_file_list)      
+            self._lambda.process_asynchronous_lambda_invocations(s3_file_list)      
      
-    def process_asynchronous_lambda_invocations(self, s3_file_list):
-        size = len(s3_file_list)
-        if size > MAX_CONCURRENT_INVOCATIONS:
-            s3_file_chunk_list = utils.divide_list_in_chunks(s3_file_list, MAX_CONCURRENT_INVOCATIONS)
-            for s3_file_chunk in s3_file_chunk_list:
-                self.launch_concurrent_lambda_invocations(s3_file_chunk)
-        else:
-            self.launch_concurrent_lambda_invocations(s3_file_list)
-    
-    def launch_concurrent_lambda_invocations(self, s3_file_list):
-        pool = ThreadPool(processes=len(s3_file_list))
-        pool.map(
-            lambda s3_file: self.parse_invocation_response(self._lambda.launch_async_event(s3_file, self.aws_lambda)),
-            s3_file_list
-        )
-        pool.close()
-    
     def create_event_source(self):
-        # To ease the readability
-        bucket_name = self.get_event_source()
-        function_arn = self._lambda.get_function_arn()
         try:
-            self.s3.create_event_source(bucket_name)
+            self.s3.create_event_source()
             self._lambda.link_function_and_event_source()
-            self.s3.set_event_source_notification(bucket_name, function_arn)
+            self.s3.set_event_source_notification()
         except ClientError as ce:
-            print ("Error creating the event source: %s" % ce)
+            error_msg = "Error creating the event source"
+            logger.error(error_msg, error_msg + ": %s" % ce)
 
     def delete_all_resources(self, lambda_functions):
         for function in lambda_functions:
