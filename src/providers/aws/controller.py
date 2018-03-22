@@ -69,6 +69,8 @@ class AWS(Commands):
         if self._lambda.has_event_source():
             self.process_event_source_calls()               
         else:
+            if self._lambda.is_asynchronous():
+                self._lambda.set_asynchronous_call_parameters()
             self._lambda.launch_lambda_instance()
     
     def ls(self):

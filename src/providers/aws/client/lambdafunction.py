@@ -53,8 +53,6 @@ class Lambda(object):
         "output" : OutputType.PLAIN_TEXT,
         "payload" : {},
         "tags" : {},
-        "recursive_behavior" : False,
-        "asynchronous_behavior" : False,
         "environment" : { 'Variables' : {} },
         "environment_variables" : {},
         "name_regex" : "(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}(-gov)?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\$LATEST|[a-zA-Z0-9-_]+))?",    
@@ -184,8 +182,9 @@ class Lambda(object):
                                                                            self.get_event_source())                    
         
     def preheat_function(self):
+        logger.info("Preheating function")
         self.set_request_response_call_parameters()
-        return self.invoke_lambda_function()
+        return self.launch_lambda_instance()
 
     def launch_async_event(self, s3_file):
         self.set_asynchronous_call_parameters()
@@ -230,21 +229,13 @@ class Lambda(object):
                                            json.dumps(self.get_property("payload")))
 
     def is_asynchronous(self):
-        return self.get_property('asynchronous_call')
+        return self.get_property('asynchronous')
  
-    def set_async(self, asynchronous_call):
-        if asynchronous_call:
-            self.set_asynchronous_call_parameters()
-        else:
-            self.set_request_response_call_parameters()
-
     def set_asynchronous_call_parameters(self):
-        self.set_property('asynchronous_call', True)
         self.set_property('invocation_type', "Event")
         self.set_property('log_type', 'None')
 
     def set_request_response_call_parameters(self):
-        self.set_property('asynchronous_call', False)
         self.set_property('invocation_type', "RequestResponse")
         self.set_property('log_type', "Tail")        
 

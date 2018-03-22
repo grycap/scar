@@ -67,7 +67,7 @@ class CommandParser(object):
         parser_run.add_argument("-m", "--memory", type=int, help="Lambda function memory in megabytes. Range from 128 to 1536 in increments of 64")
         parser_run.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 300.")
         parser_run.add_argument("-e", "--environment_variables", action='append', help="Pass environment variable to the container (VAR=val). Can be defined multiple times.")
-        parser_run.add_argument("-a", "--async", help="Tell Scar to wait or not for the lambda function return", action="store_true")
+        parser_run.add_argument("-a", "--asynchronous", help="Tell Scar to wait or not for the lambda function return", action="store_true")
         parser_run.add_argument("-s", "--script", nargs='?', type=argparse.FileType('r'), help="Path to the input file passed to the function")
         parser_run.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         parser_run.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
