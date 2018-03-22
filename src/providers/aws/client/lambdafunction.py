@@ -281,7 +281,7 @@ class Lambda(object):
         #self.set_env_var('UDOCKER_DIR', self.get_property("udocker_dir"))
         #self.set_env_var('UDOCKER_TARBALL', self.get_property("udocker_tarball"))
         self.set_env_var('TIMEOUT_THRESHOLD', str(self.get_property("timeout_threshold")))
-        self.set_env_var('RECURSIVE', str(self.get_property("recursive_behavior")))
+        self.set_env_var('RECURSIVE', str(self.get_property("recursive")))
         self.set_env_var('IMAGE_ID', self.get_property("image_id"))
         if self.has_image_file():
 #             if self.has_deployment_bucket():
