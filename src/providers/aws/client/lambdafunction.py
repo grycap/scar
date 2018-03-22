@@ -62,8 +62,6 @@ class Lambda(object):
                                  "object" : { "key" : ""  } }
                         }]},
         "zip_file_path" : os.path.join(tempfile.gettempdir(), 'function.zip')
-        #"udocker_dir" : "/tmp/home/.udocker",
-        #"udocker_tarball" : "/var/task/udocker-1.1.0-RC2.tar.gz",  
     }    
     
     @utils.lazy_property
@@ -429,7 +427,8 @@ class LambdaClient(BotoClient):
             return response
         except ClientError as ce:
             error_msg = "Error creating lambda function"
-            logger.error(error_msg, error_msg + ": %s" % ce)              
+            logger.error(error_msg, error_msg + ": %s" % ce)
+            raise ce            
 
     def get_function_info(self, function_name_or_arn):
         ''' You can specify a function name or you can specify
