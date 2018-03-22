@@ -235,6 +235,7 @@ class Lambda(object):
         # Zip all the files and folders needed
         codezip.create_code_zip(func_name,
                                 self.get_property("environment_variables"),
+                                script=self.get_property("script"),
                                 image_id=self.get_property("image_id"),
                                 image_file=self.get_property("image_file"),
                                 deployment_bucket=dbucket,
@@ -334,14 +335,11 @@ class Lambda(object):
             if (call_type == CallType.RUN):
                 self.update_function_attributes(args)
                 if self.get_argument_value(args, 'script'):
-                    parsed_script = utils.escape_string(self.script.read())
-                    self.set_payload({"script" : parsed_script})
+                    parsed_script = utils.escape_string(self.get_property("script").read())
+                    self.set_property('payload', { "script" : parsed_script })
                 if self.get_argument_value(args, 'cont_args'):
                     parsed_cont_args = utils.escape_list(self.get_property("cont_args"))
                     self.set_property('payload', { "cmd_args" : parsed_cont_args })
-                    #self.properties['payload'] = json.dumps(payload)
-                    #self.set_payload({ "cmd_args" : parsed_cont_args })
-                    
 
     def get_all_functions(self, arn_list):
         function_info_list = []
