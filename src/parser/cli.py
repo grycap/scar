@@ -42,7 +42,7 @@ class CommandParser(object):
         parser_init = self.subparsers.add_parser('init', help="Create lambda function")
         # Set default function
         parser_init.set_defaults(func=self.scar.init)
-        parser_init.add_argument("-i", "--image_id", help="Container image id (i.e. centos:7)", required=True)
+        parser_init.add_argument("-i", "--image_id", help="Container image id (i.e. centos:7)")
         parser_init.add_argument("-if", "--image_file", help="Container image file (i.e. centos.tar.gz)")
         parser_init.add_argument("-d", "--description", help="Lambda function description.")
         parser_init.add_argument("-db", "--deployment_bucket", help="Bucket where the deployment package is going to be uploaded.")

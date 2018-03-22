@@ -134,9 +134,9 @@ class Lambda(object):
             error_msg = "Error initializing lambda function."
             logger.error(error_msg, error_msg + ": %s" % ce)
             utils.finish_failed_execution()
-        finally:
+        #finally:
             # Remove the files created in the operation
-            utils.delete_file(self.properties["zip_file_path"])
+            #utils.delete_file(self.properties["zip_file_path"])
         
     def delete_function(self, func_name=None):
         if func_name:
@@ -276,16 +276,9 @@ class Lambda(object):
         self.get_property("environment_variables")[key] = value
 
     def set_required_environment_variables(self):
-        #self.set_env_var('UDOCKER_DIR', self.get_property("udocker_dir"))
-        #self.set_env_var('UDOCKER_TARBALL', self.get_property("udocker_tarball"))
         self.set_env_var('TIMEOUT_THRESHOLD', str(self.get_property("timeout_threshold")))
         self.set_env_var('RECURSIVE', str(self.get_property("recursive")))
         self.set_env_var('IMAGE_ID', self.get_property("image_id"))
-        if self.has_image_file():
-#             if self.has_deployment_bucket():
-#                 self.set_env_var('IMAGE_FILE', '/tmp/home/image_file/' + self.get_property("name") + ".tar")
-#             else:
-            self.set_env_var('IMAGE_FILE', 'image_file/' + self.get_property("name") + ".tar") 
 
     def set_environment_variables(self, variables=None):
         self.set_required_environment_variables()
@@ -338,7 +331,12 @@ class Lambda(object):
         if ((call_type != CallType.LS) and (not self.get_delete_all())):
             if (call_type == CallType.INIT):
                 if (not self.get_property("name")) or (self.get_property("name") == ""):
-                    self.properties["name"] = self.create_function_name(self.get_property("image_id"))
+                    func_name = "function"
+                    if self.get_property("image_id") != "":
+                        func_name = self.get_property("image_id")
+                    elif self.get_property("image_file") != "":
+                        func_name = self.get_property("image_file").split('.')[0]
+                    self.properties["name"] = self.create_function_name(func_name)
                 self.set_tags()
             
             self.check_function_name()
