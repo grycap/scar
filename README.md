@@ -25,11 +25,12 @@ SCAR also supports a High Throughput Computing [Programming Model](#programming-
   * [Advanced Usage](#advancedusage)
       * [Executing a user defined shell script](#executing_a_user_defined_shell_script)
       * [Event-Driven File-Processing Programming Model](#programming-model)
+      * [Upload docker images using an S3 bucket](#uploading_docker_images_using_s3)
+      * [Upload docker image files using an S3 bucket](#uploading_docker_image_files_using_s3)
       * [Local Testing of the Docker images via udocker](#localtesting)
       * [Local Testing of the Docker images via emulambda](#emulambda)  
   * [Acknowledgements](#acknowledgements)
   
-
 <a name="approach"></a>
 
 ## Approach
@@ -327,6 +328,30 @@ The following workflow summarises the programming model, the differences with th
 1. The Lambda function retrieves the file from the Amazon S3 bucket and makes it available for the shell-script running inside the container in the `/tmp/$REQUEST_ID/input` folder. The `$SCAR_INPUT_FILE` environment variable will point to the location of the input file.
 1. The shell-script processes the input file and produces the output (either one or multiple files) in the folder `/tmp/$REQUEST_ID/output`.
 1. The output files are automatically uploaded by the Lambda function into the `output` folder of `bucket-name`.
+
+<a name="uploading_docker_images_using_s3"></a>
+### Upload docker images using an S3 bucket
+
+If you want to save some space inside the lambda function you can deploy a lambda function using an S3 bucket by issuing the following command:
+
+```sh
+scar run -db bucket-name -n lambda-function-name -i docker_image
+```
+
+The maximum deployment package size allowed by AWS is an unzipped file of 250MB. With this restriction in mind, SCAR downloads the docker image to a temporal folder and creates the udocker file structure needed. 
+* If the image information and the container filesystem fit in the 250MB SCAR will upload everything and the lambda function will not need to download or create a container structure thus improving the execution time of the function. This option gives the user the full 500MB of `/tmp/` storage.
+* If the container filesystem doesn't fit in the deployment package SCAR will only upload the image information, that is, the layers. Also the lambda function execution time is improved because it doesn't need to dowload the container. In this case udocker needs to create the container filesystem so the first function invocation can be delayed a couple of seconds. This option usually duplicates the available space in the `/tmp/` folder with respect to the SCAR standard initialization.
+
+<a name="uploading_docker_image_files_using_s3"></a>
+### Upload docker image files using an S3 bucket
+
+SCAR also allows to upload a saved docker image
+
+```sh
+scar run -db bucket-name -n lambda-function-name -if docker_image.tar.gz
+```
+
+The behavior of SCAR is the same as in the case above (when uploading an image from docker hub). The image file is unpacked in a temporal folder and the udocker layers and container filesystem are created. Depending on the size of the layers and the filesystem, SCAR will try to upload everything or only the image layers.
 
 <a id="localtesting"></a>
 
