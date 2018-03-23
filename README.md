@@ -1,6 +1,5 @@
 # SCAR - Serverless Container-aware ARchitectures
 
-[![Build Status](https://travis-ci.org/grycap/scar.svg?branch=master)](https://travis-ci.org/grycap/scar)
 [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
 # ![SCAR](scar-logo.png)
