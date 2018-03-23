@@ -15,6 +15,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import src.utils as utils
+from botocore.exceptions import ClientError
+
+def create_clienterror(error_msg, operation_name):
+    error = {'Error' : {'Message' : error_msg}}
+    return ClientError(error, operation_name)
 
 def validate_function_properties(_lambda):
     validate_iam_role(_lambda.get_property("iam"))
@@ -25,19 +30,22 @@ def validate_function_properties(_lambda):
 
 def validate_iam_role(iam_props):
     if (("role" not in iam_props) or (iam_props["role"] == "")):
-        raise Exception("Please, specify a valid iam role in the configuration file (usually located in ~/.scar/scar.cfg).")
+        error_msg = "Please, specify a valid iam role in the configuration file (usually located in ~/.scar/scar.cfg)."
+        raise create_clienterror(error_msg, 'validate_iam_role')
 
 def validate_time(lambda_time):
     if (lambda_time <= 0) or (lambda_time > 300):
-        raise Exception('Incorrect time specified\nPlease, set a value between 0 and 300.')
+        error_msg = 'Incorrect time specified\nPlease, set a value between 0 and 300.'
+        raise create_clienterror(error_msg, 'validate_time')
     return lambda_time
 
 def validate_memory(lambda_memory):
     """ Check if the memory introduced by the user is correct.
     If the memory is not specified in 64mb increments,
     transforms the request to the next available increment."""
-    if (lambda_memory < 128) or (lambda_memory > 1536):
-        raise Exception('Incorrect memory size specified\nPlease, set a value between 128 and 1536.')
+    if (lambda_memory < 128) or (lambda_memory > 3008):
+        error_msg = 'Incorrect memory size specified\nPlease, set a value between 128 and 3008.'
+        raise create_clienterror(error_msg, 'validate_memory')    
     else:
         res = lambda_memory % 64
         if (res == 0):

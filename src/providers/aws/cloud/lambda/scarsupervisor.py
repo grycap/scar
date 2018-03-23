@@ -192,7 +192,6 @@ def download_container_image(container_image_id):
 
 def load_local_container_image(container_image_id):
     logger.info("Loading container image '%s'" % container_image_id)
-    
     if check_key_in_dictionary('S3_DEPLOYMENT_BUCKET', os.environ):
         #container_image_id = download_to_memory(os.environ['S3_DEPLOYMENT_BUCKET'], os.environ['S3_IMAGE_KEY'])
         container_image_id = os.environ['IMAGE_FILE']

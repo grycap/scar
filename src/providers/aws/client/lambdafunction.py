@@ -48,6 +48,7 @@ def get_call_type(value):
 class Lambda(object):
     
     properties = {
+        "runtime" : "python3.6",
         "invocation_type" : "RequestResponse",
         "log_type" : "Tail",
         "output" : OutputType.PLAIN_TEXT,
@@ -237,12 +238,6 @@ class Lambda(object):
         self.set_property('invocation_type', "RequestResponse")
         self.set_property('log_type', "Tail")        
 
-    def set_memory(self, memory):
-        self.set_property("memory", validators.validate_memory(memory)) 
-        
-    def set_time(self, time):
-        self.set_property("time",  validators.validate_time(time)) 
-        
     def set_s3_event_source(self, file_name):
         self.properties['s3_event']['Records'][0]['s3']['bucket']['name'] = self.get_property('event_source')
         self.properties['s3_event']['Records'][0]['s3']['object']['key'] = file_name
@@ -251,7 +246,6 @@ class Lambda(object):
         dbucket = self.get_property("deployment_bucket")
         func_name = self.get_property("name")
         bucket_file_key = 'lambda/' + func_name + '.zip'
-        
         # Zip all the files and folders needed
         codezip.create_code_zip(func_name,
                                 self.get_property("environment_variables"),
@@ -273,38 +267,40 @@ class Lambda(object):
         return (('deployment_bucket' in self.properties) and (self.get_property("deployment_bucket") != ''))    
         
     def set_env_var(self, key, value):
-        self.get_property("environment_variables")[key] = value
+        if value is not None or value != "":
+            self.get_property("environment_variables")[key] = value
 
     def set_required_environment_variables(self):
         self.set_env_var('TIMEOUT_THRESHOLD', str(self.get_property("timeout_threshold")))
         self.set_env_var('RECURSIVE', str(self.get_property("recursive")))
         self.set_env_var('IMAGE_ID', self.get_property("image_id"))
 
-    def set_environment_variables(self, variables=None):
-        self.set_required_environment_variables()
-        if variables:
+    def set_environment_variables(self):
+        if isinstance(self.get_property("environment_variables"), list):
+            variables = self.get_property("environment_variables")
+            self.set_property("environment_variables", {})
             for env_var in variables:
                 parsed_env_var = env_var.split("=")
                 # Add an specific prefix to be able to find the variables defined by the user
                 key = 'CONT_VAR_' + parsed_env_var[0]
                 self.set_env_var(key, parsed_env_var[1])
+        
+        if (self.get_property("call_type") == CallType.INIT):
+            self.set_required_environment_variables()
         self.properties["environment"] = { 'Variables' : self.get_property("environment_variables") }
 
     def set_tags(self):
         self.properties["tags"]['createdby'] = 'scar'
         self.properties["tags"]['owner'] = IAM().get_user_name_or_id()
 
-    def set_all(self, value):
-        self.delete_all = value
-          
     def get_argument_value(self, args, attr):
         if attr in args.__dict__.keys():
             return args.__dict__[attr]
 
     def update_function_attributes(self, args):
         memory = self.get_argument_value(args, 'memory')
-        time = self.get_argument_value(args, 'memory')
-        env_vars = self.get_argument_value(args, 'memory')
+        time = self.get_argument_value(args, 'time')
+        env_vars = self.get_property('environment_variables')
         func_name = self.get_property("name")
         if memory:
             self.client.update_function_memory(func_name, memory)
@@ -394,18 +390,20 @@ class LambdaClient(BotoClient):
     def update_function_timeout(self, function_name, timeout):
         try:
             self.get_client().update_function_configuration(FunctionName=function_name,
-                                                            Timeout=self.check_time(timeout))
+                                                            Timeout=validators.validate_time(timeout))
         except ClientError as ce:
             error_msg = "Error updating lambda function timeout"
             logger.error(error_msg, error_msg + ": %s" % ce)
+            utils.finish_failed_execution()
     
     def update_function_memory(self, function_name, memory):
         try:
             self.get_client().update_function_configuration(FunctionName=function_name,
-                                                            MemorySize=memory)
+                                                            MemorySize=validators.validate_memory(memory))
         except ClientError as ce:
             error_msg = "Error updating lambda function memory"
-            logger.error(error_msg, error_msg + ": %s" % ce)            
+            logger.error(error_msg, error_msg + ": %s" % ce)
+            utils.finish_failed_execution()     
             
     def create_function(self, function_name, runtime, role, 
                         handler, code, environment,
@@ -450,7 +448,7 @@ class LambdaClient(BotoClient):
         try:
             # Retrieve the global variables already defined
             lambda_env_variables = self.get_function_environment_variables(function_name)
-            self.parse_environment_variables(lambda_env_variables, env_vars)
+            lambda_env_variables['Variables'].update(env_vars)
             self.get_client().update_function_configuration(FunctionName=function_name,
                                                             Environment=lambda_env_variables)
         except ClientError as ce:

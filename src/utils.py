@@ -106,6 +106,7 @@ def load_json_file(file_path):
 def merge_dicts(d1, d2):
     for k,v in d2.items():
         if v is not None:
+            
             d1[k] = v
     return d1
 

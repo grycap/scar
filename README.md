@@ -106,26 +106,30 @@ There is a sample policy in the [lambda-execute-role.json](docs/aws/lambda-execu
 
 ### Configuration file
 
-Create the file `~/.scar/scar.cfg` with the following structure (sample values are included, please customize it to your environment):
-
+The first time you execute SCAR a default configuration file is created in the following location: `~/.scar/scar.cfg`.
+As explained above, it is mandatory to set a value for the aws.iam.role property. The rest of the values can be customized to your environment:
 ```sh
-[scar]
-lambda_description = SCAR Lambda function
-lambda_memory = 256
-lambda_time = 200
-lambda_region = us-east-1
-lambda_role = arn:aws:iam::974349055189:role/lambda-s3-execution-role
-lambda_timeout_threshold = 10
+{ "aws" : { 
+  "iam" : {"role" : ""},
+  "lambda" : {
+    "region" : "us-east-1",
+    "time" : 300,
+    "memory" : 512,
+    "description" : "Automatically generated lambda function",
+    "timeout_threshold" : 10 },
+  "cloudwatch" : { "log_retention_policy_in_days" : 30 }}
+}
 ```
 
 The values represent:
 
-* lambda_description: Default description of the AWS Lambda function (can be customized with the `-d` parameter in `scar init`)
-* lambda_memory: Default maximum memory allocated to the AWS Lambda function (can be customized with the `-m` parameter in `scar init`)
-* lambda_time: Default maximum execution time of the AWS Lambda function (can be customized with the `-t` parameter in `scar init`).
-* lambda_region: The [AWS region](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html) on which the AWS Lambda function will be created
-* lambda_role: The [ARN](http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html) of the IAM Role that you just created in the previous section
-* lambda_timeout_threshold: Default time used to postprocess the container output. Also used to avoid getting timeout error in case the execution of the container takes more time than the lambda_time (can be customized with the `-tt` parameter in `scar init`).
+* aws.iam.role: The [ARN](http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html) of the IAM Role that you just created in the previous section.
+* aws.lambda.region: The [AWS region](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html) on which the AWS Lambda function will be created.
+* aws.lambda.time: Default maximum execution time of the AWS Lambda function (can be customized with the `-t` parameter in `scar init`).
+* aws.lambda.memory: Default maximum memory allocated to the AWS Lambda function (can be customized with the `-m` parameter in `scar init`).
+* aws.lambda.description: Default description of the AWS Lambda function (can be customized with the `-d` parameter in `scar init`).
+* aws.lambda.timeout_threshold: Default time used to postprocess the container output. Also used to avoid getting timeout error in case the execution of the container takes more time than the lambda_time (can be customized with the `-tt` parameter in `scar init`).
+* aws.cloudwatch.log_retention_policy_in_days: Default time (in days) used to store the logs in cloudwatch. Any log older than this parameter will be deleted.
 
 <a name="basicusage"></a>
 
