@@ -56,6 +56,7 @@ def create_code_zip(function_name, env_vars, script=None, extra_payload=None, im
 
     if extra_payload and extra_payload != "":
         logger.info("Adding extra payload from %s" % extra_payload)
+        env_vars['EXTRA_PAYLOAD'] = "/var/task"
         dir_util.copy_tree(extra_payload, scar_temporal_folder)     
                
     zip_scar_folder()

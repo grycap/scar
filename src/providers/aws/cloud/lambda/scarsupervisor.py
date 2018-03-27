@@ -292,7 +292,7 @@ def append_init_script_to_udocker_command(command):
 def append_udocker_container_volumes_to_udocker_command(command):
     container_volumes = ["-v", "/tmp/%s" % request_id, "-v", "/dev", "-v", "/proc", "-v", "/etc/hosts", "--nosysdirs"]
     if check_key_in_dictionary('EXTRA_PAYLOAD', os.environ):
-        container_volumes.extend(["-v", "/var/task/extra"])
+        container_volumes.extend(["-v", "/var/task"])
     command.extend(container_volumes)    
 
 def create_udocker_command(event):
