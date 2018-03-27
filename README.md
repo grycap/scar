@@ -15,6 +15,12 @@ SCAR also supports a High Throughput Computing [Programming Model](#programming-
   [Website](https://grycap.github.io/scar/) |
   [Scientific Paper](http://linkinghub.elsevier.com/retrieve/pii/S0167739X17316485) ([pre-print](http://www.grycap.upv.es/gmolto/publications/preprints/Perez2018scc.pdf)).
 
+# WARNING
+
+For **old** SCAR users:
+* SCAR has been updated and the configuration files have changed. Please rename or delete your configuration file (in ~/.scar/scar.cfg) to allow SCAR to create the new file and then fill the iam.role value.
+* Also the SCAR CLI has been slightly modified, now when defining an Docker image with the init command you have to use the '-i' parameter. This is due to the new functionality provided and to avoid ambiguity in the command line.
+
 **Table of contents**
 
   * [Approach](#approach)

@@ -262,10 +262,10 @@ class Lambda(object):
             self.properties['code'] = { "ZipFile": utils.get_file_as_byte_array(self.get_property("zip_file_path"))}
 
     def has_image_file(self):
-        return (('image_file' in self.properties) and (self.get_property("image_file") != ''))
+        return utils.has_dict_prop_value(self.properties, 'image_file')
     
     def has_deployment_bucket(self):
-        return (('deployment_bucket' in self.properties) and (self.get_property("deployment_bucket") != ''))    
+        return utils.has_dict_prop_value(self.properties, 'deployment_bucket')
         
     def set_env_var(self, key, value):
         if value is not None or value != "":

@@ -22,9 +22,6 @@ import subprocess
 import traceback
 import tarfile
 import socket
-import fs
-from fs.ftpfs import FTPFS
-from fs_s3fs import S3FS
 
 loglevel = logging.INFO
 logger = logging.getLogger()
@@ -233,11 +230,13 @@ def add_user_defined_variables_to_udocker_container_variables(variables):
             add_udocker_container_variable(variables, key.replace("CONT_VAR_", ""), os.environ[key])    
             
 def add_iam_credentials_to_udocker_container_variables(variables):
-        # Add IAM credentials
-    if not check_key_in_dictionary('CONT_VAR_AWS_ACCESS_KEY_ID', os.environ):
-        add_udocker_container_variable(variables, "AWS_ACCESS_KEY_ID", os.environ["AWS_ACCESS_KEY_ID"])
-    if not check_key_in_dictionary('CONT_VAR_AWS_SECRET_ACCESS_KEY', os.environ):
-        add_udocker_container_variable(variables, "AWS_SECRET_ACCESS_KEY", os.environ["AWS_SECRET_ACCESS_KEY"])       
+    iam_creds = {'CONT_VAR_AWS_ACCESS_KEY_ID':'AWS_ACCESS_KEY_ID', 
+                 'CONT_VAR_AWS_SECRET_ACCESS_KEY':'AWS_SECRET_ACCESS_KEY'}
+    # Add IAM credentials
+    for key,value in iam_creds.items():
+        if not check_key_in_dictionary(key, os.environ):
+            add_udocker_container_variable(variables, value, os.environ[value])
+     
 
 def add_session_and_security_token_to_udocker_container_variables(variables):
     # Always add Session and security tokens
