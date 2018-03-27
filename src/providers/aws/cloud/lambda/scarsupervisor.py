@@ -22,9 +22,6 @@ import subprocess
 import traceback
 import tarfile
 import socket
-import fs
-from fs.ftpfs import FTPFS
-from fs_s3fs import S3FS
 
 loglevel = logging.INFO
 logger = logging.getLogger()
