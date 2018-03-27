@@ -110,6 +110,9 @@ class Lambda(object):
     def has_event_source(self):
         return self.get_property("event_source") != ""
     
+    def has_lambda_output(self):
+        return self.get_property("lambda_output") != ""    
+    
     def get_event_source(self):
         return self.get_property("event_source")   
     
@@ -275,6 +278,8 @@ class Lambda(object):
         self.set_env_var('TIMEOUT_THRESHOLD', str(self.get_property("timeout_threshold")))
         self.set_env_var('RECURSIVE', str(self.get_property("recursive")))
         self.set_env_var('IMAGE_ID', self.get_property("image_id"))
+        if self.has_lambda_output():
+            self.set_env_var('LAMBDA_OUTPUT', self.get_property("lambda_output")) 
 
     def set_environment_variables(self):
         if isinstance(self.get_property("environment_variables"), list):

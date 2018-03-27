@@ -59,6 +59,7 @@ class CommandParser(object):
         parser_init.add_argument("-r", "--recursive", help="Launch a recursive lambda function", action="store_true")
         parser_init.add_argument("-p", "--preheat", help="Preheats the function running it once and downloading the necessary container", action="store_true")
         parser_init.add_argument("-ep", "--extra_payload", help="Folder containing files that are going to be added to the lambda function")
+        parser_init.add_argument("-lo", "--lambda_output", help="Lambda function name where the output will be redirected")
     
     def create_run_parser(self):
         parser_run = self.subparsers.add_parser('run', help="Deploy function")

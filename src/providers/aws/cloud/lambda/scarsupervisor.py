@@ -178,6 +178,21 @@ def set_invocation_input_output_folders():
     input_folder = '/tmp/%s/input' % request_id
     output_folder = '/tmp/%s/output' % request_id
     
+def pass_lambda_output():
+    out_function_name  = os.environ['LAMBDA_OUTPUT']
+    out_file_path = os.environ['LAMBDA_OUTPUT_FILE']
+    if os.path.isfile(out_file_path):
+        out_file_content = read_file(out_file_path)
+        logger.info("Passing output to lambda function %s" % out_function_name)
+        client = boto3.client('lambda', region_name='us-east-1')
+        client.invoke(FunctionName=out_function_name,
+                      InvocationType='Event',
+                      LogType='None',
+                      Payload=json.dumps(out_file_content))        
+    
+def has_lambda_output():
+    return check_key_in_dictionary('LAMBDA_OUTPUT', os.environ)      
+    
 #######################################
 #      UDOCKER RELATED FUNCTIONS      #
 #######################################
@@ -253,6 +268,11 @@ def add_instance_ip_to_udocker_container_variables(variables):
 def add_extra_payload_path_to_udocker_container_variables(variables):
     if check_key_in_dictionary('EXTRA_PAYLOAD', os.environ):
         add_udocker_container_variable(variables, "EXTRA_PAYLOAD", os.environ["EXTRA_PAYLOAD"])
+          
+def add_lambda_output_variable(variables):
+    if check_key_in_dictionary('LAMBDA_OUTPUT', os.environ):
+        os.environ['LAMBDA_OUTPUT_FILE'] = "/tmp/%s/lambda_output" % request_id
+        add_udocker_container_variable(variables, "LAMBDA_OUTPUT_FILE", "/tmp/%s/lambda_output" % request_id)          
             
 def get_udocker_container_global_variables():
     variables = []
@@ -261,7 +281,8 @@ def get_udocker_container_global_variables():
     add_session_and_security_token_to_udocker_container_variables(variables)
     add_input_file_path_to_udocker_container_variables(variables)
     add_instance_ip_to_udocker_container_variables(variables)
-    add_extra_payload_path_to_udocker_container_variables(variables)    
+    add_extra_payload_path_to_udocker_container_variables(variables)
+    add_lambda_output_variable(variables)
     return variables
 
 def append_script_to_udocker_command(script, command):
@@ -335,8 +356,8 @@ def launch_udocker_container(event, context, command):
                 logger.warning("Container timeout")
     return lambda_output
 
-def read_udocker_output_file(output_file_path):
-    with open(output_file_path, 'r') as content_file:
+def read_file(file_path):
+    with open(file_path, 'r') as content_file:
         return content_file.read()    
 
 #######################################
@@ -391,11 +412,15 @@ def lambda_handler(event, context):
         logger.debug("Udocker command: %s" % command)
         # Execute container
         output_file_path = launch_udocker_container(event, context, command)                                       
-        stdout += read_udocker_output_file(output_file_path)
+        stdout += read_file(output_file_path)
+        
+        if has_lambda_output():
+            pass_lambda_output()
         post_process(event)
         
     except Exception:
         logger.error("Exception launched:\n %s" % traceback.format_exc())
         stdout += "SCAR ERROR: Exception launched:\n %s" % traceback.format_exc()
     logger.info(stdout)
+    
     return stdout
