@@ -150,7 +150,7 @@ def parse_invocation_response(response, function_name, output_type, is_asynchron
     # Decode and parse the payload
     response = parse_payload(response)
     if "FunctionError" in response:
-        parse_error_invocation_response(response, function_name, output_type)
+        parse_error_invocation_response(response, function_name)
     if is_asynchronous:        
         parse_asynchronous_invocation_response(response, output_type, function_name)
     else:

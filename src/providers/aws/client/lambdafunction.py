@@ -250,6 +250,7 @@ class Lambda(object):
         codezip.create_code_zip(func_name,
                                 self.get_property("environment_variables"),
                                 script=self.get_property("script"),
+                                extra_payload=self.get_property("extra_payload"),
                                 image_id=self.get_property("image_id"),
                                 image_file=self.get_property("image_file"),
                                 deployment_bucket=dbucket,

@@ -22,6 +22,9 @@ import subprocess
 import traceback
 import tarfile
 import socket
+import fs
+from fs.ftpfs import FTPFS
+from fs_s3fs import S3FS
 
 loglevel = logging.INFO
 logger = logging.getLogger()
@@ -383,9 +386,6 @@ def lambda_handler(event, context):
     stdout = ""
     stdout += prepare_output(context)
     try:
-    #    subprocess.call(["ls", "-la", "/var/task/image_file/"])
-    #   subprocess.call(["du", "-h", "/tmp"])
-        
         pre_process(event)
         # Create container execution command
         command = create_udocker_command(event)
@@ -394,9 +394,6 @@ def lambda_handler(event, context):
         output_file_path = launch_udocker_container(event, context, command)                                       
         stdout += read_udocker_output_file(output_file_path)
         post_process(event)
-   
-    #    subprocess.call(["du", "-d2", "-h", "/tmp/home/.udocker"])
-    #    subprocess.call(["ls", "-la", "/tmp/home/.udocker/layers"])
         
     except Exception:
         logger.error("Exception launched:\n %s" % traceback.format_exc())

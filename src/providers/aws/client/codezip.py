@@ -20,6 +20,7 @@ import shutil
 import src.logger as logger
 import src.utils as utils
 import subprocess
+from distutils import dir_util
 
 MAX_PAYLOAD_SIZE = 50 * 1024 * 1024
 MAX_S3_PAYLOAD_SIZE = 250 * 1024 * 1024
@@ -49,9 +50,13 @@ def create_code_zip(function_name, env_vars, script=None, extra_payload=None, im
     if image_file and image_file != "":
         prepare_udocker_image(image_file, env_vars)
         
-    if script:
+    if script and script != "":
         shutil.copy(script, scar_temporal_folder + "init_script.sh")
         env_vars['INIT_SCRIPT_PATH'] = "/var/task/init_script.sh"
+
+    if extra_payload and extra_payload != "":
+        logger.info("Adding extra payload from %s" % extra_payload)
+        dir_util.copy_tree(extra_payload, scar_temporal_folder)     
                
     zip_scar_folder()
     
