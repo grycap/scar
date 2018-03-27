@@ -61,6 +61,7 @@ class AWS(Commands):
         
         if self._lambda.has_event_source():
             self.create_event_source()
+
         # If preheat is activated, the function is launched at the init step
         if self._lambda.need_preheat():    
             self._lambda.preheat_function()
