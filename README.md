@@ -1,6 +1,5 @@
 # SCAR - Serverless Container-aware ARchitectures
 
-[![Build Status](https://travis-ci.org/grycap/scar.svg?branch=master)](https://travis-ci.org/grycap/scar)
 [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
 # ![SCAR](scar-logo.png)
@@ -9,11 +8,18 @@ SCAR is a framework to transparently execute containers out of Docker images in 
 
 SCAR provides the benefits of AWS Lambda with the execution environment you decide, provided as a Docker image available in Docker Hub. It is probably the easiest, most convenient approach to run generic applications on AWS Lambda, as well as code in your favourite programming language, not only in those languages supported by AWS Lambda.
 
-SCAR also supports a High Throughput Computing [Programming Model](#programming-model) to create highly-parallel event-driven file-processing serverless applications that execute on customized runtime environments provided by Docker containers run on AWS Lambda.
+SCAR also supports a High Throughput Computing [Programming Model](#programming-model) to create highly-parallel event-driven file-processing serverless applications that execute on customized runtime environments provided by Docker containers run on AWS Lambda. The development of SCAR has been published in the [Future Generation Computer Systems](https://www.journals.elsevier.com/future-generation-computer-systems) scientific journal.
 
 <a name="toc"></a>
 **Related resources**:
-  [Website](https://grycap.github.io/scar/) 
+  [Website](https://grycap.github.io/scar/) |
+  [Scientific Paper](http://linkinghub.elsevier.com/retrieve/pii/S0167739X17316485) ([pre-print](http://www.grycap.upv.es/gmolto/publications/preprints/Perez2018scc.pdf)).
+
+# WARNING
+
+For **old** SCAR users:
+* SCAR has been updated and the configuration files have changed. Please rename or delete your configuration file (in ~/.scar/scar.cfg) to allow SCAR to create the new file and then fill the iam.role value.
+* Also the SCAR CLI has been slightly modified, now when defining an Docker image with the init command you have to use the '-i' parameter. This is due to the new functionality provided and to avoid ambiguity in the command line.
 
 **Table of contents**
 
@@ -25,11 +31,13 @@ SCAR also supports a High Throughput Computing [Programming Model](#programming-
   * [Advanced Usage](#advancedusage)
       * [Executing a user defined shell script](#executing_a_user_defined_shell_script)
       * [Event-Driven File-Processing Programming Model](#programming-model)
+      * [Upload docker images using an S3 bucket](#uploading_docker_images_using_s3)
+      * [Upload docker image files using an S3 bucket](#uploading_docker_image_files_using_s3)
       * [Local Testing of the Docker images via udocker](#localtesting)
       * [Local Testing of the Docker images via emulambda](#emulambda)  
+  * [Further Information](#furtherinfo)
   * [Acknowledgements](#acknowledgements)
   
-
 <a name="approach"></a>
 
 ## Approach
@@ -68,13 +76,20 @@ git clone https://github.com/grycap/scar.git
 
 2. Install the required dependencies:
 
+* [zip](https://linux.die.net/man/1/zip) (linux package)
 * [AWS SDK for Python (Boto 3)](https://github.com/boto/boto3) (v1.4.4+ is required)
 * [Tabulate](https://pypi.python.org/pypi/tabulate)
 
-You can automatically install the dependencies by issuing the following command:
+You can automatically install the python dependencies by issuing the following command:
 
 ```sh
 sudo pip install -r requirements.txt
+```
+
+The zip package can be installed using apt:
+
+```sh
+sudo apt install zip
 ```
 
 3. (Optional) Define an alias for increased usability:
@@ -106,26 +121,30 @@ There is a sample policy in the [lambda-execute-role.json](docs/aws/lambda-execu
 
 ### Configuration file
 
-Create the file `~/.scar/scar.cfg` with the following structure (sample values are included, please customize it to your environment):
-
+The first time you execute SCAR a default configuration file is created in the following location: `~/.scar/scar.cfg`.
+As explained above, it is mandatory to set a value for the aws.iam.role property. The rest of the values can be customized to your environment:
 ```sh
-[scar]
-lambda_description = SCAR Lambda function
-lambda_memory = 256
-lambda_time = 200
-lambda_region = us-east-1
-lambda_role = arn:aws:iam::974349055189:role/lambda-s3-execution-role
-lambda_timeout_threshold = 10
+{ "aws" : { 
+  "iam" : {"role" : ""},
+  "lambda" : {
+    "region" : "us-east-1",
+    "time" : 300,
+    "memory" : 512,
+    "description" : "Automatically generated lambda function",
+    "timeout_threshold" : 10 },
+  "cloudwatch" : { "log_retention_policy_in_days" : 30 }}
+}
 ```
 
 The values represent:
 
-* lambda_description: Default description of the AWS Lambda function (can be customized with the `-d` parameter in `scar init`)
-* lambda_memory: Default maximum memory allocated to the AWS Lambda function (can be customized with the `-m` parameter in `scar init`)
-* lambda_time: Default maximum execution time of the AWS Lambda function (can be customized with the `-t` parameter in `scar init`).
-* lambda_region: The [AWS region](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html) on which the AWS Lambda function will be created
-* lambda_role: The [ARN](http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html) of the IAM Role that you just created in the previous section
-* lambda_timeout_threshold: Default time used to postprocess the container output. Also used to avoid getting timeout error in case the execution of the container takes more time than the lambda_time (can be customized with the `-tt` parameter in `scar init`).
+* aws.iam.role: The [ARN](http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html) of the IAM Role that you just created in the previous section.
+* aws.lambda.region: The [AWS region](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html) on which the AWS Lambda function will be created.
+* aws.lambda.time: Default maximum execution time of the AWS Lambda function (can be customized with the `-t` parameter in `scar init`).
+* aws.lambda.memory: Default maximum memory allocated to the AWS Lambda function (can be customized with the `-m` parameter in `scar init`).
+* aws.lambda.description: Default description of the AWS Lambda function (can be customized with the `-d` parameter in `scar init`).
+* aws.lambda.timeout_threshold: Default time used to postprocess the container output. Also used to avoid getting timeout error in case the execution of the container takes more time than the lambda_time (can be customized with the `-tt` parameter in `scar init`).
+* aws.cloudwatch.log_retention_policy_in_days: Default time (in days) used to store the logs in cloudwatch. Any log older than this parameter will be deleted.
 
 <a name="basicusage"></a>
 
@@ -136,7 +155,7 @@ The values represent:
 In these examples the [grycap/cowsay](https://hub.docker.com/r/grycap/cowsay/) Docker image in Docker Hub will be employed:
 
 ```sh
-scar init -n lambda-docker-cowsay -m 128 -t 300 grycap/cowsay
+scar init -n lambda-docker-cowsay -m 128 -t 300 -i grycap/cowsay
 ```
 
 Notice that the memory and time limits for the Lambda function can be specified in the command-line. Upon first execution, the file `$HOME/.scar/scar.cfg` is created with default values for the memory and timeout, among other features. The command-line values always take precedence over the values in the configuration file. The default values are 128 MB for the memory (minimize memory) and 300 seconds for the timeout (maximize runtime).
@@ -150,7 +169,7 @@ scar --help
 2. Execute the Lambda function
 
 ```sh
-scar run lambda-docker-cowsay
+scar run -n lambda-docker-cowsay
 ```
 
 The first invocation to the Lambda function will pull the Docker image from Docker Hub so it will take considerably longer than the subsequent invocations, which will most certainly reuse the existing Docker image, stored in ```/tmp```.
@@ -160,16 +179,16 @@ The first invocation to the Lambda function will pull the Docker image from Dock
 The logs are stored in CloudWatch with a default retention policy of 30 days.  The following command retrieves all the logs related to the Lambda function:
 
 ```sh
-scar log lambda-docker-cowsay
+scar log -n lambda-docker-cowsay
 ```
 
 If you only want the logs related to a log-stream-name you can use:
 
 ```sh
-scar log lambda-docker-cowsay -ls 'log-stream-name'
+scar log -n lambda-docker-cowsay -ls 'log-stream-name'
 ```
 
-And finally if you know the request id generated by your invocation, you can specify it if to get the logs related:
+And finally if you know the request id generated by your invocation, you can specify it to get the logs related:
 
 ```sh
 scar log lambda-docker-cowsay -ri request-id
@@ -201,7 +220,7 @@ scar rm -n lambda-docker-cowsay
 You can execute the Lambda function and specify a shell-script locally available in your machine to be executed within the container.
 
 ```sh
-scar run -s test/test-cowsay.sh lambda-docker-cowsay
+scar run -s src/test/test-cowsay.sh -n lambda-docker-cowsay
 ```
 
 The shell-script can be changed in each different execution of the Lambda function.
@@ -211,13 +230,13 @@ The shell-script can be changed in each different execution of the Lambda functi
 A shell-script can be specified when initializing the Lambda function to trigger its execution inside the container on each invocation of the Lambda function. For example:
 
 ```sh
-scar init -s test/test-env.sh -n lambda-test-init-script ubuntu:16.04
+scar init -s src/test/test-env.sh -n lambda-test-init-script -i ubuntu:16.04
 ```
 
 Now whenever this Lambda function is executed, the script will be run in the container:
 
 ```sh
-scar run lambda-test-init-script
+scar run -n lambda-test-init-script
 ```
 
 This can be overridden by speciying a different shell-script when running the Lambda function.
@@ -227,7 +246,7 @@ This can be overridden by speciying a different shell-script when running the La
 You can specify environment variables to the run command which will be in turn passed to the executed Docker container and made available to your shell-script:
 
 ```sh
-scar run -e TEST1=45 -e TEST2=69 -s test/test-global-vars.sh lambda-docker-cowsay
+scar run -e TEST1=45 -e TEST2=69 -s src/test/test-global-vars.sh -n lambda-docker-cowsay
 ```
 
 In particular, the following environment variables are automatically made available to the underlying Docker container:
@@ -244,7 +263,7 @@ This allows a script running in the Docker container to access other AWS service
 Applications available in the Docker image can be directly executed:
 
 ```sh
- scar run lambda-docker-cowsay /usr/games/fortune
+ scar run -n lambda-docker-cowsay /usr/games/fortune
 ```
 
 ### Passing Arguments
@@ -252,7 +271,7 @@ Applications available in the Docker image can be directly executed:
 You can also supply arguments which will be passed to the command executed in the Docker container:
 
 ```sh
-scar run lambda-docker-cowsay /usr/bin/perl /usr/games/cowsay Hello World
+scar run -n lambda-docker-cowsay /usr/bin/perl /usr/games/cowsay Hello World
 ```
 
 Note that since cowsay is a Perl script you will have to prepend it with the location of the Perl interpreter (in the Docker container).
@@ -262,7 +281,7 @@ Note that since cowsay is a Perl script you will have to prepend it with the loc
 For easier scripting, a JSON output can be obtained by including the `--json` or the `-v` (even more verbose output) flags.
 
 ```sh
-scar run --json lambda-docker-cowsay
+scar run --json -n lambda-docker-cowsay
 ```
 
 <a id="programming-model"></a>
@@ -274,7 +293,7 @@ SCAR supports an event-driven programming model suitable for the execution of hi
 The following command:
 
 ```sh
-scar init -s user-defined-script.sh -n lambda-function-name -es bucket-name repo/image:latest
+scar init -s user-defined-script.sh -n lambda-function-name -es bucket-name -i repo/image:latest
 ```
 
 Creates a Lambda function to execute the shell-script `user-defined-script.sh` inside a Docker container created out of the `repo/image:latest` Docker image stored in Docker Hub.
@@ -298,13 +317,13 @@ SCAR also supports another way of executing highly-parallel file-processing appl
 After creating a function with the command:
 
 ```sh
-scar init -s user-defined-script.sh -n lambda-function-name repo/image:latest
+scar init -s user-defined-script.sh -n lambda-function-name -i repo/image:latest
 ```
 
 You can activate the SCAR event launcher using the `run` command like this:
 
 ```sh
-scar run -es bucket-name lambda-function-name
+scar run -es bucket-name -n lambda-function-name
 ```
 
 This command lists the files in the `input` folder of the specified bucket and sends the required events (one per file) to the lambda function.
@@ -316,6 +335,30 @@ The following workflow summarises the programming model, the differences with th
 1. The Lambda function retrieves the file from the Amazon S3 bucket and makes it available for the shell-script running inside the container in the `/tmp/$REQUEST_ID/input` folder. The `$SCAR_INPUT_FILE` environment variable will point to the location of the input file.
 1. The shell-script processes the input file and produces the output (either one or multiple files) in the folder `/tmp/$REQUEST_ID/output`.
 1. The output files are automatically uploaded by the Lambda function into the `output` folder of `bucket-name`.
+
+<a name="uploading_docker_images_using_s3"></a>
+### Upload docker images using an S3 bucket
+
+If you want to save some space inside the lambda function you can deploy a lambda function using an S3 bucket by issuing the following command:
+
+```sh
+scar run -db bucket-name -n lambda-function-name -i repo/image
+```
+
+The maximum deployment package size allowed by AWS is an unzipped file of 250MB. With this restriction in mind, SCAR downloads the docker image to a temporal folder and creates the udocker file structure needed. 
+* If the image information and the container filesystem fit in the 250MB SCAR will upload everything and the lambda function will not need to download or create a container structure thus improving the execution time of the function. This option gives the user the full 500MB of `/tmp/` storage.
+* If the container filesystem doesn't fit in the deployment package SCAR will only upload the image information, that is, the layers. Also the lambda function execution time is improved because it doesn't need to dowload the container. In this case udocker needs to create the container filesystem so the first function invocation can be delayed a couple of seconds. This option usually duplicates the available space in the `/tmp/` folder with respect to the SCAR standard initialization.
+
+<a name="uploading_docker_image_files_using_s3"></a>
+### Upload docker image files using an S3 bucket
+
+SCAR also allows to upload a saved docker image
+
+```sh
+scar run -db bucket-name -n lambda-function-name -if docker_image.tar.gz
+```
+
+The behavior of SCAR is the same as in the case above (when uploading an image from docker hub). The image file is unpacked in a temporal folder and the udocker layers and container filesystem are created. Depending on the size of the layers and the filesystem, SCAR will try to upload everything or only the image layers.
 
 <a id="localtesting"></a>
 
@@ -392,6 +435,7 @@ SCAR is licensed under the Apache License, Version 2.0. See
 [LICENSE](https://github.com/grycap/scar/blob/master/LICENSE) for the full
 license text.
 
+<a id="furtherinfo"></a>
 ## Further information
 
 There is further information on the architecture of SCAR and use cases in the scientific publication ["Serverless computing for container-based architectures"](http://linkinghub.elsevier.com/retrieve/pii/S0167739X17316485) (pre-print available [here](http://www.grycap.upv.es/gmolto/publications/preprints/Perez2018scc.pdf)), included in the Future Generation Computer Systems journal. Please acknowledge the use of SCAR by including the following cite:
@@ -400,6 +444,7 @@ There is further information on the architecture of SCAR and use cases in the sc
 A. Pérez, G. Moltó, M. Caballer, and A. Calatrava, “Serverless computing for container-based architectures,” Futur. Gener. Comput. Syst., vol. 83, pp. 50–59, Jun. 2018.
 ```
 
+<a id="acknowledgements"></a>
 ## Acknowledgements
 
 * [udocker](https://github.com/indigo-dc/udocker)
