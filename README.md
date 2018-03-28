@@ -342,7 +342,7 @@ The following workflow summarises the programming model, the differences with th
 If you want to save some space inside the lambda function you can deploy a lambda function using an S3 bucket by issuing the following command:
 
 ```sh
-scar run -db bucket-name -n lambda-function-name -i repo/image
+scar init -db bucket-name -n lambda-function-name -i repo/image
 ```
 
 The maximum deployment package size allowed by AWS is an unzipped file of 250MB. With this restriction in mind, SCAR downloads the docker image to a temporal folder and creates the udocker file structure needed. 
@@ -355,7 +355,7 @@ The maximum deployment package size allowed by AWS is an unzipped file of 250MB.
 SCAR also allows to upload a saved docker image
 
 ```sh
-scar run -db bucket-name -n lambda-function-name -if docker_image.tar.gz
+scar init -db bucket-name -n lambda-function-name -if docker_image.tar.gz
 ```
 
 The behavior of SCAR is the same as in the case above (when uploading an image from docker hub). The image file is unpacked in a temporal folder and the udocker layers and container filesystem are created. Depending on the size of the layers and the filesystem, SCAR will try to upload everything or only the image layers.
