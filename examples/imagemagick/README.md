@@ -16,7 +16,7 @@ You can run ImageMagick in AWS Lambda via SCAR to automatically perform image ma
 1. Create the Lambda function
 
 ```sh
-scar init -s examples/imagemagick/grayify-image.sh -n lambda-imagemagick -es scar-test grycap/imagemagick
+scar init -s examples/imagemagick/grayify-image.sh -n lambda-imagemagick -es scar-test -i grycap/imagemagick
 ```
 
 2. Upload a file to the S3 bucket

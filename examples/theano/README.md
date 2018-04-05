@@ -11,13 +11,13 @@ You can run a container out of this image on AWS Lambda via [SCAR](https://githu
 1. Create the Lambda function
 
 ```sh
-scar init grycap/theano
+scar init -i grycap/theano
 ```
 
 2. Execute the Lambda function with an script to compile and run an Erlang application
 
 ```sh
-scar run -s examples/theano/theano-hw.sh scar-grycap-theano
+scar run -s examples/theano/theano-hw.sh -n scar-grycap-theano
 ```
 
 The first invocation will take considerably longer than the subsequent ones, where the container will be cached. You can modify the script and perform another `scar run`.

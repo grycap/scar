@@ -9,13 +9,13 @@ You can run a container out of this image on AWS Lambda via SCAR using the follo
 1. Create the Lambda function
 
 ```sh
-scar init grycap/r-base-lambda
+scar init -i grycap/r-base-lambda
 ```
 
 2. Execute the Lambda function with an script to compile and run R commands
 
 ```sh
-scar run -s examples/r/r-demo.sh scar-grycap-r-base-lambda
+scar run -s examples/r/r-demo.sh -n scar-grycap-r-base-lambda
 ```
 
 The first invocation will take considerably longer than the subsequent ones, where the container will be cached. You can modify the script and perform another `scar run`.

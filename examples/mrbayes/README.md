@@ -23,13 +23,13 @@ You can run this image in AWS Lambda via [SCAR](https://github.com/grycap/scar) 
 1. Create the Lambda function
 
  ```sh
- scar init -n lambda-mrbayes grycap/mrbayes
+ scar init -n lambda-mrbayes -i grycap/mrbayes
  ```
 
 2. Execute the Lambda function passing an execution script
 
  ```sh
- scar run -s examples/mrbayes/mrbayes-sample-run.sh lambda-mrbayes
+ scar run -s examples/mrbayes/mrbayes-sample-run.sh -n lambda-mrbayes
  ```
 
 ## Using recursive capabilities in AWS Lambda via SCAR
@@ -47,19 +47,19 @@ Also, the output of the scar functions is only the output of the first iteration
 1. Create the Lambda function
 
  ```sh
- scar init -n lambda-recursive-mrbayes -s examples/mrbayes/recursive/in-memory/mrbayes-recursive-big.sh -t 120 -r -m 1024 grycap/mrbayes
+ scar init -n lambda-recursive-mrbayes -s examples/mrbayes/recursive/in-memory/mrbayes-recursive-big.sh -t 120 -r -m 1024 -i grycap/mrbayes
  ```
 
 2. Execute the Lambda function passing an execution script
 
  ```sh
- scar run lambda-recursive-mrbayes
+ scar run -n lambda-recursive-mrbayes
  ```
 
 3. Check the complete log trace of the lambda function
 
  ```sh
- scar log lambda-recursive-mrbayes
+ scar log -n lambda-recursive-mrbayes
  ```
 
 ### Using an associated S3 bucket
@@ -67,7 +67,7 @@ Also, the output of the scar functions is only the output of the first iteration
 1. Create the Lambda function
 
  ```sh
- scar init -n lambda-recursive-mrbayes -es recursive-bucket -s examples/mrbayes/recursive/with-s3/mrbayes-recursive.sh -t 120 -r -m 1024 grycap/mrbayes
+ scar init -n lambda-recursive-mrbayes -es recursive-bucket -s examples/mrbayes/recursive/with-s3/mrbayes-recursive.sh -t 120 -r -m 1024 -i grycap/mrbayes
  ```
 
 2. Execute the Lambda function uploading a file to the 'input/' folder of the s3 bucket
@@ -75,6 +75,6 @@ Also, the output of the scar functions is only the output of the first iteration
 3. Check the complete log trace of the lambda function
 
  ```sh
- scar log lambda-recursive-mrbayes
+ scar log -n lambda-recursive-mrbayes
  ```
 

@@ -27,7 +27,7 @@ A sample script to be executed inside the Docker container running on AWS Lambda
 This example assumes that the Amazon S3 bucket is `scar-test`. Since there is a flat namespace, please change this name for your tests.
 
 ```sh
-scar init -s examples/ffmpeg/grayify-video.sh -n lambda-ffmpeg -es scar-test sameersbn/ffmpeg
+scar init -s examples/ffmpeg/grayify-video.sh -n lambda-ffmpeg -es scar-test -i sameersbn/ffmpeg
 ```
 
 ## Test the Lambda function
