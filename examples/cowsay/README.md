@@ -23,11 +23,11 @@ You can run this image in AWS Lambda via [SCAR](https://github.com/grycap/scar) 
 1. Create the Lambda function
 
 ```sh
-scar init -n lambda-cowsay grycap/cowsay
+scar init -n lambda-cowsay -i grycap/cowsay
 ```
 
 2. Execute the Lambda function
 
 ```sh
-scar run lambda-cowsay
+scar run -n lambda-cowsay
 ```

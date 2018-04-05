@@ -24,13 +24,13 @@ You can run AWS CLI in AWS Lambda via [SCAR](https://github.com/grycap/scar) usi
 1. Create the Lambda function
 
 ```sh
-scar init -n lambda-aws-cli grycap/aws-cli
+scar init -n lambda-aws-cli -i grycap/aws-cli
 ```
 
 2. Execute the Lambda function
 
 ```sh
-scar run -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY lambda-aws-cli ec2 describe-instances
+scar run -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY -n lambda-aws-cli ec2 describe-instances
 ```
 
 You have the AWS CLI running on AWS Lambda.

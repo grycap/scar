@@ -9,13 +9,13 @@ You can run a container out of this image on AWS Lambda via [SCAR](https://githu
 1. Create the Lambda function
 
 ```sh
-scar init -n scar-grycap-erlang grycap/erlang
+scar init -n scar-grycap-erlang -i grycap/erlang
 ```
 
 2. Execute the Lambda function with an script to compile and run an Erlang application
 
 ```sh
-scar run -s examples/erlang/erlang-hw.sh scar-grycap-erlang
+scar run -s examples/erlang/erlang-hw.sh -n scar-grycap-erlang
 ```
 The first invocation will take considerably longer than the subsequent ones, where the container will be cached. You can modify the script and perform another `scar run`.
 
