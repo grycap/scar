@@ -42,8 +42,11 @@ class Scar(Commands):
         
     def parse_command_arguments(self):
         args = CommandParser(self).parse_arguments()
-        self.cloud_provider.parse_command_arguments(args)
-        args.func()
+        if hasattr(args, 'func'):
+            self.cloud_provider.parse_command_arguments(args)
+            args.func()
+        else:
+            logger.error("Incorrect arguments: use scar -h to see the options available")
 
 if __name__ == "__main__":
     logger.init_execution_trace()
