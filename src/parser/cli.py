@@ -73,8 +73,8 @@ class CommandParser(object):
         parser_run.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         parser_run.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
         parser_run.add_argument("-es", "--event_source", help="Name specifying the source of the events that will launch the lambda function. Only supporting buckets right now.")
-        parser_run.add_argument('cont_args', nargs=argparse.REMAINDER, help="Arguments passed to the container.")        
-            
+        parser_run.add_argument('cont_args', nargs=argparse.REMAINDER, help="Arguments passed to the container.")
+    
     def create_rm_parser(self):
         parser_rm = self.subparsers.add_parser('rm', help="Delete function")
         parser_rm.set_defaults(func=self.scar.rm)
