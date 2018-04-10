@@ -43,12 +43,15 @@ def add_mandatory_files(function_name, env_vars):
 def create_code_zip(function_name, env_vars, script=None, extra_payload=None, image_id=None, image_file=None, deployment_bucket=None, file_key=None):
     clean_tmp_folders()
     add_mandatory_files(function_name, env_vars)
-    create_udocker_files()
-    if (image_id and image_id != "") and (deployment_bucket and deployment_bucket != ""):
-        download_udocker_image(image_id, env_vars)
     
-    if image_file and image_file != "":
-        prepare_udocker_image(image_file, env_vars)
+    if deployment_bucket and deployment_bucket != "":
+        create_udocker_files()
+        
+        if image_id and image_id != "":
+            download_udocker_image(image_id, env_vars)
+    
+        if image_file and image_file != "":
+            prepare_udocker_image(image_file, env_vars)
         
     if script and script != "":
         shutil.copy(script, scar_temporal_folder + "init_script.sh")
