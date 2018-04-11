@@ -20,17 +20,19 @@ import shutil
 import src.logger as logger
 import src.utils as utils
 import subprocess
+import tempfile
 from distutils import dir_util
 
 MAX_PAYLOAD_SIZE = 50 * 1024 * 1024
 MAX_S3_PAYLOAD_SIZE = 250 * 1024 * 1024
 aws_src_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 lambda_code_files_path = aws_src_path + "/cloud/lambda/"
-scar_temporal_folder = "/tmp/scar/"
-udocker_exec = "/tmp/scar/udockerb"
+os_tmp_folder = tempfile.gettempdir()
+scar_temporal_folder = os_tmp_folder + "/scar"
+udocker_exec = scar_temporal_folder +"/udockerb"
 udocker_tarball = ""
 udocker_dir = ""
-zip_file_path = "/tmp/function.zip"
+zip_file_path = os_tmp_folder +"/function.zip"
 
 def add_mandatory_files(function_name, env_vars):
     os.makedirs(scar_temporal_folder, exist_ok=True)
@@ -90,7 +92,7 @@ def set_tmp_udocker_env():
         udocker_dir = os.environ['UDOCKER_DIR']
     # Set temporal global vars
     os.environ['UDOCKER_TARBALL'] = lambda_code_files_path + "udocker-1.1.0-RC2.tar.gz"
-    os.environ['UDOCKER_DIR'] = "/tmp/scar/udocker"        
+    os.environ['UDOCKER_DIR'] = scar_temporal_folder + "/udocker"        
     
 def restore_udocker_env():
     if udocker_tarball != "":
@@ -110,8 +112,8 @@ def create_udocker_files():
 
 def prepare_udocker_image(image_file, env_vars):
     set_tmp_udocker_env()
-    shutil.copy(image_file, "/tmp/udocker_image.tar.gz")
-    cmd_out = execute_command(["python3", udocker_exec, "load", "-i", "/tmp/udocker_image.tar.gz"], cli_msg="Loading image file")
+    shutil.copy(image_file, os_tmp_folder + "/udocker_image.tar.gz")
+    cmd_out = execute_command(["python3", udocker_exec, "load", "-i", os_tmp_folder + "/udocker_image.tar.gz"], cli_msg="Loading image file")
     create_udocker_container(cmd_out)
     env_vars['IMAGE_ID'] = cmd_out
     env_vars['UDOCKER_REPOS'] = "/var/task/udocker/repos/"
