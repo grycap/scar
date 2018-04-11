@@ -20,13 +20,14 @@ import shutil
 import src.logger as logger
 import src.utils as utils
 import subprocess
+import tempfile
 from distutils import dir_util
 
 MAX_PAYLOAD_SIZE = 50 * 1024 * 1024
 MAX_S3_PAYLOAD_SIZE = 250 * 1024 * 1024
 aws_src_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 lambda_code_files_path = aws_src_path + "/cloud/lambda/"
-scar_temporal_folder = "/tmp/scar/"
+scar_temporal_folder = tempfile.gettempdir() + "/scar/"
 udocker_exec = "/tmp/scar/udockerb"
 udocker_tarball = ""
 udocker_dir = ""
