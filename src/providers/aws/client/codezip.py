@@ -36,7 +36,7 @@ zip_file_path = os_tmp_folder +"/function.zip"
 
 def add_mandatory_files(function_name, env_vars):
     os.makedirs(scar_temporal_folder, exist_ok=True)
-    shutil.copy(lambda_code_files_path + 'scarsupervisor.py', scar_temporal_folder + function_name + '.py')
+    shutil.copy(lambda_code_files_path + 'scarsupervisor.py', scar_temporal_folder + "/" + function_name + '.py')
     shutil.copy(lambda_code_files_path + 'udockerb', udocker_exec)
     env_vars['UDOCKER_DIR'] = "/tmp/home/udocker"
     env_vars['UDOCKER_LIB'] = "/var/task/udocker/lib/"
