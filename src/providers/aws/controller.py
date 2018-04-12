@@ -15,6 +15,7 @@
 
 from .client.lambdafunction import Lambda
 from .client.cloudwatchlogs import CloudWatchLogs
+from .client.apigateway import APIGateway
 from .client.s3 import S3
 from .client.iam import IAM
 from .client.resourcegroups import ResourceGroups
@@ -40,6 +41,11 @@ class AWS(Commands):
         return cloudwatch_logs
     
     @utils.lazy_property
+    def api_gateway(self):
+        api_gateway = APIGateway(self._lambda)
+        return api_gateway    
+    
+    @utils.lazy_property
     def s3(self):
         s3 = S3(self._lambda)
         return s3      
@@ -61,7 +67,10 @@ class AWS(Commands):
         
         if self._lambda.has_event_source():
             self.create_event_source()
-
+            
+        if self._lambda.has_api_defined():
+            self.api_gateway.create_api_gateway()            
+            
         # If preheat is activated, the function is launched at the init step
         if self._lambda.need_preheat():    
             self._lambda.preheat_function()

@@ -267,6 +267,9 @@ class Lambda(object):
     def has_image_file(self):
         return utils.has_dict_prop_value(self.properties, 'image_file')
     
+    def has_api_defined(self):
+        return utils.has_dict_prop_value(self.properties, 'api_gateway_name')    
+    
     def has_deployment_bucket(self):
         return utils.has_dict_prop_value(self.properties, 'deployment_bucket')
         
