@@ -39,15 +39,13 @@ def add_mandatory_files(function_name, env_vars):
     shutil.copy(lambda_code_files_path + 'scarsupervisor.py', scar_temporal_folder + "/" + function_name + '.py')
     shutil.copy(lambda_code_files_path + 'udockerb', udocker_exec)
     env_vars['UDOCKER_DIR'] = "/tmp/home/udocker"
-    env_vars['UDOCKER_LIB'] = "/var/task/udocker/lib/"
-    env_vars['UDOCKER_BIN'] = "/var/task/udocker/bin/"
 
 def create_code_zip(function_name, env_vars, script=None, extra_payload=None, image_id=None, image_file=None, deployment_bucket=None, file_key=None):
     clean_tmp_folders()
     add_mandatory_files(function_name, env_vars)
     
     if deployment_bucket and deployment_bucket != "":
-        create_udocker_files()
+        create_udocker_files(env_vars)
         
         if image_id and image_id != "":
             download_udocker_image(image_id, env_vars)
@@ -105,9 +103,11 @@ def execute_command(command, cmd_wd=None, cli_msg=None):
     logger.info(cli_msg, cmd_out)
     return cmd_out[:-1]
     
-def create_udocker_files():
+def create_udocker_files(env_vars):
     set_tmp_udocker_env()
     execute_command(["python3", udocker_exec, "help"], cli_msg="Setting udocker environment")
+    env_vars['UDOCKER_LIB'] = "/var/task/udocker/lib/"
+    env_vars['UDOCKER_BIN'] = "/var/task/udocker/bin/"
     restore_udocker_env()
 
 def prepare_udocker_image(image_file, env_vars):
