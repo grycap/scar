@@ -162,12 +162,6 @@ def post_process(event):
     # Delete all the temporal folders created for the invocation
     shutil.rmtree("/tmp/%s" % request_id)
     
-def prepare_output(context):
-    stdout = "Log group name: %s\n" % context.log_group_name
-    stdout += "Log stream name: %s\n" % context.log_stream_name
-    stdout += "---------------------------------------------------------------------------\n"
-    return stdout
-
 def set_request_id(context):
     global request_id
     request_id = context.aws_request_id
@@ -396,6 +390,12 @@ def extract_tar_gz(tar_path):
         tar.extractall(path=input_folder)
     logging.info("Succesfully extracted '%s' in path '%s'" % (tar_path, input_folder))
             
+def create_response(context):
+    return {"statusCode" : 200, 
+            "headers" : { 
+                "logGroupName": context.log_group_name, 
+                "logStreamName": context.log_stream_name }}  
+            
 #######################################
 #         LAMBDA MAIN FUNCTION        #
 #######################################
@@ -403,8 +403,8 @@ def lambda_handler(event, context):
     logger.info("Received event: " + json.dumps(event))
     set_request_id(context)
     set_invocation_input_output_folders()
-    stdout = ""
-    stdout += prepare_output(context)
+    stdout = "---------------------------------------------------------------------------\n"
+    response = create_response(context)
     try:
         pre_process(event)
         # Create container execution command
@@ -421,6 +421,10 @@ def lambda_handler(event, context):
     except Exception:
         logger.error("Exception launched:\n %s" % traceback.format_exc())
         stdout += "SCAR ERROR: Exception launched:\n %s" % traceback.format_exc()
-    logger.info(stdout)
+        response["statusCode"] = 500
+        
+    finally:  
+        logger.info(stdout)
+        response["body"] = stdout
     
-    return stdout
+    return response

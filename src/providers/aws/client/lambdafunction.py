@@ -386,7 +386,17 @@ class Lambda(object):
             else:   
                 error_msg = "Error while looking for the lambda function"
                 logger.error(error_msg, error_msg + ": %s" % ce)
-                utils.finish_failed_execution()             
+                utils.finish_failed_execution()
+                
+    def add_invocation_permission_from_api_gateway(self, api_id, aws_acc_id):
+        # Testing permission
+        self.client.add_invocation_permission(self.get_property("name"),
+                                              'apigateway.amazonaws.com',
+                                              'arn:aws:execute-api:us-east-1:{0}:{1}/*'.format(aws_acc_id, api_id))
+        # Invocation permission
+        self.client.add_invocation_permission(self.get_property("name"),
+                                              'apigateway.amazonaws.com',
+                                              'arn:aws:execute-api:us-east-1:{0}:{1}/scar/ANY'.format(aws_acc_id, api_id))                              
 
 
 class LambdaClient(BotoClient):
@@ -465,15 +475,7 @@ class LambdaClient(BotoClient):
             logger.error(error_msg, error_msg + ": %s" % ce)
     
     def add_invocation_permission_from_s3(self, function_name, bucket_name):
-        try:
-            self.get_client().add_permission(FunctionName=function_name,
-                                             StatementId=utils.get_random_uuid4_str(),
-                                             Action="lambda:InvokeFunction",
-                                             Principal="s3.amazonaws.com",
-                                             SourceArn='arn:aws:s3:::%s' % bucket_name )
-        except ClientError as ce:
-            error_msg = "Error setting lambda permissions"
-            logger.error(error_msg, error_msg + ": %s" % ce)            
+            self.add_invocation_permission(function_name, "s3.amazonaws.com", 'arn:aws:s3:::%s' % bucket_name)
     
     def list_functions(self):
         ''' Returns a list of your Lambda functions. '''
@@ -508,12 +510,23 @@ class LambdaClient(BotoClient):
                                                 Payload=payload)
         except ClientError as ce:
             error_msg = "Error invoking lambda function"
-            logger.error(error_msg, error_msg + ": %s" % ce)            
+            logger.error(error_msg, error_msg + ": %s" % ce)
             utils.finish_failed_execution()
     
         except ReadTimeout as rt:
             error_msg = "Timeout reading connection pool"
             logger.error(error_msg, error_msg + ": %s" % rt)            
             utils.finish_failed_execution()
-        return response                                        
+        return response
+    
+    def add_invocation_permission(self, function_name, principal, source_arn):
+        try:
+            self.get_client().add_permission(FunctionName=function_name,
+                                             StatementId=utils.get_random_uuid4_str(),
+                                             Action="lambda:InvokeFunction",
+                                             Principal=principal,
+                                             SourceArn=source_arn )
+        except ClientError as ce:
+            error_msg = "Error setting lambda permissions"
+            logger.error(error_msg, error_msg + ": %s" % ce)                                     
         

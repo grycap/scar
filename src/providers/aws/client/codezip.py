@@ -41,14 +41,13 @@ def add_mandatory_files(function_name, env_vars):
     env_vars['UDOCKER_DIR'] = "/tmp/home/udocker"
     env_vars['UDOCKER_LIB'] = "/var/task/udocker/lib/"
     env_vars['UDOCKER_BIN'] = "/var/task/udocker/bin/"
+    create_udocker_files()
 
 def create_code_zip(function_name, env_vars, script=None, extra_payload=None, image_id=None, image_file=None, deployment_bucket=None, file_key=None):
     clean_tmp_folders()
     add_mandatory_files(function_name, env_vars)
     
     if deployment_bucket and deployment_bucket != "":
-        create_udocker_files()
-        
         if image_id and image_id != "":
             download_udocker_image(image_id, env_vars)
     
@@ -107,7 +106,7 @@ def execute_command(command, cmd_wd=None, cli_msg=None):
     
 def create_udocker_files():
     set_tmp_udocker_env()
-    execute_command(["python3", udocker_exec, "help"], cli_msg="Setting udocker environment")
+    execute_command(["python3", udocker_exec, "help"], cli_msg="Packing udocker files")
     restore_udocker_env()
 
 def prepare_udocker_image(image_file, env_vars):

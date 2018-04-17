@@ -17,6 +17,7 @@ from enum import Enum
 from tabulate import tabulate
 import src.logger as logger
 import src.utils as utils
+import json
 
 class OutputType(Enum):
     PLAIN_TEXT = 1
@@ -112,7 +113,7 @@ def parse_error_invocation_response(response, function_name):
         
 def parse_payload(value):
     if (('Payload' in value) and value['Payload']):
-        value['Payload'] = value['Payload'].read().decode("utf-8")[1:-1].replace('\\n', '\n')
+        value['Payload'] = json.loads(value['Payload'].read().decode("utf-8"))
         return value
     else:
         return ''
@@ -126,12 +127,16 @@ def parse_asynchronous_invocation_response(response, output_type, function_name)
     
 def parse_requestresponse_invocation_response(response, output_type):
     aws_output = 'LambdaOutput'
-    text_message = 'SCAR: Request Id: %s\n' % response['ResponseMetadata']['RequestId']
-    text_message += response['Payload']
+    
+    text_message = 'Request Id: %s\n' % response['ResponseMetadata']['RequestId']
+    text_message += 'Log Group Name: %s\n' % response['Payload']['headers']['logGroupName']
+    text_message += 'Log Stream Name: %s\n' % response['Payload']['headers']['logStreamName']
+    text_message += response['Payload']['body']
+    
     json_message = { aws_output : {'StatusCode' : response['StatusCode'],
-                                   'Payload' : response['Payload'],
-                                   'LogGroupName' : response['LogGroupName'],
-                                   'LogStreamName' : response['LogStreamName'],
+                                   'Payload' : response['Payload']['body'],
+                                   'LogGroupName' : response['Payload']['headers']['logGroupName'],
+                                   'LogStreamName' : response['Payload']['headers']['logStreamName'],
                                    'RequestId' : response['ResponseMetadata']['RequestId']}}        
     print_generic_response(response, output_type, aws_output, text_message, json_output=json_message)        
       
@@ -140,12 +145,6 @@ def parse_base64_response_values(value):
     value['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'] = utils.base64_to_utf8(value['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'])
     return value
 
-def parse_log_ids(value):
-    parsed_output = value['Payload'].split('\n')
-    value['LogGroupName'] = parsed_output[1][22:]
-    value['LogStreamName'] = parsed_output[2][23:]
-    return value
-        
 def parse_invocation_response(response, function_name, output_type, is_asynchronous):
     # Decode and parse the payload
     response = parse_payload(response)
@@ -157,6 +156,5 @@ def parse_invocation_response(response, function_name, output_type, is_asynchron
         # Transform the base64 encoded results to something legible
         response = parse_base64_response_values(response)
         # Extract log_group_name and log_stream_name from the payload
-        response = parse_log_ids(response)
         parse_requestresponse_invocation_response(response, output_type)
         
