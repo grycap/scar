@@ -62,7 +62,11 @@ def parse_delete_function_response(response, function_name, output_type):
 
 def parse_delete_log_response(response, log_group_name, output_type):
     text_message = "Log group '%s' successfully deleted." % log_group_name
-    print_generic_response(response, output_type, 'CloudWatchOutput', text_message)  
+    print_generic_response(response, output_type, 'CloudWatchOutput', text_message)
+    
+def parse_delete_api_response(response, api_id, output_type):
+    text_message = "REST API '%s' successfully deleted." % api_id
+    print_generic_response(response, output_type, 'APIGateway', text_message)      
 
 def parse_ls_response(lambda_functions, output_type):
     aws_output = 'Functions'

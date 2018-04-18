@@ -236,6 +236,11 @@ class Lambda(object):
     def set_asynchronous_call_parameters(self):
         self.set_property('invocation_type', "Event")
         self.set_property('log_type', 'None')
+        
+    def set_api_gateway_id(self, api_id, acc_id):
+        self.set_property('api_gateway_id', api_id)
+        self.set_property('aws_acc_id', acc_id)
+        self.add_lambda_environment_variable('API_GATEWAY_ID', api_id)
 
     def set_request_response_call_parameters(self):
         self.set_property('invocation_type', "RequestResponse")
@@ -251,7 +256,7 @@ class Lambda(object):
         bucket_file_key = 'lambda/' + func_name + '.zip'
         # Zip all the files and folders needed
         codezip.create_code_zip(func_name,
-                                self.get_property("environment_variables"),
+                                self.get_property("environment", "Variables"),
                                 script=self.get_property("script"),
                                 extra_payload=self.get_property("extra_payload"),
                                 image_id=self.get_property("image_id"),
@@ -273,30 +278,27 @@ class Lambda(object):
     def has_deployment_bucket(self):
         return utils.has_dict_prop_value(self.properties, 'deployment_bucket')
         
-    def set_env_var(self, key, value):
-        if value is not None or value != "":
-            self.get_property("environment_variables")[key] = value
-
     def set_required_environment_variables(self):
-        self.set_env_var('TIMEOUT_THRESHOLD', str(self.get_property("timeout_threshold")))
-        self.set_env_var('RECURSIVE', str(self.get_property("recursive")))
-        self.set_env_var('IMAGE_ID', self.get_property("image_id"))
+        self.add_lambda_environment_variable('TIMEOUT_THRESHOLD', str(self.get_property("timeout_threshold")))
+        self.add_lambda_environment_variable('RECURSIVE', str(self.get_property("recursive")))
+        self.add_lambda_environment_variable('IMAGE_ID', self.get_property("image_id"))
         if self.has_lambda_output():
-            self.set_env_var('LAMBDA_OUTPUT', self.get_property("lambda_output")) 
+            self.add_lambda_environment_variable('LAMBDA_OUTPUT', self.get_property("lambda_output")) 
+
+    def add_lambda_environment_variable(self, key, value):
+        if (key is not None or key != "") and (value is not None):
+            self.get_property("environment", "Variables")[key] = value        
 
     def set_environment_variables(self):
         if isinstance(self.get_property("environment_variables"), list):
-            variables = self.get_property("environment_variables")
-            self.set_property("environment_variables", {})
-            for env_var in variables:
+            for env_var in self.get_property("environment_variables"):
                 parsed_env_var = env_var.split("=")
                 # Add an specific prefix to be able to find the variables defined by the user
                 key = 'CONT_VAR_' + parsed_env_var[0]
-                self.set_env_var(key, parsed_env_var[1])
+                self.add_lambda_environment_variable(key, parsed_env_var[1])
         
         if (self.get_property("call_type") == CallType.INIT):
             self.set_required_environment_variables()
-        self.properties["environment"] = { 'Variables' : self.get_property("environment_variables") }
 
     def set_tags(self):
         self.properties["tags"]['createdby'] = 'scar'
@@ -388,16 +390,27 @@ class Lambda(object):
                 logger.error(error_msg, error_msg + ": %s" % ce)
                 utils.finish_failed_execution()
                 
-    def add_invocation_permission_from_api_gateway(self, api_id, aws_acc_id):
+    def add_invocation_permission_from_api_gateway(self):
+        api_gateway_id = self.get_property('api_gateway_id')
+        aws_acc_id = self.get_property('aws_acc_id')
         # Testing permission
         self.client.add_invocation_permission(self.get_property("name"),
                                               'apigateway.amazonaws.com',
-                                              'arn:aws:execute-api:us-east-1:{0}:{1}/*'.format(aws_acc_id, api_id))
+                                              'arn:aws:execute-api:us-east-1:{0}:{1}/*'.format(aws_acc_id, api_gateway_id))
         # Invocation permission
         self.client.add_invocation_permission(self.get_property("name"),
                                               'apigateway.amazonaws.com',
-                                              'arn:aws:execute-api:us-east-1:{0}:{1}/scar/ANY'.format(aws_acc_id, api_id))                              
+                                              'arn:aws:execute-api:us-east-1:{0}:{1}/scar/ANY'.format(aws_acc_id, api_gateway_id))                              
 
+    def get_api_gateway_id(self, func_name=None):
+        if func_name:
+            function_name = func_name
+        else:
+            function_name = self.get_function_name()
+        self.check_function_name(function_name)
+        env_vars = self.client.get_function_environment_variables(function_name)
+        if ('API_GATEWAY_ID' in env_vars['Variables']):
+            return env_vars['Variables']['API_GATEWAY_ID']
 
 class LambdaClient(BotoClient):
     '''A low-level client representing aws LambdaClient.

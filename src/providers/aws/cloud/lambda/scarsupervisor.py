@@ -403,7 +403,8 @@ def lambda_handler(event, context):
     logger.info("Received event: " + json.dumps(event))
     set_request_id(context)
     set_invocation_input_output_folders()
-    stdout = "---------------------------------------------------------------------------\n"
+    #stdout = "---------------------------------------------------------------------------\n"
+    stdout = ""
     response = create_response(context)
     try:
         pre_process(event)

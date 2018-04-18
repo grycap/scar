@@ -61,15 +61,20 @@ class AWS(Commands):
         return iam    
        
     def init(self):
+        
+        if self._lambda.has_api_defined():
+            api_id, aws_acc_id = self.api_gateway.create_api_gateway()
+            self._lambda.set_api_gateway_id(api_id, aws_acc_id)        
+        
         # Call the aws services
         self._lambda.create_function()
         self.cloudwatch_logs.create_log_group()
         
         if self._lambda.has_event_source():
             self.create_event_source()
-            
+       
         if self._lambda.has_api_defined():
-            self.api_gateway.create_api_gateway()            
+            self._lambda.add_invocation_permission_from_api_gateway() 
             
         # If preheat is activated, the function is launched at the init step
         if self._lambda.need_preheat():    
@@ -92,7 +97,7 @@ class AWS(Commands):
         if self._lambda.get_delete_all():
             self.delete_all_resources(self.get_all_functions())
         else:
-            self.delete_function_and_log()
+            self.delete_resources()
     
     def log(self):
         aws_log = self.cloudwatch_logs.get_aws_log()
@@ -131,10 +136,17 @@ class AWS(Commands):
 
     def delete_all_resources(self, lambda_functions):
         for function in lambda_functions:
-            self.delete_function_and_log(function['FunctionName'])
+            self.delete_resources(function['FunctionName'])
         
-    def delete_function_and_log(self, function_name=None):
-        self._lambda.delete_function(function_name)
+    def delete_resources(self, function_name=None):
+        # Delete associated api
+        api_id = self._lambda.get_api_gateway_id(function_name)
+        output_type = self._lambda.get_output_type()
+        if api_id:
+            self.api_gateway.delete_api_gateway(api_id, output_type)
         # Delete associated log
         self.cloudwatch_logs.delete_log_group(function_name)
+        # Delete function
+        self._lambda.delete_function(function_name)
+
         

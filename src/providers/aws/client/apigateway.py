@@ -18,6 +18,7 @@ from .boto import BotoClient
 import src.logger as logger
 from botocore.exceptions import ClientError
 import src.utils as utils
+import src.providers.aws.response as response_parser
 
 API_DESCRIPTION="API created automatically with SCAR"
 
@@ -30,7 +31,6 @@ class APIGateway():
 
     def __init__(self, aws_lambda):
         # Get all the log related attributes
-        self.lambda_function = aws_lambda
         self.function_name = aws_lambda.get_property("name")
         self.api_gateway_name = aws_lambda.get_property("api_gateway_name")
         self.lambda_role = aws_lambda.get_property("iam","role")
@@ -61,7 +61,13 @@ class APIGateway():
                                     self.default_type,
                                     self.get_api_lambda_uri())
         self.client.create_deployment(self.api_id, 'scar')
-        self.lambda_function.add_invocation_permission_from_api_gateway(self.api_id, self.aws_acc_id)    
+        self.endpoint = 'https://{0}.execute-api.{1}.amazonaws.com/scar/launch'.format(self.api_id, 'us-east-1')
+        logger.info('API Gateway endpoint: {0}'.format(self.endpoint))
+        return self.api_id, self.aws_acc_id
+    
+    def delete_api_gateway(self, api_id, output_type):
+        response = self.client.delete_rest_api(api_id)
+        response_parser.parse_delete_api_response(response, api_id, output_type)
         
     def set_api_resources(self, api_info):
         self.api_id = api_info['id']
@@ -153,5 +159,14 @@ class APIGatewayClient(BotoClient):
             return self.get_client().create_deployment(restApiId=api_id, stageName=stage_name)
         except ClientError as ce:
             error_msg = "Error creating the deployment of the API '{0}'".format(api_id)
-            logger.error(error_msg, error_msg + ": {0}".format(ce))                                           
-        
+            logger.error(error_msg, error_msg + ": {0}".format(ce))
+            
+    def delete_rest_api(self, api_id):
+        ''' Deletes the specified API.
+            More info in https://boto3.readthedocs.io/en/latest/reference/services/apigateway.html#APIGateway.Client.delete_rest_api
+        '''
+        try:
+            return self.get_client().delete_rest_api(restApiId=api_id)
+        except ClientError as ce:
+            error_msg = "Error deleteing the API '{0}'".format(api_id)
+            logger.error(error_msg, error_msg + ": {0}".format(ce))            
