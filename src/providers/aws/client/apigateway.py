@@ -19,8 +19,11 @@ import src.logger as logger
 from botocore.exceptions import ClientError
 import src.utils as utils
 import src.providers.aws.response as response_parser
+import time
 
 API_DESCRIPTION="API created automatically with SCAR"
+MAX_NUMBER_OF_RETRIES = 5
+WAIT_BETWEEN_RETIRES = 5
 
 class APIGateway():
     
@@ -83,7 +86,7 @@ class APIGatewayClient(BotoClient):
     def __init__(self, region=None):
         super().__init__('apigateway', region)
     
-    def create_rest_api(self, api_name):
+    def create_rest_api(self, api_name, count=MAX_NUMBER_OF_RETRIES):
         ''' Default type REGIONAL, other possible type EDGE. 
             More info in https://boto3.readthedocs.io/en/latest/reference/services/apigateway.html#APIGateway.Client.create_rest_api
         '''
@@ -92,6 +95,9 @@ class APIGatewayClient(BotoClient):
                                                      description=API_DESCRIPTION,
                                                      endpointConfiguration={'types': ['REGIONAL']})
         except ClientError as ce:
+            if (ce.response['Error']['Code'] == 'TooManyRequestsException'):
+                time.sleep(WAIT_BETWEEN_RETIRES)
+                return self.create_rest_api(api_name, count-1)
             error_msg = "Error creating the '{0}' REST API".format(api_name)
             logger.error(error_msg, error_msg + ": {0}".format(ce))
        
@@ -161,12 +167,15 @@ class APIGatewayClient(BotoClient):
             error_msg = "Error creating the deployment of the API '{0}'".format(api_id)
             logger.error(error_msg, error_msg + ": {0}".format(ce))
             
-    def delete_rest_api(self, api_id):
+    def delete_rest_api(self, api_id, count=MAX_NUMBER_OF_RETRIES):
         ''' Deletes the specified API.
             More info in https://boto3.readthedocs.io/en/latest/reference/services/apigateway.html#APIGateway.Client.delete_rest_api
         '''
         try:
             return self.get_client().delete_rest_api(restApiId=api_id)
         except ClientError as ce:
-            error_msg = "Error deleteing the API '{0}'".format(api_id)
+            if (ce.response['Error']['Code'] == 'TooManyRequestsException'):
+                time.sleep(WAIT_BETWEEN_RETIRES)
+                return self.delete_rest_api(api_id, count-1)
+            error_msg = "Error deleting the API '{0}'".format(api_id)
             logger.error(error_msg, error_msg + ": {0}".format(ce))            
