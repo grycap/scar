@@ -87,19 +87,26 @@ def parse_lambda_function_info(function_info):
     memory = function_info.get('MemorySize', "-")
     timeout = function_info.get('Timeout', "-")
     image_id = function_info['Environment']['Variables'].get('IMAGE_ID', "-")
+    api_gateway = function_info['Environment']['Variables'].get('API_GATEWAY_ID', "-")
+    if api_gateway != '-':
+        region = function_info['FunctionArn'].split(':')[3]
+        api_gateway = 'https://{0}.execute-api.{1}.amazonaws.com/scar/launch'.format(api_gateway, region)
+        
     return {'Name' : name,
             'Memory' : memory,
             'Timeout' : timeout,
-            'Image_id': image_id}
+            'Image_id': image_id,
+            'Api_gateway': api_gateway}
   
 def get_table(functions_info):
-    headers = ['NAME', 'MEMORY', 'TIME', 'IMAGE_ID']
+    headers = ['NAME', 'MEMORY', 'TIME', 'IMAGE_ID', 'API_URL']
     table = []
     for function in functions_info:
         table.append([function['Name'],
                       function['Memory'],
                       function['Timeout'],
-                      function['Image_id']])
+                      function['Image_id'],
+                      function['Api_gateway']])
     return tabulate(table, headers)    
 
 def parse_error_invocation_response(response, function_name):
