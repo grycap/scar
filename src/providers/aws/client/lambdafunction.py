@@ -110,9 +110,6 @@ class Lambda(object):
     def has_event_source(self):
         return self.get_property("event_source") != ""
     
-    def has_lambda_output(self):
-        return self.get_property("lambda_output") != ""    
-    
     def get_event_source(self):
         return self.get_property("event_source")   
     
@@ -278,12 +275,20 @@ class Lambda(object):
     def has_deployment_bucket(self):
         return utils.has_dict_prop_value(self.properties, 'deployment_bucket')
         
+    def has_output_bucket(self):
+        return utils.has_dict_prop_value(self.properties, 'output_bucket')
+    
+    def has_output_lambda(self):
+        return utils.has_dict_prop_value(self.properties, 'output_lambda')
+        
     def set_required_environment_variables(self):
         self.add_lambda_environment_variable('TIMEOUT_THRESHOLD', str(self.get_property("timeout_threshold")))
         self.add_lambda_environment_variable('RECURSIVE', str(self.get_property("recursive")))
         self.add_lambda_environment_variable('IMAGE_ID', self.get_property("image_id"))
-        if self.has_lambda_output():
-            self.add_lambda_environment_variable('LAMBDA_OUTPUT', self.get_property("lambda_output")) 
+        if self.has_output_lambda():
+            self.add_lambda_environment_variable('OUTPUT_LAMBDA', self.get_property("output_lambda"))
+        if self.has_output_bucket():
+            self.add_lambda_environment_variable('OUTPUT_BUCKET', self.get_property("output_bucket"))            
 
     def add_lambda_environment_variable(self, key, value):
         if (key is not None or key != "") and (value is not None):

@@ -22,6 +22,7 @@ import subprocess
 import traceback
 import tarfile
 import socket
+import uuid
 
 loglevel = logging.INFO
 logger = logging.getLogger()
@@ -34,6 +35,7 @@ script_exec = "/bin/sh"
 request_id = ""
 input_folder = ""
 output_folder = ""
+udocker_variables = []
 
 logger.info('SCAR: Loading lambda function')
 #######################################
@@ -116,6 +118,30 @@ def download_to_memory(bucket_name, file_key):
     return obj.get()["Body"].read()
 
 #######################################
+#    API GATEWAY RELATED FUNCTIONS    #
+#######################################
+
+def is_http_event(event):
+    if 'httpMethod' in event:
+        return True
+    
+def process_http_event(event):
+    http_method = event['httpMethod']
+    resource = event['resource']
+    path = event['path']
+    if event['queryStringParameters'] is not None:
+        query_params = event['queryStringParameters']
+    if http_method == 'POST' and event['body'] is not None:
+        body = event['body']
+        body_file_name = uuid.uuid4().hex
+        file_path = '/tmp/%s/%s' % (request_id, body_file_name)
+        logger.info("Received file from POST request and saved it in path '%s'" % (file_path))
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)  
+        with open(file_path, 'w') as data:
+            data.write(body)
+        add_udocker_container_variable("SCAR_INPUT_FILE", body_file_name)
+    
+#######################################
 #      LAMBDA RELATED FUNCTIONS       #
 #######################################
 def get_invocation_remaining_seconds(context):
@@ -147,14 +173,16 @@ def pre_process(event):
     create_event_file(json.dumps(event))
     prepare_udocker_environment()
     prepare_udocker_container()
-    check_s3_event_records(event)
+    if(is_s3_event(event)):
+        check_s3_event_records(event)
+    if is_http_event(event):
+        process_http_event(event)
     
 def check_s3_event_records(event):
-    if(is_s3_event(event)):
-        s3_record = get_s3_record(event)
-        if s3_record:
-            global s3_input_file_name
-            s3_input_file_name = download_input_from_s3(s3_record)
+    s3_record = get_s3_record(event)
+    if s3_record:
+        global s3_input_file_name
+        s3_input_file_name = download_input_from_s3(s3_record)
     
 def post_process(event):
     if(is_s3_event(event)):
@@ -169,12 +197,13 @@ def set_request_id(context):
 def set_invocation_input_output_folders():
     global input_folder
     global output_folder
+    
     input_folder = '/tmp/%s/input' % request_id
     output_folder = '/tmp/%s/output' % request_id
     
-def pass_lambda_output():
-    out_function_name  = os.environ['LAMBDA_OUTPUT']
-    out_file_path = os.environ['LAMBDA_OUTPUT_FILE']
+def pass_output_lambda():
+    out_function_name  = os.environ['OUTPUT_LAMBDA']
+    out_file_path = os.environ['OUTPUT_LAMBDA_FILE']
     if os.path.isfile(out_file_path):
         out_file_content = read_file(out_file_path)
         logger.info("Passing output to lambda function %s" % out_function_name)
@@ -184,8 +213,8 @@ def pass_lambda_output():
                       LogType='None',
                       Payload=json.dumps(out_file_content))        
     
-def has_lambda_output():
-    return check_key_in_dictionary('LAMBDA_OUTPUT', os.environ)      
+def has_output_lambda():
+    return check_key_in_dictionary('OUTPUT_LAMBDA', os.environ)      
     
 #######################################
 #      UDOCKER RELATED FUNCTIONS      #
@@ -228,56 +257,54 @@ def prepare_udocker_container():
     else:
         logger.info("Container '" + container_name + "' already available")
 
-def add_udocker_container_variable(variables, key, value):
-    variables.append('--env')
-    variables.append(key + '=' + value)
+def add_udocker_container_variable(key, value):
+    udocker_variables.append('--env')
+    udocker_variables.append(key + '=' + value)
 
-def add_user_defined_variables_to_udocker_container_variables(variables):
+def add_user_defined_variables_to_udocker_container_variables():
     for key in os.environ.keys():
         # Find global variables with the specified prefix
         if re.match("CONT_VAR_.*", key):
-            add_udocker_container_variable(variables, key.replace("CONT_VAR_", ""), os.environ[key])    
+            add_udocker_container_variable(key.replace("CONT_VAR_", ""), os.environ[key])    
             
-def add_iam_credentials_to_udocker_container_variables(variables):
+def add_iam_credentials_to_udocker_container_variables():
     iam_creds = {'CONT_VAR_AWS_ACCESS_KEY_ID':'AWS_ACCESS_KEY_ID', 
                  'CONT_VAR_AWS_SECRET_ACCESS_KEY':'AWS_SECRET_ACCESS_KEY'}
     # Add IAM credentials
     for key,value in iam_creds.items():
         if not check_key_in_dictionary(key, os.environ):
-            add_udocker_container_variable(variables, value, os.environ[value])
+            add_udocker_container_variable(value, os.environ[value])
      
 
-def add_session_and_security_token_to_udocker_container_variables(variables):
+def add_session_and_security_token_to_udocker_container_variables():
     # Always add Session and security tokens
-    add_udocker_container_variable(variables, "AWS_SESSION_TOKEN", os.environ["AWS_SESSION_TOKEN"])
-    add_udocker_container_variable(variables, "AWS_SECURITY_TOKEN", os.environ["AWS_SECURITY_TOKEN"])
+    add_udocker_container_variable("AWS_SESSION_TOKEN", os.environ["AWS_SESSION_TOKEN"])
+    add_udocker_container_variable("AWS_SECURITY_TOKEN", os.environ["AWS_SECURITY_TOKEN"])
             
-def add_input_file_path_to_udocker_container_variables(variables):
+def add_input_file_path_to_udocker_container_variables():
     if s3_input_file_name and s3_input_file_name != "":
-        add_udocker_container_variable(variables, "SCAR_INPUT_FILE", s3_input_file_name)      
+        add_udocker_container_variable("SCAR_INPUT_FILE", s3_input_file_name)
             
-def add_instance_ip_to_udocker_container_variables(variables):
-    add_udocker_container_variable(variables, "INSTANCE_IP", socket.gethostbyname(socket.gethostname()))
+def add_instance_ip_to_udocker_container_variables():
+    add_udocker_container_variable("INSTANCE_IP", socket.gethostbyname(socket.gethostname()))
     
-def add_extra_payload_path_to_udocker_container_variables(variables):
+def add_extra_payload_path_to_udocker_container_variables():
     if check_key_in_dictionary('EXTRA_PAYLOAD', os.environ):
-        add_udocker_container_variable(variables, "EXTRA_PAYLOAD", os.environ["EXTRA_PAYLOAD"])
+        add_udocker_container_variable("EXTRA_PAYLOAD", os.environ["EXTRA_PAYLOAD"])
           
-def add_lambda_output_variable(variables):
-    if check_key_in_dictionary('LAMBDA_OUTPUT', os.environ):
-        os.environ['LAMBDA_OUTPUT_FILE'] = "/tmp/%s/lambda_output" % request_id
-        add_udocker_container_variable(variables, "LAMBDA_OUTPUT_FILE", "/tmp/%s/lambda_output" % request_id)          
+def add_lambda_output_variable():
+    if check_key_in_dictionary('OUTPUT_LAMBDA', os.environ):
+        os.environ['OUTPUT_LAMBDA_FILE'] = "/tmp/%s/lambda_output" % request_id
+        add_udocker_container_variable("OUTPUT_LAMBDA_FILE", "/tmp/%s/lambda_output" % request_id)          
             
-def get_udocker_container_global_variables():
-    variables = []
-    add_user_defined_variables_to_udocker_container_variables(variables)
-    add_iam_credentials_to_udocker_container_variables(variables)
-    add_session_and_security_token_to_udocker_container_variables(variables)
-    add_input_file_path_to_udocker_container_variables(variables)
-    add_instance_ip_to_udocker_container_variables(variables)
-    add_extra_payload_path_to_udocker_container_variables(variables)
-    add_lambda_output_variable(variables)
-    return variables
+def set_udocker_container_global_variables():
+    add_user_defined_variables_to_udocker_container_variables()
+    add_iam_credentials_to_udocker_container_variables()
+    add_session_and_security_token_to_udocker_container_variables()
+    add_input_file_path_to_udocker_container_variables()
+    add_instance_ip_to_udocker_container_variables()
+    add_extra_payload_path_to_udocker_container_variables()
+    add_lambda_output_variable()
 
 def append_script_to_udocker_command(script, command):
     script_path = "/tmp/%s/script.sh" % request_id
@@ -288,10 +315,10 @@ def append_script_to_udocker_command(script, command):
 def append_udocker_container_variables_to_udocker_command(command):
     container_vars = ["--env", "REQUEST_ID=%s" % request_id]
     command.extend(container_vars)        
-    # Add global variables (if any)
-    global_variables = get_udocker_container_global_variables()
-    if global_variables:
-        command.extend(global_variables)
+    # Set global udocker_variables (if any)
+    set_udocker_container_global_variables()
+    if len(udocker_variables) > 0:
+        command.extend(udocker_variables)
         
 def append_args_to_udocker_command(cmd_args, command):
     command.append(container_name)
@@ -415,8 +442,8 @@ def lambda_handler(event, context):
         output_file_path = launch_udocker_container(event, context, command)                                       
         stdout += read_file(output_file_path)
         
-        if has_lambda_output():
-            pass_lambda_output()
+        if has_output_lambda():
+            pass_output_lambda()
         post_process(event)
         
     except Exception:

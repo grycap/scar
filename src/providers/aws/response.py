@@ -117,14 +117,14 @@ def parse_error_invocation_response(response, function_name):
         
 def parse_payload(value):
     if (('Payload' in value) and value['Payload']):
-        value['Payload'] = json.loads(value['Payload'].read().decode("utf-8"))
-        return value
-    else:
-        return ''
+        payload = value['Payload'].read()
+        if len(payload) > 0:
+            value['Payload'] = json.loads(payload.decode("utf-8"))
     
 def parse_asynchronous_invocation_response(response, output_type, function_name):
     aws_output = 'LambdaOutput'
-    text_message = "Function '%s' launched correctly" % function_name
+    text_message = 'Request Id: %s\n' % response['ResponseMetadata']['RequestId']
+    text_message += "Function '%s' launched correctly" % function_name
     json_message = { aws_output : {'StatusCode' : response['StatusCode'],
                                    'RequestId' : response['ResponseMetadata']['RequestId']}}        
     print_generic_response(response, output_type, aws_output, text_message, json_output=json_message)
@@ -147,18 +147,17 @@ def parse_requestresponse_invocation_response(response, output_type):
 def parse_base64_response_values(value):
     value['LogResult'] = utils.base64_to_utf8(value['LogResult'])
     value['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'] = utils.base64_to_utf8(value['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'])
-    return value
 
 def parse_invocation_response(response, function_name, output_type, is_asynchronous):
     # Decode and parse the payload
-    response = parse_payload(response)
+    parse_payload(response)
     if "FunctionError" in response:
         parse_error_invocation_response(response, function_name)
     if is_asynchronous:        
         parse_asynchronous_invocation_response(response, output_type, function_name)
     else:
         # Transform the base64 encoded results to something legible
-        response = parse_base64_response_values(response)
+        parse_base64_response_values(response)
         # Extract log_group_name and log_stream_name from the payload
         parse_requestresponse_invocation_response(response, output_type)
         

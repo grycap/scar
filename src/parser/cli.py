@@ -46,6 +46,8 @@ class CommandParser(object):
         parser_init.add_argument("-if", "--image_file", help="Container image file (i.e. centos.tar.gz)")
         parser_init.add_argument("-d", "--description", help="Lambda function description.")
         parser_init.add_argument("-db", "--deployment_bucket", help="Bucket where the deployment package is going to be uploaded.")
+        parser_init.add_argument("-ob", "--output_bucket", help="Bucket name where the output of the function is saved.")
+        parser_init.add_argument("-ol", "--output_lambda", help="Lambda function name where the output will be redirected")
         parser_init.add_argument("-e", "--environment_variables", action='append', help="Pass environment variable to the container (VAR=val). Can be defined multiple times.")
         parser_init.add_argument("-n", "--name", help="Lambda function name")
         parser_init.add_argument("-m", "--memory", type=int, help="Lambda function memory in megabytes. Range from 128 to 1536 in increments of 64")
@@ -59,8 +61,8 @@ class CommandParser(object):
         parser_init.add_argument("-r", "--recursive", help="Launch a recursive lambda function", action="store_true")
         parser_init.add_argument("-p", "--preheat", help="Preheats the function running it once and downloading the necessary container", action="store_true")
         parser_init.add_argument("-ep", "--extra_payload", help="Folder containing files that are going to be added to the lambda function")
-        parser_init.add_argument("-lo", "--lambda_output", help="Lambda function name where the output will be redirected")
         parser_init.add_argument("-api", "--api_gateway_name", help="API Gateway name created to launch the lambda function")
+
     
     def create_run_parser(self):
         parser_run = self.subparsers.add_parser('run', help="Deploy function")
