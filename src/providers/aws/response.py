@@ -24,6 +24,16 @@ class OutputType(Enum):
     JSON = 2
     VERBOSE = 3
 
+def parse_http_response(response, function_name, asynch):
+    text_message = "Request Id: {0}".format(response.headers['x-amzn-RequestId'])
+    if asynch:
+        text_message += "\nFunction '{0}' launched correctly".format(function_name)
+    else:
+        text_message += "\nLog Group Name: {0}\n".format(response.headers['logGroupName']) 
+        text_message += "Log Stream Name: {0}\n".format(response.headers['logStreamName'])
+        text_message += response.text
+    logger.info(text_message)
+    
 def print_generic_response(response, output_type, aws_output, text_message=None, json_output=None, verbose_output=None):
     if output_type == OutputType.PLAIN_TEXT:
         output = text_message

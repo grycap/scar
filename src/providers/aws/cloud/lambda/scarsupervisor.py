@@ -427,14 +427,16 @@ def create_response(context):
 #         LAMBDA MAIN FUNCTION        #
 #######################################
 def lambda_handler(event, context):
-    logger.info("Received event: " + json.dumps(event))
-    set_request_id(context)
-    set_invocation_input_output_folders()
-    #stdout = "---------------------------------------------------------------------------\n"
-    stdout = ""
-    response = create_response(context)
     try:
+        stdout = ""
+        response = create_response(context)
+        logger.info("Received event: " + json.dumps(event))
+        set_request_id(context)
+        set_invocation_input_output_folders()
         pre_process(event)
+        
+        print("ERROR" +1 )
+        
         # Create container execution command
         command = create_udocker_command(event)
         logger.debug("Udocker command: %s" % command)

@@ -61,7 +61,6 @@ class AWS(Commands):
         return iam    
        
     def init(self):
-        
         if self._lambda.has_api_defined():
             api_id, aws_acc_id = self.api_gateway.create_api_gateway()
             self._lambda.set_api_gateway_id(api_id, aws_acc_id)        
@@ -79,6 +78,9 @@ class AWS(Commands):
         # If preheat is activated, the function is launched at the init step
         if self._lambda.need_preheat():    
             self._lambda.preheat_function()
+    
+    def invoke(self):
+        self._lambda.invoke_function_http()
     
     def run(self):
         if self._lambda.has_event_source():

@@ -131,7 +131,8 @@ class APIGatewayClient(BotoClient):
             return self.get_client().put_method(restApiId=api_id,
                                                 resourceId=resource_id,
                                                 httpMethod=http_method,
-                                                authorizationType=authorization_type)
+                                                authorizationType=authorization_type,
+                                                requestParameters={'method.request.header.X-Amz-Invocation-Type' : False} )
         except ClientError as ce:
             error_msg = "Error creating the method '{0}' in the API '{1}'".format(http_method, api_id)
             logger.error(error_msg, error_msg + ": {0}".format(ce))
@@ -141,13 +142,15 @@ class APIGatewayClient(BotoClient):
             More info in https://boto3.readthedocs.io/en/latest/reference/services/apigateway.html#APIGateway.Client.put_integration
             Also https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html
         '''
+        req_param = { 'integration.request.header.X-Amz-Invocation-Type': 'method.request.header.X-Amz-Invocation-Type' }
         try:
             return self.get_client().put_integration(restApiId=api_id,
                                                      resourceId=resource_id,
                                                      httpMethod=http_method,
                                                      type=aws_type,
                                                      integrationHttpMethod='POST',
-                                                     uri=api_uri)
+                                                     uri=api_uri,
+                                                     requestParameters=req_param)
             '''
             arn:aws:apigateway:{region}:{subdomain.service|service}:path|action/{service_api}
             arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:123456789012:function:HelloWorld/invocations

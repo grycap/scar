@@ -28,6 +28,9 @@ class Scar(Commands):
     def init(self):
         self.cloud_provider.init()
     
+    def invoke(self):
+        self.cloud_provider.invoke()    
+    
     def run(self):
         self.cloud_provider.run()
     

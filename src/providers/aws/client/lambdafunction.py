@@ -30,6 +30,7 @@ import src.providers.aws.response as response_parser
 import src.utils as utils
 import tempfile
 from multiprocessing.pool import ThreadPool
+import src.http.invoke as invoke
 
 MAX_CONCURRENT_INVOCATIONS = 1000
 
@@ -39,6 +40,7 @@ class CallType(Enum):
     LS = "ls"
     RM = "rm"
     LOG = "log"
+    INVOKE = "invoke"    
     
 def get_call_type(value):
     for call_type in CallType:
@@ -86,8 +88,6 @@ class Lambda(object):
                 return self.properties[value][nested_value]
             else:
                 return self.properties[value]
-        else:
-            return ""
         
     def set_property(self, key, value):
         self.properties[key] = value
@@ -108,7 +108,7 @@ class Lambda(object):
         return self.get_property("preheat")
     
     def has_event_source(self):
-        return self.get_property("event_source") != ""
+        return utils.has_dict_prop_value(self.properties, 'event_source')    
     
     def get_event_source(self):
         return self.get_property("event_source")   
@@ -170,7 +170,9 @@ class Lambda(object):
         error_msg = None
         if function_found and (call_type == CallType.INIT):
             error_msg = "Function name '%s' already used." % function_name
-        elif (not function_found) and ((call_type == CallType.RM) or (call_type == CallType.RUN)):
+        elif (not function_found) and ((call_type == CallType.RM) or 
+                                       (call_type == CallType.RUN) or 
+                                       (call_type == CallType.INVOKE)):
             error_msg = "Function '%s' doesn't exist." % function_name
         if error_msg:
             logger.error(error_msg)             
@@ -416,6 +418,32 @@ class Lambda(object):
         env_vars = self.client.get_function_environment_variables(function_name)
         if ('API_GATEWAY_ID' in env_vars['Variables']):
             return env_vars['Variables']['API_GATEWAY_ID']
+        
+    def invoke_function_http(self, func_name=None):
+        if func_name:
+            function_name = func_name
+        else:
+            function_name = self.get_function_name()
+        api_id = self.get_api_gateway_id(function_name)
+
+        if api_id is None or api_id == "":
+            error_msg = "Error retrieving API ID for lambda function {0}".format(func_name)
+            logger.error(error_msg)
+            utils.finish_failed_execution()
+        
+        function_url = 'https://{0}.execute-api.{1}.amazonaws.com/scar/launch'.format(api_id, self.get_property("region"))
+        asynch=self.get_property("asynchronous")
+        headers=None
+        if asynch:
+            headers = {'X-Amz-Invocation-Type': 'Event'}
+        
+        response = invoke.invoke_function(function_url, 
+                               method=self.get_property("request"), 
+                               parameters=self.get_property("parameters"), 
+                               data=self.get_property("data"), 
+                               headers=headers )
+        
+        response_parser.parse_http_response(response, function_name, asynch)
 
 class LambdaClient(BotoClient):
     '''A low-level client representing aws LambdaClient.
