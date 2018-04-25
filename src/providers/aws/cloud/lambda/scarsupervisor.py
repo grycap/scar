@@ -134,8 +134,8 @@ def process_http_event(event):
     if http_method == 'POST' and event['body'] is not None:
         body = event['body']
         body_file_name = uuid.uuid4().hex
-        file_path = '/tmp/%s/%s' % (request_id, body_file_name)
-        logger.info("Received file from POST request and saved it in path '%s'" % (file_path))
+        file_path = "/tmp/{0}/{1}".format(request_id, body_file_name)
+        logger.info("Received file from POST request and saved it in path '{0}'".format(file_path))
         os.makedirs(os.path.dirname(file_path), exist_ok=True)  
         with open(file_path, 'w') as data:
             data.write(body)
@@ -434,9 +434,6 @@ def lambda_handler(event, context):
         set_request_id(context)
         set_invocation_input_output_folders()
         pre_process(event)
-        
-        print("ERROR" +1 )
-        
         # Create container execution command
         command = create_udocker_command(event)
         logger.debug("Udocker command: %s" % command)

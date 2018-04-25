@@ -69,11 +69,11 @@ class CommandParser(object):
         parser_invoke = self.subparsers.add_parser('invoke', help="Call a lambda function using an HTTP request")
         # Set default function
         parser_invoke.set_defaults(func=self.scar.invoke)
-        parser_invoke.add_argument("-n", "--name", help="Lambda function name", required=True)
-        parser_invoke.add_argument("-X", "--request", help="Specify request command to use (i.e. GET or POST)", default='GET')
-        parser_invoke.add_argument("-d", "--data", help="HTTP POST data")
-        parser_invoke.add_argument("-a", "--asynchronous", help="Tell Scar to wait or not for the lambda function return", action="store_true")
-        parser_invoke.add_argument("-p", "--parameters", help="In addition to passing the parameters in the URL, you can pass the parameters here (i.e. {'key1': 'value1', 'key2': ['value2', 'value3']})")  
+        parser_invoke.add_argument("-n", "--name", help="Lambda function name (mandatory).", required=True)
+        parser_invoke.add_argument("-X", "--request", help="Specify request command to use (i.e. GET or POST) (default: GET).", default='GET')
+        parser_invoke.add_argument("-db", "--data-binary", help="File path of the HTTP data to POST.")
+        parser_invoke.add_argument("-a", "--asynchronous", help="Tells Scar to wait or not for the lambda function return.", action="store_true")
+        parser_invoke.add_argument("-p", "--parameters", help="In addition to passing the parameters in the URL, you can pass the parameters here (i.e. '{\"key1\": \"value1\", \"key2\": [\"value2\", \"value3\"]}').")  
     
     def create_run_parser(self):
         parser_run = self.subparsers.add_parser('run', help="Deploy function")
@@ -82,7 +82,7 @@ class CommandParser(object):
         parser_run.add_argument("-m", "--memory", type=int, help="Lambda function memory in megabytes. Range from 128 to 1536 in increments of 64")
         parser_run.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 300.")
         parser_run.add_argument("-e", "--environment_variables", action='append', help="Pass environment variable to the container (VAR=val). Can be defined multiple times.")
-        parser_run.add_argument("-a", "--asynchronous", help="Tell Scar to wait or not for the lambda function return", action="store_true")
+        parser_run.add_argument("-a", "--asynchronous", help="Tells Scar to wait or not for the lambda function return", action="store_true")
         parser_run.add_argument("-s", "--script", nargs='?', type=argparse.FileType('r'), help="Path to the input file passed to the function")
         parser_run.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         parser_run.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")

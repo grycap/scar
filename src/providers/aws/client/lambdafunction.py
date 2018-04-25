@@ -19,18 +19,18 @@ from .iam import IAM
 from botocore.exceptions import ClientError
 from botocore.vendored.requests.exceptions import ReadTimeout
 from enum import Enum
+from multiprocessing.pool import ThreadPool
 from src.parser.cfgfile import ConfigFile
 from src.providers.aws.response import OutputType
-import src.providers.aws.client.codezip as codezip
-import src.providers.aws.client.validators as validators
 import json
 import os
+import src.http.invoke as invoke
 import src.logger as logger
+import src.providers.aws.client.codezip as codezip
+import src.providers.aws.client.validators as validators
 import src.providers.aws.response as response_parser
 import src.utils as utils
 import tempfile
-from multiprocessing.pool import ThreadPool
-import src.http.invoke as invoke
 
 MAX_CONCURRENT_INVOCATIONS = 1000
 
@@ -437,10 +437,19 @@ class Lambda(object):
         if asynch:
             headers = {'X-Amz-Invocation-Type': 'Event'}
         
+        params = self.get_property("parameters")
+        if params:
+            params = json.loads(params)
+        
+        data = self.get_property("data-binary")
+        if data:
+            with open(data, 'rb') as f:
+                data = f.read()
+        
         response = invoke.invoke_function(function_url, 
                                method=self.get_property("request"), 
-                               parameters=self.get_property("parameters"), 
-                               data=self.get_property("data"), 
+                               parameters=params, 
+                               data=data, 
                                headers=headers )
         
         response_parser.parse_http_response(response, function_name, asynch)
