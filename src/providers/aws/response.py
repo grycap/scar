@@ -29,9 +29,9 @@ def parse_http_response(response, function_name, asynch):
     if asynch:
         text_message += "\nFunction '{0}' launched correctly".format(function_name)
     else:
-        text_message += "\nLog Group Name: {0}\n".format(response.headers['logGroupName']) 
-        text_message += "Log Stream Name: {0}\n".format(response.headers['logStreamName'])
-        text_message += response.text
+        text_message += "\nLog Group Name: {0}\n".format(response.headers['amz-log-group-name']) 
+        text_message += "Log Stream Name: {0}\n".format(response.headers['amz-log-stream-name'])
+        text_message += json.loads(response.text)["udocker_output"]
     logger.info(text_message)
     
 def print_generic_response(response, output_type, aws_output, text_message=None, json_output=None, verbose_output=None):
@@ -148,17 +148,24 @@ def parse_asynchronous_invocation_response(response, output_type, function_name)
     
 def parse_requestresponse_invocation_response(response, output_type):
     aws_output = 'LambdaOutput'
+    log_group_name = response['Payload']['headers']['amz-log-group-name']
+    log_stream_name = response['Payload']['headers']['amz-log-stream-name']
+    request_id = response['ResponseMetadata']['RequestId']
+    if "exception" in response['Payload']['body']:
+        body = "ERROR launching udocker container: \n {0}".format(json.loads(response['Payload']['body'])['exception'])
+    else:
+        body = json.loads(response['Payload']['body'])['udocker_output']
     
-    text_message = 'Request Id: %s\n' % response['ResponseMetadata']['RequestId']
-    text_message += 'Log Group Name: %s\n' % response['Payload']['headers']['logGroupName']
-    text_message += 'Log Stream Name: %s\n' % response['Payload']['headers']['logStreamName']
-    text_message += response['Payload']['body']
+    text_message = 'Request Id: %s\n' % request_id
+    text_message += 'Log Group Name: %s\n' % log_group_name
+    text_message += 'Log Stream Name: %s\n' % log_stream_name
+    text_message += body
     
     json_message = { aws_output : {'StatusCode' : response['StatusCode'],
-                                   'Payload' : response['Payload']['body'],
-                                   'LogGroupName' : response['Payload']['headers']['logGroupName'],
-                                   'LogStreamName' : response['Payload']['headers']['logStreamName'],
-                                   'RequestId' : response['ResponseMetadata']['RequestId']}}        
+                                   'Payload' : body,
+                                   'LogGroupName' : log_group_name,
+                                   'LogStreamName' : log_stream_name,
+                                   'RequestId' : request_id}}        
     print_generic_response(response, output_type, aws_output, text_message, json_output=json_message)        
       
 def parse_base64_response_values(value):

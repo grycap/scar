@@ -16,8 +16,9 @@
 import logging
 import json
 
+loglevel = logging.INFO
 FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-logging.basicConfig(filename='scar.log', level=logging.INFO, format=FORMAT)
+logging.basicConfig(filename='scar.log', level=loglevel, format=FORMAT)
 
 def init_execution_trace():
     logging.info('----------------------------------------------------')
@@ -32,14 +33,15 @@ def end_execution_trace_with_errors():
     logging.info('----------------------------------------------------')
 
 def debug(cli_msg, log_msg=None):
-    print(cli_msg)
+    if loglevel == logging.DEBUG:
+        print(cli_msg)
     if log_msg:
         logging.debug(log_msg)
     else:
         logging.debug(cli_msg)
 
 def info(cli_msg=None, log_msg=None):
-    if cli_msg:
+    if cli_msg and loglevel == logging.INFO:
         print(cli_msg)
     if log_msg:
         logging.info(log_msg)

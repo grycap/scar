@@ -69,8 +69,11 @@ class AWS(Commands):
         self._lambda.create_function()
         self.cloudwatch_logs.create_log_group()
         
-        if self._lambda.has_event_source():
-            self.create_event_source()
+        if self._lambda.has_input_bucket():
+            self.create_input_source()
+            
+        if self._lambda.has_output_bucket():
+            self.s3.create_bucket(self._lambda.get_output_bucket())            
        
         if self._lambda.has_api_defined():
             self._lambda.add_invocation_permission_from_api_gateway() 
@@ -83,8 +86,8 @@ class AWS(Commands):
         self._lambda.invoke_function_http()
     
     def run(self):
-        if self._lambda.has_event_source():
-            self.process_event_source_calls()               
+        if self._lambda.has_input_bucket():
+            self.process_input_bucket_calls()               
         else:
             if self._lambda.is_asynchronous():
                 self._lambda.set_asynchronous_call_parameters()
@@ -116,7 +119,7 @@ class AWS(Commands):
         user_id = self.iam.get_user_name_or_id()
         return self.resource_groups.get_lambda_functions_arn_list(user_id)
         
-    def process_event_source_calls(self):
+    def process_input_bucket_calls(self):
         s3_file_list = self.s3.get_processed_bucket_file_list()
         logger.info("Files found: '%s'" % s3_file_list)
         # First do a request response invocation to prepare the lambda environment
@@ -127,11 +130,11 @@ class AWS(Commands):
         if s3_file_list:
             self._lambda.process_asynchronous_lambda_invocations(s3_file_list)      
      
-    def create_event_source(self):
+    def create_input_source(self):
         try:
-            self.s3.create_event_source()
-            self._lambda.link_function_and_event_source()
-            self.s3.set_event_source_notification()
+            self.s3.create_input_bucket()
+            self._lambda.link_function_and_input_bucket()
+            self.s3.set_input_bucket_notification()
         except ClientError as ce:
             error_msg = "Error creating the event source"
             logger.error(error_msg, error_msg + ": %s" % ce)

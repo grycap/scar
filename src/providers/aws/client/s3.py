@@ -38,39 +38,38 @@ class S3():
     
     def __init__(self, aws_lambda=None):
         if aws_lambda:
-            self.bucket_name = aws_lambda.get_property("event_source")
+            self.input_bucket = aws_lambda.get_property("input_bucket")
+            self.input_folder = aws_lambda.get_property("input_folder")
+            if self.input_folder is None:
+                self.input_folder = "{0}/input/".format(aws_lambda.get_function_name())
+            
             self.function_arn = aws_lambda.get_property("function_arn")
-            self.is_recursive = aws_lambda.get_property("recursive")
             self.region = aws_lambda.get_property("region")
 
-    def create_event_source(self):
+    def create_bucket(self, bucket_name):
         try:
-            if not self.client.find_bucket_by_name(self.bucket_name):
+            if not self.client.find_bucket_by_name(bucket_name):
                 # Create the bucket if not found
-                self.client.create_bucket(self.bucket_name)
-            # Add folder structure
-            self.add_bucket_folder(self.bucket_name, "input/")
-            self.add_bucket_folder(self.bucket_name, "output/")
+                self.client.create_bucket(bucket_name)
         except ClientError as ce:
-            error_msg = "Error creating the bucket '%s'" % self.bucket_name
+            error_msg = "Error creating the bucket '%s'" % self.input_bucket
             logger.error(error_msg, error_msg + ": %s" % ce)
 
-    def set_event_source_notification(self):
-        self.create_trigger_from_bucket()
-        if self.is_recursive:
-            self.add_bucket_folder(self.bucket_name, "recursive/")
-            self.create_recursive_trigger_from_bucket(self.bucket_name, self.function_arn)                               
+    def create_input_bucket(self):
+        self.create_bucket(self.input_bucket)
+        self.add_bucket_folder(self.input_bucket, self.input_folder)
+
+    def add_bucket_folder(self, bucket_name, folder_name):
+        try:
+            self.client.put_object(bucket_name, folder_name)
+        except ClientError as ce:
+            error_msg = "Error creating the folder '%s' in the bucket '%s'" % (folder_name, bucket_name)
+            logger.error(error_msg, error_msg + ": %s" % (folder_name, bucket_name, ce))
+
+    def set_input_bucket_notification(self):           
+        notification = { "LambdaFunctionConfigurations": [self.get_trigger_configuration(self.function_arn, self.input_folder)] }
+        self.client.put_bucket_notification_configuration(self.input_bucket, notification)
             
-    def create_trigger_from_bucket(self):           
-        notification = { "LambdaFunctionConfigurations": [self.get_trigger_configuration(self.function_arn, "input/")] }
-        self.client.put_bucket_notification_configuration(self.bucket_name, notification)
-            
-    def create_recursive_trigger_from_bucket(self):
-        notification = { "LambdaFunctionConfigurations": [
-                            self.get_trigger_configuration(self.function_arn, "input/"),
-                            self.get_trigger_configuration(self.function_arn, "recursive/")] }
-        self.client.put_bucket_notification_configuration(self.bucket_name, notification)
-        
     def get_trigger_configuration(self, function_arn, folder_name):
         self.trigger_configuration["LambdaFunctionArn"] = function_arn
         self.trigger_configuration["Filter"]["Key"]["FilterRules"][0]["Value"] = folder_name
@@ -78,10 +77,10 @@ class S3():
         
     def get_processed_bucket_file_list(self):
         file_list = []
-        result = self.client.get_bucket_file_list(self.bucket_name, 'input/')
+        result = self.client.get_bucket_file_list(self.input_bucket, self.input_folder)
         if 'Contents' in result:
             for content in result['Contents']:
-                if content['Key'] and content['Key'] != "input/":
+                if content['Key'] and content['Key'] != self.input_folder:
                     file_list.append(content['Key'])
         return file_list         
 
@@ -92,13 +91,6 @@ class S3():
             error_msg = "Error uploading the file '%s' to the S3 bucket '%s'" % (file_key, bucket_name)
             logger.error(error_msg, error_msg + ": %s" % ce)          
 
-    def add_bucket_folder(self, bucket_name, folder_name):
-        try:
-            self.client.put_object(bucket_name, folder_name)
-        except ClientError as ce:
-            error_msg = "Error creating the folder '%s' in the bucket '%s'" % (folder_name, bucket_name)
-            logger.error(error_msg, error_msg + ": %s" % (folder_name, bucket_name, ce))              
-            
 class S3Client(BotoClient):
     '''A low-level client representing Amazon Simple Storage Service (S3Client).
     https://boto3.readthedocs.io/en/latest/reference/services/s3.html'''
@@ -120,11 +112,11 @@ class S3Client(BotoClient):
             return True
         except ClientError as ce:
             # Function not found
-            if ce.response['Error']['Code'] == 'ResourceNotFoundException':
+            if ce.response['Error']['Code'] == 'NoSuchBucket':
                 return False
             else:
-                error_msg = "Error, bucket '%s' not found" % bucket_name
-                logger.error(error_msg, error_msg + ": %s" % (bucket_name, ce))        
+                error_msg = "Error, bucket '{0}' not found".format(bucket_name)
+                logger.error(error_msg, error_msg + ": {0}".format(ce))        
     
     def get_bucket_file_list(self, bucket_name, prefix):
         try:

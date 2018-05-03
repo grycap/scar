@@ -31,6 +31,7 @@ import src.providers.aws.client.validators as validators
 import src.providers.aws.response as response_parser
 import src.utils as utils
 import tempfile
+import base64
 
 MAX_CONCURRENT_INVOCATIONS = 1000
 
@@ -107,11 +108,14 @@ class Lambda(object):
     def need_preheat(self):
         return self.get_property("preheat")
     
-    def has_event_source(self):
-        return utils.has_dict_prop_value(self.properties, 'event_source')    
+    def has_input_bucket(self):
+        return self.get_property("input_bucket") is not None
     
-    def get_event_source(self):
-        return self.get_property("event_source")   
+    def get_input_bucket(self):
+        return self.get_property("input_bucket")      
+    
+    def get_output_bucket(self):
+        return self.get_property("output_bucket")    
     
     def create_function(self):
         try:
@@ -178,9 +182,9 @@ class Lambda(object):
             logger.error(error_msg)             
             utils.finish_failed_execution()             
     
-    def link_function_and_event_source(self):
-        self.client.add_invocation_permission_from_s3(self.get_function_name(), 
-                                                                           self.get_event_source())                    
+    def link_function_and_input_bucket(self):
+        self.client.add_invocation_permission_from_s3(self.get_function_name(),
+                                                      self.get_input_bucket())                    
         
     def preheat_function(self):
         logger.info("Preheating function")
@@ -280,17 +284,17 @@ class Lambda(object):
     def has_output_bucket(self):
         return utils.has_dict_prop_value(self.properties, 'output_bucket')
     
-    def has_output_lambda(self):
-        return utils.has_dict_prop_value(self.properties, 'output_lambda')
-        
+    def has_output_folder(self):
+        return utils.has_dict_prop_value(self.properties, 'output_folder')
+
     def set_required_environment_variables(self):
         self.add_lambda_environment_variable('TIMEOUT_THRESHOLD', str(self.get_property("timeout_threshold")))
         self.add_lambda_environment_variable('RECURSIVE', str(self.get_property("recursive")))
         self.add_lambda_environment_variable('IMAGE_ID', self.get_property("image_id"))
-        if self.has_output_lambda():
-            self.add_lambda_environment_variable('OUTPUT_LAMBDA', self.get_property("output_lambda"))
         if self.has_output_bucket():
-            self.add_lambda_environment_variable('OUTPUT_BUCKET', self.get_property("output_bucket"))            
+            self.add_lambda_environment_variable('OUTPUT_BUCKET', self.get_property("output_bucket"))
+        if self.has_output_folder():
+            self.add_lambda_environment_variable('OUTPUT_FOLDER', self.get_property("output_folder"))                   
 
     def add_lambda_environment_variable(self, key, value):
         if (key is not None or key != "") and (value is not None):
@@ -483,7 +487,7 @@ class LambdaClient(BotoClient):
                         handler, code, environment,
                         description, timeout, memory_size, tags): 
         try:
-            logger.info("Creating lambda function.")
+            logger.debug("Creating lambda function.")
             response = self.get_client().create_function(FunctionName=function_name,
                                                          Runtime=runtime,
                                                          Role=role,

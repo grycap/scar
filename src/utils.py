@@ -59,6 +59,9 @@ def find_expression(rgx_pattern, string_to_search):
 def base64_to_utf8(value):
     return base64.b64decode(value).decode('utf8')
 
+def dict_to_base64_string(value):
+    return base64.b64encode(json.dumps(value)).decode("utf-8")
+
 def escape_list(values):
     result = []
     for value in values:

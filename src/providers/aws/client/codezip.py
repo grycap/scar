@@ -55,7 +55,7 @@ def create_code_zip(function_name, env_vars, script=None, extra_payload=None, im
             prepare_udocker_image(image_file, env_vars)
         
     if script and script != "":
-        shutil.copy(script, scar_temporal_folder + "init_script.sh")
+        shutil.copy(script, scar_temporal_folder + "/init_script.sh")
         env_vars['INIT_SCRIPT_PATH'] = "/var/task/init_script.sh"
 
     if extra_payload and extra_payload != "":
