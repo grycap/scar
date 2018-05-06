@@ -11,6 +11,7 @@ This directory includes different use cases of applications packaged as Docker i
 * [ImageMagick](https://www.imagemagick.org), a tool to manipulate images.
 * [MrBayes](http://mrbayes.sourceforge.net/), a scientific application for bayesian inference of Phylogeny.
 * [R](https://www.r-project.org/), a free software environment for statistical computing and graphics.
+* [Ruby](ttps://www.ruby-lang.org), a dynamic, open source programming language with a focus on simplicity and productivity
 * [Theano](http://deeplearning.net/software/theano/), a Python library that allows you to define, optimize, and evaluate mathematical expressions involving multi-dimensional arrays efficiently.
 
 Are you using SCAR for another application? Let us know by creating an issue.
