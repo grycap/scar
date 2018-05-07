@@ -25,6 +25,7 @@ from src.cmdtemplate import Commands
 import src.logger as logger
 import src.providers.aws.response as response_parser
 import src.utils as utils
+import os
 
 class AWS(Commands):
 
@@ -107,6 +108,12 @@ class AWS(Commands):
     def log(self):
         aws_log = self.cloudwatch_logs.get_aws_log()
         print(aws_log)
+        
+    def put(self):
+        bucket_name = self._lambda.get_property("bucket")
+        bucket_folder = self._lambda.get_property("bucket_folder")
+        path_to_upload = self._lambda.get_property("path")
+        self.upload_to_s3(bucket_name, bucket_folder, path_to_upload)
 
     def parse_command_arguments(self, args):
         self._lambda.set_properties(args)
@@ -129,6 +136,28 @@ class AWS(Commands):
         # If the list has more elements, invoke functions asynchronously    
         if s3_file_list:
             self._lambda.process_asynchronous_lambda_invocations(s3_file_list)      
+
+    def upload_to_s3(self, bucket_name, bucket_folder, path_to_upload):
+        self.s3.create_bucket(bucket_name)
+        if(os.path.isdir(path_to_upload)):
+            files = utils.get_all_files_in_directory(path_to_upload)
+        else:
+            files = [path_to_upload]
+        for file in files:
+            self.upload_file_to_s3(bucket_name, bucket_folder, file)            
+
+    def upload_file_to_s3(self, bucket_name, bucket_folder, file_path):
+        file_data = utils.get_file_as_byte_array(file_path)
+        file_name = os.path.basename(file_path)
+        if bucket_folder and bucket_folder != "":
+            if bucket_folder.endswith("/"):
+                file_key = "{0}{1}".format(bucket_folder, file_name)
+            else:
+                file_key = "{0}/{1}".format(bucket_folder, file_name)
+        else:
+            file_key = "{1}".format(file_name)
+        logger.info("Uploading file '{0}' to bucket '{1}' with key '{2}'".format(file_path, bucket_name, file_key))
+        self.s3.upload_file(bucket_name, file_key, file_data)
      
     def create_input_source(self):
         try:

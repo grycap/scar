@@ -121,4 +121,11 @@ def get_tree_size(path):
             total += get_tree_size(entry.path)
         else:
             total += entry.stat(follow_symlinks=False).st_size
-    return total     
+    return total
+
+def get_all_files_in_directory(dir_path):
+    files = []
+    for dirname, _, filenames in os.walk(dir_path):
+        for filename in filenames:
+            files.append(os.path.join(dirname, filename))
+    return files

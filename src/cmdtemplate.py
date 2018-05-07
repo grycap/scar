@@ -45,5 +45,9 @@ class Commands(metaclass=abc.ABCMeta):
         pass
     
     @abc.abstractmethod
+    def put(self):
+        pass    
+    
+    @abc.abstractmethod
     def parse_command_arguments(self, args):
         pass    

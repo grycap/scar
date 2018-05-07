@@ -43,6 +43,9 @@ class Scar(Commands):
     def log(self):
         self.cloud_provider.log()
         
+    def put(self):
+        self.cloud_provider.put()        
+        
     def parse_command_arguments(self):
         args = CommandParser(self).parse_arguments()
         if hasattr(args, 'func'):

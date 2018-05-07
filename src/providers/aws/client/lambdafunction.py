@@ -31,7 +31,6 @@ import src.providers.aws.client.validators as validators
 import src.providers.aws.response as response_parser
 import src.utils as utils
 import tempfile
-import base64
 
 MAX_CONCURRENT_INVOCATIONS = 1000
 
@@ -41,7 +40,9 @@ class CallType(Enum):
     LS = "ls"
     RM = "rm"
     LOG = "log"
-    INVOKE = "invoke"    
+    INVOKE = "invoke"
+    PUT = "put"
+    GET = "get"           
     
 def get_call_type(value):
     for call_type in CallType:
@@ -346,7 +347,10 @@ class Lambda(object):
         self.properties = utils.merge_dicts(self.properties, vars(args))
         call_type = self.set_call_type(args.func.__name__)
         self.set_output_type()
-        if ((call_type != CallType.LS) and (not self.get_delete_all())):
+        if ((call_type != CallType.LS) and 
+            (not self.get_delete_all()) and
+            (call_type != CallType.PUT) and
+            (call_type != CallType.GET)):
             if (call_type == CallType.INIT):
                 if (not self.get_property("name")) or (self.get_property("name") == ""):
                     func_name = "function"

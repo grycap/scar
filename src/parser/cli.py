@@ -33,11 +33,12 @@ class CommandParser(object):
     def create_subparsers(self):
         self.subparsers = self.parser.add_subparsers(title='Commands')    
         self.create_init_parser()
-        self.create_invoke_parser()        
+        self.create_invoke_parser()
         self.create_run_parser()
         self.create_rm_parser()
         self.create_ls_parser()
-        self.create_log_parser()        
+        self.create_log_parser()
+        self.create_put_parser()
     
     def create_init_parser(self):
         parser_init = self.subparsers.add_parser('init', help="Create lambda function")
@@ -105,6 +106,7 @@ class CommandParser(object):
         parser_ls.set_defaults(func=self.scar.ls)
         parser_ls.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         parser_ls.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
+        #parser_ls.add_argument("-b", "--bucket", help="Show bucket files", required=True)
             
     def create_log_parser(self):
         parser_log = self.subparsers.add_parser('log', help="Show the logs for the lambda function")
@@ -113,8 +115,12 @@ class CommandParser(object):
         parser_log.add_argument("-ls", "--log_stream_name", help="Return the output for the log stream specified.")
         parser_log.add_argument("-ri", "--request_id", help="Return the output for the request id specified.")        
     
-    def put(self):
-        pass
+    def create_put_parser(self):
+        parser_put = self.subparsers.add_parser('put', help="Upload file(s) to bucket")
+        parser_put.set_defaults(func=self.scar.put)
+        parser_put.add_argument("-b", "--bucket", help="Bucket to use as storage", required=True)
+        parser_put.add_argument("-bf", "--bucket_folder", help="Folder used to store the file(s) in the bucket", default="")
+        parser_put.add_argument("-p", "--path", help="Path of the file or folder to upload", required=True)
     
     def get(self):
         pass        
