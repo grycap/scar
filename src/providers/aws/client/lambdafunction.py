@@ -445,7 +445,7 @@ class Lambda(object):
         if params:
             params = json.loads(params)
         
-        data = self.get_property("data-binary")
+        data = self.get_property("data_binary")
         if data:
             with open(data, 'rb') as f:
                 data = f.read()

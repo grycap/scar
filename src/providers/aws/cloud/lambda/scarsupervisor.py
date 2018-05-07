@@ -23,6 +23,7 @@ import traceback
 import tarfile
 import socket
 import uuid
+import base64
 
 loglevel = logging.INFO
 logger = logging.getLogger()
@@ -124,12 +125,12 @@ class HTTP():
     
     def save_post_body(self):
         if self.is_post_request_with_body():
-            body = lambda_instance.event['body']
+            body = base64.decode(lambda_instance.event['body'])
             body_file_name = uuid.uuid4().hex
             file_path = "/tmp/{0}/{1}".format(lambda_instance.request_id, body_file_name)
             logger.info("Received file from POST request and saved it in path '{0}'".format(file_path))
             os.makedirs(os.path.dirname(file_path), exist_ok=True)  
-            with open(file_path, 'w') as data:
+            with open(file_path, 'wb') as data:
                 data.write(body)
             return file_path
 
