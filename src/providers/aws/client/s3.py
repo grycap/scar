@@ -89,7 +89,14 @@ class S3():
             self.client.put_object(bucket_name, file_key, file_data)
         except ClientError as ce:
             error_msg = "Error uploading the file '%s' to the S3 bucket '%s'" % (file_key, bucket_name)
-            logger.error(error_msg, error_msg + ": %s" % ce)          
+            logger.error(error_msg, error_msg + ": %s" % ce)
+            
+    def download_file(self, bucket_name, file_key, output):
+        file_path = os.path.basename(file_key)
+        if output:
+            file_path = output
+        with open(file_path, 'wb') as f:
+            self.client.download_file(bucket_name, file_key, f)
 
 class S3Client(BotoClient):
     '''A low-level client representing Amazon Simple Storage Service (S3Client).
@@ -141,5 +148,14 @@ class S3Client(BotoClient):
             self.get_client().put_object(Bucket=bucket_name, Key=file_key, Body=file_data)
         else:
             self.get_client().put_object(Bucket=bucket_name, Key=file_key)
-              
-    
+            
+    def download_file(self, bucket_name, file_key, file):
+        '''Adds an object to a bucket.
+        https://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Client.download_fileobj'''
+        try:
+            self.get_client().download_fileobj(bucket_name, file_key, file)
+            
+        except ClientError as ce:
+            error_msg = "Error downloading file '{0}' from bucket '{1}'".format(file_key, bucket_name)
+            logger.error(error_msg, error_msg + "{0}: {1}".format(bucket_name, ce))
+            

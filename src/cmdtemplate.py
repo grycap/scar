@@ -46,6 +46,10 @@ class Commands(metaclass=abc.ABCMeta):
     
     @abc.abstractmethod
     def put(self):
+        pass
+    
+    @abc.abstractmethod
+    def get(self):
         pass    
     
     @abc.abstractmethod

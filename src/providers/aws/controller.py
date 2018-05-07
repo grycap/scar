@@ -114,6 +114,12 @@ class AWS(Commands):
         bucket_folder = self._lambda.get_property("bucket_folder")
         path_to_upload = self._lambda.get_property("path")
         self.upload_to_s3(bucket_name, bucket_folder, path_to_upload)
+        
+    def get(self):
+        bucket_name = self._lambda.get_property("bucket")
+        file_key = self._lambda.get_property("file_key")
+        output = self._lambda.get_property("output")
+        self.s3.download_file(bucket_name, file_key, output)      
 
     def parse_command_arguments(self, args):
         self._lambda.set_properties(args)

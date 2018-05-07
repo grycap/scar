@@ -39,6 +39,7 @@ class CommandParser(object):
         self.create_ls_parser()
         self.create_log_parser()
         self.create_put_parser()
+        self.create_get_parser()        
     
     def create_init_parser(self):
         parser_init = self.subparsers.add_parser('init', help="Create lambda function")
@@ -122,8 +123,12 @@ class CommandParser(object):
         parser_put.add_argument("-bf", "--bucket_folder", help="Folder used to store the file(s) in the bucket", default="")
         parser_put.add_argument("-p", "--path", help="Path of the file or folder to upload", required=True)
     
-    def get(self):
-        pass        
+    def create_get_parser(self):
+        parser_get = self.subparsers.add_parser('get', help="Download file(s) from bucket")
+        parser_get.set_defaults(func=self.scar.get)
+        parser_get.add_argument("-b", "--bucket", help="Bucket to use as storage", required=True)
+        parser_get.add_argument("-fk", "--file_key", help="File to download from bucket", required=True)
+        parser_get.add_argument("-o", "--output", help="Path to store the downloaded file")
     
     def parse_arguments(self):
         '''Command parsing and selection'''
