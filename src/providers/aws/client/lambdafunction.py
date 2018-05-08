@@ -31,8 +31,10 @@ import src.providers.aws.client.validators as validators
 import src.providers.aws.response as response_parser
 import src.utils as utils
 import tempfile
+import base64
 
 MAX_CONCURRENT_INVOCATIONS = 1000
+
 
 class CallType(Enum):
     INIT = "init"
@@ -43,11 +45,13 @@ class CallType(Enum):
     INVOKE = "invoke"
     PUT = "put"
     GET = "get"           
+
     
 def get_call_type(value):
     for call_type in CallType:
         if call_type.value == value:
             return call_type
+
 
 class Lambda(object):
     
@@ -60,7 +64,7 @@ class Lambda(object):
         "tags" : {},
         "environment" : { 'Variables' : {} },
         "environment_variables" : {},
-        "name_regex" : "(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}(-gov)?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\$LATEST|[a-zA-Z0-9-_]+))?",    
+        "name_regex" : "(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}(-gov)?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\$LATEST|[a-zA-Z0-9-_]+))?",
         "s3_event" : { "Records" : [ 
                         {"eventSource" : "aws:s3",
                          "s3" : {"bucket" : { "name" : "" },
@@ -170,7 +174,7 @@ class Lambda(object):
         if func_name:
             function_name = func_name
         else:
-            function_name= self.get_property("name")
+            function_name = self.get_property("name")
         function_found = self.find_function(function_name)
         error_msg = None
         if function_found and (call_type == CallType.INIT):
@@ -225,7 +229,7 @@ class Lambda(object):
         response = self.invoke_lambda_function()
         response_parser.parse_invocation_response(response,
                                                   self.get_function_name(),
-                                                  self.get_property("output"), 
+                                                  self.get_property("output"),
                                                   self.is_asynchronous())
 
     def invoke_lambda_function(self):
@@ -440,8 +444,8 @@ class Lambda(object):
             utils.finish_failed_execution()
         
         function_url = 'https://{0}.execute-api.{1}.amazonaws.com/scar/launch'.format(api_id, self.get_property("region"))
-        asynch=self.get_property("asynchronous")
-        headers=None
+        asynch = self.get_property("asynchronous")
+        headers = None
         if asynch:
             headers = {'X-Amz-Invocation-Type': 'Event'}
         
@@ -450,17 +454,20 @@ class Lambda(object):
             params = json.loads(params)
         
         data = self.get_property("data_binary")
+        
         if data:
             with open(data, 'rb') as f:
                 data = f.read()
+            data = base64.b64encode(data)
         
-        response = invoke.invoke_function(function_url, 
-                               method=self.get_property("request"), 
-                               parameters=params, 
-                               data=data, 
-                               headers=headers )
+        response = invoke.invoke_function(function_url,
+                               method=self.get_property("request"),
+                               parameters=params,
+                               data=data,
+                               headers=headers)
         
         response_parser.parse_http_response(response, function_name, asynch)
+
 
 class LambdaClient(BotoClient):
     '''A low-level client representing aws LambdaClient.
@@ -487,7 +494,7 @@ class LambdaClient(BotoClient):
             logger.error(error_msg, error_msg + ": %s" % ce)
             utils.finish_failed_execution()     
             
-    def create_function(self, function_name, runtime, role, 
+    def create_function(self, function_name, runtime, role,
                         handler, code, environment,
                         description, timeout, memory_size, tags): 
         try:
@@ -521,7 +528,6 @@ class LambdaClient(BotoClient):
             else:            
                 error_msg = "Error getting function data"
                 logger.error(error_msg, error_msg + ": %s" % ce)
-     
         
     def get_function_environment_variables(self, function_name):
         return self.get_client().get_function(FunctionName=function_name)['Configuration']['Environment']
@@ -588,7 +594,7 @@ class LambdaClient(BotoClient):
                                              StatementId=utils.get_random_uuid4_str(),
                                              Action="lambda:InvokeFunction",
                                              Principal=principal,
-                                             SourceArn=source_arn )
+                                             SourceArn=source_arn)
         except ClientError as ce:
             error_msg = "Error setting lambda permissions"
             logger.error(error_msg, error_msg + ": %s" % ce)                                     

@@ -24,8 +24,10 @@ import tarfile
 import socket
 import uuid
 import base64
+import cgi
+from io import BytesIO
 
-loglevel = logging.INFO
+loglevel = logging.DEBUG
 logger = logging.getLogger()
 logger.setLevel(loglevel)
 logger.info('SCAR: Loading lambda function')
@@ -54,10 +56,11 @@ class S3():
         return client
     
     def __init__(self):
-        self.record = self.get_s3_record()
-        self.input_bucket = self.record['bucket']['name']
-        self.file_key = self.record['object']['key']
-        self.file_download_path = '{0}/{1}'.format(lambda_instance.input_folder, uuid.uuid4().hex)      
+        if 'Records' in lambda_instance.event:
+            self.record = self.get_s3_record()
+            self.input_bucket = self.record['bucket']['name']
+            self.file_key = self.record['object']['key']
+            self.file_download_path = '{0}/{1}'.format(lambda_instance.input_folder, uuid.uuid4().hex)      
 
     def get_s3_record(self):
         if len(lambda_instance.event['Records']) > 1:
@@ -125,7 +128,7 @@ class HTTP():
     
     def save_post_body(self):
         if self.is_post_request_with_body():
-            body = base64.decode(lambda_instance.event['body'])
+            body = base64.b64decode(lambda_instance.event['body'])
             body_file_name = uuid.uuid4().hex
             file_path = "/tmp/{0}/{1}".format(lambda_instance.request_id, body_file_name)
             logger.info("Received file from POST request and saved it in path '{0}'".format(file_path))
