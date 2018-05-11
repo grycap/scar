@@ -18,6 +18,7 @@ import argparse
 import src.logger as logger
 import src.utils as utils
 
+
 class CommandParser(object):
     
     def __init__(self, scar):
@@ -54,7 +55,7 @@ class CommandParser(object):
         parser_init.add_argument("-inf", "--input_folder", help="Folder name where the input files will be stored (Only works when an input bucket is defined).")
         parser_init.add_argument("-ob", "--output_bucket", help="Bucket name where the output files are saved.")
         parser_init.add_argument("-outf", "--output_folder", help="Folder name where the output files are saved (Only works when an input bucket is defined).")
-        #parser_init.add_argument("-out-func", "--output_function", help="Function name where the output will be redirected")
+        # parser_init.add_argument("-out-func", "--output_function", help="Function name where the output will be redirected")
         parser_init.add_argument("-e", "--environment_variables", action='append', help="Pass environment variable to the container (VAR=val). Can be defined multiple times.")
         parser_init.add_argument("-n", "--name", help="Lambda function name")
         parser_init.add_argument("-m", "--memory", type=int, help="Lambda function memory in megabytes. Range from 128 to 1536 in increments of 64")
@@ -64,7 +65,7 @@ class CommandParser(object):
         parser_init.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
         parser_init.add_argument("-s", "--script", help="Path to the input file passed to the function")
         parser_init.add_argument("-lr", "--lambda_role", help="Lambda role used in the management of the functions")
-        #parser_init.add_argument("-r", "--recursive", help="Launch a recursive lambda function", action="store_true")
+        # parser_init.add_argument("-r", "--recursive", help="Launch a recursive lambda function", action="store_true")
         parser_init.add_argument("-p", "--preheat", help="Preheats the function running it once and downloading the necessary container", action="store_true")
         parser_init.add_argument("-ep", "--extra_payload", help="Folder containing files that are going to be added to the lambda function")
         parser_init.add_argument("-api", "--api_gateway_name", help="API Gateway name created to launch the lambda function")
@@ -107,7 +108,8 @@ class CommandParser(object):
         parser_ls.set_defaults(func=self.scar.ls)
         parser_ls.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         parser_ls.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
-        #parser_ls.add_argument("-b", "--bucket", help="Show bucket files", required=True)
+        parser_ls.add_argument("-b", "--bucket", help="Show bucket files")
+        parser_ls.add_argument("-bf", "--bucket_folder", help="Show bucket files")        
             
     def create_log_parser(self):
         parser_log = self.subparsers.add_parser('log', help="Show the logs for the lambda function")
@@ -127,9 +129,9 @@ class CommandParser(object):
         parser_get = self.subparsers.add_parser('get', help="Download file(s) from bucket")
         parser_get.set_defaults(func=self.scar.get)
         parser_get.add_argument("-b", "--bucket", help="Bucket to use as storage", required=True)
-        parser_get.add_argument("-fk", "--file_key", help="File to download from bucket", required=True)
-        parser_get.add_argument("-o", "--output", help="Path to store the downloaded file")
-    
+        parser_get.add_argument("-bf", "--bucket_folder", help="Path of the file or folder to download", required=True)
+        parser_get.add_argument("-p", "--path", help="Path to store the downloaded file or folder")
+
     def parse_arguments(self):
         '''Command parsing and selection'''
         try:

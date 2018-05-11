@@ -24,10 +24,8 @@ import tarfile
 import socket
 import uuid
 import base64
-import cgi
-from io import BytesIO
 
-loglevel = logging.DEBUG
+loglevel = logging.INFO
 logger = logging.getLogger()
 logger.setLevel(loglevel)
 logger.info('SCAR: Loading lambda function')
@@ -56,11 +54,13 @@ class S3():
         return client
     
     def __init__(self):
-        if 'Records' in lambda_instance.event:
+        if check_key_in_dictionary('Records', lambda_instance.event):
             self.record = self.get_s3_record()
             self.input_bucket = self.record['bucket']['name']
             self.file_key = self.record['object']['key']
-            self.file_download_path = '{0}/{1}'.format(lambda_instance.input_folder, uuid.uuid4().hex)      
+            self.file_name = os.path.basename(self.file_key)
+            self.file_download_path = '{0}/{1}'.format(lambda_instance.input_folder, self.file_name)
+            #self.file_download_path = '{0}/{1}'.format(lambda_instance.input_folder, uuid.uuid4().hex)      
 
     def get_s3_record(self):
         if len(lambda_instance.event['Records']) > 1:
@@ -93,6 +93,7 @@ class S3():
 
     def upload_output(self, bucket_name, bucket_folder=None):
         output_files_path = get_all_files_in_directory(lambda_instance.output_folder)
+        logger.debug("UPLOADING FILES {0}".format(output_files_path))
         for file_path in output_files_path:
             file_name = file_path.replace("{0}/".format(lambda_instance.output_folder), "")
             if bucket_folder:
@@ -159,14 +160,22 @@ class Lambda():
     @lazy_property
     def output_bucket_folder(self):
         output_folder = get_environment_variable('OUTPUT_FOLDER')
-        return output_folder        
-
+        return output_folder
+    
+    @lazy_property
+    def input_bucket(self):
+        input_bucket = get_environment_variable('INPUT_BUCKET')
+        return input_bucket
+    
     def has_output_bucket(self):
         return is_variable_in_environment('OUTPUT_BUCKET')
 
     def has_output_bucket_folder(self):
-        return is_variable_in_environment('OUTPUT_FOLDER')        
+        return is_variable_in_environment('OUTPUT_FOLDER')
     
+    def has_input_bucket(self):
+        return is_variable_in_environment('INPUT_BUCKET')
+
     def get_invocation_remaining_seconds(self):
         return int(self.context.get_remaining_time_in_millis() / 1000) - int(get_environment_variable('TIMEOUT_THRESHOLD'))            
         
@@ -404,9 +413,12 @@ class Supervisor():
     def parse_input(self):
         if self.is_s3_event():
             self.input_bucket = self.s3.input_bucket
+            logger.debug("INPUT BUCKET SET TO {0}".format(self.input_bucket))
             self.scar_input_file = self.s3.download_input()
+            logger.debug("INPUT FILE SET TO {0}".format(self.scar_input_file))
         elif self.is_http_event():
             self.scar_input_file = self.http.save_post_body()
+            logger.debug("INPUT FILE SET TO {0}".format(self.scar_input_file))
         
     def prepare_udocker(self):
         self.udocker.create_image()
@@ -429,10 +441,13 @@ class Supervisor():
         bucket_folder = None
         if lambda_instance.has_output_bucket():
             bucket_name = lambda_instance.output_bucket
+            logger.debug("OUTPUT BUCKET SET TO {0}".format(bucket_name))
             if lambda_instance.has_output_bucket_folder():
                 bucket_folder = lambda_instance.output_bucket_folder
-        elif self.has_input_bucket():
-            bucket_name = self.input_bucket
+                logger.debug("OUTPUT FOLDER SET TO {0}".format(bucket_folder))
+        elif lambda_instance.has_input_bucket():
+            bucket_name = lambda_instance.input_bucket
+            logger.debug("OUTPUT BUCKET SET TO {0}".format(bucket_name))
         if bucket_name:
             self.s3.upload_output(bucket_name, bucket_folder)
 
@@ -446,6 +461,7 @@ class Supervisor():
     def create_response(self):
         return {"statusCode" : self.status_code, 
                 "headers" : { 
+                    "amz-lambda-request-id": lambda_instance.request_id, 
                     "amz-log-group-name": lambda_instance.log_group_name, 
                     "amz-log-stream-name": lambda_instance.log_stream_name },
                 "body" : json.dumps(self.body),

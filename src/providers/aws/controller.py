@@ -88,16 +88,26 @@ class AWS(Commands):
     
     def run(self):
         if self._lambda.has_input_bucket():
-            self.process_input_bucket_calls()               
+            self.process_input_bucket_calls()
         else:
             if self._lambda.is_asynchronous():
                 self._lambda.set_asynchronous_call_parameters()
             self._lambda.launch_lambda_instance()
     
     def ls(self):
-        lambda_functions = self.get_all_functions()
-        response_parser.parse_ls_response(lambda_functions, 
-                                          self._lambda.get_output_type())
+        bucket_name = self._lambda.get_property("bucket")
+        bucket_folder = self._lambda.get_property("bucket_folder")        
+        if bucket_name:
+            if bucket_folder:
+                file_list = self.s3.get_bucket_files(bucket_name, bucket_folder)
+            else:
+                file_list = self.s3.get_bucket_files(bucket_name)   
+            for file_info in file_list:
+                print(file_info)
+        else:
+            lambda_functions = self.get_all_functions()
+            response_parser.parse_ls_response(lambda_functions, 
+                                              self._lambda.get_output_type())
     
     def rm(self):
         if self._lambda.get_delete_all():
@@ -117,9 +127,9 @@ class AWS(Commands):
         
     def get(self):
         bucket_name = self._lambda.get_property("bucket")
-        file_key = self._lambda.get_property("file_key")
-        output = self._lambda.get_property("output")
-        self.s3.download_file(bucket_name, file_key, output)      
+        file_prefix = self._lambda.get_property("bucket_folder")
+        output_path = self._lambda.get_property("path")
+        self.s3.download_bucket_files(bucket_name, file_prefix, output_path)
 
     def parse_command_arguments(self, args):
         self._lambda.set_properties(args)

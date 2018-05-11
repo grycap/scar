@@ -90,13 +90,51 @@ class S3():
         except ClientError as ce:
             error_msg = "Error uploading the file '%s' to the S3 bucket '%s'" % (file_key, bucket_name)
             logger.error(error_msg, error_msg + ": %s" % ce)
-            
-    def download_file(self, bucket_name, file_key, output):
-        file_path = os.path.basename(file_key)
-        if output:
-            file_path = output
+    
+    def get_bucket_files(self, bucket_name, prefix_key=''):
+        file_list = []
+        result = self.client.list_files(bucket_name, key=prefix_key)
+        if 'Contents' in result:
+            for info in result['Contents']:
+                file_list += [info['Key']]
+        while result['IsTruncated']:
+            token = result['NextContinuationToken']
+            result = self.client.list_files(bucket_name, key=prefix_key, continuation_token=token)
+            for info in result['Contents']:
+                file_list += [info['Key']]
+        return file_list        
+    
+    def download_bucket_files(self, bucket_name, file_prefix, output):
+        file_key_list = self.get_bucket_files(bucket_name, file_prefix)
+        for file_key in file_key_list:
+            # Avoid download s3 'folders'
+            if not file_key.endswith('/'):
+                # Parse file path
+                file_name = os.path.basename(file_key)
+                file_dir = file_key.replace(file_name, "")
+                dir_name = os.path.dirname(file_prefix)
+                if dir_name != '':
+                    local_path = file_dir.replace(os.path.dirname(file_prefix)+"/", "")
+                else:
+                    local_path = file_prefix + "/"
+                # Modify file path if there is an output defined
+                if output:
+                    if not output.endswith('/') and len(file_key_list) == 1:
+                        file_path = output
+                    else:
+                        local_path = output + local_path
+                        file_path = local_path + file_name
+                else:   
+                    file_path = local_path + file_name
+                # make sure the folders are created
+                if os.path.dirname(local_path) != '' and not os.path.isdir(local_path):
+                    os.makedirs(local_path, exist_ok=True)
+                self.download_file(bucket_name, file_key, file_path)
+    
+    def download_file(self, bucket_name, file_key, file_path):
+        logger.info("Downloading file '{0}' from bucket '{1}' in path '{2}'".format(file_key, bucket_name, file_path))
         with open(file_path, 'wb') as f:
-            self.client.download_file(bucket_name, file_key, f)
+            self.client.download_file(bucket_name, file_key, f)  
 
 class S3Client(BotoClient):
     '''A low-level client representing Amazon Simple Storage Service (S3Client).
@@ -158,4 +196,16 @@ class S3Client(BotoClient):
         except ClientError as ce:
             error_msg = "Error downloading file '{0}' from bucket '{1}'".format(file_key, bucket_name)
             logger.error(error_msg, error_msg + "{0}: {1}".format(bucket_name, ce))
+            
+    def list_files(self, bucket_name, key='', continuation_token=None):
+        '''Adds an object to a bucket.
+        https://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Client.download_fileobj'''
+        try:
+            if continuation_token:
+                return self.get_client().list_objects_v2(Bucket=bucket_name, Prefix=key, ContinuationToken=continuation_token)
+            else:
+                return self.get_client().list_objects_v2(Bucket=bucket_name, Prefix=key)
+        except ClientError as ce:
+            error_msg = "Error listing files from bucket '{0}'".format(bucket_name)
+            logger.error(error_msg, error_msg + "{0}: {1}".format(bucket_name, ce))            
             

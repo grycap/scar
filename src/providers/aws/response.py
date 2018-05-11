@@ -25,14 +25,21 @@ class OutputType(Enum):
     VERBOSE = 3
 
 def parse_http_response(response, function_name, asynch):
-    text_message = "Request Id: {0}".format(response.headers['x-amzn-RequestId'])
-    if asynch:
-        text_message += "\nFunction '{0}' launched correctly".format(function_name)
+    if response.ok:
+        text_message = "Request Id: {0}".format(response.headers['amz-lambda-request-id'])
+        if asynch:
+            text_message += "\nFunction '{0}' launched correctly".format(function_name)
+        else:
+            text_message += "\nLog Group Name: {0}\n".format(response.headers['amz-log-group-name']) 
+            text_message += "Log Stream Name: {0}\n".format(response.headers['amz-log-stream-name'])
+            text_message += json.loads(response.text)["udocker_output"]
     else:
-        text_message += "\nLog Group Name: {0}\n".format(response.headers['amz-log-group-name']) 
-        text_message += "Log Stream Name: {0}\n".format(response.headers['amz-log-stream-name'])
-        text_message += json.loads(response.text)["udocker_output"]
-    logger.info(text_message)
+        if asynch and response.status_code == 502:
+            text_message = "Function '{0}' launched sucessfully.".format(function_name)
+        else:
+            text_message = "Error ({0}): {1}".format(response.reason, json.loads(response.text)['message']) 
+        
+    logger.info(text_message)        
     
 def print_generic_response(response, output_type, aws_output, text_message=None, json_output=None, verbose_output=None):
     if output_type == OutputType.PLAIN_TEXT:

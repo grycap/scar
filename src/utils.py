@@ -96,10 +96,7 @@ def get_random_uuid4_str():
     return str(uuid.uuid4())
 
 def has_dict_prop_value(dictionary, value):
-    if (value in dictionary) and (dictionary[value] != ""):
-        return True
-    else:
-        return False
+    return (value in dictionary) and (dictionary[value] != "")
 
 def load_json_file(file_path):
     if os.path.isfile(file_path):
@@ -109,7 +106,6 @@ def load_json_file(file_path):
 def merge_dicts(d1, d2):
     for k,v in d2.items():
         if v is not None:
-            
             d1[k] = v
     return d1
 
@@ -129,3 +125,9 @@ def get_all_files_in_directory(dir_path):
         for filename in filenames:
             files.append(os.path.join(dirname, filename))
     return files
+
+def get_file_size(file_path):
+    '''Return file size in bytes'''
+    return os.stat(file_path).st_size
+
+

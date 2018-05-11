@@ -34,7 +34,8 @@ import tempfile
 import base64
 
 MAX_CONCURRENT_INVOCATIONS = 1000
-
+MAX_POST_BODY_SIZE = 1024*1024*6
+MAX_POST_BODY_SIZE_ASYNC = 1024*95
 
 class CallType(Enum):
     INIT = "init"
@@ -112,9 +113,6 @@ class Lambda(object):
     
     def need_preheat(self):
         return self.get_property("preheat")
-    
-    def has_input_bucket(self):
-        return self.get_property("input_bucket") is not None
     
     def get_input_bucket(self):
         return self.get_property("input_bucket")      
@@ -285,7 +283,10 @@ class Lambda(object):
     
     def has_deployment_bucket(self):
         return utils.has_dict_prop_value(self.properties, 'deployment_bucket')
-        
+ 
+    def has_input_bucket(self):
+        return utils.has_dict_prop_value(self.properties, 'input_bucket')
+    
     def has_output_bucket(self):
         return utils.has_dict_prop_value(self.properties, 'output_bucket')
     
@@ -296,6 +297,8 @@ class Lambda(object):
         self.add_lambda_environment_variable('TIMEOUT_THRESHOLD', str(self.get_property("timeout_threshold")))
         self.add_lambda_environment_variable('RECURSIVE', str(self.get_property("recursive")))
         self.add_lambda_environment_variable('IMAGE_ID', self.get_property("image_id"))
+        if self.has_input_bucket():
+            self.add_lambda_environment_variable('INPUT_BUCKET', self.get_property("input_bucket"))
         if self.has_output_bucket():
             self.add_lambda_environment_variable('OUTPUT_BUCKET', self.get_property("output_bucket"))
         if self.has_output_folder():
@@ -447,15 +450,15 @@ class Lambda(object):
         asynch = self.get_property("asynchronous")
         headers = None
         if asynch:
-            headers = {'X-Amz-Invocation-Type': 'Event'}
+            headers = {'X-Amz-Invocation-Type':'Event'}
         
         params = self.get_property("parameters")
         if params:
             params = json.loads(params)
         
         data = self.get_property("data_binary")
-        
         if data:
+            self.check_file_size(data)                
             with open(data, 'rb') as f:
                 data = f.read()
             data = base64.b64encode(data)
@@ -468,6 +471,17 @@ class Lambda(object):
         
         response_parser.parse_http_response(response, function_name, asynch)
 
+    def check_file_size(self, file_path, asynch):
+        file_size = utils.get_file_size(file_path)
+        error_msg = None
+        if file_size > MAX_POST_BODY_SIZE:
+            error_msg = "Invalid request: Payload size {0:.2f} MB greater than 6 MB".format((file_size/(1024*1024)))
+        elif asynch and file_size > MAX_POST_BODY_SIZE_ASYNC:
+            error_msg = "Invalid request: Payload size {0:.2f} KB greater than 128 KB".format((file_size/(1024)))
+        if error_msg:
+            error_msg += "\nCheck AWS Lambda invocation limits in : https://docs.aws.amazon.com/lambda/latest/dg/limits.html"
+            logger.error(error_msg)
+            utils.finish_failed_execution()         
 
 class LambdaClient(BotoClient):
     '''A low-level client representing aws LambdaClient.

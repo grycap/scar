@@ -26,7 +26,7 @@
 OUTPUT_DIR="/tmp/$REQUEST_ID/output"
 
 echo "SCRIPT: Invoked Video Grayifier. File available in $SCAR_INPUT_FILE"
-FILENAME=`basename $SCAR_INPUT_FILE`
+FILENAME=`basename $SCAR_INPUT_FILE .avi`
 OUTPUT_FILE=$OUTPUT_DIR/$FILENAME
-echo "SCRIPT: Converting input video file $SCAR_INPUT_FILE to grayscale to output file $OUTPUT_FILE"
-ffmpeg -loglevel panic -nostats -i $SCAR_INPUT_FILE -vf format=gray $OUTPUT_FILE < /dev/null
+echo "SCRIPT: Converting input video file $SCAR_INPUT_FILE to grayscale to output file $OUTPUT_FILE.avi"
+ffmpeg -loglevel panic -nostats -i $SCAR_INPUT_FILE -vf format=gray $OUTPUT_FILE.avi < /dev/null
