@@ -17,8 +17,8 @@ SCAR also supports a High Throughput Computing [Programming Model](#programming-
 
 # WARNING
 
-For **old** SCAR users:
-* SCAR has been updated and the configuration files have changed. Please rename or delete your configuration file (in ~/.scar/scar.cfg) to allow SCAR to create the new file and then fill the iam.role value.
+### For **old** SCAR users:
+* SCAR has been updated and the configuration files have changed. Please rename or delete your configuration file (in `~/.scar/scar.cfg`) to allow SCAR to create the new file and then fill the `iam.role` value.
 * Also the SCAR CLI has been slightly modified, now when defining an Docker image with the init command you have to use the '-i' parameter. This is due to the new functionality provided and to avoid ambiguity in the command line.
 
 **Table of contents**
@@ -30,6 +30,7 @@ For **old** SCAR users:
   * [Basic Usage](#basicusage)
   * [Advanced Usage](#advancedusage)
       * [Executing a user defined shell script](#executing_a_user_defined_shell_script)
+      * [Define an HTTP endpoint with API Gateway](#http-endpoint)      
       * [Event-Driven File-Processing Programming Model](#programming-model)
       * [Upload docker images using an S3 bucket](#uploading_docker_images_using_s3)
       * [Upload docker image files using an S3 bucket](#uploading_docker_image_files_using_s3)
@@ -96,7 +97,7 @@ sudo apt install zip
 
 ```sh
 cd scar
-alias scar=`pwd`/scar.py
+alias scar='python3 `pwd`/scar.py'
 ```
 
 <a name="configuration"></a>
@@ -283,6 +284,62 @@ For easier scripting, a JSON output can be obtained by including the `--json` or
 ```sh
 scar run --json -n lambda-docker-cowsay
 ```
+
+<a id="http-endpoint"></a>
+
+## API Gateway Integration
+
+###  Define an HTTP endpoint
+
+SCAR allows to transparently integrate an HTTP endpoint with a Lambda function. To enable this functionality you only need to define an api name and SCAR will take care of the integration process (before using this feature make sure you have to correct rights set in your aws account).
+
+The following command creates a generic api endpoint that redirects the http petitions to your lambda function:
+```sh
+scar init -i grycap/cowsay -n scar-grycap-cowsay -api cowsay
+```
+
+After the function is created you can check the API URL with the command:
+
+```sh
+scar ls
+```
+
+That shows the basic function properties:
+
+```
+NAME                  MEMORY    TIME  IMAGE_ID       API_URL
+------------------  --------  ------  -------------  ------------------------------------------------------------------
+scar-grycap-cowsay       512     300  grycap/cowsay  https://asdfg.execute-api.us-east-1.amazonaws.com/scar/launch
+```
+
+###  GET Request
+
+SCAR also allows you to make an HTTP request, for that you can use the command `invoke` like this:
+
+```sh
+scar invoke -n scar-grycap-cowsay
+```
+
+This command automatically creates a `GET` request and passes the petition to the API endpoint defined previously.
+Bear in mind that the timeout for the api gateway requests is 29s, so if the function takes more time to respond, the api will return an error message.
+To launch asynchronous functions you only need to add the `asynch` parameter to the call:
+
+```sh
+scar invoke -n scar-grycap-cowsay -a
+```
+
+However, remember that when you launch an asynchronous function throught the API Gateway there is no way to know if the function finishes successfully until you check the function invocation logs.
+
+###  POST Request
+
+You can also pass files through the HTTP endpoint using the following command:
+
+```sh
+scar invoke -n scar-grycap-darknet -d /tmp/img.jpg -X POST
+```
+
+The file specified after the parameter `-d` is codified and passed as the POST body.
+Take into accoun that the file limitations for request response and asynchronous requests are 6MB and 128KB respectively, as specified in the [AWS lambda documentation](https://docs.aws.amazon.com/lambda/latest/dg/limits.html).
 
 <a id="programming-model"></a>
 
