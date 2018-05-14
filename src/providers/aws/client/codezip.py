@@ -73,7 +73,7 @@ def create_code_zip(function_name, env_vars, script=None, extra_payload=None, im
     if deployment_bucket and deployment_bucket != "":
         upload_file_to_S3_bucket(zip_file_path, deployment_bucket, file_key)
     
-    clean_tmp_folders()
+   # clean_tmp_folders()
     
 def clean_tmp_folders():
     # Delete created temporal files
@@ -123,7 +123,7 @@ def create_udocker_container(image_id):
     if(utils.get_tree_size(scar_temporal_folder) < MAX_S3_PAYLOAD_SIZE/2):
         execute_command(["python3", udocker_exec, "create", "--name=lambda_cont", image_id], cli_msg="Creating container structure")
     if(utils.get_tree_size(scar_temporal_folder) > MAX_S3_PAYLOAD_SIZE):
-        shutil.rmtree(scar_temporal_folder + "udocker/containers/")    
+        shutil.rmtree(scar_temporal_folder + "/udocker/containers/")    
     
 def download_udocker_image(image_id, env_vars):
     set_tmp_udocker_env()

@@ -224,9 +224,6 @@ class Udocker():
 
     def load_local_container_image(self):
         logger.info("Loading container image '{0}'".format(self.container_image_id))
-#         if is_variable_in_environment('S3_DEPLOYMENT_BUCKET'):
-#             container_image_id = os.environ['IMAGE_FILE']
-#             download_s3_file(os.environ['S3_DEPLOYMENT_BUCKET'], os.environ['S3_IMAGE_KEY'], container_image_id)
         execute_command(self.cmd_load_image)
         
     def download_container_image(self):
@@ -473,13 +470,10 @@ class Supervisor():
         shutil.rmtree("/tmp/%s" % lambda_instance.request_id)        
         
     def create_temporal_folders(self):
-        if not os.path.isdir(lambda_instance.temporal_folder):
-            os.makedirs(lambda_instance.temporal_folder, exist_ok=True)
-        if not os.path.isdir(lambda_instance.input_folder):
-            os.makedirs(lambda_instance.input_folder, exist_ok=True)
-        if not os.path.isdir(lambda_instance.output_folder):
-            os.makedirs(lambda_instance.output_folder, exist_ok=True)                        
-        
+        create_folder(lambda_instance.temporal_folder)
+        create_folder(lambda_instance.input_folder)
+        create_folder(lambda_instance.output_folder)
+    
     def create_event_file(self):
         create_file_with_content("{0}/event.json".format(lambda_instance.temporal_folder),
                                  json.dumps(lambda_instance.event))        
@@ -487,6 +481,10 @@ class Supervisor():
 #######################################
 #           USEFUL FUNCTIONS          #
 #######################################
+def create_folder(folder_name):
+    if not os.path.isdir(folder_name):
+        os.makedirs(folder_name, exist_ok=True)
+
 def kill_process(self, process):
     logger.info("Stopping process '{0}'".format(process))
     # Using SIGKILL instead of SIGTERM to ensure the process finalization 

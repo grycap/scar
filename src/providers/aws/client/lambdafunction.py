@@ -257,7 +257,7 @@ class Lambda(object):
         self.properties['s3_event']['Records'][0]['s3']['object']['key'] = file_name
         
     def set_function_code(self):
-        dbucket = self.get_property("deployment_bucket")
+        dep_bucket = self.get_property("deployment_bucket")
         func_name = self.get_property("name")
         bucket_file_key = 'lambda/' + func_name + '.zip'
         # Zip all the files and folders needed
@@ -267,11 +267,11 @@ class Lambda(object):
                                 extra_payload=self.get_property("extra_payload"),
                                 image_id=self.get_property("image_id"),
                                 image_file=self.get_property("image_file"),
-                                deployment_bucket=dbucket,
+                                deployment_bucket=dep_bucket,
                                 file_key=bucket_file_key)
         
-        if dbucket and dbucket != "":
-            self.properties['code'] = { "S3Bucket": dbucket, "S3Key" : bucket_file_key }
+        if dep_bucket and dep_bucket != "":
+            self.properties['code'] = { "S3Bucket": dep_bucket, "S3Key" : bucket_file_key }
         else:
             self.properties['code'] = { "ZipFile": utils.get_file_as_byte_array(self.get_property("zip_file_path"))}
 
@@ -355,7 +355,7 @@ class Lambda(object):
         call_type = self.set_call_type(args.func.__name__)
         self.set_output_type()
         if ((call_type != CallType.LS) and 
-            (not self.get_delete_all()) and
+            (not self.delete_all()) and
             (call_type != CallType.PUT) and
             (call_type != CallType.GET)):
             if (call_type == CallType.INIT):
