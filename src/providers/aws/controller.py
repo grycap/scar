@@ -84,7 +84,11 @@ class AWS(Commands):
             self._lambda.preheat_function()
     
     def invoke(self):
-        self._lambda.invoke_function_http()
+        function_name = self._lambda.get_function_name()
+        response = self._lambda.invoke_function_http(function_name)
+        response_parser.parse_http_response(response, 
+                                            function_name, 
+                                            self._lambda.get_property("asynchronous"))
     
     def run(self):
         if self._lambda.has_input_bucket():
@@ -98,10 +102,7 @@ class AWS(Commands):
         bucket_name = self._lambda.get_property("bucket")
         bucket_folder = self._lambda.get_property("bucket_folder")        
         if bucket_name:
-            if bucket_folder:
-                file_list = self.s3.get_bucket_files(bucket_name, bucket_folder)
-            else:
-                file_list = self.s3.get_bucket_files(bucket_name)   
+            file_list = self.s3.get_bucket_files(bucket_name, bucket_folder)
             for file_info in file_list:
                 print(file_info)
         else:
@@ -110,10 +111,10 @@ class AWS(Commands):
                                               self._lambda.get_output_type())
     
     def rm(self):
-        if self._lambda.get_delete_all():
+        if self._lambda.delete_all():
             self.delete_all_resources(self.get_all_functions())
         else:
-            self.delete_resources()
+            self.delete_resources(self._lambda.get_function_name())
     
     def log(self):
         aws_log = self.cloudwatch_logs.get_aws_log()
@@ -165,13 +166,11 @@ class AWS(Commands):
     def upload_file_to_s3(self, bucket_name, bucket_folder, file_path):
         file_data = utils.get_file_as_byte_array(file_path)
         file_name = os.path.basename(file_path)
-        if bucket_folder and bucket_folder != "":
-            if bucket_folder.endswith("/"):
-                file_key = "{0}{1}".format(bucket_folder, file_name)
-            else:
-                file_key = "{0}/{1}".format(bucket_folder, file_name)
+        file_key = "{0}".format(file_name)
+        if bucket_folder and bucket_folder != "" and bucket_folder.endswith("/"):
+            file_key = "{0}{1}".format(bucket_folder, file_name)
         else:
-            file_key = "{1}".format(file_name)
+            file_key = "{0}/{1}".format(bucket_folder, file_name)
         logger.info("Uploading file '{0}' to bucket '{1}' with key '{2}'".format(file_path, bucket_name, file_key))
         self.s3.upload_file(bucket_name, file_key, file_data)
      
@@ -188,7 +187,7 @@ class AWS(Commands):
         for function in lambda_functions:
             self.delete_resources(function['FunctionName'])
         
-    def delete_resources(self, function_name=None):
+    def delete_resources(self, function_name):
         # Delete associated api
         api_id = self._lambda.get_api_gateway_id(function_name)
         output_type = self._lambda.get_output_type()

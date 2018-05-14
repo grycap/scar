@@ -91,7 +91,9 @@ class S3():
             error_msg = "Error uploading the file '%s' to the S3 bucket '%s'" % (file_key, bucket_name)
             logger.error(error_msg, error_msg + ": %s" % ce)
     
-    def get_bucket_files(self, bucket_name, prefix_key=''):
+    def get_bucket_files(self, bucket_name, prefix_key):
+        if prefix_key is None:
+            prefix_key = ''
         file_list = []
         result = self.client.list_files(bucket_name, key=prefix_key)
         if 'Contents' in result:

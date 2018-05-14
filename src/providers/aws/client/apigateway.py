@@ -151,11 +151,6 @@ class APIGatewayClient(BotoClient):
                                                      integrationHttpMethod='POST',
                                                      uri=api_uri,
                                                      requestParameters=req_param)
-            '''
-            arn:aws:apigateway:{region}:{subdomain.service|service}:path|action/{service_api}
-            arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:123456789012:function:HelloWorld/invocations
-            arn:aws:iam::974349055189:role/lambda-s3-recursive-role
-            '''
         except ClientError as ce:
             error_msg = "Error integrating the Lambda function with the API Gateway"
             logger.error(error_msg, error_msg + ": {0}".format(ce))

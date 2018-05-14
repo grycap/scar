@@ -99,7 +99,7 @@ class Lambda(object):
     def set_property(self, key, value):
         self.properties[key] = value
 
-    def get_delete_all(self):
+    def delete_all(self):
         return self.get_property("all")
 
     def get_output_type(self):
@@ -424,53 +424,50 @@ class Lambda(object):
                                               'apigateway.amazonaws.com',
                                               'arn:aws:execute-api:us-east-1:{0}:{1}/scar/ANY'.format(aws_acc_id, api_gateway_id))                              
 
-    def get_api_gateway_id(self, func_name=None):
-        if func_name:
-            function_name = func_name
-        else:
-            function_name = self.get_function_name()
+    def get_api_gateway_id(self, function_name):
         self.check_function_name(function_name)
         env_vars = self.client.get_function_environment_variables(function_name)
         if ('API_GATEWAY_ID' in env_vars['Variables']):
             return env_vars['Variables']['API_GATEWAY_ID']
         
-    def invoke_function_http(self, func_name=None):
-        if func_name:
-            function_name = func_name
-        else:
-            function_name = self.get_function_name()
+    def get_api_gateway_url(self, function_name):
         api_id = self.get_api_gateway_id(function_name)
-
         if api_id is None or api_id == "":
-            error_msg = "Error retrieving API ID for lambda function {0}".format(func_name)
+            error_msg = "Error retrieving API ID for lambda function {0}".format(function_name)
             logger.error(error_msg)
             utils.finish_failed_execution()
+        return 'https://{0}.execute-api.{1}.amazonaws.com/scar/launch'.format(api_id, self.get_property("region"))        
         
-        function_url = 'https://{0}.execute-api.{1}.amazonaws.com/scar/launch'.format(api_id, self.get_property("region"))
+    def get_http_invocation_headers(self):
         asynch = self.get_property("asynchronous")
-        headers = None
         if asynch:
-            headers = {'X-Amz-Invocation-Type':'Event'}
+            return {'X-Amz-Invocation-Type':'Event'}  
         
-        params = self.get_property("parameters")
-        if params:
-            params = json.loads(params)
-        
+    def get_encoded_binary_data(self):
         data = self.get_property("data_binary")
         if data:
             self.check_file_size(data)                
             with open(data, 'rb') as f:
                 data = f.read()
-            data = base64.b64encode(data)
+            return base64.b64encode(data)        
         
-        response = invoke.invoke_function(function_url,
+    def get_http_parameters(self):
+        params = self.get_property("parameters")
+        if params:
+            return json.loads(params)
+        
+    def invoke_function_http(self, function_name):
+        function_url = self.get_api_gateway_url(function_name)
+        headers = self.get_http_invocation_headers()
+        params = self.get_http_parameters()
+        data = self.get_encoded_binary_data()
+
+        return invoke.invoke_function(function_url,
                                method=self.get_property("request"),
                                parameters=params,
                                data=data,
                                headers=headers)
         
-        response_parser.parse_http_response(response, function_name, asynch)
-
     def check_file_size(self, file_path, asynch):
         file_size = utils.get_file_size(file_path)
         error_msg = None
