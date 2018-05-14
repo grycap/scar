@@ -48,6 +48,8 @@ def create_code_zip(function_name, env_vars, script=None, extra_payload=None, im
     add_mandatory_files(function_name, env_vars)
     
     if deployment_bucket and deployment_bucket != "":
+        create_udocker_files()
+        
         if image_id and image_id != "":
             download_udocker_image(image_id, env_vars)
     
@@ -73,7 +75,7 @@ def create_code_zip(function_name, env_vars, script=None, extra_payload=None, im
     if deployment_bucket and deployment_bucket != "":
         upload_file_to_S3_bucket(zip_file_path, deployment_bucket, file_key)
     
-   # clean_tmp_folders()
+    clean_tmp_folders()
     
 def clean_tmp_folders():
     # Delete created temporal files
