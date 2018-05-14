@@ -468,7 +468,8 @@ class Lambda(object):
                                data=data,
                                headers=headers)
         
-    def check_file_size(self, file_path, asynch):
+    def check_file_size(self, file_path):
+        asynch = self.get_property("asynchronous")
         file_size = utils.get_file_size(file_path)
         error_msg = None
         if file_size > MAX_POST_BODY_SIZE:

@@ -240,7 +240,7 @@ class Udocker():
         else:
             logger.info("Creating container based on image '{0}'.".format(self.container_image_id))
             execute_command(self.cmd_create_container)
-            execute_command(self.cmd_set_execution_mode)
+        execute_command(self.cmd_set_execution_mode)
 
     def create_command(self):
         self.add_container_volumes()
