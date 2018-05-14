@@ -28,6 +28,9 @@ class Scar(Commands):
     def init(self):
         self.cloud_provider.init()
     
+    def invoke(self):
+        self.cloud_provider.invoke()    
+    
     def run(self):
         self.cloud_provider.run()
     
@@ -39,6 +42,12 @@ class Scar(Commands):
     
     def log(self):
         self.cloud_provider.log()
+        
+    def put(self):
+        self.cloud_provider.put()
+        
+    def get(self):
+        self.cloud_provider.get()        
         
     def parse_command_arguments(self):
         args = CommandParser(self).parse_arguments()

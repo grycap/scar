@@ -39,13 +39,16 @@ def add_mandatory_files(function_name, env_vars):
     shutil.copy(lambda_code_files_path + 'scarsupervisor.py', scar_temporal_folder + "/" + function_name + '.py')
     shutil.copy(lambda_code_files_path + 'udockerb', udocker_exec)
     env_vars['UDOCKER_DIR'] = "/tmp/home/udocker"
+    env_vars['UDOCKER_LIB'] = "/var/task/udocker/lib/"
+    env_vars['UDOCKER_BIN'] = "/var/task/udocker/bin/"
+    create_udocker_files()
 
 def create_code_zip(function_name, env_vars, script=None, extra_payload=None, image_id=None, image_file=None, deployment_bucket=None, file_key=None):
     clean_tmp_folders()
     add_mandatory_files(function_name, env_vars)
     
     if deployment_bucket and deployment_bucket != "":
-        create_udocker_files(env_vars)
+        create_udocker_files()
         
         if image_id and image_id != "":
             download_udocker_image(image_id, env_vars)
@@ -54,7 +57,7 @@ def create_code_zip(function_name, env_vars, script=None, extra_payload=None, im
             prepare_udocker_image(image_file, env_vars)
         
     if script and script != "":
-        shutil.copy(script, scar_temporal_folder + "init_script.sh")
+        shutil.copy(script, scar_temporal_folder + "/init_script.sh")
         env_vars['INIT_SCRIPT_PATH'] = "/var/task/init_script.sh"
 
     if extra_payload and extra_payload != "":
@@ -103,11 +106,9 @@ def execute_command(command, cmd_wd=None, cli_msg=None):
     logger.info(cli_msg, cmd_out)
     return cmd_out[:-1]
     
-def create_udocker_files(env_vars):
+def create_udocker_files():
     set_tmp_udocker_env()
-    execute_command(["python3", udocker_exec, "help"], cli_msg="Setting udocker environment")
-    env_vars['UDOCKER_LIB'] = "/var/task/udocker/lib/"
-    env_vars['UDOCKER_BIN'] = "/var/task/udocker/bin/"
+    execute_command(["python3", udocker_exec, "help"], cli_msg="Packing udocker files")
     restore_udocker_env()
 
 def prepare_udocker_image(image_file, env_vars):
@@ -124,7 +125,7 @@ def create_udocker_container(image_id):
     if(utils.get_tree_size(scar_temporal_folder) < MAX_S3_PAYLOAD_SIZE/2):
         execute_command(["python3", udocker_exec, "create", "--name=lambda_cont", image_id], cli_msg="Creating container structure")
     if(utils.get_tree_size(scar_temporal_folder) > MAX_S3_PAYLOAD_SIZE):
-        shutil.rmtree(scar_temporal_folder + "udocker/containers/")    
+        shutil.rmtree(scar_temporal_folder + "/udocker/containers/")    
     
 def download_udocker_image(image_id, env_vars):
     set_tmp_udocker_env()

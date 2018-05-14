@@ -23,6 +23,10 @@ class Commands(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def init(self):
         pass
+
+    @abc.abstractmethod    
+    def invoke(self):
+        pass
     
     @abc.abstractmethod    
     def run(self):
@@ -39,6 +43,14 @@ class Commands(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def log(self):
         pass
+    
+    @abc.abstractmethod
+    def put(self):
+        pass
+    
+    @abc.abstractmethod
+    def get(self):
+        pass    
     
     @abc.abstractmethod
     def parse_command_arguments(self, args):

@@ -59,6 +59,9 @@ def find_expression(rgx_pattern, string_to_search):
 def base64_to_utf8(value):
     return base64.b64decode(value).decode('utf8')
 
+def dict_to_base64_string(value):
+    return base64.b64encode(json.dumps(value)).decode("utf-8")
+
 def escape_list(values):
     result = []
     for value in values:
@@ -93,10 +96,7 @@ def get_random_uuid4_str():
     return str(uuid.uuid4())
 
 def has_dict_prop_value(dictionary, value):
-    if (value in dictionary) and (dictionary[value] != ""):
-        return True
-    else:
-        return False
+    return (value in dictionary) and (dictionary[value] != "")
 
 def load_json_file(file_path):
     if os.path.isfile(file_path):
@@ -106,7 +106,6 @@ def load_json_file(file_path):
 def merge_dicts(d1, d2):
     for k,v in d2.items():
         if v is not None:
-            
             d1[k] = v
     return d1
 
@@ -118,4 +117,17 @@ def get_tree_size(path):
             total += get_tree_size(entry.path)
         else:
             total += entry.stat(follow_symlinks=False).st_size
-    return total     
+    return total
+
+def get_all_files_in_directory(dir_path):
+    files = []
+    for dirname, _, filenames in os.walk(dir_path):
+        for filename in filenames:
+            files.append(os.path.join(dirname, filename))
+    return files
+
+def get_file_size(file_path):
+    '''Return file size in bytes'''
+    return os.stat(file_path).st_size
+
+

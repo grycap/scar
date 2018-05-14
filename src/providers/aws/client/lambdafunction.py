@@ -19,19 +19,23 @@ from .iam import IAM
 from botocore.exceptions import ClientError
 from botocore.vendored.requests.exceptions import ReadTimeout
 from enum import Enum
+from multiprocessing.pool import ThreadPool
 from src.parser.cfgfile import ConfigFile
 from src.providers.aws.response import OutputType
-import src.providers.aws.client.codezip as codezip
-import src.providers.aws.client.validators as validators
 import json
 import os
+import src.http.invoke as invoke
 import src.logger as logger
+import src.providers.aws.client.codezip as codezip
+import src.providers.aws.client.validators as validators
 import src.providers.aws.response as response_parser
 import src.utils as utils
 import tempfile
-from multiprocessing.pool import ThreadPool
+import base64
 
 MAX_CONCURRENT_INVOCATIONS = 1000
+MAX_POST_BODY_SIZE = 1024*1024*6
+MAX_POST_BODY_SIZE_ASYNC = 1024*95
 
 class CallType(Enum):
     INIT = "init"
@@ -39,11 +43,16 @@ class CallType(Enum):
     LS = "ls"
     RM = "rm"
     LOG = "log"
+    INVOKE = "invoke"
+    PUT = "put"
+    GET = "get"           
+
     
 def get_call_type(value):
     for call_type in CallType:
         if call_type.value == value:
             return call_type
+
 
 class Lambda(object):
     
@@ -56,7 +65,7 @@ class Lambda(object):
         "tags" : {},
         "environment" : { 'Variables' : {} },
         "environment_variables" : {},
-        "name_regex" : "(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}(-gov)?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\$LATEST|[a-zA-Z0-9-_]+))?",    
+        "name_regex" : "(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}(-gov)?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\$LATEST|[a-zA-Z0-9-_]+))?",
         "s3_event" : { "Records" : [ 
                         {"eventSource" : "aws:s3",
                          "s3" : {"bucket" : { "name" : "" },
@@ -86,13 +95,11 @@ class Lambda(object):
                 return self.properties[value][nested_value]
             else:
                 return self.properties[value]
-        else:
-            return ""
         
     def set_property(self, key, value):
         self.properties[key] = value
 
-    def get_delete_all(self):
+    def delete_all(self):
         return self.get_property("all")
 
     def get_output_type(self):
@@ -107,14 +114,11 @@ class Lambda(object):
     def need_preheat(self):
         return self.get_property("preheat")
     
-    def has_event_source(self):
-        return self.get_property("event_source") != ""
+    def get_input_bucket(self):
+        return self.get_property("input_bucket")      
     
-    def has_lambda_output(self):
-        return self.get_property("lambda_output") != ""    
-    
-    def get_event_source(self):
-        return self.get_property("event_source")   
+    def get_output_bucket(self):
+        return self.get_property("output_bucket")    
     
     def create_function(self):
         try:
@@ -168,20 +172,22 @@ class Lambda(object):
         if func_name:
             function_name = func_name
         else:
-            function_name= self.get_property("name")
+            function_name = self.get_property("name")
         function_found = self.find_function(function_name)
         error_msg = None
         if function_found and (call_type == CallType.INIT):
             error_msg = "Function name '%s' already used." % function_name
-        elif (not function_found) and ((call_type == CallType.RM) or (call_type == CallType.RUN)):
+        elif (not function_found) and ((call_type == CallType.RM) or 
+                                       (call_type == CallType.RUN) or 
+                                       (call_type == CallType.INVOKE)):
             error_msg = "Function '%s' doesn't exist." % function_name
         if error_msg:
             logger.error(error_msg)             
             utils.finish_failed_execution()             
     
-    def link_function_and_event_source(self):
-        self.client.add_invocation_permission_from_s3(self.get_function_name(), 
-                                                                           self.get_event_source())                    
+    def link_function_and_input_bucket(self):
+        self.client.add_invocation_permission_from_s3(self.get_function_name(),
+                                                      self.get_input_bucket())                    
         
     def preheat_function(self):
         logger.info("Preheating function")
@@ -221,7 +227,7 @@ class Lambda(object):
         response = self.invoke_lambda_function()
         response_parser.parse_invocation_response(response,
                                                   self.get_function_name(),
-                                                  self.get_property("output"), 
+                                                  self.get_property("output"),
                                                   self.is_asynchronous())
 
     def invoke_lambda_function(self):
@@ -236,6 +242,11 @@ class Lambda(object):
     def set_asynchronous_call_parameters(self):
         self.set_property('invocation_type', "Event")
         self.set_property('log_type', 'None')
+        
+    def set_api_gateway_id(self, api_id, acc_id):
+        self.set_property('api_gateway_id', api_id)
+        self.set_property('aws_acc_id', acc_id)
+        self.add_lambda_environment_variable('API_GATEWAY_ID', api_id)
 
     def set_request_response_call_parameters(self):
         self.set_property('invocation_type', "RequestResponse")
@@ -246,54 +257,67 @@ class Lambda(object):
         self.properties['s3_event']['Records'][0]['s3']['object']['key'] = file_name
         
     def set_function_code(self):
-        dbucket = self.get_property("deployment_bucket")
+        dep_bucket = self.get_property("deployment_bucket")
         func_name = self.get_property("name")
         bucket_file_key = 'lambda/' + func_name + '.zip'
         # Zip all the files and folders needed
         codezip.create_code_zip(func_name,
-                                self.get_property("environment_variables"),
+                                self.get_property("environment", "Variables"),
                                 script=self.get_property("script"),
                                 extra_payload=self.get_property("extra_payload"),
                                 image_id=self.get_property("image_id"),
                                 image_file=self.get_property("image_file"),
-                                deployment_bucket=dbucket,
+                                deployment_bucket=dep_bucket,
                                 file_key=bucket_file_key)
         
-        if dbucket and dbucket != "":
-            self.properties['code'] = { "S3Bucket": dbucket, "S3Key" : bucket_file_key }
+        if dep_bucket and dep_bucket != "":
+            self.properties['code'] = { "S3Bucket": dep_bucket, "S3Key" : bucket_file_key }
         else:
             self.properties['code'] = { "ZipFile": utils.get_file_as_byte_array(self.get_property("zip_file_path"))}
 
     def has_image_file(self):
         return utils.has_dict_prop_value(self.properties, 'image_file')
     
+    def has_api_defined(self):
+        return utils.has_dict_prop_value(self.properties, 'api_gateway_name')    
+    
     def has_deployment_bucket(self):
         return utils.has_dict_prop_value(self.properties, 'deployment_bucket')
-        
-    def set_env_var(self, key, value):
-        if value is not None or value != "":
-            self.get_property("environment_variables")[key] = value
+ 
+    def has_input_bucket(self):
+        return utils.has_dict_prop_value(self.properties, 'input_bucket')
+    
+    def has_output_bucket(self):
+        return utils.has_dict_prop_value(self.properties, 'output_bucket')
+    
+    def has_output_folder(self):
+        return utils.has_dict_prop_value(self.properties, 'output_folder')
 
     def set_required_environment_variables(self):
-        self.set_env_var('TIMEOUT_THRESHOLD', str(self.get_property("timeout_threshold")))
-        self.set_env_var('RECURSIVE', str(self.get_property("recursive")))
-        self.set_env_var('IMAGE_ID', self.get_property("image_id"))
-        if self.has_lambda_output():
-            self.set_env_var('LAMBDA_OUTPUT', self.get_property("lambda_output")) 
+        self.add_lambda_environment_variable('TIMEOUT_THRESHOLD', str(self.get_property("timeout_threshold")))
+        self.add_lambda_environment_variable('RECURSIVE', str(self.get_property("recursive")))
+        self.add_lambda_environment_variable('IMAGE_ID', self.get_property("image_id"))
+        if self.has_input_bucket():
+            self.add_lambda_environment_variable('INPUT_BUCKET', self.get_property("input_bucket"))
+        if self.has_output_bucket():
+            self.add_lambda_environment_variable('OUTPUT_BUCKET', self.get_property("output_bucket"))
+        if self.has_output_folder():
+            self.add_lambda_environment_variable('OUTPUT_FOLDER', self.get_property("output_folder"))                   
+
+    def add_lambda_environment_variable(self, key, value):
+        if (key is not None or key != "") and (value is not None):
+            self.get_property("environment", "Variables")[key] = value        
 
     def set_environment_variables(self):
         if isinstance(self.get_property("environment_variables"), list):
-            variables = self.get_property("environment_variables")
-            self.set_property("environment_variables", {})
-            for env_var in variables:
+            for env_var in self.get_property("environment_variables"):
                 parsed_env_var = env_var.split("=")
                 # Add an specific prefix to be able to find the variables defined by the user
                 key = 'CONT_VAR_' + parsed_env_var[0]
-                self.set_env_var(key, parsed_env_var[1])
+                self.add_lambda_environment_variable(key, parsed_env_var[1])
         
         if (self.get_property("call_type") == CallType.INIT):
             self.set_required_environment_variables()
-        self.properties["environment"] = { 'Variables' : self.get_property("environment_variables") }
 
     def set_tags(self):
         self.properties["tags"]['createdby'] = 'scar'
@@ -330,7 +354,10 @@ class Lambda(object):
         self.properties = utils.merge_dicts(self.properties, vars(args))
         call_type = self.set_call_type(args.func.__name__)
         self.set_output_type()
-        if ((call_type != CallType.LS) and (not self.get_delete_all())):
+        if ((call_type != CallType.LS) and 
+            (not self.delete_all()) and
+            (call_type != CallType.PUT) and
+            (call_type != CallType.GET)):
             if (call_type == CallType.INIT):
                 if (not self.get_property("name")) or (self.get_property("name") == ""):
                     func_name = "function"
@@ -383,8 +410,75 @@ class Lambda(object):
             else:   
                 error_msg = "Error while looking for the lambda function"
                 logger.error(error_msg, error_msg + ": %s" % ce)
-                utils.finish_failed_execution()             
+                utils.finish_failed_execution()
+                
+    def add_invocation_permission_from_api_gateway(self):
+        api_gateway_id = self.get_property('api_gateway_id')
+        aws_acc_id = self.get_property('aws_acc_id')
+        # Testing permission
+        self.client.add_invocation_permission(self.get_property("name"),
+                                              'apigateway.amazonaws.com',
+                                              'arn:aws:execute-api:us-east-1:{0}:{1}/*'.format(aws_acc_id, api_gateway_id))
+        # Invocation permission
+        self.client.add_invocation_permission(self.get_property("name"),
+                                              'apigateway.amazonaws.com',
+                                              'arn:aws:execute-api:us-east-1:{0}:{1}/scar/ANY'.format(aws_acc_id, api_gateway_id))                              
 
+    def get_api_gateway_id(self, function_name):
+        self.check_function_name(function_name)
+        env_vars = self.client.get_function_environment_variables(function_name)
+        if ('API_GATEWAY_ID' in env_vars['Variables']):
+            return env_vars['Variables']['API_GATEWAY_ID']
+        
+    def get_api_gateway_url(self, function_name):
+        api_id = self.get_api_gateway_id(function_name)
+        if api_id is None or api_id == "":
+            error_msg = "Error retrieving API ID for lambda function {0}".format(function_name)
+            logger.error(error_msg)
+            utils.finish_failed_execution()
+        return 'https://{0}.execute-api.{1}.amazonaws.com/scar/launch'.format(api_id, self.get_property("region"))        
+        
+    def get_http_invocation_headers(self):
+        asynch = self.get_property("asynchronous")
+        if asynch:
+            return {'X-Amz-Invocation-Type':'Event'}  
+        
+    def get_encoded_binary_data(self):
+        data = self.get_property("data_binary")
+        if data:
+            self.check_file_size(data)                
+            with open(data, 'rb') as f:
+                data = f.read()
+            return base64.b64encode(data)        
+        
+    def get_http_parameters(self):
+        params = self.get_property("parameters")
+        if params:
+            return json.loads(params)
+        
+    def invoke_function_http(self, function_name):
+        function_url = self.get_api_gateway_url(function_name)
+        headers = self.get_http_invocation_headers()
+        params = self.get_http_parameters()
+        data = self.get_encoded_binary_data()
+
+        return invoke.invoke_function(function_url,
+                               method=self.get_property("request"),
+                               parameters=params,
+                               data=data,
+                               headers=headers)
+        
+    def check_file_size(self, file_path, asynch):
+        file_size = utils.get_file_size(file_path)
+        error_msg = None
+        if file_size > MAX_POST_BODY_SIZE:
+            error_msg = "Invalid request: Payload size {0:.2f} MB greater than 6 MB".format((file_size/(1024*1024)))
+        elif asynch and file_size > MAX_POST_BODY_SIZE_ASYNC:
+            error_msg = "Invalid request: Payload size {0:.2f} KB greater than 128 KB".format((file_size/(1024)))
+        if error_msg:
+            error_msg += "\nCheck AWS Lambda invocation limits in : https://docs.aws.amazon.com/lambda/latest/dg/limits.html"
+            logger.error(error_msg)
+            utils.finish_failed_execution()         
 
 class LambdaClient(BotoClient):
     '''A low-level client representing aws LambdaClient.
@@ -411,11 +505,11 @@ class LambdaClient(BotoClient):
             logger.error(error_msg, error_msg + ": %s" % ce)
             utils.finish_failed_execution()     
             
-    def create_function(self, function_name, runtime, role, 
+    def create_function(self, function_name, runtime, role,
                         handler, code, environment,
                         description, timeout, memory_size, tags): 
         try:
-            logger.info("Creating lambda function.")
+            logger.debug("Creating lambda function.")
             response = self.get_client().create_function(FunctionName=function_name,
                                                          Runtime=runtime,
                                                          Role=role,
@@ -445,7 +539,6 @@ class LambdaClient(BotoClient):
             else:            
                 error_msg = "Error getting function data"
                 logger.error(error_msg, error_msg + ": %s" % ce)
-     
         
     def get_function_environment_variables(self, function_name):
         return self.get_client().get_function(FunctionName=function_name)['Configuration']['Environment']
@@ -462,15 +555,7 @@ class LambdaClient(BotoClient):
             logger.error(error_msg, error_msg + ": %s" % ce)
     
     def add_invocation_permission_from_s3(self, function_name, bucket_name):
-        try:
-            self.get_client().add_permission(FunctionName=function_name,
-                                             StatementId=utils.get_random_uuid4_str(),
-                                             Action="lambda:InvokeFunction",
-                                             Principal="s3.amazonaws.com",
-                                             SourceArn='arn:aws:s3:::%s' % bucket_name )
-        except ClientError as ce:
-            error_msg = "Error setting lambda permissions"
-            logger.error(error_msg, error_msg + ": %s" % ce)            
+            self.add_invocation_permission(function_name, "s3.amazonaws.com", 'arn:aws:s3:::%s' % bucket_name)
     
     def list_functions(self):
         ''' Returns a list of your Lambda functions. '''
@@ -505,12 +590,23 @@ class LambdaClient(BotoClient):
                                                 Payload=payload)
         except ClientError as ce:
             error_msg = "Error invoking lambda function"
-            logger.error(error_msg, error_msg + ": %s" % ce)            
+            logger.error(error_msg, error_msg + ": %s" % ce)
             utils.finish_failed_execution()
     
         except ReadTimeout as rt:
             error_msg = "Timeout reading connection pool"
             logger.error(error_msg, error_msg + ": %s" % rt)            
             utils.finish_failed_execution()
-        return response                                        
+        return response
+    
+    def add_invocation_permission(self, function_name, principal, source_arn):
+        try:
+            self.get_client().add_permission(FunctionName=function_name,
+                                             StatementId=utils.get_random_uuid4_str(),
+                                             Action="lambda:InvokeFunction",
+                                             Principal=principal,
+                                             SourceArn=source_arn)
+        except ClientError as ce:
+            error_msg = "Error setting lambda permissions"
+            logger.error(error_msg, error_msg + ": %s" % ce)                                     
         

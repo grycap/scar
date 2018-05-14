@@ -15,6 +15,7 @@
 
 from .client.lambdafunction import Lambda
 from .client.cloudwatchlogs import CloudWatchLogs
+from .client.apigateway import APIGateway
 from .client.s3 import S3
 from .client.iam import IAM
 from .client.resourcegroups import ResourceGroups
@@ -24,6 +25,7 @@ from src.cmdtemplate import Commands
 import src.logger as logger
 import src.providers.aws.response as response_parser
 import src.utils as utils
+import os
 
 class AWS(Commands):
 
@@ -38,6 +40,11 @@ class AWS(Commands):
     def cloudwatch_logs(self):
         cloudwatch_logs = CloudWatchLogs(self._lambda)
         return cloudwatch_logs
+    
+    @utils.lazy_property
+    def api_gateway(self):
+        api_gateway = APIGateway(self._lambda)
+        return api_gateway    
     
     @utils.lazy_property
     def s3(self):
@@ -55,39 +62,75 @@ class AWS(Commands):
         return iam    
        
     def init(self):
+        if self._lambda.has_api_defined():
+            api_id, aws_acc_id = self.api_gateway.create_api_gateway()
+            self._lambda.set_api_gateway_id(api_id, aws_acc_id)        
+        
         # Call the aws services
         self._lambda.create_function()
         self.cloudwatch_logs.create_log_group()
         
-        if self._lambda.has_event_source():
-            self.create_event_source()
-
+        if self._lambda.has_input_bucket():
+            self.create_input_source()
+            
+        if self._lambda.has_output_bucket():
+            self.s3.create_bucket(self._lambda.get_output_bucket())            
+       
+        if self._lambda.has_api_defined():
+            self._lambda.add_invocation_permission_from_api_gateway() 
+            
         # If preheat is activated, the function is launched at the init step
         if self._lambda.need_preheat():    
             self._lambda.preheat_function()
     
+    def invoke(self):
+        function_name = self._lambda.get_function_name()
+        response = self._lambda.invoke_function_http(function_name)
+        response_parser.parse_http_response(response, 
+                                            function_name, 
+                                            self._lambda.get_property("asynchronous"))
+    
     def run(self):
-        if self._lambda.has_event_source():
-            self.process_event_source_calls()               
+        if self._lambda.has_input_bucket():
+            self.process_input_bucket_calls()
         else:
             if self._lambda.is_asynchronous():
                 self._lambda.set_asynchronous_call_parameters()
             self._lambda.launch_lambda_instance()
     
     def ls(self):
-        lambda_functions = self.get_all_functions()
-        response_parser.parse_ls_response(lambda_functions, 
-                                          self._lambda.get_output_type())
+        bucket_name = self._lambda.get_property("bucket")
+        bucket_folder = self._lambda.get_property("bucket_folder")        
+        if bucket_name:
+            file_list = self.s3.get_bucket_files(bucket_name, bucket_folder)
+            for file_info in file_list:
+                print(file_info)
+        else:
+            lambda_functions = self.get_all_functions()
+            response_parser.parse_ls_response(lambda_functions, 
+                                              self._lambda.get_output_type())
     
     def rm(self):
-        if self._lambda.get_delete_all():
+        if self._lambda.delete_all():
             self.delete_all_resources(self.get_all_functions())
         else:
-            self.delete_function_and_log()
+            self.delete_resources(self._lambda.get_function_name())
     
     def log(self):
         aws_log = self.cloudwatch_logs.get_aws_log()
         print(aws_log)
+        
+    def put(self):
+        bucket_name = self._lambda.get_property("bucket")
+        bucket_folder = self._lambda.get_property("bucket_folder")
+        path_to_upload = self._lambda.get_property("path")
+        self.upload_to_s3(bucket_name, bucket_folder, path_to_upload)
+        
+    def get(self):
+        bucket_name = self._lambda.get_property("bucket")
+        file_prefix = self._lambda.get_property("bucket_folder")
+        output_path = self._lambda.get_property("path")
+        self.s3.download_bucket_files(bucket_name, file_prefix, output_path)
 
     def parse_command_arguments(self, args):
         self._lambda.set_properties(args)
@@ -100,7 +143,7 @@ class AWS(Commands):
         user_id = self.iam.get_user_name_or_id()
         return self.resource_groups.get_lambda_functions_arn_list(user_id)
         
-    def process_event_source_calls(self):
+    def process_input_bucket_calls(self):
         s3_file_list = self.s3.get_processed_bucket_file_list()
         logger.info("Files found: '%s'" % s3_file_list)
         # First do a request response invocation to prepare the lambda environment
@@ -110,22 +153,49 @@ class AWS(Commands):
         # If the list has more elements, invoke functions asynchronously    
         if s3_file_list:
             self._lambda.process_asynchronous_lambda_invocations(s3_file_list)      
+
+    def upload_to_s3(self, bucket_name, bucket_folder, path_to_upload):
+        self.s3.create_bucket(bucket_name)
+        if(os.path.isdir(path_to_upload)):
+            files = utils.get_all_files_in_directory(path_to_upload)
+        else:
+            files = [path_to_upload]
+        for file in files:
+            self.upload_file_to_s3(bucket_name, bucket_folder, file)            
+
+    def upload_file_to_s3(self, bucket_name, bucket_folder, file_path):
+        file_data = utils.get_file_as_byte_array(file_path)
+        file_name = os.path.basename(file_path)
+        file_key = "{0}".format(file_name)
+        if bucket_folder and bucket_folder != "" and bucket_folder.endswith("/"):
+            file_key = "{0}{1}".format(bucket_folder, file_name)
+        else:
+            file_key = "{0}/{1}".format(bucket_folder, file_name)
+        logger.info("Uploading file '{0}' to bucket '{1}' with key '{2}'".format(file_path, bucket_name, file_key))
+        self.s3.upload_file(bucket_name, file_key, file_data)
      
-    def create_event_source(self):
+    def create_input_source(self):
         try:
-            self.s3.create_event_source()
-            self._lambda.link_function_and_event_source()
-            self.s3.set_event_source_notification()
+            self.s3.create_input_bucket()
+            self._lambda.link_function_and_input_bucket()
+            self.s3.set_input_bucket_notification()
         except ClientError as ce:
             error_msg = "Error creating the event source"
             logger.error(error_msg, error_msg + ": %s" % ce)
 
     def delete_all_resources(self, lambda_functions):
         for function in lambda_functions:
-            self.delete_function_and_log(function['FunctionName'])
+            self.delete_resources(function['FunctionName'])
         
-    def delete_function_and_log(self, function_name=None):
-        self._lambda.delete_function(function_name)
+    def delete_resources(self, function_name):
+        # Delete associated api
+        api_id = self._lambda.get_api_gateway_id(function_name)
+        output_type = self._lambda.get_output_type()
+        if api_id:
+            self.api_gateway.delete_api_gateway(api_id, output_type)
         # Delete associated log
         self.cloudwatch_logs.delete_log_group(function_name)
+        # Delete function
+        self._lambda.delete_function(function_name)
+
         

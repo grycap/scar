@@ -16,29 +16,50 @@ In this example, the goal is that videos uploaded to an Amazon S3 bucket are aut
 
 A sample script to be executed inside the Docker container running on AWS Lambda is shown in the file [grayify-video.sh](grayify-video.sh). This script is agnostic to the Lambda function and it assumes that:
 
-1. The user will upload the video into the `input` folder of an Amazon S3 bucket.
+1. The user will upload the video into the `lambda-ffmpeg/input` folder of an Amazon S3 bucket.
 2. The input video file will automatically be made available in `tmp/$REQUEST_ID/input`, as specified by the `$SCAR_INPUT_FILE` environment variable.
 3. The script will convert to video to grayscale.
 4. The output video file will be saved in `/tmp/$REQUEST_ID/output`.
-5. The video file will be automatically uploaded to the `output` folder of the Amazon S3 bucket and deleted from the underlying storage.
+5. The video file will be automatically uploaded to the `lambda-ffmpeg/output/$REQUEST_ID` folder of the Amazon S3 bucket and deleted from the underlying storage.
 
 ## Create the Lambda function
 
 This example assumes that the Amazon S3 bucket is `scar-test`. Since there is a flat namespace, please change this name for your tests.
 
 ```sh
-scar init -s examples/ffmpeg/grayify-video.sh -n lambda-ffmpeg -es scar-test -i sameersbn/ffmpeg
+scar init -s examples/ffmpeg/grayify-video.sh -n lambda-ffmpeg -ib scar-test -i sameersbn/ffmpeg
 ```
+
+python3 scar.py put -b grycap-scar-ffmpeg -bf lambda-ffmpeg/input -p /home/alpegon/seq1.avi
 
 ## Test the Lambda function
 
 Upload a video to the S3 bucket. For these examples we are using sample videos from the [ICPR 2010 Contest on Semantic Descriptio if Human Activities (SDAH 2010)](http://cvrc.ece.utexas.edu/SDHA2010/Human_Interaction.html).
-
 ```sh
-aws s3 cp s3://scar-data/sdha2010/seq1.avi s3://scar-test/input/seq1.avi
+scar put -b scar-test -bf lambda-ffmpeg/input -p seq1.avi
 ```
 
-The converted video to grayscale will be available in `s3://scar-test/output/seq2.avi`. You can upload multiple videos to S3. Multiple concurrent Lambda invocations of the same function will process in parallel the video files. Notice that the first invocation(s) will take considerably longer until caching of the Docker container is performed.
+To check the progress of the function invocation you can call the `log` command:
+```sh
+scar log -n lambda-ffmpeg
+```
+
+Whe the execution finishes, the converted video to grayscale will be available in `s3://scar-test/lambda-ffmpeg/output/$REQUEST_ID/seq1.avi`. Moreover you can list the files in the specified bucket with the command:
+```sh
+scar ls -b scar-test -bf lambda-ffmpeg/output/
+```
+
+After the function finishes you can download the generated output video using the following command:
+```sh
+scar get -b scar-test -bf lambda-ffmpeg/output -p /tmp/
+```
+This command will download the ouput folder of the S3 bucket to the /tmp/ folder of your computer
+
+In addition, you can upload multiple videos to S3 using a folder instead an specific file.
+```sh
+scar put -b scar-test -bf lambda-ffmpeg/input -p /my-videos/
+```
+Multiple concurrent Lambda invocations of the same function will process in parallel the video files. Notice that the first invocation(s) will take considerably longer until caching of the Docker container is performed.
 
 ## Limitations
 

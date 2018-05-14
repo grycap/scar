@@ -132,7 +132,7 @@ class CloudWatchLogsClient(BotoClient):
             
     def create_log_group(self, log_group_name, tags):
         try:
-            logger.info("Creating cloudwatch log group.")
+            logger.debug("Creating cloudwatch log group.")
             return self.get_client().create_log_group(logGroupName=log_group_name, tags=tags)
         except ClientError as ce:
             if ce.response['Error']['Code'] == 'ResourceAlreadyExistsException':
@@ -145,7 +145,7 @@ class CloudWatchLogsClient(BotoClient):
     
     def set_log_retention_policy(self, log_group_name, log_retention_policy_in_days):
         try:
-            logger.info("Setting log group policy.")
+            logger.debug("Setting log group policy.")
             self.get_client().put_retention_policy(logGroupName=log_group_name,
                                                    retentionInDays=log_retention_policy_in_days)
         except ClientError as ce:

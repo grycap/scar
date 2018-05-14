@@ -15,10 +15,10 @@ You can run a container out of this image on AWS Lambda via [SCAR](https://githu
 1. Create the Lambda function
 
 ```sh
-scar init -s yolo-sample-object-detection.sh -es s3-bucket -m 1024 -i grycap/darknet
+scar init -s yolo-sample-object-detection.sh -ib s3-bucket -m 2048 -i grycap/darknet
 ```
 
-2. Launch the Lambda function uploading a file to the `/input` folder of the specified S3 bucket.
+2. Launch the Lambda function uploading a file to the `/scar-grycap-darknet/input` folder of the specified S3 bucket.
 
 For this example we are using this image: https://github.com/pjreddie/darknet/blob/master/data/dog.jpg
 You also need the aws client installed in your machine.
