@@ -65,7 +65,6 @@ class CommandParser(object):
         parser_init.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
         parser_init.add_argument("-s", "--script", help="Path to the input file passed to the function")
         parser_init.add_argument("-lr", "--lambda_role", help="Lambda role used in the management of the functions")
-        # parser_init.add_argument("-r", "--recursive", help="Launch a recursive lambda function", action="store_true")
         parser_init.add_argument("-p", "--preheat", help="Preheats the function running it once and downloading the necessary container", action="store_true")
         parser_init.add_argument("-ep", "--extra_payload", help="Folder containing files that are going to be added to the lambda function")
         parser_init.add_argument("-api", "--api_gateway_name", help="API Gateway name created to launch the lambda function")
@@ -75,7 +74,6 @@ class CommandParser(object):
         # Set default function
         parser_invoke.set_defaults(func=self.scar.invoke)
         parser_invoke.add_argument("-n", "--name", help="Lambda function name (mandatory).", required=True)
-        parser_invoke.add_argument("-X", "--request", help="Specify request command to use (i.e. GET or POST) (default: GET).", default='GET')
         parser_invoke.add_argument("-db", "--data_binary", help="File path of the HTTP data to POST.")
         parser_invoke.add_argument("-a", "--asynchronous", help="Launch an asynchronous function.", action="store_true")
         parser_invoke.add_argument("-p", "--parameters", help="In addition to passing the parameters in the URL, you can pass the parameters here (i.e. '{\"key1\": \"value1\", \"key2\": [\"value2\", \"value3\"]}').")  
