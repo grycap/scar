@@ -10,33 +10,96 @@ Since we are using Darknet on the CPU it takes around 6-12 seconds per image, us
 
 > WARNING:  To work properly this software needs at least a lambda function with 1024MB of RAM
 
+For this example we are using this image (https://github.com/pjreddie/darknet/blob/master/data/dog.jpg): 
+
+### Event driven invocation (using S3)
+
 You can run a container out of this image on AWS Lambda via [SCAR](https://github.com/grycap/scar) using the following procedure:
 
-1. Create the Lambda function
+Create the Lambda function
 
 ```sh
-scar init -s yolo-sample-object-detection.sh -ib s3-bucket -m 2048 -i grycap/darknet
+scar init -s yolo-sample-object-detection.sh -ib s3-bucket -m 2048 -n darknet -i grycap/darknet
 ```
 
-2. Launch the Lambda function uploading a file to the `/scar-grycap-darknet/input` folder of the specified S3 bucket.
-
-For this example we are using this image: https://github.com/pjreddie/darknet/blob/master/data/dog.jpg
-You also need the aws client installed in your machine.
+Launch the Lambda function uploading a file to the `s3://s3-bucket/darknet/input` folder in S3.
 
 ```sh
-wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/dog.jpg -O /tmp/dog.jpg
-aws s3 cp /tmp/dog.jpg s3://s3-bucket/input/dog.jpg
+wget https://raw.githubusercontent.com/grycap/scar/master/examples/darknet/dog.jpg -O /tmp/dog.jpg
+scar put -b s3-bucket -bf darknet/input -p /tmp/dog.jpg
 ```
 
 Take into consideration than the first invocation will take considerably longer than the subsequent ones, where the container will be cached.
 
-3. In the output folder of the S3 bucket you will see the output of the yolo system with the name of the image that you uploaded.
+To check the progress of the function invocation you can call the `log` command:
+```sh
+scar log -n darknet
+```
 
-In our case the output file is dog.out and the content:
+### HTTP invocation (using API Gateway)
+
+The same can be achieved by defining an HTTP endpoint with the AWS API Gateway and invoking the function using a POST request.
+
+We start by creating the Lambda function and linking it to and API endpoint
 
 ```sh
-/tmp/8645455b-6228-11e7-b45c-37719f6fd852/input/dog.jpg: Predicted in 18.879135 seconds.
+scar init -s yolo-sample-object-detection.sh -ib s3-bucket -m 2048 -n darknet -i grycap/darknet -api darknet-api
+```
+
+Launch the Lambda function using the `invoke` command of SCAR (due to the 29 timeout of the API endpoint, it's very probable that the first execution gives you an `Error (Gateway Timeout): Endpoint request timed out` although if you check the logs the lambda function should have finished correctly):
+
+```sh
+scar invoke -n darknet -X POST -d /tmp/dog.jpg
+```
+
+To avoid the api timeout you can launch the function asynchronously:
+
+```sh
+scar invoke -n darknet -X POST -d /tmp/dog.jpg -a
+```
+
+> WARNING:  Check the [AWS lambda limits](https://docs.aws.amazon.com/lambda/latest/dg/limits.html) to know the maximum size of files that can be send as payload of the POST request
+
+### Processing the output
+
+When the execution of the function finishes, the script used produces two output files and SCAR copies them to the S3 bucket used. To check if the files are created and copied correctly you can use the command:
+
+```sh
+scar ls -b s3-bucket -bf darknet/output
+```
+
+Command output:
+```
+darknet/output/68f5c9d5-5826-44gr-basc-8f8b23f44cdf/image-result.png
+darknet/output/68f5c9d5-5826-44gr-basc-8f8b23f44cdf/result.out
+```
+
+The files are created in the output folder following the `s3://s3-bucket/darknet/output/$REQUEST_ID/*.*` structure.
+
+To download the created files you can also use SCAR:
+
+Download an specific file with :
+```sh
+scar get -b s3-bucket -bf darknet/output/68f5c9d5-5826-44gr-basc-8f8b23f44cdf/image-result.png -p /tmp/result.png
+```
+
+Download a folder with:
+
+```sh
+scar get -b s3-bucket -bf darknet/output -p /tmp/lambda/
+```
+
+This command creates and `ouput` folder and all the subfolders in the `/tmp/lambda/` folder
+
+
+In our case the two output files are result.out:
+
+```sh
+/tmp/68f5c9d5-5826-44gr-basc-8f8b23f44cdf/input/dog.jpg: Predicted in 12.383388 seconds.
 dog: 82%
 truck: 64%
 bicycle: 85%
 ```
+
+and image-result.png:
+![image-result.png](image-result.png)
