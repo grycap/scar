@@ -69,7 +69,7 @@ bicycle: 85%
 ```
 
 and image-result.png:
-![image-result.png](https://raw.githubusercontent.com/grycap/scar/master/examples/darknet/image-result.png)
+![image-result.png](image-result.png)
 
 
 ### HTTP invocation (using API Gateway)
