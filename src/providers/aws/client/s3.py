@@ -52,8 +52,8 @@ class S3():
                 # Create the bucket if not found
                 self.client.create_bucket(bucket_name)
         except ClientError as ce:
-            error_msg = "Error creating the bucket '%s'" % self.input_bucket
-            logger.error(error_msg, error_msg + ": %s" % ce)
+            error_msg = "Error creating the bucket '{0}'".format(self.input_bucket)
+            logger.log_exception(error_msg, ce)
 
     def create_input_bucket(self):
         self.create_bucket(self.input_bucket)
@@ -63,8 +63,8 @@ class S3():
         try:
             self.client.put_object(bucket_name, folder_name)
         except ClientError as ce:
-            error_msg = "Error creating the folder '%s' in the bucket '%s'" % (folder_name, bucket_name)
-            logger.error(error_msg, error_msg + ": %s" % (folder_name, bucket_name, ce))
+            error_msg = "Error creating the folder '{0}' in the bucket '{1}'".format(folder_name, bucket_name)
+            logger.log_exception(error_msg, ce)
 
     def set_input_bucket_notification(self):           
         notification = { "LambdaFunctionConfigurations": [self.get_trigger_configuration(self.function_arn, self.input_folder)] }
@@ -88,8 +88,8 @@ class S3():
         try:
             self.client.put_object(bucket_name, file_key, file_data)
         except ClientError as ce:
-            error_msg = "Error uploading the file '%s' to the S3 bucket '%s'" % (file_key, bucket_name)
-            logger.error(error_msg, error_msg + ": %s" % ce)
+            error_msg = "Error uploading the file '{0}' to the S3 bucket '{1}'".format(file_key, bucket_name)
+            logger.log_exception(error_msg, ce)
     
     def get_bucket_files(self, bucket_name, prefix_key):
         file_list = []
@@ -151,7 +151,7 @@ class S3Client(BotoClient):
             self.get_client().create_bucket(ACL='private', Bucket=bucket_name)
         except ClientError as ce:
             error_msg = "Error creating the S3 bucket '{0}'".format(bucket_name)
-            logger.error(error_msg, error_msg + ": {0}".format(ce))
+            logger.log_exception(error_msg, ce)
     
     def find_bucket_by_name(self, bucket_name):
         try:
@@ -164,14 +164,14 @@ class S3Client(BotoClient):
                 return False
             else:
                 error_msg = "Error, bucket '{0}' not found".format(bucket_name)
-                logger.error(error_msg, error_msg + ": {0}".format(ce))        
+                logger.log_exception(error_msg, ce)
     
     def get_bucket_file_list(self, bucket_name, prefix):
         try:
             return  self.get_client().list_objects_v2(Bucket=bucket_name, Prefix=prefix)
         except ClientError as ce:
-            error_msg = "Error listing files from bucket '%s'" % bucket_name
-            logger.error(error_msg, error_msg + ": %s" % (bucket_name, ce))
+            error_msg = "Error listing files from bucket '{0}'".format(bucket_name)
+            logger.log_exception(error_msg, ce)
     
     def put_bucket_notification_configuration(self, bucket_name, notification):
         '''Enables notifications of specified events for a bucket.'''
@@ -180,7 +180,7 @@ class S3Client(BotoClient):
                                                                     NotificationConfiguration=notification)
         except ClientError as ce:
             error_msg = "Error configuring S3Client bucket"
-            logger.error(error_msg, error_msg + ": %s" % ce)          
+            logger.log_exception(error_msg, ce)
             
     def put_object(self, bucket_name, file_key, file_data=None):
         '''Adds an object to a bucket.
@@ -198,7 +198,7 @@ class S3Client(BotoClient):
             
         except ClientError as ce:
             error_msg = "Error downloading file '{0}' from bucket '{1}'".format(file_key, bucket_name)
-            logger.error(error_msg, error_msg + "{0}: {1}".format(bucket_name, ce))
+            logger.log_exception(error_msg, ce)
             
     def list_files(self, bucket_name, key='', continuation_token=None):
         '''Adds an object to a bucket.
@@ -210,5 +210,5 @@ class S3Client(BotoClient):
                 return self.get_client().list_objects_v2(Bucket=bucket_name, Prefix=key)
         except ClientError as ce:
             error_msg = "Error listing files from bucket '{0}'".format(bucket_name)
-            logger.error(error_msg, error_msg + "{0}: {1}".format(bucket_name, ce))            
+            logger.log_exception(error_msg, ce)
             
