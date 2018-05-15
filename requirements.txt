@@ -1,3 +1,4 @@
 boto3
 tabulate
 configparser
+requests
