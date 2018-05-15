@@ -92,18 +92,19 @@ class S3():
             logger.error(error_msg, error_msg + ": %s" % ce)
     
     def get_bucket_files(self, bucket_name, prefix_key):
-        if prefix_key is None:
-            prefix_key = ''
         file_list = []
-        result = self.client.list_files(bucket_name, key=prefix_key)
-        if 'Contents' in result:
-            for info in result['Contents']:
-                file_list += [info['Key']]
-        while result['IsTruncated']:
-            token = result['NextContinuationToken']
-            result = self.client.list_files(bucket_name, key=prefix_key, continuation_token=token)
-            for info in result['Contents']:
-                file_list += [info['Key']]
+        if self.client.find_bucket_by_name(bucket_name):
+            if prefix_key is None:
+                prefix_key = ''
+            result = self.client.list_files(bucket_name, key=prefix_key)
+            if 'Contents' in result:
+                for info in result['Contents']:
+                    file_list += [info['Key']]
+            while result['IsTruncated']:
+                token = result['NextContinuationToken']
+                result = self.client.list_files(bucket_name, key=prefix_key, continuation_token=token)
+                for info in result['Contents']:
+                    file_list += [info['Key']]
         return file_list        
     
     def download_bucket_files(self, bucket_name, file_prefix, output):
@@ -149,8 +150,8 @@ class S3Client(BotoClient):
         try:
             self.get_client().create_bucket(ACL='private', Bucket=bucket_name)
         except ClientError as ce:
-            error_msg = "Error creating the S3Client bucket '%s'" % bucket_name
-            logger.error(error_msg, error_msg + ": %s" % (bucket_name, ce))
+            error_msg = "Error creating the S3 bucket '{0}'".format(bucket_name)
+            logger.error(error_msg, error_msg + ": {0}".format(ce))
     
     def find_bucket_by_name(self, bucket_name):
         try:
