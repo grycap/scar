@@ -16,13 +16,13 @@ For this example we are using this image (https://github.com/pjreddie/darknet/bl
 
 You can run a container out of this image on AWS Lambda via [SCAR](https://github.com/grycap/scar) using the following procedure:
 
-1. Create the Lambda function
+Create the Lambda function
 
 ```sh
 scar init -s yolo-sample-object-detection.sh -ib s3-bucket -m 2048 -n darknet -i grycap/darknet
 ```
 
-2. Launch the Lambda function uploading a file to the `s3://s3-bucket/darknet/input` folder in S3.
+Launch the Lambda function uploading a file to the `s3://s3-bucket/darknet/input` folder in S3.
 
 ```sh
 wget https://raw.githubusercontent.com/grycap/scar/master/examples/darknet/dog.jpg -O /tmp/dog.jpg
@@ -40,13 +40,13 @@ scar log -n darknet
 
 The same can be achieved by defining an HTTP endpoint with the AWS API Gateway and invoking the function using a POST request.
 
-1. We start by creating the Lambda function and linking it to and API endpoint
+We start by creating the Lambda function and linking it to and API endpoint
 
 ```sh
 scar init -s yolo-sample-object-detection.sh -ib s3-bucket -m 2048 -n darknet -i grycap/darknet -api darknet-api
 ```
 
-2. Launch the Lambda function using the `invoke` command of SCAR (due to the 29 timeout of the API endpoint, it's very probable that the first execution gives you an `Error (Gateway Timeout): Endpoint request timed out` although if you check the logs the lambda function should have finished correctly):
+Launch the Lambda function using the `invoke` command of SCAR (due to the 29 timeout of the API endpoint, it's very probable that the first execution gives you an `Error (Gateway Timeout): Endpoint request timed out` although if you check the logs the lambda function should have finished correctly):
 
 ```sh
 scar invoke -n darknet -X POST -d /tmp/dog.jpg
@@ -58,9 +58,11 @@ To avoid the api timeout you can launch the function asynchronously:
 scar invoke -n darknet -X POST -d /tmp/dog.jpg -a
 ```
 
+> WARNING:  Check the [AWS lambda limits](https://docs.aws.amazon.com/lambda/latest/dg/limits.html) to know the maximum size of files that can be send as payload of the POST request
+
 ### Processing the output
 
-3. When the execution of the function finishes, the script used produces two output files and SCAR copies them to the S3 bucket used. To check if the files are created and copied correctly you can use the command:
+When the execution of the function finishes, the script used produces two output files and SCAR copies them to the S3 bucket used. To check if the files are created and copied correctly you can use the command:
 
 ```sh
 scar ls -b s3-bucket -bf darknet/output
