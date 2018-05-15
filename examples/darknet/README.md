@@ -49,13 +49,13 @@ scar init -s yolo-sample-object-detection.sh -ib s3-bucket -m 2048 -n darknet -i
 Launch the Lambda function using the `invoke` command of SCAR (due to the 29 timeout of the API endpoint, it's very probable that the first execution gives you an `Error (Gateway Timeout): Endpoint request timed out` although if you check the logs the lambda function should have finished correctly):
 
 ```sh
-scar invoke -n darknet -X POST -d /tmp/dog.jpg
+scar invoke -n darknet -d /tmp/dog.jpg
 ```
 
 To avoid the api timeout you can launch the function asynchronously:
 
 ```sh
-scar invoke -n darknet -X POST -d /tmp/dog.jpg -a
+scar invoke -n darknet -d /tmp/dog.jpg -a
 ```
 
 > WARNING:  Check the [AWS lambda limits](https://docs.aws.amazon.com/lambda/latest/dg/limits.html) to know the maximum size of files that can be send as payload of the POST request

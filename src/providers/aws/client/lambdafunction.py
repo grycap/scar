@@ -463,7 +463,6 @@ class Lambda(object):
         data = self.get_encoded_binary_data()
 
         return invoke.invoke_function(function_url,
-                               method=self.get_property("request"),
                                parameters=params,
                                data=data,
                                headers=headers)

@@ -37,7 +37,8 @@ def parse_http_response(response, function_name, asynch):
         if asynch and response.status_code == 502:
             text_message = "Function '{0}' launched sucessfully.".format(function_name)
         else:
-            text_message = "Error ({0}): {1}".format(response.reason, json.loads(response.text)['message']) 
+            error = json.loads(response.text)
+            text_message = "Error ({0}): {1}".format(response.reason, error['exception']) 
         
     logger.info(text_message)        
     

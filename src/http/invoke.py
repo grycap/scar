@@ -14,16 +14,10 @@
 # limitations under the License.
 
 import requests
-import src.logger as logger
-import src.utils as utils
 
-def invoke_function(url, method='GET', parameters=None, data=None, headers=None):
-    if method == "GET":
+def invoke_function(url, parameters=None, data=None, headers=None):
+    if data is None:
         response = requests.get(url, headers=headers, params=parameters)
-    elif method == "POST":
-        response = requests.post(url, headers=headers, data=data, params=parameters)
     else:
-        error_msg = "HTTP request '{0}' not recognized. Please use only 'GET' or 'POST'".format(method)
-        logger.error(error_msg)
-        utils.finish_failed_execution()
+        response = requests.post(url, headers=headers, data=data, params=parameters)
     return response

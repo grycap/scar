@@ -335,7 +335,7 @@ However, remember that when you launch an asynchronous function throught the API
 You can also pass files through the HTTP endpoint using the following command:
 
 ```sh
-scar invoke -n scar-grycap-darknet -d /tmp/img.jpg -X POST
+scar invoke -n scar-grycap-darknet -d /tmp/img.jpg
 ```
 
 The file specified after the parameter `-d` is codified and passed as the POST body.
