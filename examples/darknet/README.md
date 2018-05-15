@@ -25,7 +25,7 @@ scar init -s yolo-sample-object-detection.sh -ib s3-bucket -m 2048 -n darknet -i
 For this example we are using this image: https://github.com/pjreddie/darknet/blob/master/data/dog.jpg
 
 ```sh
-wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/dog.jpg -O /tmp/dog.jpg
+wget https://raw.githubusercontent.com/grycap/scar/master/examples/darknet/dog.jpg -O /tmp/dog.jpg
 scar put -b s3-bucket -bf darknet/input -p /tmp/dog.jpg
 ```
 
@@ -69,6 +69,7 @@ bicycle: 85%
 ```
 
 and image-result.png:
+![image-result.png](https://raw.githubusercontent.com/grycap/scar/master/examples/darknet/image-result.png)
 
 
 ### HTTP invocation (using API Gateway)
