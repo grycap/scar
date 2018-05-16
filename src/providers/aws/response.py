@@ -38,7 +38,10 @@ def parse_http_response(response, function_name, asynch):
             text_message = "Function '{0}' launched sucessfully.".format(function_name)
         else:
             error = json.loads(response.text)
-            text_message = "Error ({0}): {1}".format(response.reason, error['exception']) 
+            if 'message' in error:
+                text_message = "Error ({0}): {1}".format(response.reason, error['message']) 
+            else:
+                text_message = "Error ({0}): {1}".format(response.reason, error['exception']) 
         
     logger.info(text_message)        
     
