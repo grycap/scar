@@ -195,6 +195,13 @@ class AWS(Commands):
             self.api_gateway.delete_api_gateway(api_id, output_type)
         # Delete associated log
         self.cloudwatch_logs.delete_log_group(function_name)
+        # Delete associated notifications
+        func_info = self._lambda.get_function_info(function_name)
+        function_arn = func_info['FunctionArn']
+        variables = func_info['Environment']['Variables']
+        if 'INPUT_BUCKET' in variables:
+            bucket_name = variables['INPUT_BUCKET']
+            self.s3.delete_bucket_notification(bucket_name, function_arn)        
         # Delete function
         self._lambda.delete_function(function_name)
 

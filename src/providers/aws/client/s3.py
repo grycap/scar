@@ -66,10 +66,25 @@ class S3():
             error_msg = "Error creating the folder '{0}' in the bucket '{1}'".format(folder_name, bucket_name)
             logger.log_exception(error_msg, ce)
 
-    def set_input_bucket_notification(self):           
-        notification = { "LambdaFunctionConfigurations": [self.get_trigger_configuration(self.function_arn, self.input_folder)] }
+    def set_input_bucket_notification(self):
+        # First check that the function doesn't have other configurations
+        bucket_conf = self.client.get_bucket_notification_configuration(self.input_bucket)
+        trigger_conf = self.get_trigger_configuration(self.function_arn, self.input_folder)
+        lambda_conf = [trigger_conf]
+        if "LambdaFunctionConfigurations" in bucket_conf:
+            lambda_conf = bucket_conf["LambdaFunctionConfigurations"]
+            lambda_conf.append(trigger_conf)
+        notification = { "LambdaFunctionConfigurations": lambda_conf }
         self.client.put_bucket_notification_configuration(self.input_bucket, notification)
-            
+        
+    def delete_bucket_notification(self, bucket_name, function_arn):
+        bucket_conf = self.client.get_bucket_notification_configuration(bucket_name)
+        if "LambdaFunctionConfigurations" in bucket_conf:
+            lambda_conf = bucket_conf["LambdaFunctionConfigurations"]
+            filter_conf = [x for x in lambda_conf if x['LambdaFunctionArn'] != function_arn]
+            notification = { "LambdaFunctionConfigurations": filter_conf }
+            self.client.put_bucket_notification_configuration(bucket_name, notification)        
+        
     def get_trigger_configuration(self, function_arn, folder_name):
         self.trigger_configuration["LambdaFunctionArn"] = function_arn
         self.trigger_configuration["Filter"]["Key"]["FilterRules"][0]["Value"] = folder_name
@@ -180,6 +195,14 @@ class S3Client(BotoClient):
                                                                     NotificationConfiguration=notification)
         except ClientError as ce:
             error_msg = "Error configuring S3Client bucket"
+            logger.log_exception(error_msg, ce)    
+    
+    def get_bucket_notification_configuration(self, bucket_name):
+        '''Returns the notification configuration of a bucket.'''
+        try:
+            return self.get_client().get_bucket_notification_configuration(Bucket=bucket_name)
+        except ClientError as ce:
+            error_msg = "Error getting S3 bucket configuration"
             logger.log_exception(error_msg, ce)
             
     def put_object(self, bucket_name, file_key, file_data=None):
