@@ -397,6 +397,15 @@ class Lambda(object):
             print ("Error getting function info by arn: %s" % ce)
         return function_info_list
     
+    def get_function_info(self, function_name_or_arn):
+        try:
+            # If this call works the function exists
+            return self.client.get_function_info(function_name_or_arn)
+        except ClientError as ce:
+            error_msg = "Error while looking for the lambda function"
+            logger.error(error_msg, error_msg + ": %s" % ce)
+            utils.finish_failed_execution()    
+    
     def find_function(self, function_name_or_arn):
         validators.validate_function_name(function_name_or_arn, self.get_property("name_regex"))
         try:
@@ -478,7 +487,9 @@ class Lambda(object):
         if error_msg:
             error_msg += "\nCheck AWS Lambda invocation limits in : https://docs.aws.amazon.com/lambda/latest/dg/limits.html"
             logger.error(error_msg)
-            utils.finish_failed_execution()         
+            utils.finish_failed_execution()   
+            
+                  
 
 class LambdaClient(BotoClient):
     '''A low-level client representing aws LambdaClient.
@@ -539,9 +550,9 @@ class LambdaClient(BotoClient):
             else:            
                 error_msg = "Error getting function data"
                 logger.error(error_msg, error_msg + ": %s" % ce)
-        
+   
     def get_function_environment_variables(self, function_name):
-        return self.get_client().get_function(FunctionName=function_name)['Configuration']['Environment']
+        return self.get_function_info(function_name)['Environment']
     
     def update_function_env_variables(self, function_name, env_vars):
         try:
