@@ -60,7 +60,6 @@ class S3():
             self.file_key = self.record['object']['key']
             self.file_name = os.path.basename(self.file_key)
             self.file_download_path = '{0}/{1}'.format(lambda_instance.input_folder, self.file_name)
-            #self.file_download_path = '{0}/{1}'.format(lambda_instance.input_folder, uuid.uuid4().hex)      
 
     def get_s3_record(self):
         if len(lambda_instance.event['Records']) > 1:
@@ -82,9 +81,6 @@ class S3():
                                                                                                self.file_download_path))
         return self.file_download_path
   
-    def delete_file(self):
-        self.client.delete_object(Bucket=self.input_bucket, Key=self.file_key)
-
     def get_file_key(self, function_name=None, folder=None, file_name=None):
         if function_name:
             return "{0}/{1}/{2}/{3}".format(function_name, folder, lambda_instance.request_id, file_name)
@@ -117,6 +113,9 @@ class S3():
         obj = boto3.resource('s3').Object(bucket_name=bucket_name, key=file_key)
         print ("Reading item from bucket {0} with key {1}".format(bucket_name, file_key))
         return obj.get()["Body"].read()
+    
+    def delete_file(self):
+        self.client.delete_object(Bucket=self.input_bucket, Key=self.file_key)    
 
 #######################################
 #    API GATEWAY RELATED FUNCTIONS    #

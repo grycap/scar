@@ -56,10 +56,11 @@ def warning(cli_msg, log_msg=None):
         logging.warning(cli_msg)
 
 def error(cli_msg, log_msg=None):
-    print(cli_msg)
     if log_msg:
+        print(log_msg)
         logging.error(log_msg)
     else:
+        print(cli_msg)
         logging.error(cli_msg)
 
 def log_exception(error_msg, exception):
