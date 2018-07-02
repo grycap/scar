@@ -51,10 +51,8 @@ class CommandParser(object):
         group.add_argument("-i", "--image_id", help="Container image id (i.e. centos:7)")
         group.add_argument("-if", "--image_file", help="Container image file created with 'docker save' (i.e. centos.tar.gz)")
         group.add_argument("-f", "--conf_file", help="Yaml file with the function configuration")
-        
         parser_init.add_argument("-d", "--description", help="Lambda function description.")
         parser_init.add_argument("-db", "--deployment_bucket", help="Bucket where the deployment package is going to be uploaded.")
-        
         parser_init.add_argument("-ib", "--input_bucket", help="Bucket name where the input files will be stored.")
         parser_init.add_argument("-inf", "--input_folder", help="Folder name where the input files will be stored (Only works when an input bucket is defined).")
         parser_init.add_argument("-ob", "--output_bucket", help="Bucket name where the output files are saved.")
@@ -71,6 +69,7 @@ class CommandParser(object):
         parser_init.add_argument("-lr", "--lambda_role", help="Lambda role used in the management of the functions")
         parser_init.add_argument("-p", "--preheat", help="Preheats the function running it once and downloading the necessary container", action="store_true")
         parser_init.add_argument("-ep", "--extra_payload", help="Folder containing files that are going to be added to the lambda function")
+        parser_init.add_argument("-ll", "--log_level", help="Set the log level of the lambda function. Accepted values are: 'CRITICAL','ERROR','WARNING','INFO','DEBUG'", default="INFO")
         parser_init.add_argument("-api", "--api_gateway_name", help="API Gateway name created to launch the lambda function")
         
     def create_invoke_parser(self):
@@ -92,6 +91,7 @@ class CommandParser(object):
         parser_update.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 300.")
         parser_update.add_argument("-e", "--environment_variables", action='append', help="Pass environment variable to the container (VAR=val). Can be defined multiple times.")
         parser_update.add_argument("-tt", "--timeout_threshold", type=int, help="Extra time used to postprocess the data. This time is extracted from the total time of the lambda function.")
+        parser_update.add_argument("-ll", "--log_level", help="Set the log level of the lambda function. Accepted values are: 'CRITICAL','ERROR','WARNING','INFO','DEBUG'", default="INFO")        
         #parser_update.add_argument("-s", "--script", nargs='?', type=argparse.FileType('r'), help="Path to the input file passed to the function")
         #parser_update.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         #parser_update.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
@@ -130,7 +130,9 @@ class CommandParser(object):
     def create_log_parser(self):
         parser_log = self.subparsers.add_parser('log', help="Show the logs for the lambda function")
         parser_log.set_defaults(func=self.scar.log)
-        parser_log.add_argument("-n", "--name", help="Lambda function name", required=True)
+        group = parser_log.add_mutually_exclusive_group(required=True)
+        group.add_argument("-n", "--name", help="Lambda function name")
+        group.add_argument("-f", "--conf_file", help="Yaml file with the function configuration")         
         parser_log.add_argument("-ls", "--log_stream_name", help="Return the output for the log stream specified.")
         parser_log.add_argument("-ri", "--request_id", help="Return the output for the request id specified.")        
     

@@ -20,7 +20,6 @@ import re
 import shutil
 import subprocess
 import traceback
-import tarfile
 import socket
 import uuid
 import base64
@@ -31,9 +30,9 @@ sys.path.append(".")
 # Works in lambda environment
 from code import utils
 
-loglevel = logging.INFO
+#loglevel = logging.INFO
 logger = logging.getLogger()
-logger.setLevel(loglevel)
+logger.setLevel(os.environ['LOG_LEVEL'])
 logger.info('SCAR: Loading lambda function')
 
 lambda_instance = None
@@ -416,7 +415,7 @@ class Supervisor():
     def execute_udocker(self):
         try:
             udocker_output = self.udocker.launch_udocker_container()
-            logger.info("CONTAINER OUTPUT: " + udocker_output)
+            logger.info("CONTAINER OUTPUT:\n " + udocker_output)
             self.body["udocker_output"] = udocker_output            
         except subprocess.TimeoutExpired:
             logger.warning("Container execution timed out")
@@ -468,14 +467,10 @@ class Supervisor():
     def create_event_file(self):
         utils.create_file_with_content("{0}/event.json".format(lambda_instance.temporal_folder), json.dumps(lambda_instance.event))        
         
-#######################################
-#           USEFUL FUNCTIONS          #
-#######################################   
+#####################################################################################################################
 def set_instance_properties(event, context):
     global lambda_instance
-    lambda_instance = Lambda(event, context)    
-
-#####################################################################################################################
+    lambda_instance = Lambda(event, context)
 
 def lambda_handler(event, context):
     logger.debug("Received event: " + json.dumps(event))

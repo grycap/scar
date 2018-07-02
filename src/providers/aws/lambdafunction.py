@@ -306,6 +306,7 @@ class Lambda(GenericClient):
 
     def set_required_environment_variables(self):
         self.add_lambda_environment_variable('TIMEOUT_THRESHOLD', str(self.get_property("timeout_threshold")))
+        self.add_lambda_environment_variable('LOG_LEVEL', self.get_property("log_level"))        
         self.add_lambda_environment_variable('IMAGE_ID', self.get_property("image_id"))
         if self.has_input_bucket():
             self.add_lambda_environment_variable('INPUT_BUCKET', self.get_property("input_bucket"))
@@ -345,6 +346,8 @@ class Lambda(GenericClient):
         env_vars = self.get_property("environment")
         if self.get_property('timeout_threshold'):
             env_vars['Variables']['TIMEOUT_THRESHOLD'] = str(self.get_property('timeout_threshold'))
+        if self.get_property('log_level'):
+            env_vars['Variables']['LOG_LEVEL'] = self.get_property('log_level')            
         defined_lambda_env_variables = self.client.get_function_environment_variables(self.get_property("name"))
         defined_lambda_env_variables['Variables'].update(env_vars['Variables'])
         update_args['Environment'] = defined_lambda_env_variables

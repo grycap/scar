@@ -61,6 +61,8 @@ class YamlParser(object):
             args['run_script'] = function_data['run_script']            
         if 'extra_payload' in function_data:
             args['extra_payload'] = function_data['extra_payload']
+        if 'log_level' in function_data:
+            args['log_level'] = function_data['log_level']            
         if 'environment' in function_data:
             variables = []
             for k,v in function_data['environment'].items():
