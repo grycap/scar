@@ -14,25 +14,5 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import boto3
-import botocore
 
-# Default values
-botocore_client_read_timeout = 360
-default_aws_region = "us-east-1"
-
-class BotoClient(object):
-    
-    def __init__(self, client_name, region=None):
-        if region is None:
-            region = default_aws_region
-        boto_config = botocore.config.Config(read_timeout=botocore_client_read_timeout)            
-        self.__client = boto3.client(client_name, region_name=region, config=boto_config)        
-    
-    def get_access_key(self):
-        session = boto3.Session()
-        credentials = session.get_credentials()
-        return credentials.access_key
-    
-    def get_client(self):
-        return self.__client
+__all__ = ['apigateway','aws','boto','cloudwatchlogs','iam','lambdafunction','resourcegroups','s3']

@@ -16,32 +16,52 @@
 
 import base64
 import json
-import src.logger as logger
 import os
 import re
 import sys
 import uuid
+import functools
+import subprocess
+import tarfile
+from botocore.exceptions import ClientError
+from . import logger
 
-def lazy_property(fn):
-    '''Decorator that makes a property lazy-evaluated.'''
-    attr_name = '_lazy_' + fn.__name__
+def lazy_property(func):
+    ''' A decorator that makes a property lazy-evaluated.'''
+    attr_name = '_lazy_' + func.__name__
 
     @property
     def _lazy_property(self):
         if not hasattr(self, attr_name):
-            setattr(self, attr_name, fn(self))
+            setattr(self, attr_name, func(self))
         return getattr(self, attr_name)
     return _lazy_property
 
-def is_valid_string(value, regex):
-    ''' Check if the passed value is valid using the passed regex'''
-    if value:
-        pattern = re.compile(regex)
-        func_name = pattern.match(value)
-        return func_name and (func_name.group() == value)
-    return False    
+def exception(logger):
+    '''
+    A decorator that wraps the passed in function and logs exceptions
+    @param logger: The logging object
+    '''
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except ClientError as ce:
+                print("There was an exception in {0}".format(func.__name__))
+                print(ce.response['Error']['Message'])
+                logger.exception(ce)
+            except Exception as ex:
+                print("There was an exception in {0}".format(func.__name__))
+                logger.exception(ex)
+                # re-raise the exception
+                # raise
+        return wrapper
+    return decorator
 
-def finish_failed_execution():
+def finish_failed_execution(error_msg=None, ex=None):
+    if error_msg and ex:
+        logger.error(error_msg, error_msg + ": {0}".format(ex)) 
     logger.end_execution_trace_with_errors()
     sys.exit(1)
 
@@ -49,30 +69,22 @@ def finish_successful_execution():
     logger.end_execution_trace()
     sys.exit(0)
 
-def find_expression(rgx_pattern, string_to_search):
+def find_expression(string_to_search, rgx_pattern):
     '''Returns the first group that matches the rgx_pattern in the string_to_search'''
-    pattern = re.compile(rgx_pattern)
-    match = pattern.search(string_to_search)
-    if match :
-        return match.group()
+    if string_to_search:    
+        pattern = re.compile(rgx_pattern)
+        match = pattern.search(string_to_search)
+        if match :
+            return match.group()
 
-def base64_to_utf8(value):
-    return base64.b64decode(value).decode('utf8')
+def base64_to_utf8_string(value):
+    return base64.b64decode(value).decode('utf-8')
+
+def utf8_to_base64_string(value):
+    return base64.b64encode(value).decode('utf-8')
 
 def dict_to_base64_string(value):
     return base64.b64encode(json.dumps(value)).decode("utf-8")
-
-def escape_list(values):
-    result = []
-    for value in values:
-        result.append(escape_string(value))
-    return str(result).replace("'", "\"")
-
-def escape_string(value):
-    value = value.replace("\\", "\\/").replace('\n', '\\n')
-    value = value.replace('"', '\\"').replace("\/", "\\/")
-    value = value.replace("\b", "\\b").replace("\f", "\\f")
-    return value.replace("\r", "\\r").replace("\t", "\\t")
 
 def print_json(value):
     print(json.dumps(value))
@@ -84,19 +96,11 @@ def divide_list_in_chunks(elements, chunk_size):
     for i in range(0, len(elements), chunk_size):
         yield elements[i:i + chunk_size]
         
-def delete_file(path):
-    os.remove(path)
-
-def get_file_as_byte_array(file_path):
-    # Return the zip as an array of bytes
-    with open(file_path, 'rb') as f:
-        return f.read()
-    
 def get_random_uuid4_str():
     return str(uuid.uuid4())
 
 def has_dict_prop_value(dictionary, value):
-    return (value in dictionary) and (dictionary[value] != "")
+    return (value in dictionary) and dictionary[value] and (dictionary[value] != "")
 
 def load_json_file(file_path):
     if os.path.isfile(file_path):
@@ -105,9 +109,12 @@ def load_json_file(file_path):
         
 def merge_dicts(d1, d2):
     for k,v in d2.items():
-        if v is not None:
+        if v:
             d1[k] = v
     return d1
+
+def check_key_in_dictionary(key, dictionary):
+    return (key in dictionary) and dictionary[key] and dictionary[key] != ""
 
 def get_tree_size(path):
     """Return total size of files in given path and subdirs."""
@@ -130,4 +137,51 @@ def get_file_size(file_path):
     '''Return file size in bytes'''
     return os.stat(file_path).st_size
 
+def create_folder(folder_name):
+    if not os.path.isdir(folder_name):
+        os.makedirs(folder_name, exist_ok=True)
+        
+def create_file_with_content(path, content):
+    with open(path, "w") as f:
+        f.write(content)
+
+def read_file(file_path, mode="r"):
+    with open(file_path, mode) as content_file:
+        return content_file.read()
+    
+def delete_file(path):
+    os.remove(path)
+    
+def create_tar_gz(files_to_archive, destination_tar_path):
+    with tarfile.open(destination_tar_path, "w:gz") as tar:
+        for file_path in files_to_archive:
+            tar.add(file_path, arcname=os.path.basename(file_path))
+    return destination_tar_path
+        
+def extract_tar_gz(tar_path, destination_path):
+    with tarfile.open(tar_path, "r:gz") as tar:
+        tar.extractall(path=destination_path)
+    logger.info("Successfully extracted '%s' in path '%s'" % (tar_path, destination_path))    
+
+def kill_process(self, process):
+    logger.info("Stopping process '{0}'".format(process))
+    # Using SIGKILL instead of SIGTERM to ensure the process finalization 
+    os.killpg(os.getpgid(process.pid), subprocess.signal.SIGKILL)
+
+def execute_command(command):
+    subprocess.call(command)
+    
+def execute_command_and_return_output(command):
+    return subprocess.check_output(command).decode("utf-8")
+
+def is_variable_in_environment(variable):
+    return check_key_in_dictionary(variable, os.environ)
+
+def set_environment_variable(key, variable):
+    if key and variable and key != "" and variable != "":
+        os.environ[key] = variable
+
+def get_environment_variable(variable):
+    if check_key_in_dictionary(variable, os.environ):
+        return os.environ[variable]
 

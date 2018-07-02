@@ -14,34 +14,29 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .boto import BotoClient
+from src.providers.aws.clients.boto import BotoClient
 from botocore.exceptions import ClientError
+import src.logger as logger
 import src.utils as utils
-
-class IAM():
-    
-    @utils.lazy_property
-    def client(self):
-        client = IAMClient()
-        return client
-
-    def get_user_name_or_id(self):
-        try:
-            user = self.client.get_user_info()
-            return user.get('UserName', user['User']['UserId'])
-        except ClientError as ce:
-            # If the user doesn't have access rights to IAMClient
-            # we can find the user name in the error response
-            return utils.find_expression('(?<=user\/)(\S+)', str(ce))     
-    
 
 class IAMClient(BotoClient):
     '''A low-level client representing aws Identity and Access Management (IAMClient).
     https://boto3.readthedocs.io/en/latest/reference/services/iam.html'''    
-    
-    def __init__(self, region=None):
-        super().__init__('iam', region)
+ 
+    boto_client_name = 'iam'
         
+    @utils.exception(logger)         
     def get_user_info(self):
-        return self.get_client().get_user()
-        
+        '''
+        Retrieves information about the specified IAM user, including the user's creation date, path, unique ID, and ARN.
+        https://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.Client.get_user
+        '''
+        try:
+            return self.client.get_user()
+        except ClientError as ce:
+            if ce.response['Error']['Code'] == 'AccessDenied':
+                # If the user doesn't have access rights to IAMClient
+                # we can find the user name in the error response
+                user_name = utils.find_expression(str(ce), '(?<=user\/)(\S+)')
+                return {'UserName' : user_name,
+                        'User' : {'UserName' : user_name, 'UserId' : ''}} 

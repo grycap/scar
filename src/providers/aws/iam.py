@@ -14,5 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from src.providers.aws.clientfactory import GenericClient
 
-__all__ = ['cfgfile','cli','yaml']
+class IAM(GenericClient):
+
+    def get_user_name_or_id(self):
+        user = self.client.get_user_info()
+        return user.get('UserName', user['User']['UserId'])
+        

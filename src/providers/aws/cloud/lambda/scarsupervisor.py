@@ -24,6 +24,12 @@ import tarfile
 import socket
 import uuid
 import base64
+import sys
+
+sys.path.append("..")
+sys.path.append(".")
+# Works in lambda environment
+from code import utils
 
 loglevel = logging.INFO
 logger = logging.getLogger()
@@ -32,29 +38,18 @@ logger.info('SCAR: Loading lambda function')
 
 lambda_instance = None
 
-def lazy_property(fn):
-    '''Decorator that makes a property lazy-evaluated.'''
-    attr_name = '_lazy_' + fn.__name__
-
-    @property
-    def _lazy_property(self):
-        if not hasattr(self, attr_name):
-            setattr(self, attr_name, fn(self))
-        return getattr(self, attr_name)
-    return _lazy_property
-
 #######################################
 #        S3 RELATED FUNCTIONS         #
 #######################################
 class S3():
     
-    @lazy_property
+    @utils.lazy_property
     def client(self):
         client = boto3.client('s3')
         return client
     
     def __init__(self):
-        if check_key_in_dictionary('Records', lambda_instance.event):
+        if utils.check_key_in_dictionary('Records', lambda_instance.event):
             self.record = self.get_s3_record()
             self.input_bucket = self.record['bucket']['name']
             self.file_key = self.record['object']['key']
@@ -66,7 +61,7 @@ class S3():
             logger.warning("Multiple records detected. Only processing the first one.")
             
         record = lambda_instance.event['Records'][0]
-        if check_key_in_dictionary('s3', record):
+        if utils.check_key_in_dictionary('s3', record):
             return record['s3']
 
     def download_input(self):
@@ -88,7 +83,7 @@ class S3():
             return "{0}/{1}/{2}".format(folder, lambda_instance.request_id, file_name)
 
     def upload_output(self, bucket_name, bucket_folder=None):
-        output_files_path = get_all_files_in_directory(lambda_instance.output_folder)
+        output_files_path = utils.get_all_files_in_directory(lambda_instance.output_folder)
         logger.debug("UPLOADING FILES {0}".format(output_files_path))
         for file_path in output_files_path:
             file_name = file_path.replace("{0}/".format(lambda_instance.output_folder), "")
@@ -151,32 +146,32 @@ class Lambda():
         self.log_group_name = self.context.log_group_name
         self.log_stream_name = self.context.log_stream_name            
 
-    @lazy_property
+    @utils.lazy_property
     def output_bucket(self):
-        output_bucket = get_environment_variable('OUTPUT_BUCKET')
+        output_bucket = utils.get_environment_variable('OUTPUT_BUCKET')
         return output_bucket
     
-    @lazy_property
+    @utils.lazy_property
     def output_bucket_folder(self):
-        output_folder = get_environment_variable('OUTPUT_FOLDER')
+        output_folder = utils.get_environment_variable('OUTPUT_FOLDER')
         return output_folder
     
-    @lazy_property
+    @utils.lazy_property
     def input_bucket(self):
-        input_bucket = get_environment_variable('INPUT_BUCKET')
+        input_bucket = utils.get_environment_variable('INPUT_BUCKET')
         return input_bucket
     
     def has_output_bucket(self):
-        return is_variable_in_environment('OUTPUT_BUCKET')
+        return utils.is_variable_in_environment('OUTPUT_BUCKET')
 
     def has_output_bucket_folder(self):
-        return is_variable_in_environment('OUTPUT_FOLDER')
+        return utils.is_variable_in_environment('OUTPUT_FOLDER')
     
     def has_input_bucket(self):
-        return is_variable_in_environment('INPUT_BUCKET')
+        return utils.is_variable_in_environment('INPUT_BUCKET')
 
     def get_invocation_remaining_seconds(self):
-        return int(self.context.get_remaining_time_in_millis() / 1000) - int(get_environment_variable('TIMEOUT_THRESHOLD'))            
+        return int(self.context.get_remaining_time_in_millis() / 1000) - int(utils.get_environment_variable('TIMEOUT_THRESHOLD'))            
         
 #######################################
 #          UDOCKER FUNCTIONS          #
@@ -192,8 +187,8 @@ class Udocker():
         self.container_output_file = "{0}/container-stdout.txt".format(lambda_instance.temporal_folder)
         self.scar_input_file = scar_input_file
         
-        if is_variable_in_environment("IMAGE_ID"):
-            self.container_image_id = get_environment_variable("IMAGE_ID")
+        if utils.is_variable_in_environment("IMAGE_ID"):
+            self.container_image_id = utils.get_environment_variable("IMAGE_ID")
             self.set_udocker_commands()
         else:
             raise Exception("Container image id not specified.")
@@ -209,28 +204,28 @@ class Udocker():
         self.cmd_container_execution = self.cmd_udocker + ["--quiet", "run"]
         
     def is_container_image_downloaded(self):
-        cmd_out = execute_command_and_return_output(self.cmd_get_images)
+        cmd_out = utils.execute_command_and_return_output(self.cmd_get_images)
         return self.container_image_id in cmd_out              
 
     def create_image(self):
         if self.is_container_image_downloaded():
             logger.info("Container image '{0}' already available".format(self.container_image_id))
         else:                     
-            if is_variable_in_environment("IMAGE_FILE"):
+            if utils.is_variable_in_environment("IMAGE_FILE"):
                 self.load_local_container_image()
             else:
                 self.download_container_image()        
 
     def load_local_container_image(self):
         logger.info("Loading container image '{0}'".format(self.container_image_id))
-        execute_command(self.cmd_load_image)
+        utils.execute_command(self.cmd_load_image)
         
     def download_container_image(self):
         logger.info("Pulling container '{0}' from Docker Hub".format(self.container_image_id))
-        execute_command(self.cmd_download_image)
+        utils.execute_command(self.cmd_download_image)
 
     def is_container_available(self):
-        cmd_out = execute_command_and_return_output(self.cmd_list_containers)
+        cmd_out = utils.execute_command_and_return_output(self.cmd_list_containers)
         return self.container_name in cmd_out      
 
     def create_container(self):
@@ -238,20 +233,20 @@ class Udocker():
             logger.info("Container already available")
         else:
             logger.info("Creating container based on image '{0}'.".format(self.container_image_id))
-            execute_command(self.cmd_create_container)
-        execute_command(self.cmd_set_execution_mode)
+            utils.execute_command(self.cmd_create_container)
+        utils.execute_command(self.cmd_set_execution_mode)
 
     def create_command(self):
         self.add_container_volumes()
         self.add_container_environment_variables()
         # Container running script
-        if check_key_in_dictionary('script', lambda_instance.event): 
+        if utils.check_key_in_dictionary('script', lambda_instance.event): 
             self.add_script_as_entrypoint()
         # Container with args
-        elif check_key_in_dictionary('cmd_args', lambda_instance.event):
+        elif utils.check_key_in_dictionary('cmd_args', lambda_instance.event):
             self.add_args()
         # Script to be executed every time (if defined)
-        elif is_variable_in_environment('INIT_SCRIPT_PATH'):
+        elif utils.is_variable_in_environment('INIT_SCRIPT_PATH'):
             self.add_init_script()
         # Only container
         else:
@@ -260,7 +255,7 @@ class Udocker():
     def add_container_volumes(self):
         self.cmd_container_execution += ["-v", lambda_instance.temporal_folder]
         self.cmd_container_execution += ["-v", "/dev", "-v", "/proc", "-v", "/etc/hosts", "--nosysdirs"]
-        if is_variable_in_environment('EXTRA_PAYLOAD'):
+        if utils.is_variable_in_environment('EXTRA_PAYLOAD'):
             self.cmd_container_execution += ["-v", lambda_instance.permanent_folder]
 
     def add_container_environment_variable(self, key, value):
@@ -289,7 +284,7 @@ class Udocker():
             # Find global variables with the specified prefix
             if re.match("CONT_VAR_.*", key):
                 user_vars += self.parse_container_environment_variable(key.replace("CONT_VAR_", ""),
-                                                                       get_environment_variable(key)) 
+                                                                       utils.get_environment_variable(key)) 
         return user_vars                      
 
     def get_iam_credentials(self):
@@ -298,18 +293,18 @@ class Udocker():
                      'CONT_VAR_AWS_SECRET_ACCESS_KEY':'AWS_SECRET_ACCESS_KEY'}
         # Add IAM credentials
         for key,value in iam_creds.items():
-            if not is_variable_in_environment(key):
+            if not utils.is_variable_in_environment(key):
                 creds += self.parse_container_environment_variable(value, 
-                                                                   get_environment_variable(value))
+                                                                   utils.get_environment_variable(value))
         return creds
     
     def get_session_and_security_token(self):
         tokens = []
         # Always add Session and security tokens
         tokens += self.parse_container_environment_variable("AWS_SESSION_TOKEN",
-                                                            get_environment_variable("AWS_SESSION_TOKEN"))
+                                                            utils.get_environment_variable("AWS_SESSION_TOKEN"))
         tokens += self.parse_container_environment_variable("AWS_SECURITY_TOKEN",
-                                                            get_environment_variable("AWS_SECURITY_TOKEN"))
+                                                            utils.get_environment_variable("AWS_SECURITY_TOKEN"))
         return tokens
             
     def get_input_file(self):
@@ -320,31 +315,28 @@ class Udocker():
             
     def get_extra_payload_path(self):
         ppath = []
-        if is_variable_in_environment('EXTRA_PAYLOAD'):
+        if utils.is_variable_in_environment('EXTRA_PAYLOAD'):
             ppath += self.parse_container_environment_variable("EXTRA_PAYLOAD", 
-                                                               get_environment_variable("EXTRA_PAYLOAD"))
+                                                               utils.get_environment_variable("EXTRA_PAYLOAD"))
         return ppath
           
     def get_lambda_output_variable(self):
         out_lambda = []
-        if is_variable_in_environment('OUTPUT_LAMBDA'):
-            set_environment_variable("OUTPUT_LAMBDA_FILE", "/tmp/{0}/lambda_output".format(lambda_instance.request_id))
+        if utils.is_variable_in_environment('OUTPUT_LAMBDA'):
+            utils.set_environment_variable("OUTPUT_LAMBDA_FILE", "/tmp/{0}/lambda_output".format(lambda_instance.request_id))
             out_lambda += self.parse_container_environment_variable("OUTPUT_LAMBDA_FILE", 
-                                                                    get_environment_variable("EXTRA_PAYLOAD"))
+                                                                    utils.get_environment_variable("EXTRA_PAYLOAD"))
         return out_lambda      
             
     def add_script_as_entrypoint(self):
         script_path = "{0}/script.sh".format(lambda_instance.temporal_folder)
-        script_content = undo_escape_string(lambda_instance.event['script'])
-        create_file_with_content(script_path, script_content)
+        script_content = utils.base64_to_utf8_string(lambda_instance.event['script'])
+        utils.create_file_with_content(script_path, script_content)
         self.cmd_container_execution += ["--entrypoint={0} {1}".format(self.script_exec, script_path), self.container_name]
 
     def add_args(self):
         self.cmd_container_execution += [self.container_name]
-        # Parse list of strings
-        args = lambda_instance.event['cmd_args']
-        parsed_args = args[1:-1].replace('"', '').split(', ')
-        self.cmd_container_execution += parsed_args
+        self.cmd_container_execution += json.loads(lambda_instance.event['cmd_args'])
     
     def add_init_script(self):
         init_script_path = "{0}/init_script.sh".format(lambda_instance.temporal_folder)
@@ -362,12 +354,12 @@ class Udocker():
             try:
                 process.wait(timeout=remaining_seconds)
             except subprocess.TimeoutExpired:
-                kill_process(process)
+                utils.kill_process(process)
                 logger.warning("Container timeout")
                 raise
         
         if os.path.isfile(self.container_output_file):
-            return read_file(self.container_output_file)
+            return utils.read_file(self.container_output_file)
         
 #####################################################################################################################
 
@@ -378,17 +370,17 @@ class Supervisor():
     status_code = 200
     body = {}
     
-    @lazy_property
+    @utils.lazy_property
     def s3(self):
         s3 = S3()
         return s3
     
-    @lazy_property
+    @utils.lazy_property
     def http(self):
         http = HTTP()
         return http
     
-    @lazy_property
+    @utils.lazy_property
     def udocker(self):
         udocker = Udocker(self.scar_input_file)
         return udocker
@@ -398,7 +390,7 @@ class Supervisor():
         self.create_event_file()
 
     def is_s3_event(self):
-        if check_key_in_dictionary('Records', lambda_instance.event):
+        if utils.check_key_in_dictionary('Records', lambda_instance.event):
             # Check if the event is an S3 event
             return lambda_instance.event['Records'][0]['eventSource'] == "aws:s3"
         return False
@@ -469,78 +461,16 @@ class Supervisor():
         shutil.rmtree("/tmp/%s" % lambda_instance.request_id)        
         
     def create_temporal_folders(self):
-        create_folder(lambda_instance.temporal_folder)
-        create_folder(lambda_instance.input_folder)
-        create_folder(lambda_instance.output_folder)
+        utils.create_folder(lambda_instance.temporal_folder)
+        utils.create_folder(lambda_instance.input_folder)
+        utils.create_folder(lambda_instance.output_folder)
     
     def create_event_file(self):
-        create_file_with_content("{0}/event.json".format(lambda_instance.temporal_folder),
-                                 json.dumps(lambda_instance.event))        
+        utils.create_file_with_content("{0}/event.json".format(lambda_instance.temporal_folder), json.dumps(lambda_instance.event))        
         
 #######################################
 #           USEFUL FUNCTIONS          #
-#######################################
-def create_folder(folder_name):
-    if not os.path.isdir(folder_name):
-        os.makedirs(folder_name, exist_ok=True)
-
-def kill_process(self, process):
-    logger.info("Stopping process '{0}'".format(process))
-    # Using SIGKILL instead of SIGTERM to ensure the process finalization 
-    os.killpg(os.getpgid(process.pid), subprocess.signal.SIGKILL)
-
-def read_file(file_path):
-    with open(file_path, 'r') as content_file:
-        return content_file.read() 
-
-def execute_command(command):
-    subprocess.call(command)
-    
-def execute_command_and_return_output(command):
-    return subprocess.check_output(command).decode("utf-8")
-
-def is_variable_in_environment(variable):
-    return check_key_in_dictionary(variable, os.environ)
-
-def set_environment_variable(key, variable):
-    if key and variable and key != "" and variable != "":
-        os.environ[key] = variable
-
-def get_environment_variable(variable):
-    if check_key_in_dictionary(variable, os.environ):
-        return os.environ[variable]
-
-def check_key_in_dictionary(key, dictionary):
-    return (key in dictionary) and dictionary[key] and dictionary[key] != ""
-
-def create_file_with_content(path, content):
-    with open(path, "w") as f:
-        f.write(content)
-                    
-def undo_escape_string(value):
-    value = value.replace("\\/", "\\").replace('\\n', '\n')
-    value = value.replace('\\"', '"').replace("\\/", "\/")
-    value = value.replace("\\b", "\b").replace("\\f", "\f")
-    return value.replace("\\r", "\r").replace("\\t", "\t")
-
-def get_all_files_in_directory(dir_path):
-    files = []
-    for dirname, _, filenames in os.walk(dir_path):
-        for filename in filenames:
-            files.append(os.path.join(dirname, filename))
-    return files
-
-def create_tar_gz(files_to_archive, destination_tar_path):
-    with tarfile.open(destination_tar_path, "w:gz") as tar:
-        for file_path in files_to_archive:
-            tar.add(file_path, arcname=os.path.basename(file_path))
-    return destination_tar_path
-        
-def extract_tar_gz(tar_path, destination_path):
-    with tarfile.open(tar_path, "r:gz") as tar:
-        tar.extractall(path=destination_path)
-    logging.info("Successfully extracted '%s' in path '%s'" % (tar_path, destination_path))
-    
+#######################################   
 def set_instance_properties(event, context):
     global lambda_instance
     lambda_instance = Lambda(event, context)    

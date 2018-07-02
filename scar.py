@@ -17,6 +17,7 @@
 
 from src.providers.aws.controller import AWS
 from src.parser.cli import CommandParser
+from src.parser.yaml import YamlParser
 from src.cmdtemplate import Commands
 import src.logger as logger 
 
@@ -33,6 +34,9 @@ class Scar(Commands):
     
     def run(self):
         self.cloud_provider.run()
+        
+    def update(self):
+        self.cloud_provider.update()        
     
     def ls(self):
         self.cloud_provider.ls()
@@ -52,6 +56,9 @@ class Scar(Commands):
     def parse_command_arguments(self):
         args = CommandParser(self).parse_arguments()
         if hasattr(args, 'func'):
+            if hasattr(args, 'conf_file') and args.conf_file:
+                # Update the arguments with the values extracted from the configuration file
+                args.__dict__.update(YamlParser(args).parse_arguments())
             self.cloud_provider.parse_command_arguments(args)
             args.func()
         else:

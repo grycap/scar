@@ -21,13 +21,6 @@ def create_clienterror(error_msg, operation_name):
     error = {'Error' : {'Message' : error_msg}}
     return ClientError(error, operation_name)
 
-def validate_function_properties(_lambda):
-    validate_iam_role(_lambda.get_property("iam"))
-    validate_function_name(_lambda.get_property("name"),
-                           _lambda.get_property("name_regex"))
-    validate_time(_lambda.get_property("time"))
-    validate_memory(_lambda.get_property("memory"))
-
 def validate_iam_role(iam_props):
     if (("role" not in iam_props) or (iam_props["role"] == "")):
         error_msg = "Please, specify a valid iam role in the configuration file (usually located in ~/.scar/scar.cfg)."
@@ -37,25 +30,20 @@ def validate_time(lambda_time):
     if (lambda_time <= 0) or (lambda_time > 300):
         error_msg = 'Incorrect time specified\nPlease, set a value between 0 and 300.'
         raise create_clienterror(error_msg, 'validate_time')
-    return lambda_time
 
 def validate_memory(lambda_memory):
-    """ Check if the memory introduced by the user is correct.
-    If the memory is not specified in 64mb increments,
-    transforms the request to the next available increment."""
     if (lambda_memory < 128) or (lambda_memory > 3008):
         error_msg = 'Incorrect memory size specified\nPlease, set a value between 128 and 3008.'
-        raise create_clienterror(error_msg, 'validate_memory')    
-    else:
-        res = lambda_memory % 64
-        if (res == 0):
-            return lambda_memory
-        else:
-            return lambda_memory - res + 64
+        raise create_clienterror(error_msg, 'validate_memory')
         
 def validate_function_name(function_name, name_regex):
-    if not utils.is_valid_string(function_name, name_regex):
-        raise Exception("'%s' is an invalid lambda function name." % function_name)
-        #logger.error("'%s' is an invalid lambda function name." % function_name)
-        #utils.finish_failed_execution()  
-        
+    if not utils.find_expression(function_name, name_regex):
+        raise Exception("'{0}' is an invalid lambda function name.".format(function_name))
+
+def validate(**kwargs):
+    if 'MemorySize' in kwargs:
+        validate_memory(kwargs['MemorySize'])
+    if 'Timeout' in kwargs:
+        validate_time(kwargs['Timeout'])        
+    
+            

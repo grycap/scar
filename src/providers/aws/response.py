@@ -133,7 +133,7 @@ def get_table(functions_info):
 def parse_error_invocation_response(response, function_name):
     if "Task timed out" in response['Payload']:
         # Find the timeout time
-        message = utils.find_expression('(Task timed out .* seconds)', str(response['Payload']))
+        message = utils.find_expression(str(response['Payload']), '(Task timed out .* seconds)')
         # Modify the error message to ease the error readability
         error_msg = message.replace("Task", "Function '%s'" % function_name)
         error_log = "Error in function response: %s" % error_msg                
@@ -180,19 +180,19 @@ def parse_requestresponse_invocation_response(response, output_type):
     print_generic_response(response, output_type, aws_output, text_message, json_output=json_message)        
       
 def parse_base64_response_values(value):
-    value['LogResult'] = utils.base64_to_utf8(value['LogResult'])
-    value['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'] = utils.base64_to_utf8(value['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'])
+    value['LogResult'] = utils.base64_to_utf8_string(value['LogResult'])
+    value['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'] = utils.base64_to_utf8_string(value['ResponseMetadata']['HTTPHeaders']['x-amz-log-result'])
 
-def parse_invocation_response(response, function_name, output_type, is_asynchronous):
+def parse_invocation_response(**kwargs):
     # Decode and parse the payload
-    parse_payload(response)
-    if "FunctionError" in response:
-        parse_error_invocation_response(response, function_name)
-    if is_asynchronous:        
-        parse_asynchronous_invocation_response(response, output_type, function_name)
+    parse_payload(kwargs['Response'])
+    if "FunctionError" in kwargs['Response']:
+        parse_error_invocation_response(kwargs['Response'], kwargs['FunctionName'])
+    if kwargs['IsAsynchronous']:        
+        parse_asynchronous_invocation_response(kwargs['Response'], kwargs['OutputType'], kwargs['FunctionName'])
     else:
         # Transform the base64 encoded results to something legible
-        parse_base64_response_values(response)
+        parse_base64_response_values(kwargs['Response'])
         # Extract log_group_name and log_stream_name from the payload
-        parse_requestresponse_invocation_response(response, output_type)
+        parse_requestresponse_invocation_response(kwargs['Response'], kwargs['OutputType'])
         
