@@ -47,8 +47,9 @@ class APIGateway(GenericClient):
     def get_method_args(self, resource_info):
         args = {'authorizationType' : self.default_authorization_type,
                 'requestParameters' : {'method.request.header.X-Amz-Invocation-Type' : False}}
-        return self.get_common_args(resource_info).update(args)
-                
+        method = self.get_common_args(resource_info)
+        method.update(args)
+        return method        
 
     def get_integration_args(self, resource_info):
         args = {'type' : self.default_type,
@@ -57,7 +58,9 @@ class APIGateway(GenericClient):
                 'requestParameters' : 
                     { 'integration.request.header.X-Amz-Invocation-Type' : 'method.request.header.X-Amz-Invocation-Type' }
                 }
-        return self.get_common_args(resource_info).update(args)
+        integration = self.get_common_args(resource_info)
+        integration.update(args)
+        return integration
 
     def create_api_gateway(self):
         api_info = self.client.create_rest_api(self.api_gateway_name)

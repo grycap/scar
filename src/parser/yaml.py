@@ -79,7 +79,11 @@ class YamlParser(object):
             if 'output_bucket' in s3_data:
                 args['output_bucket'] = s3_data['output_bucket']
             if 'output_folder' in s3_data:
-                args['output_folder'] = s3_data['output_folder']                                               
+                args['output_folder'] = s3_data['output_folder']
+        if 'api_gateway' in function_data:
+            api_data = function_data['api_gateway']
+            if 'name' in api_data:
+                args['api_gateway_name'] = api_data['name']                                                              
 
         return args
         
