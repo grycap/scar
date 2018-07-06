@@ -1,6 +1,7 @@
 # SCAR - Serverless Container-aware ARchitectures
 
 [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/1968/badge)](https://bestpractices.coreinfrastructure.org/projects/1968)
 
 # ![SCAR](scar-logo.png)
 
