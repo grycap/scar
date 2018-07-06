@@ -59,11 +59,14 @@ class S3Client(BotoClient):
         https://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Client.get_bucket_notification_configuration'''
         return self.client.get_bucket_notification_configuration(Bucket=bucket_name)
             
-    @utils.exception(logger)            
+    @utils.exception(logger)
     def upload_file(self, bucket_name, file_key, file_data=None):
         '''Adds an object to a bucket.
         https://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Client.put_object'''
-        return self.client.put_object(Bucket=bucket_name, Key=file_key, Body=file_data)          
+        kwargs = {'Bucket' : bucket_name, 'Key' : file_key}
+        if file_data:
+            kwargs['Body'] = file_data
+        return self.client.put_object(**kwargs)          
             
     @utils.exception(logger)            
     def download_file(self, bucket_name, file_key, file):

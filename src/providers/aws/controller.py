@@ -61,6 +61,7 @@ class AWS(Commands):
         iam = IAM()
         return iam    
        
+    @utils.exception(logger)
     def init(self):
         if self._lambda.has_api_defined():
             api_id, aws_acc_id = self.api_gateway.create_api_gateway()

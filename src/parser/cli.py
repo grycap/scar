@@ -16,8 +16,6 @@
 
 import argparse
 import src.logger as logger
-import src.utils as utils
-
 
 class CommandParser(object):
     
@@ -159,5 +157,4 @@ class CommandParser(object):
         except AttributeError as ae:
             logger.error("Incorrect arguments: use scar -h to see the options available",
                              "Error parsing arguments: %s" % ae)            
-            utils.finish_failed_execution() 
-        
+            raise

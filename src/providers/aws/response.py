@@ -141,7 +141,6 @@ def parse_error_invocation_response(response, function_name):
         error_msg = "Error in function response."
         error_log = "Error in function response: %s" % response['Payload']
     logger.error(error_msg, error_log)
-    utils.finish_failed_execution()    
         
 def parse_payload(value):
     if (('Payload' in value) and value['Payload']):

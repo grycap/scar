@@ -18,13 +18,12 @@ import base64
 import json
 import os
 import re
-import sys
 import uuid
 import functools
 import subprocess
 import tarfile
 from botocore.exceptions import ClientError
-from . import logger
+import src.exceptions as scar_excp
 
 def lazy_property(func):
     ''' A decorator that makes a property lazy-evaluated.'''
@@ -51,23 +50,18 @@ def exception(logger):
                 print("There was an exception in {0}".format(func.__name__))
                 print(ce.response['Error']['Message'])
                 logger.exception(ce)
+            except scar_excp.ScarError as se:
+                #print("There was an exception in {0}".format(func.__name__))
+                print(se.args[0])
+                logger.exception(se)
+                raise        
             except Exception as ex:
-                print("There was an exception in {0}".format(func.__name__))
+                print("There was an unmanaged exception in {0}".format(func.__name__))
                 logger.exception(ex)
                 # re-raise the exception
-                # raise
+                raise
         return wrapper
     return decorator
-
-def finish_failed_execution(error_msg=None, ex=None):
-    if error_msg and ex:
-        logger.error(error_msg, error_msg + ": {0}".format(ex)) 
-    logger.end_execution_trace_with_errors()
-    sys.exit(1)
-
-def finish_successful_execution():
-    logger.end_execution_trace()
-    sys.exit(0)
 
 def find_expression(string_to_search, rgx_pattern):
     '''Returns the first group that matches the rgx_pattern in the string_to_search'''
@@ -161,10 +155,8 @@ def create_tar_gz(files_to_archive, destination_tar_path):
 def extract_tar_gz(tar_path, destination_path):
     with tarfile.open(tar_path, "r:gz") as tar:
         tar.extractall(path=destination_path)
-    logger.info("Successfully extracted '%s' in path '%s'" % (tar_path, destination_path))    
 
 def kill_process(self, process):
-    logger.info("Stopping process '{0}'".format(process))
     # Using SIGKILL instead of SIGTERM to ensure the process finalization 
     os.killpg(os.getpgid(process.pid), subprocess.signal.SIGKILL)
 

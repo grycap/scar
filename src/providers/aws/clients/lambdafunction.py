@@ -94,15 +94,13 @@ class LambdaClient(BotoClient):
         return response
     
     @utils.exception(logger)    
-    def add_invocation_permission(self, function_name, principal, source_arn):
+    def add_invocation_permission(self, **kwargs):
         '''
         Adds a permission to the resource policy associated with the specified AWS Lambda function.
         http://boto3.readthedocs.io/en/latest/reference/services/lambda.html#Lambda.Client.add_permission
         '''
-        return self.client.add_permission(FunctionName=function_name,
-                                          StatementId=utils.get_random_uuid4_str(),
-                                          Action="lambda:InvokeFunction",
-                                          Principal=principal,
-                                          SourceArn=source_arn)
+        kwargs['StatementId'] = utils.get_random_uuid4_str()
+        kwargs['Action'] = "lambda:InvokeFunction"
+        return self.client.add_permission(**kwargs)
             
             

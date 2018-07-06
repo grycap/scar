@@ -25,14 +25,13 @@ class S3(GenericClient):
         if aws_lambda:
             self.input_bucket = aws_lambda.get_property("input_bucket")
             self.input_folder = aws_lambda.get_property("input_folder")
+            if not self.input_folder.endswith("/"):
+                self.input_folder = self.input_folder + "/"
             if self.input_folder is None:
                 self.input_folder = "{0}/input/".format(aws_lambda.get_function_name())
-            
             self.function_arn = aws_lambda.get_property("function_arn")
             self.region = aws_lambda.get_property("region")
-
-    def trigger_configuration(self):
-        return {  "LambdaFunctionArn": "",
+            self.trigger_configuration =  {  "LambdaFunctionArn": "",
                   "Events": [ "s3:ObjectCreated:*" ],
                   "Filter": {
                       "Key": {
@@ -41,7 +40,7 @@ class S3(GenericClient):
                     }
                   }
                 }
-
+    
     def create_bucket(self, bucket_name):
         try:
             if not self.client.find_bucket(bucket_name):

@@ -66,6 +66,9 @@ class Scar(Commands):
 
 if __name__ == "__main__":
     logger.init_execution_trace()
-    Scar().parse_command_arguments()
-    logger.end_execution_trace()  
+    try:
+        Scar().parse_command_arguments()
+        logger.end_execution_trace()
+    except:
+        logger.end_execution_trace_with_errors()
     

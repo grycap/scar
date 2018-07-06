@@ -28,9 +28,8 @@ import sys
 sys.path.append("..")
 sys.path.append(".")
 # Works in lambda environment
-from code import utils
+import src.utils as utils
 
-#loglevel = logging.INFO
 logger = logging.getLogger()
 logger.setLevel(os.environ['LOG_LEVEL'])
 logger.info('SCAR: Loading lambda function')
@@ -87,12 +86,9 @@ class S3():
         for file_path in output_files_path:
             file_name = file_path.replace("{0}/".format(lambda_instance.output_folder), "")
             if bucket_folder:
-                file_key = self.get_file_key(folder=bucket_folder,
-                                             file_name=file_name)
+                file_key = self.get_file_key(folder=bucket_folder, file_name=file_name)
             else:
-                file_key = self.get_file_key(function_name=lambda_instance.function_name,
-                                             folder='output',
-                                             file_name=file_name)
+                file_key = self.get_file_key(function_name=lambda_instance.function_name, folder='output', file_name=file_name)
             self.upload_file(bucket_name, file_path, file_key)
             
     def upload_file(self, bucket_name, file_path, file_key):
@@ -353,6 +349,7 @@ class Udocker():
             try:
                 process.wait(timeout=remaining_seconds)
             except subprocess.TimeoutExpired:
+                logger.info("Stopping process '{0}'".format(process))
                 utils.kill_process(process)
                 logger.warning("Container timeout")
                 raise

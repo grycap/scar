@@ -31,6 +31,7 @@ import src.utils as utils
 import tempfile
 import base64
 from src.providers.aws.clientfactory import GenericClient
+import src.exceptions as scar_excp
 
 MAX_CONCURRENT_INVOCATIONS = 1000
 MAX_POST_BODY_SIZE = 1024*1024*6
@@ -137,7 +138,6 @@ class Lambda(GenericClient):
         except ClientError as ce:
             error_msg = "Error initializing lambda function."
             logger.error(error_msg, error_msg + ": %s" % ce)
-            utils.finish_failed_execution()
         finally:
             # Remove the files created in the operation
             utils.delete_file(self.properties["zip_file_path"])
@@ -163,6 +163,7 @@ class Lambda(GenericClient):
             i += 1
         return name    
     
+    @utils.exception(logger)
     def check_function_name(self, func_name=None):
         call_type = self.get_property("call_type")
         if func_name:
@@ -173,23 +174,21 @@ class Lambda(GenericClient):
         error_msg = None
         if function_found and (call_type == CallType.INIT):
             error_msg = "Function name '{0}' already used.".format(function_name)
+            raise scar_excp.FunctionCreationError(function_name=function_name, error_msg=error_msg)
         elif (not function_found) and ((call_type == CallType.RM) or 
                                        (call_type == CallType.RUN) or 
                                        (call_type == CallType.INVOKE)):
             error_msg = "Function '{0}' doesn't exist.".format(function_name)
+            raise scar_excp.FunctionNotFoundError(function_name=function_name, error_msg=error_msg)
         if error_msg:
             logger.error(error_msg)             
-            utils.finish_failed_execution()             
     
     def link_function_and_input_bucket(self):
-        self.add_invocation_permission_from_s3(self.get_function_name(), 
-                                               self.get_input_bucket())
-        
-    def add_invocation_permission_from_s3(self, function_name, bucket_name):
-            self.client.add_invocation_permission(function_name, 
-                                                  "s3.amazonaws.com",
-                                                  'arn:aws:s3:::{0}'.format(bucket_name))                            
-        
+        kwargs = {'FunctionName' : self.get_function_name(),
+                  'Principal' : "s3.amazonaws.com",
+                  'SourceArn' : 'arn:aws:s3:::{0}'.format(self.get_input_bucket())}
+        self.client.add_invocation_permission(**kwargs)
+
     def preheat_function(self):
         logger.info("Preheating function")
         self.set_request_response_call_parameters()
@@ -423,7 +422,6 @@ class Lambda(GenericClient):
         except ClientError as ce:
             error_msg = "Error while looking for the lambda function"
             logger.error(error_msg, error_msg + ": %s" % ce)
-            utils.finish_failed_execution()    
     
     def find_function(self, function_name_or_arn):
         validators.validate_function_name(function_name_or_arn, self.get_property("name_regex"))
@@ -438,19 +436,18 @@ class Lambda(GenericClient):
             else:   
                 error_msg = "Error while looking for the lambda function"
                 logger.error(error_msg, error_msg + ": %s" % ce)
-                utils.finish_failed_execution()
                 
     def add_invocation_permission_from_api_gateway(self):
         api_gateway_id = self.get_property('api_gateway_id')
         aws_acc_id = self.get_property('aws_acc_id')
+        kwargs = {'FunctionName' : self.get_function_name(),
+                  'Principal' : 'apigateway.amazonaws.com',
+                  'SourceArn' : 'arn:aws:execute-api:us-east-1:{0}:{1}/*'.format(aws_acc_id, api_gateway_id)}
         # Testing permission
-        self.client.add_invocation_permission(self.get_property("name"),
-                                              'apigateway.amazonaws.com',
-                                              'arn:aws:execute-api:us-east-1:{0}:{1}/*'.format(aws_acc_id, api_gateway_id))
+        self.client.add_invocation_permission(**kwargs)
         # Invocation permission
-        self.client.add_invocation_permission(self.get_property("name"),
-                                              'apigateway.amazonaws.com',
-                                              'arn:aws:execute-api:us-east-1:{0}:{1}/scar/ANY'.format(aws_acc_id, api_gateway_id))                              
+        kwargs['SourceArn'] = 'arn:aws:execute-api:us-east-1:{0}:{1}/scar/ANY'.format(aws_acc_id, api_gateway_id)
+        self.client.add_invocation_permission(**kwargs)                              
 
     def get_api_gateway_id(self, function_name):
         self.check_function_name(function_name)
@@ -463,7 +460,6 @@ class Lambda(GenericClient):
         if api_id is None or api_id == "":
             error_msg = "Error retrieving API ID for lambda function {0}".format(function_name)
             logger.error(error_msg)
-            utils.finish_failed_execution()
         return 'https://{0}.execute-api.{1}.amazonaws.com/scar/launch'.format(api_id, self.get_property("region"))        
         
     def get_http_invocation_headers(self):
@@ -506,4 +502,3 @@ class Lambda(GenericClient):
         if error_msg:
             error_msg += "\nCheck AWS Lambda invocation limits in : https://docs.aws.amazon.com/lambda/latest/dg/limits.html"
             logger.error(error_msg)
-            utils.finish_failed_execution()   

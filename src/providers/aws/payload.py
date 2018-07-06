@@ -37,12 +37,14 @@ zip_file_path = os_tmp_folder +"/function.zip"
 
 def add_mandatory_files(function_name, env_vars):
     os.makedirs(scar_temporal_folder, exist_ok=True)
-    shutil.copy(lambda_code_files_path + 'scarsupervisor.py', scar_temporal_folder + "/" + function_name + '.py')
-    os.makedirs(scar_temporal_folder + "/code", exist_ok=True)
-    shutil.copy(lambda_code_files_path + '__init__.py', scar_temporal_folder + '/code/__init__.py')    
-    shutil.copy(src_path + '/utils.py', scar_temporal_folder + '/code/utils.py')
-    shutil.copy(src_path + '/logger.py', scar_temporal_folder + '/code/logger.py')
+    shutil.copy(lambda_code_files_path + 'scarsupervisor.py', "{0}/{1}.py".format(scar_temporal_folder, function_name))
     shutil.copy(lambda_code_files_path + 'udockerb', udocker_exec)
+    
+    os.makedirs(scar_temporal_folder + "/src", exist_ok=True)
+    shutil.copy(lambda_code_files_path + '__init__.py', scar_temporal_folder + '/src/__init__.py')    
+    shutil.copy(src_path + '/utils.py', scar_temporal_folder + '/src/utils.py')
+    shutil.copy(src_path + '/exceptions.py', scar_temporal_folder + '/src/exceptions.py')    
+    
     env_vars['UDOCKER_DIR'] = "/tmp/home/udocker"
     env_vars['UDOCKER_LIB'] = "/var/task/udocker/lib/"
     env_vars['UDOCKER_BIN'] = "/var/task/udocker/bin/"
@@ -78,7 +80,7 @@ def prepare_lambda_payload(**kwargs):
     if 'DeploymentBucket' in kwargs:
         upload_file_to_S3_bucket(zip_file_path, kwargs['DeploymentBucket'], kwargs['FileKey'])
     
-    #clean_tmp_folders()
+    clean_tmp_folders()
     
 def clean_tmp_folders():
     # Delete created temporal files
@@ -142,7 +144,6 @@ def upload_file_to_S3_bucket(image_file, deployment_bucket, file_key):
     if(utils.get_tree_size(scar_temporal_folder) > MAX_S3_PAYLOAD_SIZE):         
         error_msg = "Uncompressed image size greater than 250MB.\nPlease reduce the uncompressed image and try again."
         logger.error(error_msg)
-        utils.finish_failed_execution()
     
     logger.info("Uploading '%s' to the '%s' S3 bucket" % (image_file, deployment_bucket))
     file_data = utils.read_file(image_file, 'rb')
@@ -150,6 +151,4 @@ def upload_file_to_S3_bucket(image_file, deployment_bucket, file_key):
 
 def payload_size_error(zip_file_path, message):
     logger.error(message)
-    utils.delete_file(zip_file_path)
-    utils.finish_failed_execution()
-    
+    utils.delete_file(zip_file_path)    
