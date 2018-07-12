@@ -1,13 +1,13 @@
 Installation
 ============
 
-#) SCAR requires python3, first make sure you have python3 available in your system
+1) SCAR requires python3, first make sure you have python3 available in your system
 
-#) Clone the GitHub repository::
+2) Clone the GitHub repository::
 
     git clone https://github.com/grycap/scar.git
 
-#) Install the required dependencies:
+3) Install the required dependencies:
 
   * `zip <https://linux.die.net/man/1/zip>`_ (linux package)
   * `Boto3 <https://pypi.org/project/boto3/>`_ (v1.4.4+ is required)
@@ -23,6 +23,6 @@ Installation
       sudo apt install zip
 
 
-#) (Optional) Define an alias for increased usability::
+4) (Optional) Define an alias for increased usability::
 
     alias scar='python3 `pwd`/scar.py'
