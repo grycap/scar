@@ -70,19 +70,24 @@ class CloudWatchLogs(GenericClient):
               
         return function_log
 
+    def is_end_line(self, line):
+        return line.startswith('REPORT') and self.request_id in line
+
+    def is_start_line(self, line):
+        return line.startswith('START') and self.request_id in line
+
     def parse_aws_logs(self, logs):
-        if (logs is None) or (self.request_id is None):
-            return None
-        full_msg = ""
-        logging = False
-        lines = logs.split('\n')
-        for line in lines:
-            if line.startswith('REPORT') and self.request_id in line:
-                full_msg += line + '\n'
-                return full_msg
-            if logging:
-                full_msg += line + '\n'
-            if line.startswith('START') and self.request_id in line:
-                full_msg += line + '\n'
-                logging = True
+        if logs and self.request_id:
+            full_msg = ""
+            logging = False
+            for line in logs.split('\n'):
+                if self.is_start_line(line):
+                    full_msg += line + '\n'
+                    logging = True                
+                elif self.is_end_line(line):
+                    full_msg += line + '\n'
+                    return full_msg
+                elif logging:
+                    full_msg += line + '\n'
+
         
