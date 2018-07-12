@@ -17,11 +17,3 @@ Welcome to SCAR's documentation!
    testing
    license
    help
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
