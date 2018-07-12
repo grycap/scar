@@ -1,0 +1,3 @@
+functions:
+  scar-cowsay:
+    image_file: minicow.tar.gz

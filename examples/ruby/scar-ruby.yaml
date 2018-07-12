@@ -1,0 +1,3 @@
+functions:
+  scar-ruby:
+    image: ruby:2.2.10-slim-jessie
