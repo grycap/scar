@@ -1,0 +1,6 @@
+functions:
+  scar-aws-cli:
+    image: grycap/aws-cli
+    environment:
+      AWS_ACCESS_KEY_ID: XXXXX
+      AWS_SECRET_ACCESS_KEY: XXXXX

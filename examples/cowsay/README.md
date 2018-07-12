@@ -20,14 +20,46 @@ docker run --rm grycap/cowsay /usr/games/cowsay "Hello World"
 
 You can run this image in AWS Lambda via [SCAR](https://github.com/grycap/scar) using the following procedure:
 
-1. Create the Lambda function
+1. Create the Lambda function using the 'scar-cowsay.yaml' configuration file provided:
 
 ```sh
-scar init -n lambda-cowsay -i grycap/cowsay
+scar init -f scar-cowsay.yaml
 ```
 
 2. Execute the Lambda function
 
 ```sh
-scar run -n lambda-cowsay
+scar run -f scar-cowsay.yaml
 ```
+
+3. When finished, delete the function with the command:
+
+```sh
+scar rm -f scar-cowsay.yaml
+```
+
+## Deploy docker image in AWS Lambda via SCAR
+
+As explained in the [SCAR documentation](http://scar.readthedocs.io/en/latest/advanced_usage.html#upload-slim-docker-image-files-in-the-payload), if the image is small enough (i.e. less than 40MB) you can upload it directly in the function payload.
+To test that we minimized the cowsay image using [minicon](https://github.com/grycap/minicon) and now we are going to deploy it:
+
+1. First download and save the docker image locally:
+
+```sh
+docker pull grycap/minicow
+docker save grycap/minicow > minicow.tar.gz
+```
+
+2. Create the Lambda function using the 'scar-minicow.yaml' configuration file:
+
+```sh
+scar init -f scar-cowsay.yaml
+```
+
+3. Execute the Lambda function
+
+```sh
+scar run -f scar-cowsay.yaml
+```
+
+From the user perspective nothing changed in comparison with the previous execution, but the main difference with the 'standard' lambda deployment is that the container is already available when the function is launched for the first time. Moreover, the function doesn't need to connect to any external repository to download the container, so this is also useful to execute small binaries or containers that you don't want to upload to a public repository.

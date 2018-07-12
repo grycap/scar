@@ -265,8 +265,8 @@ class Udocker():
                                                                                   socket.gethostbyname(socket.gethostname()))        
         self.cmd_container_execution += self.get_user_defined_variables()
         self.cmd_container_execution += self.get_iam_credentials()        
-        self.cmd_container_execution += self.get_session_and_security_token()
         self.cmd_container_execution += self.get_input_file()
+        self.cmd_container_execution += self.get_output_dir()
         self.cmd_container_execution += self.get_extra_payload_path()
         self.cmd_container_execution += self.get_lambda_output_variable()
        
@@ -287,7 +287,7 @@ class Udocker():
 
     def get_iam_credentials(self):
         creds = []
-        iam_creds = {'CONT_VAR_AWS_ACCESS_KEY_ID':'AWS_ACCESS_KEY_ID', 
+        iam_creds = {'CONT_VAR_AWS_ACCESS_KEY_ID':'AWS_ACCESS_KEY_ID',
                      'CONT_VAR_AWS_SECRET_ACCESS_KEY':'AWS_SECRET_ACCESS_KEY'}
         # Add IAM credentials
         for key,value in iam_creds.items():
@@ -296,20 +296,15 @@ class Udocker():
                                                                    utils.get_environment_variable(value))
         return creds
     
-    def get_session_and_security_token(self):
-        tokens = []
-        # Always add Session and security tokens
-        tokens += self.parse_container_environment_variable("AWS_SESSION_TOKEN",
-                                                            utils.get_environment_variable("AWS_SESSION_TOKEN"))
-        tokens += self.parse_container_environment_variable("AWS_SECURITY_TOKEN",
-                                                            utils.get_environment_variable("AWS_SECURITY_TOKEN"))
-        return tokens
-            
     def get_input_file(self):
         file = []
         if self.scar_input_file and self.scar_input_file != "":
             file += self.parse_container_environment_variable("SCAR_INPUT_FILE", self.scar_input_file)
         return file
+    
+    def get_output_dir(self):
+        return self.parse_container_environment_variable("SCAR_OUTPUT_DIR", 
+                                                         "/tmp/{0}/output".format(lambda_instance.request_id))
             
     def get_extra_payload_path(self):
         ppath = []

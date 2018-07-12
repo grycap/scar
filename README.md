@@ -18,7 +18,8 @@ SCAR also supports a High Throughput Computing [Programming Model](#programming-
 
 ## Documentation
 
-SCAR documentation can be found in [readthedocs](http://scar.readthedocs.io/en/latest/)
+SCAR documentation can be found in [readthedocs](http://scar.readthedocs.io/en/latest/).
+
 Also the examples have extra information that is usefull to execute them.
 
 ## Licensing

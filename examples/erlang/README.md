@@ -9,14 +9,14 @@ You can run a container out of this image on AWS Lambda via [SCAR](https://githu
 1. Create the Lambda function
 
 ```sh
-scar init -n scar-grycap-erlang -i grycap/erlang
+scar init -f scar-erlang.yaml
 ```
 
 2. Execute the Lambda function with an script to compile and run an Erlang application
 
 ```sh
-scar run -s examples/erlang/erlang-hw.sh -n scar-grycap-erlang
+scar run -f scar-erlang.yaml -s erlang-hw.sh
 ```
 The first invocation will take considerably longer than the subsequent ones, where the container will be cached. You can modify the script and perform another `scar run`.
 
-You can also run multiple concurrent invocations of this Lambda function to perform highly-parallel event-driven processing. See the [SCAR Programming Model](https://github.com/grycap/scar/blob/master/README.md#programming-model).
+You can also run multiple concurrent invocations of this Lambda function to perform highly-parallel event-driven processing. See the [SCAR Programming Model](http://scar.readthedocs.io/en/latest/prog_model.html).
