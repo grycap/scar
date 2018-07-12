@@ -15,7 +15,6 @@
 
 import os
 import src.logger as logger
-import src.utils as utils
 import shutil
 import json
 
@@ -41,7 +40,6 @@ class ConfigFile(object):
         message = "Config file '%s' created.\n" % config_file_path
         message += "Please, set a valid iam role in the file field 'role' before the first execution."
         logger.warning(message)
-        utils.finish_successful_execution()
         
     def get_aws_props(self):
         return self.cfg_data['aws']

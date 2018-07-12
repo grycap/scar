@@ -13,12 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .client.lambdafunction import Lambda
-from .client.cloudwatchlogs import CloudWatchLogs
-from .client.apigateway import APIGateway
-from .client.s3 import S3
-from .client.iam import IAM
-from .client.resourcegroups import ResourceGroups
+from src.providers.aws.lambdafunction import Lambda
+from src.providers.aws.cloudwatchlogs import CloudWatchLogs
+from src.providers.aws.apigateway import APIGateway
+from src.providers.aws.s3 import S3
+from src.providers.aws.iam import IAM
+from src.providers.aws.resourcegroups import ResourceGroups
 from botocore.exceptions import ClientError
 from src.cmdtemplate import Commands
 
@@ -61,6 +61,7 @@ class AWS(Commands):
         iam = IAM()
         return iam    
        
+    @utils.exception(logger)
     def init(self):
         if self._lambda.has_api_defined():
             api_id, aws_acc_id = self.api_gateway.create_api_gateway()
@@ -97,6 +98,9 @@ class AWS(Commands):
             if self._lambda.is_asynchronous():
                 self._lambda.set_asynchronous_call_parameters()
             self._lambda.launch_lambda_instance()
+            
+    def update(self):
+        self._lambda.update_function_attributes()
     
     def ls(self):
         bucket_name = self._lambda.get_property("bucket")
@@ -164,7 +168,7 @@ class AWS(Commands):
             self.upload_file_to_s3(bucket_name, bucket_folder, file)            
 
     def upload_file_to_s3(self, bucket_name, bucket_folder, file_path):
-        file_data = utils.get_file_as_byte_array(file_path)
+        file_data = utils.read_file(file_path, 'rb')
         file_name = os.path.basename(file_path)
         file_key = "{0}".format(file_name)
         if bucket_folder and bucket_folder != "" and bucket_folder.endswith("/"):

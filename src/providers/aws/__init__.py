@@ -15,4 +15,4 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-__all__ = ['controller','response']
+__all__ = ['apigateway','cloudwatchlogs','codezip','controller','iam','lambdafunction','resourcegroups','response','s3','validators']

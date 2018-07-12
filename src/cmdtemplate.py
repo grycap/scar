@@ -33,10 +33,14 @@ class Commands(metaclass=abc.ABCMeta):
         pass
     
     @abc.abstractmethod    
+    def update(self):
+        pass    
+    
+    @abc.abstractmethod    
     def ls(self):
         pass
     
-    @abc.abstractmethod    
+    @abc.abstractmethod
     def rm(self):
         pass
 

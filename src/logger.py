@@ -62,6 +62,9 @@ def error(cli_msg, log_msg=None):
     else:
         print(cli_msg)
         logging.error(cli_msg)
+        
+def exception(msg):
+    logging.exception(msg)        
 
 def log_exception(error_msg, exception):
     error(error_msg, error_msg + ": {0}".format(exception))
