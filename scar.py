@@ -69,6 +69,7 @@ if __name__ == "__main__":
     try:
         Scar().parse_command_arguments()
         logger.end_execution_trace()
-    except:
+    except Exception as ex:
+        logger.exception(ex)
         logger.end_execution_trace_with_errors()
     

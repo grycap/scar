@@ -82,7 +82,7 @@ class CommandParser(object):
         parser_invoke.add_argument("-p", "--parameters", help="In addition to passing the parameters in the URL, you can pass the parameters here (i.e. '{\"key1\": \"value1\", \"key2\": [\"value2\", \"value3\"]}').")  
  
     def create_update_parser(self):
-        parser_update = self.subparsers.add_parser('update', help="Deploy function")
+        parser_update = self.subparsers.add_parser('update', help="Update function properties")
         parser_update.set_defaults(func=self.scar.update)
         group = parser_update.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name", help="Lambda function name")

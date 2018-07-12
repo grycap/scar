@@ -25,7 +25,7 @@ class S3(GenericClient):
         if aws_lambda:
             self.input_bucket = aws_lambda.get_property("input_bucket")
             self.input_folder = aws_lambda.get_property("input_folder")
-            if not self.input_folder.endswith("/"):
+            if self.input_folder and not self.input_folder.endswith("/"):
                 self.input_folder = self.input_folder + "/"
             if self.input_folder is None:
                 self.input_folder = "{0}/input/".format(aws_lambda.get_function_name())
@@ -74,7 +74,7 @@ class S3(GenericClient):
         
     def delete_bucket_notification(self, bucket_name, function_arn):
         bucket_conf = self.client.get_bucket_notification_configuration(bucket_name)
-        if "LambdaFunctionConfigurations" in bucket_conf:
+        if bucket_conf and "LambdaFunctionConfigurations" in bucket_conf:
             lambda_conf = bucket_conf["LambdaFunctionConfigurations"]
             filter_conf = [x for x in lambda_conf if x['LambdaFunctionArn'] != function_arn]
             notification = { "LambdaFunctionConfigurations": filter_conf }

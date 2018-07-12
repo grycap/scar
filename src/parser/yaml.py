@@ -62,12 +62,21 @@ class YamlParser(object):
         if 'extra_payload' in function_data:
             args['extra_payload'] = function_data['extra_payload']
         if 'log_level' in function_data:
-            args['log_level'] = function_data['log_level']            
+            args['log_level'] = function_data['log_level']
         if 'environment' in function_data:
             variables = []
             for k,v in function_data['environment'].items():
                 variables.append(str(k) + '=' + str(v))
             args['environment_variables'] = variables
+        # LOG COMMANDS
+        if 'log_stream_name' in function_data:
+            args['log_stream_name'] = function_data['log_stream_name']
+        if 'request_id' in function_data:
+            args['request_id'] = function_data['request_id']
+            
+        if 'data_binary' in function_data:
+            args['data_binary'] = function_data['data_binary']
+                                
         if 's3' in function_data:
             s3_data = function_data['s3']
             if 'deployment_bucket' in s3_data:
@@ -83,7 +92,8 @@ class YamlParser(object):
         if 'api_gateway' in function_data:
             api_data = function_data['api_gateway']
             if 'name' in api_data:
-                args['api_gateway_name'] = api_data['name']                                                              
-
+                args['api_gateway_name'] = api_data['name']
+            if 'parameters' in api_data:
+                args['parameters'] = api_data['parameters']
         return args
         

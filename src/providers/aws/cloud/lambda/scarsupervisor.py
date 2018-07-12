@@ -24,6 +24,7 @@ import socket
 import uuid
 import base64
 import sys
+from urllib.parse import unquote_plus
 
 sys.path.append("..")
 sys.path.append(".")
@@ -31,9 +32,11 @@ sys.path.append(".")
 import src.utils as utils
 
 logger = logging.getLogger()
-logger.setLevel(os.environ['LOG_LEVEL'])
+if os.environ['LOG_LEVEL']:
+    logger.setLevel(os.environ['LOG_LEVEL'])
+else:
+    logger.setLevel('INFO')
 logger.info('SCAR: Loading lambda function')
-
 lambda_instance = None
 
 #######################################
@@ -50,8 +53,8 @@ class S3():
         if utils.check_key_in_dictionary('Records', lambda_instance.event):
             self.record = self.get_s3_record()
             self.input_bucket = self.record['bucket']['name']
-            self.file_key = self.record['object']['key']
-            self.file_name = os.path.basename(self.file_key)
+            self.file_key = unquote_plus(self.record['object']['key'])
+            self.file_name = os.path.basename(self.file_key).replace(' ', '')
             self.file_download_path = '{0}/{1}'.format(lambda_instance.input_folder, self.file_name)
 
     def get_s3_record(self):

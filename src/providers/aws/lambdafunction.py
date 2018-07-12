@@ -244,6 +244,7 @@ class Lambda(GenericClient):
     def set_asynchronous_call_parameters(self):
         self.set_property('invocation_type', "Event")
         self.set_property('log_type', 'None')
+        self.set_property('asynchronous', 'True')
         
     def set_api_gateway_id(self, api_id, acc_id):
         self.set_property('api_gateway_id', api_id)
@@ -252,10 +253,11 @@ class Lambda(GenericClient):
 
     def set_request_response_call_parameters(self):
         self.set_property('invocation_type', "RequestResponse")
-        self.set_property('log_type', "Tail")        
+        self.set_property('log_type', "Tail")    
+        self.set_property('asynchronous', 'False')    
 
     def set_s3_event_source(self, file_name):
-        self.properties['s3_event']['Records'][0]['s3']['bucket']['name'] = self.get_property('event_source')
+        self.properties['s3_event']['Records'][0]['s3']['bucket']['name'] = self.get_property('input_bucket')
         self.properties['s3_event']['Records'][0]['s3']['object']['key'] = file_name
         
     def set_property_if_has_value(self, dictio, key, prop):
@@ -478,6 +480,8 @@ class Lambda(GenericClient):
     def get_http_parameters(self):
         params = self.get_property("parameters")
         if params:
+            if type(params) is dict:
+                return params
             return json.loads(params)
         
     def invoke_function_http(self, function_name):
