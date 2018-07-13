@@ -1,0 +1,4 @@
+functions:
+  scar-mrbayes:
+    image: grycap/mrbayes
+    run_script: mrbayes-sample-run.sh
