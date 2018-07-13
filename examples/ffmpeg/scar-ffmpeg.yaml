@@ -1,0 +1,7 @@
+functions:
+  scar-ffmpeg:
+    image: sameersbn/ffmpeg
+    memory: 2048
+    init_script: grayify-video.sh
+    s3:
+      input_bucket: scar-test
