@@ -22,13 +22,13 @@ You can run this image in AWS Lambda via [SCAR](https://github.com/grycap/scar) 
 
 1. Create the Lambda function
 
- ```sh
- scar init -n lambda-mrbayes -i grycap/mrbayes
- ```
+```sh
+scar init -f scar-mrbayes.yaml
+```
 
-2. Execute the Lambda function passing an execution script
+2. Execute the Lambda function passing an execution script (in this case, specified on the configuration file)
 
- ```sh
- scar run -s examples/mrbayes/mrbayes-sample-run.sh -n lambda-mrbayes
- ```
+```sh
+scar run -f scar-mrbayes.yaml
+```
 

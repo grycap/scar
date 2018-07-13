@@ -1,0 +1,3 @@
+functions:
+  scar-r:
+    image: grycap/r-base-lambda

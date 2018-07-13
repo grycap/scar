@@ -1,5 +1,6 @@
 FROM debian:stretch-slim
 LABEL maintainer="gmolto@dsic.upv.es" 
+
 ENV R_HOME /root
 ENV PATH "$PATH:/$R_HOME/bin"
 ENV LD_LIBRARY_PATH "$R_HOME/lib"
