@@ -19,11 +19,15 @@ import json
 import os
 import re
 import uuid
-import functools
 import subprocess
 import tarfile
-from botocore.exceptions import ClientError
-import src.exceptions as scar_excp
+import tempfile
+
+def join_paths(*paths):
+    return os.path.join(*paths)
+
+def get_temp_dir():
+    return tempfile.gettempdir()
 
 def lazy_property(func):
     ''' A decorator that makes a property lazy-evaluated.'''
@@ -35,33 +39,6 @@ def lazy_property(func):
             setattr(self, attr_name, func(self))
         return getattr(self, attr_name)
     return _lazy_property
-
-def exception(logger):
-    '''
-    A decorator that wraps the passed in function and logs exceptions
-    @param logger: The logging object
-    '''
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            try:
-                return func(*args, **kwargs)
-            except ClientError as ce:
-                print("There was an exception in {0}".format(func.__name__))
-                print(ce.response['Error']['Message'])
-                logger.exception(ce)
-            except scar_excp.ScarError as se:
-                #print("There was an exception in {0}".format(func.__name__))
-                print(se.args[0])
-                logger.exception(se)
-                raise        
-            except Exception as ex:
-                print("There was an unmanaged exception in {0}".format(func.__name__))
-                logger.exception(ex)
-                # re-raise the exception
-                raise
-        return wrapper
-    return decorator
 
 def find_expression(string_to_search, rgx_pattern):
     '''Returns the first group that matches the rgx_pattern in the string_to_search'''
@@ -102,9 +79,18 @@ def load_json_file(file_path):
             return json.load(f)
         
 def merge_dicts(d1, d2):
+    '''
+    Merge 'd1' and 'd2' dicts into 'd1'.
+    'd2' has precedence over 'd1'
+    '''
     for k,v in d2.items():
         if v:
-            d1[k] = v
+            if k not in d1:
+                d1[k] = v
+            elif type(v) is dict:
+                d1[k] = merge_dicts(d1[k], v)
+            elif type(v) is list:
+                d1[k] += v
     return d1
 
 def check_key_in_dictionary(key, dictionary):
@@ -177,3 +163,13 @@ def get_environment_variable(variable):
     if check_key_in_dictionary(variable, os.environ):
         return os.environ[variable]
 
+def parse_arg_list(arg_keys, cmd_args):
+    result = {}
+    for key in arg_keys:
+        if type(key) is tuple:
+            if key[0] in cmd_args and cmd_args[key[0]]:
+                result[key[1]] = cmd_args[key[0]]
+        else:
+            if key in cmd_args and cmd_args[key]:
+                result[key] = cmd_args[key]
+    return result

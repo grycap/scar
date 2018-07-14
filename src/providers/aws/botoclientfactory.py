@@ -19,18 +19,21 @@ from src.providers.aws.clients.lambdafunction import LambdaClient
 from src.providers.aws.clients.apigateway import APIGatewayClient
 from src.providers.aws.clients.cloudwatchlogs import CloudWatchLogsClient
 from src.providers.aws.clients.iam import IAMClient
-from src.providers.aws.clients.lambdafunction import LambdaClient
 from src.providers.aws.clients.resourcegroups import ResourceGroupsClient
 from src.providers.aws.clients.s3 import S3Client
 
 class GenericClient(object):
+
+    def __init__(self, aws_properties):
+        self.aws_properties = aws_properties
+
+    def get_client_args(self):
+        return {'client' : {'region_name' : self.aws_properties['region'] } ,
+                'session' : { 'profile_name' : self.aws_properties['boto_profile'] }}
     
     @utils.lazy_property
     def client(self):
         client_name = self.__class__.__name__ + 'Client'
-        if hasattr(self, 'region'):
-            client = globals()[client_name](self.region)
-        else:
-            client = globals()[client_name]()
+        client = globals()[client_name](**self.get_client_args())
         return client
 

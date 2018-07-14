@@ -17,29 +17,29 @@
 from botocore.exceptions import ClientError
 import src.logger as logger
 import os
-from src.providers.aws.clientfactory import GenericClient
+from src.providers.aws.botoclientfactory import GenericClient
+import src.exceptions as excp 
 
 class S3(GenericClient):
+    
+    trigger_configuration =  {"LambdaFunctionArn": "", "Events": [ "s3:ObjectCreated:*" ],
+                              "Filter": { "Key": { "FilterRules": [{ "Name": "prefix", "Value": "" }]}}
+                              }
 
-    def __init__(self, aws_lambda=None):
-        if aws_lambda:
-            self.input_bucket = aws_lambda.get_property("input_bucket")
-            self.input_folder = aws_lambda.get_property("input_folder")
-            if self.input_folder and not self.input_folder.endswith("/"):
-                self.input_folder = self.input_folder + "/"
-            if self.input_folder is None:
-                self.input_folder = "{0}/input/".format(aws_lambda.get_function_name())
-            self.function_arn = aws_lambda.get_property("function_arn")
-            self.region = aws_lambda.get_property("region")
-            self.trigger_configuration =  {  "LambdaFunctionArn": "",
-                  "Events": [ "s3:ObjectCreated:*" ],
-                  "Filter": {
-                      "Key": {
-                        "FilterRules": [{ "Name": "prefix",
-                                            "Value": "" }]
-                    }
-                  }
-                }
+    def __init__(self, aws_properties):
+        super().__init__(aws_properties)
+        self.properties = aws_properties['s3']
+#         self
+#         if aws_lambda:
+#             self.input_bucket = aws_lambda.get_property("input_bucket")
+#             self.input_folder = aws_lambda.get_property("input_folder")
+#             if self.input_folder and not self.input_folder.endswith("/"):
+#                 self.input_folder = self.input_folder + "/"
+#             if self.input_folder is None:
+#                 self.input_folder = "{0}/input/".format(aws_lambda.get_function_name())
+#             self.function_arn = aws_lambda.get_property("function_arn")
+#             self.region = aws_lambda.get_property("region")
+
     
     def create_bucket(self, bucket_name):
         try:
@@ -101,17 +101,24 @@ class S3(GenericClient):
             error_msg = "Error uploading the file '{0}' to the S3 bucket '{1}'".format(file_key, bucket_name)
             logger.log_exception(error_msg, ce)
     
-    def get_bucket_files(self, bucket_name, prefix_key):
-        file_list = []
+    @excp.exception(logger)
+    def get_bucket_files(self):
+        bucket_name = self.properties['input_bucket']
         if self.client.find_bucket(bucket_name):
-            if prefix_key is None:
-                prefix_key = ''
-            result = self.client.list_files(bucket_name, key=prefix_key)
-            if 'Contents' in result:
-                for info in result['Contents']:
-                    file_list += [info['Key']]
+            kwargs = {"Bucket" : bucket_name}
+            if ('input_folder' in self.properties) and (self.properties['input_folder']):
+                kwargs["Prefix"] = self.properties['input_folder']
+            response = self.client.list_files(**kwargs)
+            return self.parse_file_keys(response)
         else:
-            logger.warning("Bucket '{0}' not found".format(bucket_name))
+            raise excp.BucketNotFoundError(bucket_name=bucket_name)
+    
+    def parse_file_keys(self, response):
+        file_list = []
+        for elem in response:
+            if 'Contents' in elem:
+                for info in elem['Contents']:
+                    file_list.extend([info['Key']])
         return file_list
     
     def download_bucket_files(self, bucket_name, file_prefix, output):

@@ -1,4 +1,5 @@
 { "aws" : { 
+	"boto_profile" : "default",
 	"iam" : {"role" : ""},
 	"lambda" : {
 		"region" : "us-east-1",

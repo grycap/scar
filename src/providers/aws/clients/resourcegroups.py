@@ -16,15 +16,16 @@
 
 from src.providers.aws.clients.boto import BotoClient
 import src.logger as logger
-import src.utils as utils
+import src.exceptions as ex
 
 class ResourceGroupsClient(BotoClient):
     '''A low-level client representing aws Resource Groups Tagging API.
     https://boto3.readthedocs.io/en/latest/reference/services/resourcegroupstaggingapi.html'''
     
+    # Parameter used by the parent to create the appropriate boto3 client
     boto_client_name = 'resourcegroupstaggingapi'
     
-    @utils.exception(logger)    
+    @ex.exception(logger)    
     def get_tagged_resources(self, tag_filters, resource_type_filters):
         '''Returns all the tagged resources that are associated with the specified tags (keys and values) located in 
         the specified region for the AWS account.

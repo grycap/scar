@@ -23,7 +23,7 @@ config_file_name = "scar.cfg"
 config_file_path = config_file_folder + '/' + config_file_name
 default_file_path = os.path.dirname(os.path.realpath(__file__))
 
-class ConfigFile(object):
+class ConfigFileParser(object):
 
     def __init__(self):
         # Check if the config file exists
@@ -41,7 +41,10 @@ class ConfigFile(object):
         message += "Please, set a valid iam role in the file field 'role' before the first execution."
         logger.warning(message)
         
-    def get_aws_props(self):
+    def get_properties(self):
+        return self.cfg_data
+        
+    def get_aws_properties(self):
         return self.cfg_data['aws']
         
         

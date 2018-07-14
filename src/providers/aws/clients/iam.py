@@ -18,14 +18,16 @@ from src.providers.aws.clients.boto import BotoClient
 from botocore.exceptions import ClientError
 import src.logger as logger
 import src.utils as utils
+import src.exceptions as excp
 
 class IAMClient(BotoClient):
     '''A low-level client representing aws Identity and Access Management (IAMClient).
     https://boto3.readthedocs.io/en/latest/reference/services/iam.html'''    
  
+    # Parameter used by the parent to create the appropriate boto3 client
     boto_client_name = 'iam'
         
-    @utils.exception(logger)         
+    @excp.exception(logger)         
     def get_user_info(self):
         '''
         Retrieves information about the specified IAM user, including the user's creation date, path, unique ID, and ARN.
@@ -39,4 +41,6 @@ class IAMClient(BotoClient):
                 # we can find the user name in the error response
                 user_name = utils.find_expression(str(ce), '(?<=user\/)(\S+)')
                 return {'UserName' : user_name,
-                        'User' : {'UserName' : user_name, 'UserId' : ''}} 
+                        'User' : {'UserName' : user_name, 'UserId' : ''}}
+            else:
+                raise 

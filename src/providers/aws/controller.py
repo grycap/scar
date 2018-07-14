@@ -21,47 +21,51 @@ from src.providers.aws.iam import IAM
 from src.providers.aws.resourcegroups import ResourceGroups
 from botocore.exceptions import ClientError
 from src.cmdtemplate import Commands
+from src.providers.aws.validators import AWSValidator
 
 import src.logger as logger
 import src.providers.aws.response as response_parser
 import src.utils as utils
 import os
+import src.exceptions as excp
 
 class AWS(Commands):
+
+    properties = {}
 
     @utils.lazy_property
     def _lambda(self):
         '''It's called _lambda because 'lambda'
         it's a restricted word in python'''
-        _lambda = Lambda()
-        return _lambda  
+        _lambda = Lambda(self.properties)
+        return _lambda
     
     @utils.lazy_property
     def cloudwatch_logs(self):
-        cloudwatch_logs = CloudWatchLogs(self._lambda)
+        cloudwatch_logs = CloudWatchLogs(self.properties)
         return cloudwatch_logs
     
     @utils.lazy_property
     def api_gateway(self):
-        api_gateway = APIGateway(self._lambda)
+        api_gateway = APIGateway(self.properties)
         return api_gateway    
     
     @utils.lazy_property
     def s3(self):
-        s3 = S3(self._lambda)
+        s3 = S3(self.properties)
         return s3      
     
     @utils.lazy_property
     def resource_groups(self):
-        resource_groups = ResourceGroups()
+        resource_groups = ResourceGroups(self.properties)
         return resource_groups
     
     @utils.lazy_property
     def iam(self):
-        iam = IAM()
+        iam = IAM(self.properties)
         return iam    
        
-    @utils.exception(logger)
+    @excp.exception(logger)
     def init(self):
         if self._lambda.has_api_defined():
             api_id, aws_acc_id = self.api_gateway.create_api_gateway()
@@ -102,17 +106,16 @@ class AWS(Commands):
     def update(self):
         self._lambda.update_function_attributes()
     
+    @excp.exception(logger)
     def ls(self):
-        bucket_name = self._lambda.get_property("bucket")
-        bucket_folder = self._lambda.get_property("bucket_folder")        
-        if bucket_name:
-            file_list = self.s3.get_bucket_files(bucket_name, bucket_folder)
+        if 's3' in self.properties:
+            file_list = self.s3.get_bucket_files()
             for file_info in file_list:
                 print(file_info)
         else:
             lambda_functions = self.get_all_functions()
             response_parser.parse_ls_response(lambda_functions, 
-                                              self._lambda.get_output_type())
+                                              self.properties['output'])
     
     def rm(self):
         if self._lambda.delete_all():
@@ -136,9 +139,32 @@ class AWS(Commands):
         output_path = self._lambda.get_property("path")
         self.s3.download_bucket_files(bucket_name, file_prefix, output_path)
 
-    def parse_command_arguments(self, args):
-        self._lambda.set_properties(args)
+    @AWSValidator.validate()
+    def parse_arguments(self, **kwargs):
+        self.properties = kwargs['aws']
+        self.add_aws_properties()
 
+        import pprint
+        pprint.pprint(self.properties)
+        print('----------------------------------------------------------------------------')
+    
+    def add_aws_properties(self):
+        self.add_tags()
+        self.add_output()
+        
+    def add_tags(self):
+        self.properties["tags"] = {}
+        self.properties["tags"]['createdby'] = 'scar'
+        self.properties["tags"]['owner'] = self.iam.get_user_name_or_id()
+                
+    def add_output(self):
+        self.properties["output"] =  response_parser.OutputType.PLAIN_TEXT
+        if 'json' in self.properties and self.properties['json']:
+            self.properties["output"] = response_parser.OutputType.JSON
+        # Override json ouput if both of them are defined
+        if 'verbose' in self.properties and self.properties['verbose']:
+            self.properties["output"] = response_parser.OutputType.VERBOSE
+        
     def get_all_functions(self):
         functions_arn_list = self.get_functions_arn_list()
         return self._lambda.get_all_functions(functions_arn_list)        

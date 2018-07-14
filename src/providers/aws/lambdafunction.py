@@ -14,24 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from src.providers.aws.iam import IAM
 from botocore.exceptions import ClientError
 from enum import Enum
 from multiprocessing.pool import ThreadPool
-from src.parser.cfgfile import ConfigFile
-from src.providers.aws.response import OutputType
 import json
-import os
 import src.http.invoke as invoke
 import src.logger as logger
 import src.providers.aws.payload as codezip
-import src.providers.aws.validators as validators
 import src.providers.aws.response as response_parser
 import src.utils as utils
-import tempfile
 import base64
-from src.providers.aws.clientfactory import GenericClient
-import src.exceptions as scar_excp
+from src.providers.aws.botoclientfactory import GenericClient
+import src.exceptions as ex
 
 MAX_CONCURRENT_INVOCATIONS = 1000
 MAX_POST_BODY_SIZE = 1024*1024*6
@@ -56,32 +50,19 @@ def get_call_type(value):
 class Lambda(GenericClient):
     
     properties = {
-        "runtime" : "python3.6",
         "invocation_type" : "RequestResponse",
         "log_type" : "Tail",
-        "output" : OutputType.PLAIN_TEXT,
         "payload" : {},
         "tags" : {},
         "environment" : { 'Variables' : {} },
         "environment_variables" : {},
-        "name_regex" : "(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}(-gov)?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\$LATEST|[a-zA-Z0-9-_]+))?",
-        "s3_event" : { "Records" : [ 
-                        {"eventSource" : "aws:s3",
-                         "s3" : {"bucket" : { "name" : "" },
-                                 "object" : { "key" : ""  } }
-                        }]},
-        "zip_file_path" : os.path.join(tempfile.gettempdir(), 'function.zip')
-    }    
-
-    def __init__(self):
-        self.set_config_file_properties()
-        validators.validate_iam_role(self.properties["iam"])    
-
-    def set_config_file_properties(self):
-        config_file_props = ConfigFile().get_aws_props()
-        self.properties = utils.merge_dicts(self.properties, config_file_props['lambda'])
-        self.properties['iam'] = config_file_props['iam']
-        self.properties['cloudwatch'] = config_file_props['cloudwatch']
+        "zip_file_path" : utils.join_paths(utils.get_temp_dir(), 'function.zip')
+    }
+    
+    s3_event = { "Records" : [ {"eventSource" : "aws:s3",
+                 "s3" : {"bucket" : { "name" : "" },
+                         "object" : { "key" : ""  } }
+                }]}
 
     def get_property(self, value, nested_value=None):
         if value in self.properties:
@@ -96,9 +77,6 @@ class Lambda(GenericClient):
     def delete_all(self):
         return self.get_property("all")
 
-    def get_output_type(self):
-        return self.get_property("output") 
-        
     def get_function_name(self):
         return self.get_property("name")
     
@@ -163,7 +141,7 @@ class Lambda(GenericClient):
             i += 1
         return name    
     
-    @utils.exception(logger)
+    @ex.exception(logger)
     def check_function_name(self, func_name=None):
         call_type = self.get_property("call_type")
         if func_name:
@@ -174,12 +152,12 @@ class Lambda(GenericClient):
         error_msg = None
         if function_found and (call_type == CallType.INIT):
             error_msg = "Function name '{0}' already used.".format(function_name)
-            raise scar_excp.FunctionCreationError(function_name=function_name, error_msg=error_msg)
+            raise ex.FunctionCreationError(function_name=function_name, error_msg=error_msg)
         elif (not function_found) and ((call_type == CallType.RM) or 
                                        (call_type == CallType.RUN) or 
                                        (call_type == CallType.INVOKE)):
             error_msg = "Function '{0}' doesn't exist.".format(function_name)
-            raise scar_excp.FunctionNotFoundError(function_name=function_name, error_msg=error_msg)
+            raise ex.FunctionNotFoundError(function_name=function_name, error_msg=error_msg)
         if error_msg:
             logger.error(error_msg)             
     
@@ -204,7 +182,7 @@ class Lambda(GenericClient):
                
     def launch_s3_event(self, s3_file):
         self.set_s3_event_source(s3_file)
-        self.set_property('payload', self.get_property("s3_event"))
+        self.set_property('payload', self.s3_event)
         logger.info("Sending event for file '%s'" % s3_file)
         return self.launch_lambda_instance()
 
@@ -257,8 +235,8 @@ class Lambda(GenericClient):
         self.set_property('asynchronous', 'False')    
 
     def set_s3_event_source(self, file_name):
-        self.properties['s3_event']['Records'][0]['s3']['bucket']['name'] = self.get_property('input_bucket')
-        self.properties['s3_event']['Records'][0]['s3']['object']['key'] = file_name
+        self.s3_event['Records'][0]['s3']['bucket']['name'] = self.get_property('input_bucket')
+        self.s3_event['Records'][0]['s3']['object']['key'] = file_name
         
     def set_property_if_has_value(self, dictio, key, prop):
         prop_val =  self.get_property(prop)
@@ -330,10 +308,6 @@ class Lambda(GenericClient):
         if (self.get_property("call_type") == CallType.INIT):
             self.set_required_environment_variables()
 
-    def set_tags(self):
-        self.properties["tags"]['createdby'] = 'scar'
-        self.properties["tags"]['owner'] = IAM().get_user_name_or_id()
-
     def get_argument_value(self, args, attr):
         if attr in args.__dict__.keys():
             return args.__dict__[attr]
@@ -353,18 +327,13 @@ class Lambda(GenericClient):
         defined_lambda_env_variables['Variables'].update(env_vars['Variables'])
         update_args['Environment'] = defined_lambda_env_variables
         
-        validators.validate(**update_args)
         self.client.update_function(**update_args)
 
     def set_call_type(self, call_type):
         self.set_property("call_type", get_call_type(call_type))
         return self.properties["call_type"]
 
-    def set_output_type(self):
-        if self.get_property("json"):
-            self.set_property("output", OutputType.JSON)    
-        elif self.get_property("verbose"):
-            self.set_property("output", OutputType.VERBOSE)
+
 
     def set_properties(self, args):
         # Set the command line parsed properties
@@ -383,15 +352,12 @@ class Lambda(GenericClient):
                     elif self.get_property("image_file") != "":
                         func_name = self.get_property("image_file").split('.')[0]
                     self.properties["name"] = self.create_function_name(func_name)
-                self.set_tags()
             
             self.check_function_name()
             function_name = self.get_property("name")
-            validators.validate_function_name(function_name, self.get_property("name_regex"))
                 
             self.set_environment_variables()
             self.properties["handler"] = function_name + ".lambda_handler"
-            self.properties["log_group_name"] = '/aws/lambda/' + function_name
             
             if (call_type == CallType.INIT):   
                 self.set_function_code()           
@@ -426,7 +392,6 @@ class Lambda(GenericClient):
             logger.error(error_msg, error_msg + ": %s" % ce)
     
     def find_function(self, function_name_or_arn):
-        validators.validate_function_name(function_name_or_arn, self.get_property("name_regex"))
         try:
             # If this call works the function exists
             self.client.get_function_info(function_name_or_arn)

@@ -14,12 +14,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from src.providers.aws.botoclientfactory import GenericClient
+import abc
 
-class IAM(GenericClient):
+class GenericValidator(metaclass=abc.ABCMeta):
+    ''' All the different cloud provider validators must inherit 
+    from this class to ensure that the commands are defined consistently'''
 
-    def get_user_name_or_id(self):
-        user = self.client.get_user_info()
-        if user:
-            return user.get('UserName', user['User']['UserId'])
-        
+    @classmethod
+    def validate(cls):
+        '''
+        A decorator that wraps the passed in function and validates the dictionary parameters passed
+        '''
+        def decorator(func):
+            def wrapper(*args, **kwargs):
+                cls.validate_kwargs(**kwargs)
+                return func(*args, **kwargs)
+            return wrapper
+        return decorator
+    
+    @classmethod
+    @abc.abstractmethod
+    def validate_kwargs(**kwargs):
+        pass

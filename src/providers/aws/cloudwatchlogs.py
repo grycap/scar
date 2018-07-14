@@ -16,18 +16,18 @@
 
 from botocore.exceptions import ClientError
 import src.providers.aws.response as response_parser
-from src.providers.aws.clientfactory import GenericClient
+from src.providers.aws.botoclientfactory import GenericClient
 
 class CloudWatchLogs(GenericClient):
     
-    def __init__(self, aws_lambda):
+    def __init__(self, aws_properties):
+        self.aws_properties = aws_properties
         # Get all the log related attributes
-        self.log_group_name = aws_lambda.get_property("log_group_name")
         self.tags = aws_lambda.get_property("tags")
-        self.output_type = aws_lambda.get_property("output")
-        self.log_retention_policy_in_days = aws_lambda.get_property("cloudwatch", "log_retention_policy_in_days")
-        self.log_stream_name = aws_lambda.get_property("log_stream_name")
-        self.request_id = aws_lambda.get_property("request_id")
+        self.log_retention_policy_in_days = aws_properties['cloudwatch']['log_retention_policy_in_days']
+        self.log_group_name = '/aws/lambda/{0}'.format(aws_properties['lambda']['name'])
+        self.log_stream_name = aws_properties['cloudwatch']['log_stream_name']
+        self.request_id = aws_properties['cloudwatch']['request_id']
 
     def create_log_group(self):
         # lambda_validator.validate_log_creation_values(self.aws_lambda)

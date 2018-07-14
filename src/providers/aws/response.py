@@ -23,7 +23,7 @@ class OutputType(Enum):
     PLAIN_TEXT = 1
     JSON = 2
     VERBOSE = 3
-
+    
 def parse_http_response(response, function_name, asynch):
     if response.ok:
         text_message = "Request Id: {0}".format(response.headers['amz-lambda-request-id'])

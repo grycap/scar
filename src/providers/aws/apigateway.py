@@ -17,15 +17,15 @@
 import src.logger as logger
 import src.utils as utils
 import src.providers.aws.response as response_parser
-from src.providers.aws.clientfactory import GenericClient
+from src.providers.aws.botoclientfactory import GenericClient
 
 class APIGateway(GenericClient):
 
-    def __init__(self, aws_lambda):
+    def __init__(self, aws_properties):
         # Get all the log related attributes
-        self.function_name = aws_lambda.get_property("name")
-        self.api_gateway_name = aws_lambda.get_property("api_gateway_name")
-        self.lambda_role = aws_lambda.get_property("iam","role")
+        self.function_name = aws_properties['lambda']['name']
+        self.api_gateway_name = aws_properties['api_gateway']['name']
+        self.lambda_role = aws_properties['iam']['role']
         # ANY, DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT
         self.default_http_method = "ANY"
         # NONE, AWS_IAM, CUSTOM, COGNITO_USER_POOLS

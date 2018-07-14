@@ -17,15 +17,16 @@
 from src.providers.aws.clients.boto import BotoClient
 import src.logger as logger
 from botocore.exceptions import ClientError
-import src.utils as utils
+import src.exceptions as ex
 
 class CloudWatchLogsClient(BotoClient):
     '''A low-level client representing Amazon CloudWatch Logs.
     https://boto3.readthedocs.io/en/latest/reference/services/logs.html'''
     
+    # Parameter used by the parent to create the appropriate boto3 client
     boto_client_name = 'logs'    
     
-    @utils.exception(logger)    
+    @ex.exception(logger)    
     def get_log_events(self, log_group_name, log_stream_name=None):
         '''
         Lists log events from the specified log group.
@@ -43,7 +44,7 @@ class CloudWatchLogsClient(BotoClient):
             logs.append(response)
         return logs
             
-    @utils.exception(logger)            
+    @ex.exception(logger)            
     def create_log_group(self, log_group_name, tags):
         '''
         Creates a log group with the specified name.
@@ -58,7 +59,7 @@ class CloudWatchLogsClient(BotoClient):
             else:
                 raise
     
-    @utils.exception(logger)
+    @ex.exception(logger)
     def set_log_retention_policy(self, log_group_name, log_retention_policy_in_days):
         '''
         Sets the retention of the specified log group.
@@ -66,7 +67,7 @@ class CloudWatchLogsClient(BotoClient):
         '''         
         return self.client.put_retention_policy(logGroupName=log_group_name, retentionInDays=log_retention_policy_in_days)
             
-    @utils.exception(logger)
+    @ex.exception(logger)
     def delete_log_group(self, log_group_name):
         '''
         Deletes the specified log group and permanently deletes all the archived log events associated with the log group.

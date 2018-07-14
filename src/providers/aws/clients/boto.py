@@ -20,22 +20,20 @@ import src.utils as utils
 
 # Default values
 botocore_client_read_timeout = 360
-default_aws_region = "us-east-1"
 
 class BotoClient(object):
     
-    def __init__(self, region=None):
-        self.region = region 
+    def __init__(self, **kwargs):
+        self.session_args = kwargs['session']
+        self.client_args = kwargs['client']
         
     @utils.lazy_property
     def client(self):
-        if self.region is None:
-            self.region = default_aws_region
-        boto_config = botocore.config.Config(read_timeout=botocore_client_read_timeout)            
-        client = boto3.client(self.boto_client_name, region_name=self.region, config=boto_config)
-        return client        
+        session = boto3.Session(**self.session_args)
+        self.client_args['config'] = botocore.config.Config(read_timeout=botocore_client_read_timeout)
+        return session.client(self.boto_client_name, **self.client_args)
     
     def get_access_key(self):
-        session = boto3.Session()
+        session = boto3.Session(**self.session_args)
         credentials = session.get_credentials()
         return credentials.access_key
