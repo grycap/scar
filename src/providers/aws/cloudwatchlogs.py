@@ -15,44 +15,43 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from botocore.exceptions import ClientError
-import src.providers.aws.response as response_parser
 from src.providers.aws.botoclientfactory import GenericClient
 
 class CloudWatchLogs(GenericClient):
     
     def __init__(self, aws_properties):
-        self.aws_properties = aws_properties
-        # Get all the log related attributes
-        self.tags = aws_lambda.get_property("tags")
-        self.log_retention_policy_in_days = aws_properties['cloudwatch']['log_retention_policy_in_days']
-        self.log_group_name = '/aws/lambda/{0}'.format(aws_properties['lambda']['name'])
-        self.log_stream_name = aws_properties['cloudwatch']['log_stream_name']
-        self.request_id = aws_properties['cloudwatch']['request_id']
+        GenericClient.__init__(self, aws_properties)
+        self.properties = self.aws_properties['cloudwatch']
+        self.properties['log_group_name'] = '/aws/lambda/{0}'.format(aws_properties['lambda']['name'])
+
+    def update_log_group_name(self):
+        self.properties['log_group_name'] = '/aws/lambda/{0}'.format(self.aws_properties['lambda']['name'])
+
+    def get_basic_args(self):
+        return { 'logGroupName' : self.properties['log_group_name'] }
 
     def create_log_group(self):
-        # lambda_validator.validate_log_creation_values(self.aws_lambda)
-        response = self.client.create_log_group(self.log_group_name, self.tags)
-        response_parser.parse_log_group_creation_response(response,
-                                                          self.log_group_name,
-                                                          self.output_type)
+        creation_args = self.get_basic_args()
+        creation_args['tags'] = self.aws_properties['tags']
+        response = self.client.create_log_group(**creation_args)
         # Set retention policy into the log group
-        self.client.set_log_retention_policy(self.log_group_name,
-                                             self.log_retention_policy_in_days)
+        retention_args = self.get_basic_args()
+        retention_args['retentionInDays'] = self.aws_properties['cloudwatch']['log_retention_policy_in_days']
+        self.client.set_log_retention_policy(**retention_args)
+        return response
       
-    def set_log_group_name(self, function_name=None):
-        self.log_group_name = '/aws/lambda/' + function_name
-      
-    def delete_log_group(self, func_name=None):
-        if func_name:
-            self.set_log_group_name(func_name)
-        cw_response = self.client.delete_log_group(self.log_group_name)
-        response_parser.parse_delete_log_response(cw_response, self.log_group_name, self.output_type)      
+    def delete_log_group(self):
+        self.update_log_group_name()
+        return self.client.delete_log_group(self.properties['log_group_name'])
       
     def get_aws_log(self):
         function_log = ""
         try:
             full_msg = ""
-            result = self.client.get_log_events(self.log_group_name, self.log_stream_name)
+            kwargs = {"logGroupName" : self.properties['log_group_name']}
+            if 'log_stream_name' in self.properties:
+                kwargs["logStreamNames"] = [self.properties['log_stream_name']]            
+            result = self.client.get_log_events(**kwargs)
             data = []
             for response in result:
                 for event in response['events']:

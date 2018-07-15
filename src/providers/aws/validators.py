@@ -15,8 +15,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import src.utils as utils
-from src.exceptions import ValidatorError
+from src.exceptions import ValidatorError, S3CodeSizeError, FunctionCodeSizeError
 from src.validator import GenericValidator
+import os
 
 valid_lambda_name_regex = "(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}(-gov)?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\$LATEST|[a-zA-Z0-9-_]+))?"
 
@@ -62,4 +63,14 @@ class AWSValidator(GenericValidator):
         if not utils.find_expression(function_name, valid_lambda_name_regex):
             error_msg = 'Find name restrictions in: https://docs.aws.amazon.com/lambda/latest/dg/API_CreateFunction.html#SSS-CreateFunction-request-FunctionName'
             raise ValidatorError(parameter='function_name', parameter_value=function_name, error_msg=error_msg)
+    
+    @staticmethod
+    def validate_function_code_size(code_file_path, MAX_PAYLOAD_SIZE):
+        if os.path.getsize(code_file_path) > MAX_PAYLOAD_SIZE:
+            raise FunctionCodeSizeError(code_size='50MB')
+        
+    @staticmethod        
+    def validate_s3_code_size(scar_folder, MAX_S3_PAYLOAD_SIZE):
+        if utils.get_tree_size(scar_folder) > MAX_S3_PAYLOAD_SIZE:         
+            raise S3CodeSizeError(code_size='250MB')
             

@@ -27,58 +27,51 @@ class S3(GenericClient):
                               }
 
     def __init__(self, aws_properties):
-        super().__init__(aws_properties)
+        GenericClient.__init__(self, aws_properties)
         self.properties = aws_properties['s3']
-#         self
-#         if aws_lambda:
-#             self.input_bucket = aws_lambda.get_property("input_bucket")
-#             self.input_folder = aws_lambda.get_property("input_folder")
-#             if self.input_folder and not self.input_folder.endswith("/"):
-#                 self.input_folder = self.input_folder + "/"
-#             if self.input_folder is None:
-#                 self.input_folder = "{0}/input/".format(aws_lambda.get_function_name())
-#             self.function_arn = aws_lambda.get_property("function_arn")
-#             self.region = aws_lambda.get_property("region")
+        self.parse_input_folder()
 
+    def parse_input_folder(self):
+        if 'input_folder' in self.properties:
+            if not self.properties['input_folder'].endswith("/"):
+                self.properties['input_folder'] = "{0}/".format(self.properties['input_folder'])
+        else:
+            self.properties['input_folder'] = "{0}/input/".format(self.aws_properties['lambda']['name'])
     
+    @excp.exception(logger)
     def create_bucket(self, bucket_name):
-        try:
-            if not self.client.find_bucket(bucket_name):
-                # Create the bucket if not found
-                self.client.create_bucket(bucket_name)
-        except ClientError as ce:
-            error_msg = "Error creating the bucket '{0}'".format(self.input_bucket)
-            logger.log_exception(error_msg, ce)
+        if self.client.find_bucket(bucket_name):
+            raise excp.ExistentBucketWarning(bucket_name=bucket_name)
+        else:
+            self.client.create_bucket(bucket_name)
 
+    @excp.exception(logger)
     def add_bucket_folder(self):
-        try:
-            self.client.upload_file(self.input_bucket, self.input_folder)
-        except ClientError as ce:
-            error_msg = "Error creating the folder '{0}' in the bucket '{1}'".format(self.input_bucket, self.input_folder)
-            logger.log_exception(error_msg, ce)
+        self.client.upload_file(self.properties['input_bucket'], self.properties['input_folder'])
 
     def create_input_bucket(self):
-        self.create_bucket(self.input_bucket)
+        self.create_bucket(self.properties['input_bucket'])
         self.add_bucket_folder()
 
     def set_input_bucket_notification(self):
         # First check that the function doesn't have other configurations
-        bucket_conf = self.client.get_bucket_notification_configuration(self.input_bucket)
-        trigger_conf = self.get_trigger_configuration(self.function_arn, self.input_folder)
+        input_bucket = self.properties['input_bucket']
+        bucket_conf = self.client.get_bucket_notification_configuration(input_bucket)
+        trigger_conf = self.get_trigger_configuration(self.function_arn, self.properties['input_folder'])
         lambda_conf = [trigger_conf]
         if "LambdaFunctionConfigurations" in bucket_conf:
             lambda_conf = bucket_conf["LambdaFunctionConfigurations"]
             lambda_conf.append(trigger_conf)
         notification = { "LambdaFunctionConfigurations": lambda_conf }
-        self.client.put_bucket_notification_configuration(self.input_bucket, notification)
+        self.client.put_bucket_notification_configuration(input_bucket, notification)
         
-    def delete_bucket_notification(self, bucket_name, function_arn):
-        bucket_conf = self.client.get_bucket_notification_configuration(bucket_name)
+    def delete_bucket_notification(self):
+        bucket_conf = self.client.get_bucket_notification_configuration(self.properties['input_bucket'])
         if bucket_conf and "LambdaFunctionConfigurations" in bucket_conf:
             lambda_conf = bucket_conf["LambdaFunctionConfigurations"]
-            filter_conf = [x for x in lambda_conf if x['LambdaFunctionArn'] != function_arn]
+            filter_conf = [x for x in lambda_conf if x['LambdaFunctionArn'] != self.aws_properties['lambda']['arn']]
             notification = { "LambdaFunctionConfigurations": filter_conf }
-            self.client.put_bucket_notification_configuration(bucket_name, notification)        
+            self.client.put_bucket_notification_configuration(self.properties['input_bucket'], notification)        
         
     def get_trigger_configuration(self, function_arn, folder_name):
         self.trigger_configuration["LambdaFunctionArn"] = function_arn
