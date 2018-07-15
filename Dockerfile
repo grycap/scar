@@ -10,7 +10,11 @@ RUN git clone --branch master --depth 1 https://github.com/grycap/scar.git /usr/
     pip install -r /usr/bin/scar/requirements.txt && \
     pip install pyyaml
 
+RUN touch /scar.log && chown scar /scar.log
+
 ENV PYTHONUNBUFFERED=1
+
+USER scar
 
 ENTRYPOINT ["python3", "/usr/bin/scar/scar.py"]
 
