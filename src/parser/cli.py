@@ -210,7 +210,7 @@ class CommandParser(object):
         return aws
 
     def parse_scar_args(self, cmd_args):
-        scar_args = ['func', 'conf_file', 'json', 'verbose', 'path', 'all', 'preheat']
+        scar_args = ['func', 'conf_file', 'json', 'verbose', 'path', ('all', 'delete_all'), 'preheat']
         scar = {}
         scar['scar'] = utils.parse_arg_list(scar_args, cmd_args)
         return scar

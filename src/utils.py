@@ -130,7 +130,8 @@ def read_file(file_path, mode="r"):
         return content_file.read()
     
 def delete_file(path):
-    os.remove(path)
+    if os.path.isfile(path):
+        os.remove(path)
     
 def create_tar_gz(files_to_archive, destination_tar_path):
     with tarfile.open(destination_tar_path, "w:gz") as tar:

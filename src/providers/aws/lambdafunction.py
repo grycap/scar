@@ -15,156 +15,189 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from botocore.exceptions import ClientError
-from enum import Enum
 from multiprocessing.pool import ThreadPool
 import json
 import src.http.invoke as invoke
 import src.logger as logger
-import src.providers.aws.payload as codezip
+from src.providers.aws.payload import FunctionPackageCreator
 import src.providers.aws.response as response_parser
 import src.utils as utils
 import base64
 from src.providers.aws.botoclientfactory import GenericClient
-import src.exceptions as ex
+import src.exceptions as excp
 
 MAX_CONCURRENT_INVOCATIONS = 1000
 MAX_POST_BODY_SIZE = 1024*1024*6
 MAX_POST_BODY_SIZE_ASYNC = 1024*95
 
-class CallType(Enum):
-    INIT = "init"
-    RUN = "run"
-    UPDATE = "update"    
-    LS = "ls"
-    RM = "rm"
-    LOG = "log"
-    INVOKE = "invoke"
-    PUT = "put"
-    GET = "get"           
-
-def get_call_type(value):
-    for call_type in CallType:
-        if call_type.value == value:
-            return call_type
-
 class Lambda(GenericClient):
-    
-    properties = {
-        "invocation_type" : "RequestResponse",
-        "log_type" : "Tail",
-        "payload" : {},
-        "tags" : {},
-        "environment" : { 'Variables' : {} },
-        "environment_variables" : {},
-        "zip_file_path" : utils.join_paths(utils.get_temp_dir(), 'function.zip')
-    }
     
     s3_event = { "Records" : [ {"eventSource" : "aws:s3",
                  "s3" : {"bucket" : { "name" : "" },
                          "object" : { "key" : ""  } }
                 }]}
 
-    def get_property(self, value, nested_value=None):
-        if value in self.properties:
-            if nested_value and nested_value in self.properties[value]:
-                return self.properties[value][nested_value]
-            else:
-                return self.properties[value]
-        
-    def set_property(self, key, value):
-        self.properties[key] = value
+    def __init__(self, aws_properties):
+        GenericClient.__init__(self, aws_properties)
+        self.call_type = aws_properties['call_type']
+        self.properties = aws_properties['lambda']
+        self.properties['environment'] = {'Variables' : {}}
+        self.properties['zip_file_path'] = utils.join_paths(utils.get_temp_dir(), 'function.zip')
+        self.properties['invocation_type'] = 'RequestResponse'
+        self.properties['log_type'] = 'Tail'
+        if 'name' in self.properties:
+            self.properties['handler'] = "{0}.lambda_handler".format(self.properties['name'])        
 
-    def delete_all(self):
-        return self.get_property("all")
-
-    def get_function_name(self):
-        return self.get_property("name")
-    
-    def get_function_arn(self):
-        return self.get_property("function_arn")
-    
-    def need_preheat(self):
-        return self.get_property("preheat")
-    
-    def get_input_bucket(self):
-        return self.get_property("input_bucket")      
-    
-    def get_output_bucket(self):
-        return self.get_property("output_bucket")    
+#     def extra_thingies(self):
+#         if ((call_type != CallType.LS) and (not self.delete_all()) and
+#             (call_type != CallType.PUT) and (call_type != CallType.GET)):
+#             if (call_type == CallType.INIT):
+#                 if (not self.get_property("name")) or (self.get_property("name") == ""):
+#                     func_name = "function"
+#                     if self.get_property("image_id") != "":
+#                         func_name = self.get_property("image_id")
+#                     elif self.get_property("image_file") != "":
+#                         func_name = self.get_property("image_file").split('.')[0]
+#                     self.properties["name"] = self.create_function_name(func_name)
+#             
+#             self.check_function_name()
+#             function_name = self.get_property("name")
+#                 
+#             self.set_environment_variables()
+#             self.properties["handler"] = function_name + ".lambda_handler"
+#             
+#             if (call_type == CallType.INIT):   
+#                 self.set_function_code()           
+#                 
+#             if (call_type == CallType.RUN):
+#                 if self.get_argument_value(args, 'run_script'):
+#                     file_content = utils.read_file(self.get_property("run_script"), 'rb')
+#                     # We first code to base64 in bytes and then decode those bytes to allow json to work
+#                     # https://stackoverflow.com/questions/37225035/serialize-in-json-a-base64-encoded-data#37239382
+#                     parsed_script = utils.utf8_to_base64_string(file_content)
+#                     self.set_property('payload', { "script" : parsed_script })
+#                 
+#                 if self.get_argument_value(args, 'c_args'):
+#                     parsed_cont_args = json.dumps(self.get_property("c_args"))
+#                     self.set_property('payload', { "cmd_args" : parsed_cont_args })        
     
     def get_creations_args(self):
-        return {'FunctionName' : self.get_property("name"),
-                'Runtime' : self.get_property("runtime"),
-                'Role' : self.get_property("iam", "role"),
-                'Handler' : self.get_property("handler"),
-                'Code' : self.get_property("code"),
-                'Environment' : self.get_property("environment"),
-                'Description':self.get_property("description"),
-                'Timeout': self.get_property("time"),
-                'MemorySize':self.get_property("memory"),
-                'Tags':self.get_property("tags") }
+        return {'FunctionName' : self.properties['name'],
+                'Runtime' : self.properties['runtime'],
+                'Role' : self.aws_properties['iam']['role'],
+                'Handler' :  self.properties['handler'],
+                'Code' : self.properties['code'],
+                'Environment' : self.properties['environment'],
+                'Description': self.properties['description'],
+                'Timeout': self.properties['time'],
+                'MemorySize': self.properties['memory'],
+                'Tags': self.aws_properties['tags'],
+                }    
     
+    @excp.exception(logger)
     def create_function(self):
-        try:
-            response = self.client.create_function(**self.get_creations_args())
-            if response and 'FunctionArn' in response:
-                self.properties["function_arn"] = response['FunctionArn']
-            response_parser.parse_lambda_function_creation_response(response,
-                                                                    self.get_function_name(),
-                                                                    self.client.get_access_key(),
-                                                                    self.get_output_type())
-        except ClientError as ce:
-            error_msg = "Error initializing lambda function."
-            logger.error(error_msg, error_msg + ": %s" % ce)
-        finally:
-            # Remove the files created in the operation
-            utils.delete_file(self.properties["zip_file_path"])
+        self.set_environment_variables()
+        self.set_function_code()           
+        creation_args = self.get_creations_args()
+        response = self.client.create_function(**creation_args)
+        if response and 'FunctionArn' in response:
+            self.properties["function_arn"] = response['FunctionArn']
+        return response
         
-    def delete_function(self, func_name=None):
-        if func_name:
-            function_name = func_name
+    def set_environment_variables(self):
+        # Add required variables
+        self.set_required_environment_variables()
+        # Add explicitly user defined variables
+        if 'environment_variables' in self.properties:
+            for env_var in self.properties['environment_variables']:
+                parsed_env_var = env_var.split("=")
+                # Add an specific prefix to be able to find the variables defined by the user
+                key = 'CONT_VAR_' + parsed_env_var[0]
+                self.add_lambda_environment_variable(key, parsed_env_var[1])
+        
+    def set_required_environment_variables(self):
+        self.add_lambda_environment_variable('TIMEOUT_THRESHOLD', str(self.properties['timeout_threshold']))
+        self.add_lambda_environment_variable('LOG_LEVEL', self.properties['log_level'])        
+        self.add_lambda_environment_variable('IMAGE_ID', self.properties['image_id'])
+        if 's3' in self.aws_properties:
+            s3_props = self.aws_properties['s3']
+            if 'input_bucket' in s3_props:
+                self.add_lambda_environment_variable('INPUT_BUCKET', s3_props['input_bucket'])
+            if 'output_bucket' in s3_props:
+                self.add_lambda_environment_variable('OUTPUT_BUCKET', s3_props['output_bucket'])
+            if 'output_folder' in s3_props:
+                self.add_lambda_environment_variable('OUTPUT_FOLDER', s3_props['output_folder'])                   
+
+    def add_lambda_environment_variable(self, key, value):
+        if key and value:
+            self.properties['environment']['Variables'][key] = value         
+        
+    def set_function_code(self):
+        package_props = self.get_function_payload_props()
+        # Zip all the files and folders needed
+        FunctionPackageCreator(package_props).prepare_lambda_payload()
+        if 'DeploymentBucket' in package_props:
+            self.properties['code'] = {"S3Bucket": package_props['DeploymentBucket'],
+                                       "S3Key" : package_props['FileKey'],}
         else:
-            function_name = self.get_function_name()
-        self.check_function_name(function_name)
-        # Delete lambda function
-        response = self.client.delete_function(function_name)
-        response_parser.parse_delete_function_response(response,
-                                                       function_name,
-                                                       self.get_output_type())        
+            self.properties['code'] = {"ZipFile": utils.read_file(self.properties['zip_file_path'], mode="rb")}        
         
-    def create_function_name(self, image_id_or_path):
-        parsed_id_or_path = image_id_or_path.replace('/', ',,,').replace(':', ',,,').replace('.', ',,,').split(',,,')
-        name = "scar-{0}".format('-'.join(parsed_id_or_path))
-        i = 1
-        while self.find_function(name):
-            name = "scar-{0}-{1}".format('-'.join(parsed_id_or_path), str(i))
-            i += 1
-        return name    
+    def get_function_payload_props(self):
+        package_args = {'FunctionName' : self.properties['name'],
+                        'EnvironmentVariables' : self.properties['environment']['Variables'],
+                        'ZipFilePath' : self.properties['zip_file_path'],
+                        }
+        if 'init_script' in self.properties:
+            package_args['Script'] = self.properties['init_script']
+        if 'extra_payload' in self.properties:
+            package_args['ExtraPayload'] = self.properties['extra_payload']
+        if 'image_id' in self.properties:
+            package_args['ImageId'] = self.properties['image_id']
+        if 'image_file' in self.properties:
+            package_args['ImageFile'] = self.properties['image_file']
+        if 's3' in self.aws_properties:
+            if 'deployment_bucket' in self.aws_properties['s3']:
+                package_args['DeploymentBucket'] = self.aws_properties['s3']['deployment_bucket']                        
+            if 'DeploymentBucket' in package_args:
+                package_args['FileKey'] = 'lambda/{0}.zip'.format(self.properties['name'])        
+        return package_args
     
-    @ex.exception(logger)
-    def check_function_name(self, func_name=None):
-        call_type = self.get_property("call_type")
-        if func_name:
-            function_name = func_name
-        else:
-            function_name = self.get_property("name")
-        function_found = self.find_function(function_name)
-        error_msg = None
-        if function_found and (call_type == CallType.INIT):
-            error_msg = "Function name '{0}' already used.".format(function_name)
-            raise ex.FunctionCreationError(function_name=function_name, error_msg=error_msg)
-        elif (not function_found) and ((call_type == CallType.RM) or 
-                                       (call_type == CallType.RUN) or 
-                                       (call_type == CallType.INVOKE)):
-            error_msg = "Function '{0}' doesn't exist.".format(function_name)
-            raise ex.FunctionNotFoundError(function_name=function_name, error_msg=error_msg)
-        if error_msg:
-            logger.error(error_msg)             
+    def delete_function(self):
+        return self.client.delete_function(self.properties['name'])
+        
+#     def create_function_name(self, image_id_or_path):
+#         parsed_id_or_path = image_id_or_path.replace('/', ',,,').replace(':', ',,,').replace('.', ',,,').split(',,,')
+#         name = "scar-{0}".format('-'.join(parsed_id_or_path))
+#         i = 1
+#         while self.find_function(name):
+#             name = "scar-{0}-{1}".format('-'.join(parsed_id_or_path), str(i))
+#             i += 1
+#         return name    
+#     
+#     @excp.exception(logger)
+#     def check_function_name(self, func_name=None):
+#         call_type = self.get_property("call_type")
+#         if func_name:
+#             function_name = func_name
+#         else:
+#             function_name = self.get_property("name")
+#         function_found = self.find_function(function_name)
+#         error_msg = None
+#         if function_found and (call_type == CallType.INIT):
+#             error_msg = "Function name '{0}' already used.".format(function_name)
+#             raise excp.FunctionCreationError(function_name=function_name, error_msg=error_msg)
+#         elif (not function_found) and ((call_type == CallType.RM) or 
+#                                        (call_type == CallType.RUN) or 
+#                                        (call_type == CallType.INVOKE)):
+#             error_msg = "Function '{0}' doesn't exist.".format(function_name)
+#             raise excp.FunctionNotFoundError(function_name=function_name, error_msg=error_msg)
+#         if error_msg:
+#             logger.error(error_msg)             
     
     def link_function_and_input_bucket(self):
-        kwargs = {'FunctionName' : self.get_function_name(),
+        kwargs = {'FunctionName' : self.properties['name'],
                   'Principal' : "s3.amazonaws.com",
-                  'SourceArn' : 'arn:aws:s3:::{0}'.format(self.get_input_bucket())}
+                  'SourceArn' : 'arn:aws:s3:::{0}'.format(self.aws_properties['s3']['input_bucket'])}
         self.client.add_invocation_permission(**kwargs)
 
     def preheat_function(self):
@@ -224,9 +257,7 @@ class Lambda(GenericClient):
         self.set_property('log_type', 'None')
         self.set_property('asynchronous', 'True')
         
-    def set_api_gateway_id(self, api_id, acc_id):
-        self.set_property('api_gateway_id', api_id)
-        self.set_property('aws_acc_id', acc_id)
+    def set_api_gateway_id(self, api_id):
         self.add_lambda_environment_variable('API_GATEWAY_ID', api_id)
 
     def set_request_response_call_parameters(self):
@@ -238,38 +269,8 @@ class Lambda(GenericClient):
         self.s3_event['Records'][0]['s3']['bucket']['name'] = self.get_property('input_bucket')
         self.s3_event['Records'][0]['s3']['object']['key'] = file_name
         
-    def set_property_if_has_value(self, dictio, key, prop):
-        prop_val =  self.get_property(prop)
-        if prop_val and prop_val != "":
-            dictio[key] = prop_val        
-        
-    def get_function_code_args(self):
-        package_args = {'FunctionName' : self.get_property("name"),
-                        'EnvironmentVariables' : self.get_property("environment", "Variables")}
-        self.set_property_if_has_value(package_args, 'Script', "init_script")
-        self.set_property_if_has_value(package_args, 'ExtraPayload', "extra_payload")
-        self.set_property_if_has_value(package_args, 'ImageId', "image_id")
-        self.set_property_if_has_value(package_args, 'ImageFile', "image_file")
-        self.set_property_if_has_value(package_args, 'DeploymentBucket', "deployment_bucket")
-        if 'DeploymentBucket' in package_args:
-            package_args['FileKey'] = 'lambda/' + self.get_property("name") + '.zip'        
-        return package_args
-        
-    def set_function_code(self):
-        package_args = self.get_function_code_args()
-        # Zip all the files and folders needed
-        codezip.prepare_lambda_payload(**package_args)
-        
-        if 'DeploymentBucket' in package_args:
-            self.properties['code'] = { "S3Bucket": package_args['DeploymentBucket'], "S3Key" : package_args['FileKey'] }
-        else:
-            self.properties['code'] = { "ZipFile": utils.read_file(self.get_property("zip_file_path"), mode="rb")}
-
     def has_image_file(self):
         return utils.has_dict_prop_value(self.properties, 'image_file')
-    
-    def has_api_defined(self):
-        return utils.has_dict_prop_value(self.properties, 'api_gateway_name')    
     
     def has_deployment_bucket(self):
         return utils.has_dict_prop_value(self.properties, 'deployment_bucket')
@@ -282,31 +283,6 @@ class Lambda(GenericClient):
     
     def has_output_folder(self):
         return utils.has_dict_prop_value(self.properties, 'output_folder')
-
-    def set_required_environment_variables(self):
-        self.add_lambda_environment_variable('TIMEOUT_THRESHOLD', str(self.get_property("timeout_threshold")))
-        self.add_lambda_environment_variable('LOG_LEVEL', self.get_property("log_level"))        
-        self.add_lambda_environment_variable('IMAGE_ID', self.get_property("image_id"))
-        if self.has_input_bucket():
-            self.add_lambda_environment_variable('INPUT_BUCKET', self.get_property("input_bucket"))
-        if self.has_output_bucket():
-            self.add_lambda_environment_variable('OUTPUT_BUCKET', self.get_property("output_bucket"))
-        if self.has_output_folder():
-            self.add_lambda_environment_variable('OUTPUT_FOLDER', self.get_property("output_folder"))                   
-
-    def add_lambda_environment_variable(self, key, value):
-        if (key is not None or key != "") and (value is not None):
-            self.get_property("environment", "Variables")[key] = value        
-
-    def set_environment_variables(self):
-        if isinstance(self.get_property("environment_variables"), list):
-            for env_var in self.get_property("environment_variables"):
-                parsed_env_var = env_var.split("=")
-                # Add an specific prefix to be able to find the variables defined by the user
-                key = 'CONT_VAR_' + parsed_env_var[0]
-                self.add_lambda_environment_variable(key, parsed_env_var[1])
-        if (self.get_property("call_type") == CallType.INIT):
-            self.set_required_environment_variables()
 
     def get_argument_value(self, args, attr):
         if attr in args.__dict__.keys():
@@ -329,51 +305,6 @@ class Lambda(GenericClient):
         
         self.client.update_function(**update_args)
 
-    def set_call_type(self, call_type):
-        self.set_property("call_type", get_call_type(call_type))
-        return self.properties["call_type"]
-
-
-
-    def set_properties(self, args):
-        # Set the command line parsed properties
-        self.properties = utils.merge_dicts(self.properties, vars(args))
-        call_type = self.set_call_type(args.func.__name__)
-        self.set_output_type()
-        if ((call_type != CallType.LS) and 
-            (not self.delete_all()) and
-            (call_type != CallType.PUT) and
-            (call_type != CallType.GET)):
-            if (call_type == CallType.INIT):
-                if (not self.get_property("name")) or (self.get_property("name") == ""):
-                    func_name = "function"
-                    if self.get_property("image_id") != "":
-                        func_name = self.get_property("image_id")
-                    elif self.get_property("image_file") != "":
-                        func_name = self.get_property("image_file").split('.')[0]
-                    self.properties["name"] = self.create_function_name(func_name)
-            
-            self.check_function_name()
-            function_name = self.get_property("name")
-                
-            self.set_environment_variables()
-            self.properties["handler"] = function_name + ".lambda_handler"
-            
-            if (call_type == CallType.INIT):   
-                self.set_function_code()           
-                
-            if (call_type == CallType.RUN):
-                if self.get_argument_value(args, 'run_script'):
-                    file_content = utils.read_file(self.get_property("run_script"), 'rb')
-                    # We first code to base64 in bytes and then decode those bytes to allow json to work
-                    # https://stackoverflow.com/questions/37225035/serialize-in-json-a-base64-encoded-data#37239382
-                    parsed_script = utils.utf8_to_base64_string(file_content)
-                    self.set_property('payload', { "script" : parsed_script })
-                
-                if self.get_argument_value(args, 'c_args'):
-                    parsed_cont_args = json.dumps(self.get_property("c_args"))
-                    self.set_property('payload', { "cmd_args" : parsed_cont_args })
-
     def get_all_functions(self, arn_list):
         function_info_list = []
         try:
@@ -383,26 +314,25 @@ class Lambda(GenericClient):
             print ("Error getting function info by arn: %s" % ce)
         return function_info_list
     
-    def get_function_info(self, function_name_or_arn):
-        try:
-            # If this call works the function exists
-            return self.client.get_function_info(function_name_or_arn)
-        except ClientError as ce:
-            error_msg = "Error while looking for the lambda function"
-            logger.error(error_msg, error_msg + ": %s" % ce)
+    def get_function_info(self):
+        return self.client.get_function_info(self.properties['name'])
     
-    def find_function(self, function_name_or_arn):
+    @excp.exception(logger)
+    def find_function(self, function_name_or_arn=None):
         try:
             # If this call works the function exists
-            self.client.get_function_info(function_name_or_arn)
+            if function_name_or_arn:
+                name_arn = function_name_or_arn
+            else:
+                name_arn = self.properties['name']
+            self.client.get_function_info(name_arn)
             return True
         except ClientError as ce:
             # Function not found
             if ce.response['Error']['Code'] == 'ResourceNotFoundException':
                 return False
             else:   
-                error_msg = "Error while looking for the lambda function"
-                logger.error(error_msg, error_msg + ": %s" % ce)
+                raise
                 
     def add_invocation_permission_from_api_gateway(self):
         api_gateway_id = self.get_property('api_gateway_id')
@@ -416,9 +346,8 @@ class Lambda(GenericClient):
         kwargs['SourceArn'] = 'arn:aws:execute-api:us-east-1:{0}:{1}/scar/ANY'.format(aws_acc_id, api_gateway_id)
         self.client.add_invocation_permission(**kwargs)                              
 
-    def get_api_gateway_id(self, function_name):
-        self.check_function_name(function_name)
-        env_vars = self.client.get_function_environment_variables(function_name)
+    def get_api_gateway_id(self):
+        env_vars = self.client.get_function_environment_variables(self.properties['name'])
         if ('API_GATEWAY_ID' in env_vars['Variables']):
             return env_vars['Variables']['API_GATEWAY_ID']
         

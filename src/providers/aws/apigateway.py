@@ -16,27 +16,28 @@
 
 import src.logger as logger
 import src.utils as utils
-import src.providers.aws.response as response_parser
 from src.providers.aws.botoclientfactory import GenericClient
 
 class APIGateway(GenericClient):
 
+    # ANY, DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT
+    default_http_method = "ANY"
+    # NONE, AWS_IAM, CUSTOM, COGNITO_USER_POOLS
+    default_authorization_type = "NONE"
+    # 'HTTP'|'AWS'|'MOCK'|'HTTP_PROXY'|'AWS_PROXY'
+    default_type = "AWS_PROXY"
+
     def __init__(self, aws_properties):
+        GenericClient.__init__(self, aws_properties)
+        self.properties = aws_properties['api_gateway']
         # Get all the log related attributes
         self.function_name = aws_properties['lambda']['name']
-        self.api_gateway_name = aws_properties['api_gateway']['name']
         self.lambda_role = aws_properties['iam']['role']
-        # ANY, DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT
-        self.default_http_method = "ANY"
-        # NONE, AWS_IAM, CUSTOM, COGNITO_USER_POOLS
-        self.default_authorization_type = "NONE"
-        # 'HTTP'|'AWS'|'MOCK'|'HTTP_PROXY'|'AWS_PROXY'
-        self.default_type = "AWS_PROXY"
 
     def get_api_lambda_uri(self):
-        self.aws_acc_id = utils.find_expression(self.lambda_role, '\d{12}')
+        self.aws_account_id = utils.find_expression(self.lambda_role, '\d{12}')
         api_gateway_uri = 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/'
-        lambda_uri = 'arn:aws:lambda:us-east-1:{0}:function:{1}/invocations'.format(self.aws_acc_id, self.function_name)
+        lambda_uri = 'arn:aws:lambda:us-east-1:{0}:function:{1}/invocations'.format(self.aws_account_id, self.function_name)
         return api_gateway_uri + lambda_uri
 
     def get_common_args(self, resource_info):
@@ -63,7 +64,7 @@ class APIGateway(GenericClient):
         return integration
 
     def create_api_gateway(self):
-        api_info = self.client.create_rest_api(self.api_gateway_name)
+        api_info = self.client.create_rest_api(self.properties['name'])
         self.set_api_resources(api_info)
         resource_info = self.client.create_resource(self.api_id, self.root_resource_id, "{proxy+}")
         self.client.create_method(**self.get_method_args(resource_info))
@@ -71,11 +72,10 @@ class APIGateway(GenericClient):
         self.client.create_deployment(self.api_id, 'scar')
         self.endpoint = 'https://{0}.execute-api.{1}.amazonaws.com/scar/launch'.format(self.api_id, 'us-east-1')
         logger.info('API Gateway endpoint: {0}'.format(self.endpoint))
-        return self.api_id, self.aws_acc_id
+        return self.api_id, self.aws_account_id
     
-    def delete_api_gateway(self, api_id, output_type):
-        response = self.client.delete_rest_api(api_id)
-        response_parser.parse_delete_api_response(response, api_id, output_type)
+    def delete_api_gateway(self):
+        return self.client.delete_rest_api(self.properties['id'])
         
     def set_api_resources(self, api_info):
         self.api_id = api_info['id']

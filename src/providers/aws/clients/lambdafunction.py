@@ -15,10 +15,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from src.providers.aws.clients.boto import BotoClient
-from botocore.exceptions import ClientError
 import src.logger as logger
 import src.utils as utils
-import src.exceptions as ex
+import src.exceptions as excp
 
 class LambdaClient(BotoClient):
     '''A low-level client representing aws LambdaClient.
@@ -40,19 +39,12 @@ class LambdaClient(BotoClient):
         Returns the configuration information of the Lambda function.
         http://boto3.readthedocs.io/en/latest/reference/services/lambda.html#Lambda.Client.get_function_configuration
         '''
-        try:
-            return self.client.get_function_configuration(FunctionName=function_name_or_arn)
-        except ClientError as ce:
-            if ce.response['Error']['Code'] == 'ResourceNotFoundException':
-                raise ce
-            else:            
-                error_msg = "Error getting function data"
-                logger.error(error_msg, error_msg + ": %s" % ce)
+        return self.client.get_function_configuration(FunctionName=function_name_or_arn)
    
     def get_function_environment_variables(self, function_name):
         return self.get_function_info(function_name)['Environment']
     
-    @ex.exception(logger)    
+    @excp.exception(logger)    
     def update_function(self, **kwargs):
         '''
         Updates the configuration parameters for the specified Lambda function by using the values provided in the request.
@@ -61,7 +53,7 @@ class LambdaClient(BotoClient):
         # Retrieve the global variables already defined
         return self.client.update_function_configuration(**kwargs)
         
-    @ex.exception(logger)        
+    @excp.exception(logger)        
     def list_functions(self):
         '''
         Returns a list of your Lambda functions.
@@ -77,7 +69,7 @@ class LambdaClient(BotoClient):
                 functions.extend(result['Functions'])            
         return functions                      
             
-    @ex.exception(logger)
+    @excp.exception(logger)
     def delete_function(self, function_name):
         '''
         Deletes the specified Lambda function code and configuration.
@@ -86,7 +78,7 @@ class LambdaClient(BotoClient):
         # Delete the lambda function
         return self.client.delete_function(FunctionName=function_name)
     
-    @ex.exception(logger)    
+    @excp.exception(logger)    
     def invoke_function(self, **kwargs):
         '''
         Invokes a specific Lambda function.
@@ -95,7 +87,7 @@ class LambdaClient(BotoClient):
         response = self.client.invoke(**kwargs)
         return response
     
-    @ex.exception(logger)    
+    @excp.exception(logger)    
     def add_invocation_permission(self, **kwargs):
         '''
         Adds a permission to the resource policy associated with the specified AWS Lambda function.

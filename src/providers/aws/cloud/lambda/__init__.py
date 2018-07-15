@@ -15,4 +15,4 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-__all__ = ['utils','logger']
+__all__ = ['utils','logger','exceptions']
