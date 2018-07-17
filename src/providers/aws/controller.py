@@ -66,14 +66,6 @@ class AWS(Commands):
        
     @excp.exception(logger)
     def init(self):
-#                 if (not self.get_property("name")) or (self.get_property("name") == ""):
-#                     func_name = "function"
-#                     if self.get_property("image_id") != "":
-#                         func_name = self.get_property("image_id")
-#                     elif self.get_property("image_file") != "":
-#                         func_name = self.get_property("image_file").split('.')[0]
-#                     self.properties["name"] = self.create_function_name(func_name)        
-        
         if self._lambda.find_function():
             raise excp.FunctionExistsError(function_name=self.properties['lambda']['name'])
         
