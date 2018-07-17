@@ -34,12 +34,6 @@ class YamlParser(object):
             functions.append(self.parse_aws_function(function, self.yaml_data['functions'][function]))
         return functions[0]
     
-    def parse_lambda_args(self, cmd_args):
-        lambda_args = ['asynchronous', 'init_script', 'run_script', 'c_args', 'memory', 'time',
-                       'timeout_threshold', 'log_level', 'image_id', 'image_file', 'description', 
-                       'lambda_role', 'extra_payload', 'environment_variables']
-        return utils.parse_arg_list(lambda_args, cmd_args) 
-    
     def parse_aws_function(self, function_name, function_data):
         aws_args = {}
         # Get function name
@@ -56,4 +50,10 @@ class YamlParser(object):
         aws = {}        
         aws['aws'] = aws_args
         return aws
+    
+    def parse_lambda_args(self, cmd_args):
+        lambda_args = ['asynchronous', 'init_script', 'run_script', 'c_args', 'memory', 'time',
+                       'timeout_threshold', 'log_level', 'image', 'image_file', 'description', 
+                       'lambda_role', 'extra_payload', 'environment_variables']
+        return utils.parse_arg_list(lambda_args, cmd_args)    
         

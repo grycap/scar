@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .s3 import S3
 import os
 import shutil
 import src.logger as logger
@@ -62,7 +61,7 @@ class FunctionPackageCreator():
         self.create_udocker_files()
     
     @excp.exception(logger)
-    def prepare_lambda_payload(self):
+    def prepare_lambda_code(self):
         self.clean_tmp_folders()
         self.add_mandatory_files(self.properties['EnvironmentVariables'])
         
@@ -86,7 +85,6 @@ class FunctionPackageCreator():
         # Check if the payload size fits within the aws limits   
         if 'DeploymentBucket' in self.properties:
             AWSValidator.validate_s3_code_size(self.scar_temporal_folder, MAX_S3_PAYLOAD_SIZE)
-            self.upload_file_to_S3_bucket(self.properties['DeploymentBucket'], self.properties['FileKey'])
         else:
             AWSValidator.validate_function_code_size(self.scar_temporal_folder, MAX_PAYLOAD_SIZE)
         
@@ -152,8 +150,3 @@ class FunctionPackageCreator():
         env_vars['UDOCKER_LAYERS'] = "/var/task/udocker/layers/"
         self.restore_udocker_env()
         
-    def upload_file_to_S3_bucket(self, deployment_bucket, file_key):
-        logger.info("Uploading '{0}' to the '{1}' S3 bucket.".format(self.properties['ZipFilePath'], deployment_bucket))
-        file_data = utils.read_file(self.properties['ZipFilePath'], 'rb')
-        S3().upload_file(deployment_bucket, file_key, file_data)
-    

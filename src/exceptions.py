@@ -168,5 +168,36 @@ class NotExistentLogGroupWarning(ScarError):
 
     :ivar log_group_name: Name of the log group
     """
-    fmt = "The requested log group '{logGroupName}' does not exist."      
+    fmt = "The requested log group '{logGroupName}' does not exist."
+    
+################################################
+##           API GATEWAY EXCEPTIONS           ##
+################################################
+class ApiEndpointNotFoundError(ScarError):
+    """
+    The requested function does not have an associated API.
+
+    :ivar function_name: Name of the function
+    """
+    fmt = "Error retrieving API ID for lambda function '{function_name}'\n"
+    fmt += "Looks like he requested function does not have an associated API."
+    
+class ApiCreationError(ScarError):
+    """
+    Error creating the API endpoint.
+
+    :ivar api_name: Name of the api
+    """
+    fmt = "Error creating the API '{api_name}'"
+    
+class InvocationPayloadError(ScarError):
+    """
+    Error invocating the API endpoint.
+
+    :ivar file_size: Size of the passed file
+    :ivar max_size: Max size allowd of the file
+    """
+    fmt = "Invalid request: Payload size {file_size} greater than {max_size}\n"
+    fmt += "Check AWS Lambda invocation limits in : https://docs.aws.amazon.com/lambda/latest/dg/limits.html"
+    
     

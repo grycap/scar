@@ -61,19 +61,16 @@ class S3Client(BotoClient):
         return self.client.get_bucket_notification_configuration(Bucket=bucket_name)
             
     @excp.exception(logger)
-    def upload_file(self, bucket_name, file_key, file_data=None):
+    def upload_file(self, **kwargs):
         '''Adds an object to a bucket.
         https://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Client.put_object'''
-        kwargs = {'Bucket' : bucket_name, 'Key' : file_key}
-        if file_data:
-            kwargs['Body'] = file_data
         return self.client.put_object(**kwargs)          
             
     @excp.exception(logger)            
-    def download_file(self, bucket_name, file_key, file):
+    def download_file(self, **kwargs):
         '''Download an object from S3 to a file-like object.
         https://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Client.download_fileobj'''
-        return self.client.download_fileobj(Bucket=bucket_name, Key=file_key, Fileobj=file)
+        return self.client.download_fileobj(**kwargs)
            
     @excp.exception(logger)            
     def list_files(self, **kwargs):
