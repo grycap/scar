@@ -41,9 +41,6 @@ class LambdaClient(BotoClient):
         '''
         return self.client.get_function_configuration(FunctionName=function_name_or_arn)
    
-    def get_function_environment_variables(self, function_name):
-        return self.get_function_info(function_name)['Environment']
-    
     @excp.exception(logger)    
     def update_function(self, **kwargs):
         '''

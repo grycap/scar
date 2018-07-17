@@ -110,6 +110,7 @@ class AWS(Commands):
                 self._lambda.set_asynchronous_call_parameters()
             self._lambda.launch_lambda_instance()
     
+    @excp.exception(logger)    
     def update(self):
         self._lambda.update_function_attributes()
     

@@ -246,26 +246,28 @@ class Lambda(GenericClient):
         self.properties['log_type'] = "Tail"
         self.properties['asynchronous'] = "False"        
         
-    def get_argument_value(self, args, attr):
-        if attr in args.__dict__.keys():
-            return args.__dict__[attr]
-
     def update_function_attributes(self):
-        update_args = {'FunctionName' : self.get_property("name") }
-        self.set_property_if_has_value(update_args, 'MemorySize', "memory")
-        self.set_property_if_has_value(update_args, 'Timeout', "time")
+        update_args = {'FunctionName' : self.properties['name'] }
+        if "memory" in self.properties and self.properties['memory']:
+            update_args['MemorySize'] = self.properties['memory']
+        if "time" in self.properties and self.properties['time']:
+            update_args['Timeout'] = self.properties['time']            
         # To update the environment variables we need to retrieve the 
         # variables defined in lambda and update them with the new values
-        env_vars = self.get_property("environment")
-        if self.get_property('timeout_threshold'):
-            env_vars['Variables']['TIMEOUT_THRESHOLD'] = str(self.get_property('timeout_threshold'))
-        if self.get_property('log_level'):
-            env_vars['Variables']['LOG_LEVEL'] = self.get_property('log_level')            
-        defined_lambda_env_variables = self.client.get_function_environment_variables(self.get_property("name"))
+        env_vars = self.properties['environment']
+        if "timeout_threshold" in self.properties and self.properties['timeout_threshold']:
+            env_vars['Variables']['TIMEOUT_THRESHOLD'] = str(self.properties['timeout_threshold'])
+        if "log_level" in self.properties and self.properties['log_level']:
+            env_vars['Variables']['LOG_LEVEL'] = self.properties['log_level']            
+        defined_lambda_env_variables = self.get_function_environment_variables()
         defined_lambda_env_variables['Variables'].update(env_vars['Variables'])
         update_args['Environment'] = defined_lambda_env_variables
         
         self.client.update_function(**update_args)
+        logger.info("Function updated successfully.")
+
+    def get_function_environment_variables(self):
+        return self.get_function_info()['Environment']
 
     def get_all_functions(self, arn_list):
         function_info_list = []
@@ -311,7 +313,7 @@ class Lambda(GenericClient):
         self.client.add_invocation_permission(**kwargs)                              
 
     def get_api_gateway_id(self):
-        env_vars = self.client.get_function_environment_variables(self.properties['name'])
+        env_vars = self.get_function_environment_variables()
         if ('API_GATEWAY_ID' in env_vars['Variables']):
             return env_vars['Variables']['API_GATEWAY_ID']
         
