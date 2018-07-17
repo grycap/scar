@@ -64,15 +64,15 @@ class CloudWatchLogsClient(BotoClient):
         return self.client.put_retention_policy(**kwargs)
             
     @excp.exception(logger)
-    def delete_log_group(self, log_group_name):
+    def delete_log_group(self, **kwargs):
         '''
         Deletes the specified log group and permanently deletes all the archived log events associated with the log group.
         https://boto3.readthedocs.io/en/latest/reference/services/logs.html#CloudWatchLogs.Client.delete_log_group
         '''         
         try:
-            return self.client.delete_log_group(logGroupName=log_group_name)
+            return self.client.delete_log_group(**kwargs)
         except ClientError as ce:
             if ce.response['Error']['Code'] == 'ResourceNotFoundException':
-                raise excp.NotExistentLogGroupWarning(logGroupName=log_group_name)
+                raise excp.NotExistentLogGroupWarning(**kwargs)
             else:
                 raise

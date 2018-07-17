@@ -16,27 +16,25 @@
 
 from botocore.exceptions import ClientError
 from multiprocessing.pool import ThreadPool
+from src.providers.aws.botoclientfactory import GenericClient
+from src.providers.aws.functioncode import FunctionPackageCreator
+from src.providers.aws.s3 import S3
+import base64
 import json
-import src.http.invoke as invoke
+import src.exceptions as excp
+import src.http.request as request
 import src.logger as logger
-from src.providers.aws.payload import FunctionPackageCreator
 import src.providers.aws.response as response_parser
 import src.utils as utils
-import base64
-from src.providers.aws.botoclientfactory import GenericClient
-import src.exceptions as excp
 
 MAX_CONCURRENT_INVOCATIONS = 1000
-MAX_POST_BODY_SIZE = 1024*1024*6
-MAX_POST_BODY_SIZE_ASYNC = 1024*95
+MB = 1024*1024
+KB = 1024
+MAX_POST_BODY_SIZE = MB*6
+MAX_POST_BODY_SIZE_ASYNC = KB*95
 
 class Lambda(GenericClient):
     
-    s3_event = { "Records" : [ {"eventSource" : "aws:s3",
-                 "s3" : {"bucket" : { "name" : "" },
-                         "object" : { "key" : ""  } }
-                }]}
-
     def __init__(self, aws_properties):
         GenericClient.__init__(self, aws_properties)
         self.call_type = aws_properties['call_type']
@@ -46,41 +44,10 @@ class Lambda(GenericClient):
         self.properties['invocation_type'] = 'RequestResponse'
         self.properties['log_type'] = 'Tail'
         if 'name' in self.properties:
-            self.properties['handler'] = "{0}.lambda_handler".format(self.properties['name'])        
+            self.properties['handler'] = "{0}.lambda_handler".format(self.properties['name'])
+        if 'asynchronous' not in self.properties:
+            self.properties['asynchronous'] = False         
 
-#     def extra_thingies(self):
-#         if ((call_type != CallType.LS) and (not self.delete_all()) and
-#             (call_type != CallType.PUT) and (call_type != CallType.GET)):
-#             if (call_type == CallType.INIT):
-#                 if (not self.get_property("name")) or (self.get_property("name") == ""):
-#                     func_name = "function"
-#                     if self.get_property("image_id") != "":
-#                         func_name = self.get_property("image_id")
-#                     elif self.get_property("image_file") != "":
-#                         func_name = self.get_property("image_file").split('.')[0]
-#                     self.properties["name"] = self.create_function_name(func_name)
-#             
-#             self.check_function_name()
-#             function_name = self.get_property("name")
-#                 
-#             self.set_environment_variables()
-#             self.properties["handler"] = function_name + ".lambda_handler"
-#             
-#             if (call_type == CallType.INIT):   
-#                 self.set_function_code()           
-#                 
-#             if (call_type == CallType.RUN):
-#                 if self.get_argument_value(args, 'run_script'):
-#                     file_content = utils.read_file(self.get_property("run_script"), 'rb')
-#                     # We first code to base64 in bytes and then decode those bytes to allow json to work
-#                     # https://stackoverflow.com/questions/37225035/serialize-in-json-a-base64-encoded-data#37239382
-#                     parsed_script = utils.utf8_to_base64_string(file_content)
-#                     self.set_property('payload', { "script" : parsed_script })
-#                 
-#                 if self.get_argument_value(args, 'c_args'):
-#                     parsed_cont_args = json.dumps(self.get_property("c_args"))
-#                     self.set_property('payload', { "cmd_args" : parsed_cont_args })        
-    
     def get_creations_args(self):
         return {'FunctionName' : self.properties['name'],
                 'Runtime' : self.properties['runtime'],
@@ -118,7 +85,7 @@ class Lambda(GenericClient):
     def set_required_environment_variables(self):
         self.add_lambda_environment_variable('TIMEOUT_THRESHOLD', str(self.properties['timeout_threshold']))
         self.add_lambda_environment_variable('LOG_LEVEL', self.properties['log_level'])        
-        self.add_lambda_environment_variable('IMAGE_ID', self.properties['image_id'])
+        self.add_lambda_environment_variable('IMAGE_ID', self.properties['image'])
         if 's3' in self.aws_properties:
             s3_props = self.aws_properties['s3']
             if 'input_bucket' in s3_props:
@@ -126,17 +93,25 @@ class Lambda(GenericClient):
             if 'output_bucket' in s3_props:
                 self.add_lambda_environment_variable('OUTPUT_BUCKET', s3_props['output_bucket'])
             if 'output_folder' in s3_props:
-                self.add_lambda_environment_variable('OUTPUT_FOLDER', s3_props['output_folder'])                   
+                self.add_lambda_environment_variable('OUTPUT_FOLDER', s3_props['output_folder'])
+        if 'api_gateway' in self.aws_properties:
+            self.add_lambda_environment_variable('API_GATEWAY_ID', self.aws_properties['api_gateway']['id'])                           
 
     def add_lambda_environment_variable(self, key, value):
         if key and value:
             self.properties['environment']['Variables'][key] = value         
-        
+    
+    @excp.exception(logger)
+    def upload_function_code_to_s3(self):
+        self.aws_properties['s3']['input_bucket'] = self.properties['DeploymentBucket']
+        S3(self.aws_properties).upload_file(file_path=self.properties['ZipFilePath'], file_key=self.properties['FileKey'])
+    
     def set_function_code(self):
         package_props = self.get_function_payload_props()
         # Zip all the files and folders needed
-        FunctionPackageCreator(package_props).prepare_lambda_payload()
+        FunctionPackageCreator(package_props).prepare_lambda_code()
         if 'DeploymentBucket' in package_props:
+            self.upload_function_code_to_s3()
             self.properties['code'] = {"S3Bucket": package_props['DeploymentBucket'],
                                        "S3Key" : package_props['FileKey'],}
         else:
@@ -205,85 +180,75 @@ class Lambda(GenericClient):
         self.set_request_response_call_parameters()
         return self.launch_lambda_instance()
 
-    def launch_async_event(self, s3_file):
+    def launch_async_event(self, s3_event):
         self.set_asynchronous_call_parameters()
-        return self.launch_s3_event(s3_file)        
+        return self.launch_s3_event(s3_event)        
    
-    def launch_request_response_event(self, s3_file):
+    def launch_request_response_event(self, s3_event):
         self.set_request_response_call_parameters()
-        return self.launch_s3_event(s3_file)            
+        return self.launch_s3_event(s3_event)            
                
-    def launch_s3_event(self, s3_file):
-        self.set_s3_event_source(s3_file)
-        self.set_property('payload', self.s3_event)
-        logger.info("Sending event for file '%s'" % s3_file)
+    def launch_s3_event(self, s3_event):
+        self.properties['payload'] = s3_event
+        logger.info("Sending event for file '{0}'".format(s3_event['Records'][0]['s3']['object']['key']))
         return self.launch_lambda_instance()
 
-    def process_asynchronous_lambda_invocations(self, s3_file_list):
-        if (len(s3_file_list) > MAX_CONCURRENT_INVOCATIONS):
-            s3_file_chunk_list = utils.divide_list_in_chunks(s3_file_list, MAX_CONCURRENT_INVOCATIONS)
+    def process_asynchronous_lambda_invocations(self, s3_event_list):
+        if (len(s3_event_list) > MAX_CONCURRENT_INVOCATIONS):
+            s3_file_chunk_list = utils.divide_list_in_chunks(s3_event_list, MAX_CONCURRENT_INVOCATIONS)
             for s3_file_chunk in s3_file_chunk_list:
                 self.launch_concurrent_lambda_invocations(s3_file_chunk)
         else:
-            self.launch_concurrent_lambda_invocations(s3_file_list)
+            self.launch_concurrent_lambda_invocations(s3_event_list)
 
-    def launch_concurrent_lambda_invocations(self, s3_file_list):
-        pool = ThreadPool(processes=len(s3_file_list))
-        pool.map(
-            lambda s3_file: self.launch_async_event(s3_file), s3_file_list
-        )
+    def launch_concurrent_lambda_invocations(self, s3_event_list):
+        pool = ThreadPool(processes=len(s3_event_list))
+        pool.map(lambda s3_event: self.launch_async_event(s3_event), s3_event_list)
         pool.close()
 
     def launch_lambda_instance(self):
         response = self.invoke_lambda_function()
         response_args = {'Response' : response,
-                         'FunctionName' : self.get_function_name(),
-                         'OutputType' : self.get_property("output"),
-                         'IsAsynchronous' : self.is_asynchronous()}
+                         'FunctionName' : self.properties['name'],
+                         'OutputType' : self.aws_properties['output'],
+                         'IsAsynchronous' : self.properties['asynchronous']}
         response_parser.parse_invocation_response(**response_args)
 
+    def get_payload(self):
+        # Default payload
+        payload = {}
+
+        if 'run_script' in self.properties:
+            file_content = utils.read_file(self.properties['run_script'], 'rb')
+            # We first code to base64 in bytes and then decode those bytes to allow the json lib to parse the data
+            # https://stackoverflow.com/questions/37225035/serialize-in-json-a-base64-encoded-data#37239382
+            payload = { "script" : utils.utf8_to_base64_string(file_content) }
+         
+        if 'c_args' in self.properties:
+            payload = { "cmd_args" : json.dumps(self.properties['c_args']) }
+
+        return json.dumps(payload)
+
     def invoke_lambda_function(self):
-        invoke_args = {'FunctionName' : self.get_function_name(),
-                       'InvocationType' : self.get_property("invocation_type"),
-                       'LogType' : self.get_property("log_type"),
-                       'Payload' : json.dumps(self.get_property("payload"))}    
+        invoke_args = {'FunctionName' : self.properties['name'],
+                       'InvocationType' : self.properties['invocation_type'],
+                       'LogType' : self.properties['log_type'],
+                       'Payload' : self.get_payload() }  
         return self.client.invoke_function(**invoke_args)
 
     def is_asynchronous(self):
         return self.get_property('asynchronous')
  
     def set_asynchronous_call_parameters(self):
-        self.set_property('invocation_type', "Event")
-        self.set_property('log_type', 'None')
-        self.set_property('asynchronous', 'True')
+        self.properties['invocation_type'] = "Event"
+        self.properties['log_type'] = "None"
+        self.properties['asynchronous'] = "True"
         
-    def set_api_gateway_id(self, api_id):
-        self.add_lambda_environment_variable('API_GATEWAY_ID', api_id)
-
     def set_request_response_call_parameters(self):
-        self.set_property('invocation_type', "RequestResponse")
-        self.set_property('log_type', "Tail")    
-        self.set_property('asynchronous', 'False')    
-
-    def set_s3_event_source(self, file_name):
-        self.s3_event['Records'][0]['s3']['bucket']['name'] = self.get_property('input_bucket')
-        self.s3_event['Records'][0]['s3']['object']['key'] = file_name
+        self.properties['invocation_type'] = "RequestResponse"
+        self.properties['log_type'] = "Tail"
+        self.properties['asynchronous'] = "False"        
         
-    def has_image_file(self):
-        return utils.has_dict_prop_value(self.properties, 'image_file')
-    
-    def has_deployment_bucket(self):
-        return utils.has_dict_prop_value(self.properties, 'deployment_bucket')
- 
-    def has_input_bucket(self):
-        return utils.has_dict_prop_value(self.properties, 'input_bucket')
-    
-    def has_output_bucket(self):
-        return utils.has_dict_prop_value(self.properties, 'output_bucket')
-    
-    def has_output_folder(self):
-        return utils.has_dict_prop_value(self.properties, 'output_folder')
-
     def get_argument_value(self, args, attr):
         if attr in args.__dict__.keys():
             return args.__dict__[attr]
@@ -335,15 +300,17 @@ class Lambda(GenericClient):
                 raise
                 
     def add_invocation_permission_from_api_gateway(self):
-        api_gateway_id = self.get_property('api_gateway_id')
-        aws_acc_id = self.get_property('aws_acc_id')
-        kwargs = {'FunctionName' : self.get_function_name(),
+        api_gateway_id = self.aws_properties['api_gateway']['id']
+        aws_acc_id = self.aws_properties['account_id']
+        aws_region = self.aws_properties['region']
+        kwargs = {'FunctionName' : self.properties['name'],
                   'Principal' : 'apigateway.amazonaws.com',
-                  'SourceArn' : 'arn:aws:execute-api:us-east-1:{0}:{1}/*'.format(aws_acc_id, api_gateway_id)}
+                  'SourceArn' : 'arn:aws:execute-api:{0}:{1}:{2}/*'.format(aws_region, aws_acc_id, api_gateway_id),
+                  }
         # Testing permission
         self.client.add_invocation_permission(**kwargs)
         # Invocation permission
-        kwargs['SourceArn'] = 'arn:aws:execute-api:us-east-1:{0}:{1}/scar/ANY'.format(aws_acc_id, api_gateway_id)
+        kwargs['SourceArn'] = 'arn:aws:execute-api:{0}:{1}:{2}/scar/ANY'.format(aws_region, aws_acc_id, api_gateway_id)
         self.client.add_invocation_permission(**kwargs)                              
 
     def get_api_gateway_id(self):
@@ -351,52 +318,47 @@ class Lambda(GenericClient):
         if ('API_GATEWAY_ID' in env_vars['Variables']):
             return env_vars['Variables']['API_GATEWAY_ID']
         
-    def get_api_gateway_url(self, function_name):
-        api_id = self.get_api_gateway_id(function_name)
-        if api_id is None or api_id == "":
-            error_msg = "Error retrieving API ID for lambda function {0}".format(function_name)
-            logger.error(error_msg)
-        return 'https://{0}.execute-api.{1}.amazonaws.com/scar/launch'.format(api_id, self.get_property("region"))        
+    def get_api_gateway_url(self):
+        api_id = self.get_api_gateway_id()
+        if not api_id:
+            raise excp.ApiEndpointNotFoundError(self.properties['name'])
+        return 'https://{0}.execute-api.{1}.amazonaws.com/scar/launch'.format(api_id, self.aws_properties["region"])        
         
     def get_http_invocation_headers(self):
-        asynch = self.get_property("asynchronous")
-        if asynch:
+        if "asynchronous" in self.aws_properties and self.aws_properties['asynchronous']:
             return {'X-Amz-Invocation-Type':'Event'}  
         
-    def get_encoded_binary_data(self):
-        data = self.get_property("data_binary")
-        if data:
-            self.check_file_size(data)                
-            with open(data, 'rb') as f:
+    def parse_http_parameters(self, parameters):
+        if type(parameters) is dict:
+            return parameters
+        return json.loads(parameters)
+
+    def get_encoded_binary_data(self, data_path):
+        if data_path:
+            self.check_file_size(data_path)                
+            with open(data_path, 'rb') as f:
                 data = f.read()
             return base64.b64encode(data)        
         
-    def get_http_parameters(self):
-        params = self.get_property("parameters")
-        if params:
-            if type(params) is dict:
-                return params
-            return json.loads(params)
+    def invoke_http_endpoint(self):
+        invoke_args = {'headers' : self.get_http_invocation_headers()}
+        if 'api_gateway' in self.aws_properties:
+            api_props = self.aws_properties['api_gateway']
+            if 'data_binary' in api_props and api_props['data_binary']:
+                invoke_args['data'] = self.get_encoded_binary_data(api_props['data_binary'])
+            if 'parameters' in api_props and api_props['parameters']:
+                invoke_args['parameters'] = self.parse_http_parameters(api_props['parameters'])
+        return request.invoke_http_endpoint(self.get_api_gateway_url(), **invoke_args)
         
-    def invoke_function_http(self, function_name):
-        function_url = self.get_api_gateway_url(function_name)
-        headers = self.get_http_invocation_headers()
-        params = self.get_http_parameters()
-        data = self.get_encoded_binary_data()
-
-        return invoke.invoke_function(function_url,
-                               parameters=params,
-                               data=data,
-                               headers=headers)
-        
+    @excp.exception(logger)        
     def check_file_size(self, file_path):
-        asynch = self.get_property("asynchronous")
         file_size = utils.get_file_size(file_path)
-        error_msg = None
         if file_size > MAX_POST_BODY_SIZE:
-            error_msg = "Invalid request: Payload size {0:.2f} MB greater than 6 MB".format((file_size/(1024*1024)))
-        elif asynch and file_size > MAX_POST_BODY_SIZE_ASYNC:
-            error_msg = "Invalid request: Payload size {0:.2f} KB greater than 128 KB".format((file_size/(1024)))
-        if error_msg:
-            error_msg += "\nCheck AWS Lambda invocation limits in : https://docs.aws.amazon.com/lambda/latest/dg/limits.html"
-            logger.error(error_msg)
+            filesize = '{0:.2f}MB'.format(file_size/MB)
+            maxsize = '{0:.2f}MB'.format(MAX_POST_BODY_SIZE_ASYNC/MB)            
+            raise excp.InvocationPayloadError(file_size= filesize, max_size=maxsize)
+        elif "asynchronous" in self.aws_properties and self.aws_properties['asynchronous'] and file_size > MAX_POST_BODY_SIZE_ASYNC:
+            filesize = '{0:.2f}KB'.format(file_size/KB)
+            maxsize = '{0:.2f}KB'.format(MAX_POST_BODY_SIZE_ASYNC/KB)
+            raise excp.InvocationPayloadError(file_size=filesize, max_size=maxsize)
+            

@@ -48,7 +48,7 @@ class CommandParser(object):
         parser_init.set_defaults(func=self.scar.init)
         # Lambda conf
         group = parser_init.add_mutually_exclusive_group(required=True)
-        group.add_argument("-i", "--image_id", help="Container image id (i.e. centos:7)")
+        group.add_argument("-i", "--image", help="Container image id (i.e. centos:7)")
         group.add_argument("-if", "--image_file", help="Container image file created with 'docker save' (i.e. centos.tar.gz)")
         group.add_argument("-f", "--conf_file", help="Yaml file with the function configuration")
         parser_init.add_argument("-d", "--description", help="Lambda function description.")
@@ -174,7 +174,7 @@ class CommandParser(object):
         parser_get.set_defaults(func=self.scar.get)
         # S3 args
         parser_get.add_argument("-b", "--bucket", help="Bucket to use as storage", required=True)
-        parser_get.add_argument("-bf", "--bucket_folder", help="Path of the file or folder to download", required=True)
+        parser_get.add_argument("-bf", "--bucket_folder", help="Path of the file or folder to download")
         # Local info args
         parser_get.add_argument("-p", "--path", help="Path to store the downloaded file or folder")
         # General AWS conf
@@ -217,7 +217,7 @@ class CommandParser(object):
 
     def parse_lambda_args(self, cmd_args):
         lambda_args = ['name', 'asynchronous', 'init_script', 'run_script', 'c_args', 'memory', 'time',
-                       'timeout_threshold', 'log_level', 'image_id', 'image_file', 'description', 
+                       'timeout_threshold', 'log_level', 'image', 'image_file', 'description', 
                        'lambda_role', 'extra_payload', 'environment_variables']
         return utils.parse_arg_list(lambda_args, cmd_args)
     
