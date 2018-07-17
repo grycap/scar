@@ -66,7 +66,6 @@ class AWS(Commands):
        
     @excp.exception(logger)
     def init(self):
-<<<<<<< HEAD
         if self._lambda.find_function():
             raise excp.FunctionExistsError(function_name=self.properties['lambda']['name'])
         
@@ -84,35 +83,7 @@ class AWS(Commands):
             response_parser.parse_log_group_creation_response(response,
                                                               self.cloudwatch_logs.get_log_group_name(),
                                                               self.properties['output'])        
-        
-=======
-#                 if (not self.get_property("name")) or (self.get_property("name") == ""):
-#                     func_name = "function"
-#                     if self.get_property("image_id") != "":
-#                         func_name = self.get_property("image_id")
-#                     elif self.get_property("image_file") != "":
-#                         func_name = self.get_property("image_file").split('.')[0]
-#                     self.properties["name"] = self.create_function_name(func_name)        
-        
-        if self._lambda.find_function():
-            raise excp.FunctionExistsError(function_name=self.properties['lambda']['name'])
-        
-        if 'api_gateway' in self.properties:
-            self.api_gateway.create_api_gateway()
-
-        response = self._lambda.create_function()
-        if response:
-            response_parser.parse_lambda_function_creation_response(response,
-                                                                    self.properties['lambda']['name'],
-                                                                    self._lambda.client.get_access_key(),
-                                                                    self.properties['output'])
-        response = self.cloudwatch_logs.create_log_group()
-        if response:
-            response_parser.parse_log_group_creation_response(response,
-                                                              self.cloudwatch_logs.get_log_group_name(),
-                                                              self.properties['output'])        
-        
->>>>>>> dd1cba6682382792f0fbffdabe8a0e57e2ca1eb4
+    
         if 's3' in self.properties:
             self.manage_s3_init()
 

@@ -116,15 +116,8 @@ class S3(GenericClient):
             raise excp.BucketNotFoundError(bucket_name=bucket_name)
     
     def parse_file_keys(self, response):
-        file_list = []
-        for elem in response:
-            if 'Contents' in elem:
-                for info in elem['Contents']:
-                    # Avoid storing the input_folder path
-                    if self.properties['input_folder'] != info['Key']:
-                        file_list.extend([info['Key']])
-        return file_list
-    
+        return [info['Key'] for elem in response if 'Contents' in elem for info in elem['Contents'] if not info['Key'].endswith('/')]       
+
     def get_s3_event(self, s3_file_key):
         return { "Records" : [ {"eventSource" : "aws:s3",
                  "s3" : {"bucket" : { "name" : self.properties['input_bucket'] },
