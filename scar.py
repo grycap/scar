@@ -69,8 +69,8 @@ class Scar(Commands):
         cmd_args = CommandParser(self).parse_arguments()
         if 'conf_file' in cmd_args['scar'] and cmd_args['scar']['conf_file']:
             yaml_args = YamlParser(cmd_args['scar']).parse_arguments()
-            merged_args = utils.merge_dicts(merged_args, yaml_args)
-        merged_args = utils.merge_dicts(cmd_args, merged_args)  
+            merged_args = utils.merge_dicts(yaml_args, merged_args)
+        merged_args = utils.merge_dicts(cmd_args, merged_args)
         self.cloud_provider.parse_arguments(**merged_args)
         merged_args['scar']['func']()
 

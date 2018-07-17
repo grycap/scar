@@ -67,7 +67,7 @@ class AWS(Commands):
     @excp.exception(logger)
     def init(self):
         if self._lambda.find_function():
-            raise excp.FunctionExistsError(function_name=self.properties['lambda']['name'])
+            raise excp.FunctionExistsError(function_name=self._lambda.properties['name'])
         
         if 'api_gateway' in self.properties:
             self.api_gateway.create_api_gateway()
@@ -75,7 +75,7 @@ class AWS(Commands):
         response = self._lambda.create_function()
         if response:
             response_parser.parse_lambda_function_creation_response(response,
-                                                                    self.properties['lambda']['name'],
+                                                                    self._lambda.properties['name'],
                                                                     self._lambda.client.get_access_key(),
                                                                     self.properties['output'])
         response = self.cloudwatch_logs.create_log_group()
@@ -98,21 +98,18 @@ class AWS(Commands):
     def invoke(self):
         response = self._lambda.invoke_http_endpoint()
         response_parser.parse_http_response(response, 
-                                            self.properties['lambda']['name'],
-                                            self.is_async_invocation())
+                                            self._lambda.properties['name'],
+                                            self._lambda.is_asynchronous())
     
     @excp.exception(logger)    
     def run(self):
         if 's3' in self.properties and 'input_bucket' in self.properties['s3']:
             self.process_input_bucket_calls()
         else:
-            if self.is_async_invocation():
+            if self._lambda.is_asynchronous():
                 self._lambda.set_asynchronous_call_parameters()
             self._lambda.launch_lambda_instance()
     
-    def is_async_invocation(self):
-        return 'asynchronous' in self._lambda.properties and self._lambda.properties['asynchronous']
-            
     def update(self):
         self._lambda.update_function_attributes()
     
@@ -153,7 +150,7 @@ class AWS(Commands):
         self.properties = kwargs['aws']
         self.scar_properties = kwargs['scar']
         self.add_extra_aws_properties()
-    
+
     def add_extra_aws_properties(self):
         self.add_tags()
         self.add_output()
@@ -251,7 +248,7 @@ class AWS(Commands):
      
     def delete_all_resources(self, lambda_functions):
         for function in lambda_functions:
-            self.properties['lambda']['name'] = function['FunctionName']
+            self._lambda.properties['name'] = function['FunctionName']
             self.delete_resources()
         
     def delete_resources(self):

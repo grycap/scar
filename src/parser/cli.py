@@ -76,7 +76,7 @@ class CommandParser(object):
         # API Gateway conf        
         parser_init.add_argument("-api", "--api_gateway_name", help="API Gateway name created to launch the lambda function")
         # General AWS conf           
-        parser_init.add_argument("-pf", "--boto_profile", help="AWS profile to use")
+        parser_init.add_argument("-pf", "--profile", help="AWS profile to use")
         
     def create_invoke_parser(self):
         parser_invoke = self.subparsers.add_parser('invoke', help="Call a lambda function using an HTTP request")
@@ -89,7 +89,7 @@ class CommandParser(object):
         parser_invoke.add_argument("-a", "--asynchronous", help="Launch an asynchronous function.", action="store_true")
         parser_invoke.add_argument("-p", "--parameters", help="In addition to passing the parameters in the URL, you can pass the parameters here (i.e. '{\"key1\": \"value1\", \"key2\": [\"value2\", \"value3\"]}').")
         # General AWS conf          
-        parser_invoke.add_argument("-pf", "--boto_profile", help="AWS profile to use")  
+        parser_invoke.add_argument("-pf", "--profile", help="AWS profile to use")  
  
     def create_update_parser(self):
         parser_update = self.subparsers.add_parser('update', help="Update function properties")
@@ -103,7 +103,7 @@ class CommandParser(object):
         parser_update.add_argument("-tt", "--timeout_threshold", type=int, help="Extra time used to postprocess the data. This time is extracted from the total time of the lambda function.")
         parser_update.add_argument("-ll", "--log_level", help="Set the log level of the lambda function. Accepted values are: 'CRITICAL','ERROR','WARNING','INFO','DEBUG'", default="INFO")
         # General AWS conf        
-        parser_update.add_argument("-pf", "--boto_profile", help="AWS profile to use")        
+        parser_update.add_argument("-pf", "--profile", help="AWS profile to use")        
         #parser_update.add_argument("-s", "--script", nargs='?', type=argparse.FileType('r'), help="Path to the input file passed to the function")
         #parser_update.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         #parser_update.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
@@ -121,7 +121,7 @@ class CommandParser(object):
         parser_run.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
         parser_run.add_argument('c_args', nargs=argparse.REMAINDER, help="Arguments passed to the container.")
         # General AWS conf
-        parser_run.add_argument("-pf", "--boto_profile", help="AWS profile to use")
+        parser_run.add_argument("-pf", "--profile", help="AWS profile to use")
     
     def create_rm_parser(self):
         parser_rm = self.subparsers.add_parser('rm', help="Delete function")
@@ -133,7 +133,7 @@ class CommandParser(object):
         parser_rm.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         parser_rm.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
         # General AWS conf           
-        parser_rm.add_argument("-pf", "--boto_profile", help="AWS profile to use")  
+        parser_rm.add_argument("-pf", "--profile", help="AWS profile to use")  
                              
     def create_log_parser(self):
         parser_log = self.subparsers.add_parser('log', help="Show the logs for the lambda function")
@@ -145,7 +145,7 @@ class CommandParser(object):
         parser_log.add_argument("-ls", "--log_stream_name", help="Return the output for the log stream specified.")
         parser_log.add_argument("-ri", "--request_id", help="Return the output for the request id specified.")
         # General AWS conf        
-        parser_log.add_argument("-pf", "--boto_profile", help="AWS profile to use")
+        parser_log.add_argument("-pf", "--profile", help="AWS profile to use")
         
     def create_ls_parser(self):
         parser_ls = self.subparsers.add_parser('ls', help="List lambda functions")
@@ -156,7 +156,7 @@ class CommandParser(object):
         parser_ls.add_argument("-b", "--bucket", help="Show bucket files")
         parser_ls.add_argument("-bf", "--bucket_folder", help="Show bucket files")
         # General AWS conf        
-        parser_ls.add_argument("-pf", "--boto_profile", help="AWS profile to use")                
+        parser_ls.add_argument("-pf", "--profile", help="AWS profile to use")                
     
     def create_put_parser(self):
         parser_put = self.subparsers.add_parser('put', help="Upload file(s) to bucket")
@@ -167,7 +167,7 @@ class CommandParser(object):
         # Local info args
         parser_put.add_argument("-p", "--path", help="Path of the file or folder to upload", required=True)
         # General AWS conf        
-        parser_put.add_argument("-pf", "--boto_profile", help="AWS profile to use")
+        parser_put.add_argument("-pf", "--profile", help="AWS profile to use")
     
     def create_get_parser(self):
         parser_get = self.subparsers.add_parser('get', help="Download file(s) from bucket")
@@ -178,7 +178,7 @@ class CommandParser(object):
         # Local info args
         parser_get.add_argument("-p", "--path", help="Path to store the downloaded file or folder")
         # General AWS conf
-        parser_get.add_argument("-pf", "--boto_profile", help="AWS profile to use")
+        parser_get.add_argument("-pf", "--profile", help="AWS profile to use")
 
     def parse_arguments(self):
         '''Command parsing and selection'''
@@ -198,7 +198,7 @@ class CommandParser(object):
         
     def parse_aws_args(self, cmd_args):
         aws_args = {}
-        other_args = ['boto_profile']
+        other_args = [('profile','boto_profile'),'region']
         self.set_args(aws_args, 'iam', self.parse_iam_args(cmd_args))
         self.set_args(aws_args, 'lambda', self.parse_lambda_args(cmd_args))
         self.set_args(aws_args, 'cloudwatch', self.parse_cloudwatchlogs_args(cmd_args))

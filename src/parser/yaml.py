@@ -29,7 +29,7 @@ class YamlParser(object):
             raise YamlFileNotFoundError(file_path=file_path)
         
     def parse_arguments(self):
-        functions = []
+        functions = []        
         for function in self.yaml_data['functions']:
             functions.append(self.parse_aws_function(function, self.yaml_data['functions'][function]))
         return functions[0]
@@ -47,7 +47,9 @@ class YamlParser(object):
             aws_args['s3'] = function_data['s3']
         if 'api_gateway' in function_data:        
             aws_args['api_gateway'] = function_data['api_gateway']
-        aws = {}        
+        other_args = [('profile','boto_profile'),'region']
+        aws_args.update(utils.parse_arg_list(other_args, function_data))
+        aws = {}     
         aws['aws'] = aws_args
         return aws
     

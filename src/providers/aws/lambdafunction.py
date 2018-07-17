@@ -236,9 +236,6 @@ class Lambda(GenericClient):
                        'Payload' : self.get_payload() }  
         return self.client.invoke_function(**invoke_args)
 
-    def is_asynchronous(self):
-        return self.get_property('asynchronous')
- 
     def set_asynchronous_call_parameters(self):
         self.properties['invocation_type'] = "Event"
         self.properties['log_type'] = "None"
@@ -325,7 +322,7 @@ class Lambda(GenericClient):
         return 'https://{0}.execute-api.{1}.amazonaws.com/scar/launch'.format(api_id, self.aws_properties["region"])        
         
     def get_http_invocation_headers(self):
-        if "asynchronous" in self.aws_properties and self.aws_properties['asynchronous']:
+        if self.is_asynchronous():
             return {'X-Amz-Invocation-Type':'Event'}  
         
     def parse_http_parameters(self, parameters):
@@ -342,6 +339,7 @@ class Lambda(GenericClient):
         
     def invoke_http_endpoint(self):
         invoke_args = {'headers' : self.get_http_invocation_headers()}
+        print(invoke_args)
         if 'api_gateway' in self.aws_properties:
             api_props = self.aws_properties['api_gateway']
             if 'data_binary' in api_props and api_props['data_binary']:
@@ -357,8 +355,10 @@ class Lambda(GenericClient):
             filesize = '{0:.2f}MB'.format(file_size/MB)
             maxsize = '{0:.2f}MB'.format(MAX_POST_BODY_SIZE_ASYNC/MB)            
             raise excp.InvocationPayloadError(file_size= filesize, max_size=maxsize)
-        elif "asynchronous" in self.aws_properties and self.aws_properties['asynchronous'] and file_size > MAX_POST_BODY_SIZE_ASYNC:
+        elif self.is_asynchronous() and file_size > MAX_POST_BODY_SIZE_ASYNC:
             filesize = '{0:.2f}KB'.format(file_size/KB)
             maxsize = '{0:.2f}KB'.format(MAX_POST_BODY_SIZE_ASYNC/KB)
             raise excp.InvocationPayloadError(file_size=filesize, max_size=maxsize)
-            
+    
+    def is_asynchronous(self):
+        return "asynchronous" in self.properties and self.properties['asynchronous']

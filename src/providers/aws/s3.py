@@ -38,9 +38,9 @@ class S3(GenericClient):
         
     @excp.exception(logger)
     def create_bucket(self, bucket_name):
-        if self.client.find_bucket(bucket_name):
-            raise excp.ExistentBucketWarning(bucket_name=bucket_name)
-        else:
+        if not self.client.find_bucket(bucket_name):
+#             raise excp.ExistentBucketWarning(bucket_name=bucket_name)
+#         else:
             self.client.create_bucket(bucket_name)
 
     def create_output_bucket(self):
@@ -100,7 +100,10 @@ class S3(GenericClient):
         kwargs['Key'] = self.get_file_key(folder_name, file_path, file_key)
         if file_path:
             kwargs['Body'] = utils.read_file(file_path, 'rb')
-        logger.info("Uploading file '{0}' from bucket '{1}' in path '{2}'".format(kwargs['Key'], kwargs['Bucket'], file_path))
+        if folder_name and not file_path:
+            logger.info("Folder '{0}' created in bucket '{1}'".format(kwargs['Key'], kwargs['Bucket']))
+        else:
+            logger.info("Uploading file '{0}' to bucket '{1}' in path '{2}'".format(kwargs['Key'], kwargs['Bucket'], file_path))
         self.client.upload_file(**kwargs)
     
     @excp.exception(logger)
