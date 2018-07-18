@@ -53,13 +53,13 @@ docker save grycap/minicow > minicow.tar.gz
 2. Create the Lambda function using the 'scar-minicow.yaml' configuration file:
 
 ```sh
-scar init -f scar-cowsay.yaml
+scar init -f scar-minicow.yaml
 ```
 
 3. Execute the Lambda function
 
 ```sh
-scar run -f scar-cowsay.yaml
+scar run -f scar-minicow.yaml
 ```
 
 From the user perspective nothing changed in comparison with the previous execution, but the main difference with the 'standard' lambda deployment is that the container is already available when the function is launched for the first time. Moreover, the function doesn't need to connect to any external repository to download the container, so this is also useful to execute small binaries or containers that you don't want to upload to a public repository.

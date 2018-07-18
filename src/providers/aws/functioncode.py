@@ -27,6 +27,13 @@ from src.providers.aws.validators import AWSValidator
 MAX_PAYLOAD_SIZE = 50 * 1024 * 1024
 MAX_S3_PAYLOAD_SIZE = 250 * 1024 * 1024
 
+def udocker_env(func):
+    def wrapper(*args, **kwargs):
+        FunctionPackageCreator.save_tmp_udocker_env()
+        func(*args, **kwargs)
+        FunctionPackageCreator.restore_udocker_env()
+    return wrapper
+
 class FunctionPackageCreator():
     
     src_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -34,18 +41,43 @@ class FunctionPackageCreator():
     lambda_code_files_path = utils.join_paths(aws_src_path, "cloud/lambda/")
     os_tmp_folder = tempfile.gettempdir()
     scar_temporal_folder = utils.join_paths(os_tmp_folder, "scar/")
-    udocker_exec = utils.join_paths(scar_temporal_folder, "udockerb")
+    
+    supervisor_source = utils.join_paths(lambda_code_files_path, "scarsupervisor.py")
+    
+    udocker_source = utils.join_paths(lambda_code_files_path, "udockerb")
+    udocker_dest = utils.join_paths(scar_temporal_folder, "udockerb")
+    
+    udocker_exec = ["python3", udocker_dest]
     udocker_tarball = ""
     udocker_dir = ""
+    init_script_name = "init_script.sh"
+    init_script_path = "/var/task/{0}".format(init_script_name)
+    extra_payload_path = "/var/task"
     
     def __init__(self, package_props):
         self.properties  = package_props
+        self.lambda_code_name = "{0}.py".format(self.properties['FunctionName'])
+        self.supervisor_dest = utils.join_paths(self.scar_temporal_folder, self.lambda_code_name)
     
-    def add_mandatory_files(self, env_vars):
+    @excp.exception(logger)
+    def prepare_lambda_code(self):
+        self.clean_tmp_folders()
+        self.add_mandatory_files()
+        
+        if 'DeploymentBucket' in self.properties and 'ImageId' in self.properties:
+            self.download_udocker_image()
+        if 'ImageFile' in self.properties:
+            self.prepare_udocker_image()
+            
+        self.add_init_script() 
+        self.add_extra_payload()     
+        self.zip_scar_folder()
+        self.check_code_size()
+
+    def add_mandatory_files(self):
         os.makedirs(self.scar_temporal_folder, exist_ok=True)
-        shutil.copy(utils.join_paths(self.lambda_code_files_path, "scarsupervisor.py"), 
-                    utils.join_paths(self.scar_temporal_folder, "{0}.py".format(self.properties['FunctionName'])))
-        shutil.copy(utils.join_paths(self.lambda_code_files_path, "udockerb"), self.udocker_exec)
+        shutil.copy(self.supervisor_source, self.supervisor_dest)
+        shutil.copy(self.udocker_source, self.udocker_dest)
         
         os.makedirs(utils.join_paths(self.scar_temporal_folder, "src"), exist_ok=True)
         shutil.copy(utils.join_paths(self.lambda_code_files_path, "__init__.py"),
@@ -55,38 +87,32 @@ class FunctionPackageCreator():
         shutil.copy(utils.join_paths(self.src_path, "exceptions.py"),
                     utils.join_paths(self.scar_temporal_folder, "src/exceptions.py"))                
         
-        env_vars['UDOCKER_DIR'] = "/tmp/home/udocker"
-        env_vars['UDOCKER_LIB'] = "/var/task/udocker/lib/"
-        env_vars['UDOCKER_BIN'] = "/var/task/udocker/bin/"
+        self.set_environment_variable('UDOCKER_DIR', "/tmp/home/udocker")
+        self.set_environment_variable('UDOCKER_LIB', "/var/task/udocker/lib/")
+        self.set_environment_variable('UDOCKER_BIN', "/var/task/udocker/bin/")
         self.create_udocker_files()
-    
-    @excp.exception(logger)
-    def prepare_lambda_code(self):
-        self.clean_tmp_folders()
-        self.add_mandatory_files(self.properties['EnvironmentVariables'])
-        
-        if 'DeploymentBucket' in self.properties and 'ImageId' in self.properties:
-            self.download_udocker_image(self.properties['ImageId'], self.properties['EnvironmentVariables'])
-        
-        if 'ImageFile' in self.properties:
-            self.prepare_udocker_image(self.properties['ImageFile'], self.properties['EnvironmentVariables'])
-            
+     
+    @udocker_env     
+    def create_udocker_files(self):
+        self.execute_command([*self.udocker_exec, "help"], cli_msg="Packing udocker files")
+     
+    def add_init_script(self):
         if 'Script' in self.properties:
-            shutil.copy(self.properties['Script'], utils.join_paths(self.scar_temporal_folder, "init_script.sh"))
-            self.properties['EnvironmentVariables']['INIT_SCRIPT_PATH'] = "/var/task/init_script.sh"
-    
+            shutil.copy(self.properties['Script'], utils.join_paths(self.scar_temporal_folder, self.init_script_name))
+            self.properties['EnvironmentVariables']['INIT_SCRIPT_PATH'] = self.init_script_path        
+     
+    def add_extra_payload(self):
         if 'ExtraPayload' in self.properties:
-            logger.info("Adding extra payload from %s" % self.properties['ExtraPayload'])
-            self.properties['EnvironmentVariables']['EXTRA_PAYLOAD'] = "/var/task"
-            dir_util.copy_tree(self.properties['ExtraPayload'], self.scar_temporal_folder)     
-                   
-        self.zip_scar_folder()
+            logger.info("Adding extra payload from {0}".format(self.properties['ExtraPayload']))
+            dir_util.copy_tree(self.properties['ExtraPayload'], self.scar_temporal_folder)
+            self.set_environment_variable('EXTRA_PAYLOAD', self.extra_payload_path)         
         
-        # Check if the payload size fits within the aws limits   
+    def check_code_size(self):
+        # Check if the code size fits within the aws limits   
         if 'DeploymentBucket' in self.properties:
             AWSValidator.validate_s3_code_size(self.scar_temporal_folder, MAX_S3_PAYLOAD_SIZE)
         else:
-            AWSValidator.validate_function_code_size(self.scar_temporal_folder, MAX_PAYLOAD_SIZE)
+            AWSValidator.validate_function_code_size(self.scar_temporal_folder, MAX_PAYLOAD_SIZE)        
         
     def clean_tmp_folders(self):
         if os.path.isfile(self.properties['ZipFilePath']):    
@@ -100,53 +126,60 @@ class FunctionPackageCreator():
                              cmd_wd=self.scar_temporal_folder,
                              cli_msg="Creating function package")
         
-    def set_tmp_udocker_env(self):
+    @classmethod
+    def save_tmp_udocker_env(cls):
         #Avoid override global variables
-        if utils.has_dict_prop_value(os.environ, 'UDOCKER_TARBALL'):
-            self.udocker_tarball = os.environ['UDOCKER_TARBALL']
-        if utils.has_dict_prop_value(os.environ, 'UDOCKER_DIR'):
-            self.udocker_dir = os.environ['UDOCKER_DIR']
+        if utils.has_dict_value(os.environ, 'UDOCKER_TARBALL'):
+            cls.udocker_tarball = os.environ['UDOCKER_TARBALL']
+        if utils.has_dict_value(os.environ, 'UDOCKER_DIR'):
+            cls.udocker_dir = os.environ['UDOCKER_DIR']
         # Set temporal global vars
-        os.environ['UDOCKER_TARBALL'] = self.lambda_code_files_path + "udocker-1.1.0-RC2.tar.gz"
-        os.environ['UDOCKER_DIR'] = self.scar_temporal_folder + "/udocker"        
+        utils.set_environment_variable('UDOCKER_TARBALL', utils.join_paths(cls.lambda_code_files_path, "udocker-1.1.0-RC2.tar.gz"))
+        utils.set_environment_variable('UDOCKER_DIR', utils.join_paths(cls.scar_temporal_folder, "udocker"))
         
-    def restore_udocker_env(self):
-        if self.udocker_tarball != "":
-            os.environ['UDOCKER_TARBALL'] = self.udocker_tarball
-        if self.udocker_dir != "":
-            os.environ['UDOCKER_DIR'] = self.udocker_dir      
+    @classmethod        
+    def restore_udocker_env(cls):
+        if cls.udocker_tarball:
+            utils.set_environment_variable('UDOCKER_TARBALL', cls.udocker_tarball)
+        else:
+            del os.environ['UDOCKER_TARBALL']
+        
+        if cls.udocker_dir:
+            utils.set_environment_variable('UDOCKER_DIR', cls.udocker_dir)
+        else:
+            del os.environ['UDOCKER_DIR']            
         
     def execute_command(self, command, cmd_wd=None, cli_msg=None):
         cmd_out = subprocess.check_output(command, cwd=cmd_wd).decode("utf-8")
         logger.info(cli_msg, cmd_out)
         return cmd_out[:-1]
         
-    def create_udocker_files(self):
-        self.set_tmp_udocker_env()
-        self.execute_command(["python3", self.udocker_exec, "help"], cli_msg="Packing udocker files")
-        self.restore_udocker_env()
-    
-    def prepare_udocker_image(self, image_file, env_vars):
-        self.set_tmp_udocker_env()
-        shutil.copy(image_file, self.os_tmp_folder + "/udocker_image.tar.gz")
-        cmd_out = self.execute_command(["python3", self.udocker_exec, "load", "-i", self.os_tmp_folder + "/udocker_image.tar.gz"], cli_msg="Loading image file")
+    @udocker_env        
+    def prepare_udocker_image(self):
+        image_path = utils.join_paths(self.os_tmp_folder, "udocker_image.tar.gz")
+        shutil.copy(self.properties['ImageFile'], image_path)
+        cmd_out = self.execute_command([*self.udocker_exec, "load", "-i", image_path], cli_msg="Loading image file")
         self.create_udocker_container(cmd_out)
-        env_vars['IMAGE_ID'] = cmd_out
-        env_vars['UDOCKER_REPOS'] = "/var/task/udocker/repos/"
-        env_vars['UDOCKER_LAYERS'] = "/var/task/udocker/layers/"    
-        self.restore_udocker_env()
+        self.set_environment_variable('IMAGE_ID', cmd_out)
+        self.set_udocker_local_registry()
     
+    @udocker_env         
+    def download_udocker_image(self):
+        self.execute_command([*self.udocker_exec, "pull", self.properties['ImageId']], cli_msg="Downloading container image")
+        self.create_udocker_container(self.properties['ImageId'])
+        self.set_udocker_local_registry()
+        
     def create_udocker_container(self, image_id):
         if(utils.get_tree_size(self.scar_temporal_folder) < MAX_S3_PAYLOAD_SIZE/2):
-            self.execute_command(["python3", self.udocker_exec, "create", "--name=lambda_cont", image_id], cli_msg="Creating container structure")
+            self.execute_command([*self.udocker_exec, "create", "--name=lambda_cont", image_id], cli_msg="Creating container structure")
         if(utils.get_tree_size(self.scar_temporal_folder) > MAX_S3_PAYLOAD_SIZE):
-            shutil.rmtree(self.scar_temporal_folder + "/udocker/containers/")    
+            shutil.rmtree(utils.join_paths(self.scar_temporal_folder, "udocker/containers/"))        
         
-    def download_udocker_image(self, image_id, env_vars):
-        self.set_tmp_udocker_env()
-        self.execute_command(["python3", self.udocker_exec, '--debug', "pull", image_id], cli_msg="Downloading container image")
-        self.create_udocker_container(image_id)
-        env_vars['UDOCKER_REPOS'] = "/var/task/udocker/repos/"
-        env_vars['UDOCKER_LAYERS'] = "/var/task/udocker/layers/"
-        self.restore_udocker_env()
-        
+    def set_udocker_local_registry(self):
+        self.set_environment_variable('UDOCKER_REPOS', '/var/task/udocker/repos/')
+        self.set_environment_variable('UDOCKER_LAYERS', '/var/task/udocker/layers/')        
+
+    def set_environment_variable(self, key, val):
+        if key and val:
+            self.properties['EnvironmentVariables'][key] = val
+     

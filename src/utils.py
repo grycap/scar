@@ -70,8 +70,8 @@ def divide_list_in_chunks(elements, chunk_size):
 def get_random_uuid4_str():
     return str(uuid.uuid4())
 
-def has_dict_prop_value(dictionary, value):
-    return (value in dictionary) and dictionary[value] and (dictionary[value] != "")
+def has_dict_value(dictionary, value):
+    return value in dictionary and dictionary[value]
 
 def load_json_file(file_path):
     if os.path.isfile(file_path):
@@ -157,7 +157,7 @@ def is_variable_in_environment(variable):
     return check_key_in_dictionary(variable, os.environ)
 
 def set_environment_variable(key, variable):
-    if key and variable and key != "" and variable != "":
+    if key and variable:
         os.environ[key] = variable
 
 def get_environment_variable(variable):

@@ -103,7 +103,7 @@ class S3(GenericClient):
         if folder_name and not file_path:
             logger.info("Folder '{0}' created in bucket '{1}'".format(kwargs['Key'], kwargs['Bucket']))
         else:
-            logger.info("Uploading file '{0}' to bucket '{1}' in path '{2}'".format(kwargs['Key'], kwargs['Bucket'], file_path))
+            logger.info("Uploading file '{0}' to bucket '{1}' from '{2}'".format(kwargs['Key'], kwargs['Bucket'], file_path))
         self.client.upload_file(**kwargs)
     
     @excp.exception(logger)
