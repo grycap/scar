@@ -76,11 +76,15 @@ class Lambda(GenericClient):
         self.set_required_environment_variables()
         # Add explicitly user defined variables
         if 'environment_variables' in self.properties:
-            for env_var in self.properties['environment_variables']:
-                parsed_env_var = env_var.split("=")
-                # Add an specific prefix to be able to find the variables defined by the user
-                key = 'CONT_VAR_' + parsed_env_var[0]
-                self.add_lambda_environment_variable(key, parsed_env_var[1])
+            if type(self.properties['environment_variables']) is dict:
+                for key, val in self.properties['environment_variables'].items():
+                    # Add an specific prefix to be able to find the variables defined by the user
+                    self.add_lambda_environment_variable('CONT_VAR_{0}'.format(key), val)                    
+            else:
+                for env_var in self.properties['environment_variables']:
+                    key_val = env_var.split("=")
+                    # Add an specific prefix to be able to find the variables defined by the user
+                    self.add_lambda_environment_variable('CONT_VAR_{0}'.format(key_val[0]), key_val[1])
         
     def set_required_environment_variables(self):
         self.add_lambda_environment_variable('TIMEOUT_THRESHOLD', str(self.properties['timeout_threshold']))
