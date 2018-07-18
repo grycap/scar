@@ -28,6 +28,10 @@ MAX_PAYLOAD_SIZE = 50 * 1024 * 1024
 MAX_S3_PAYLOAD_SIZE = 250 * 1024 * 1024
 
 def udocker_env(func):
+    '''
+    Decorator used to avoid losing the definition of the udocker
+    environment variables (if any) 
+    '''
     def wrapper(*args, **kwargs):
         FunctionPackageCreator.save_tmp_udocker_env()
         func(*args, **kwargs)
@@ -139,15 +143,15 @@ class FunctionPackageCreator():
         
     @classmethod        
     def restore_udocker_env(cls):
-        if cls.udocker_tarball:
-            utils.set_environment_variable('UDOCKER_TARBALL', cls.udocker_tarball)
-        else:
-            del os.environ['UDOCKER_TARBALL']
+        cls.restore_environ_var('UDOCKER_TARBALL', cls.udocker_tarball)
+        cls.restore_environ_var('UDOCKER_DIR', cls.udocker_dir)
         
-        if cls.udocker_dir:
-            utils.set_environment_variable('UDOCKER_DIR', cls.udocker_dir)
+    @classmethod        
+    def restore_environ_var(cls, key, var):
+        if var:
+            utils.set_environment_variable(key, var)
         else:
-            del os.environ['UDOCKER_DIR']            
+            del os.environ[key]        
         
     def execute_command(self, command, cmd_wd=None, cli_msg=None):
         cmd_out = subprocess.check_output(command, cwd=cmd_wd).decode("utf-8")
