@@ -59,7 +59,16 @@ class ScarError(Exception):
 
 ################################################
 ##             GENERAL EXCEPTIONS             ##
-################################################                   
+################################################
+class ScarConfigFileError(ScarError):
+    """
+    The SCAR configuration file does not exist and it has been created
+
+    :ivar file_path: Path of the file
+    """
+    fmt = "Config file '{file_path}' created.\n"
+    fmt += "Please, set a valid iam role in the file field 'role' before the first execution."    
+                
 class YamlFileNotFoundError(ScarError):
     """
     The yaml configuration file does not exist
@@ -139,7 +148,6 @@ class BucketNotFoundError(ScarError):
     The requested bucket does not exist.
 
     :ivar bucket_name: Name of the bucket
-    :ivar error_msg: General error message    
     """
     fmt = "Unable to find the bucket '{bucket_name}'."
     
@@ -200,4 +208,14 @@ class InvocationPayloadError(ScarError):
     fmt = "Invalid request: Payload size {file_size} greater than {max_size}\n"
     fmt += "Check AWS Lambda invocation limits in : https://docs.aws.amazon.com/lambda/latest/dg/limits.html"
     
+################################################
+##               IAM EXCEPTIONS               ##
+################################################
+class GetUserInfoError(ScarError):
+    """
+    There was an error gettting the IAM user info
+
+    :ivar error_msg: General error message    
+    """
+    fmt = "Error getting the AWS user information.\n{error_msg}."    
     

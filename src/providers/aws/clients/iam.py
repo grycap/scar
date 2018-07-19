@@ -43,4 +43,6 @@ class IAMClient(BotoClient):
                 return {'UserName' : user_name,
                         'User' : {'UserName' : user_name, 'UserId' : ''}}
             else:
-                raise 
+                raise
+        except Exception as ex:
+            raise excp.GetUserInfoError(error_msg=ex)
