@@ -98,7 +98,7 @@ class FunctionPackageCreator():
      
     @udocker_env     
     def create_udocker_files(self):
-        self.execute_command([*self.udocker_exec, "help"], cli_msg="Packing udocker files")
+        self.execute_command(self.udocker_exec + ["help"], cli_msg="Packing udocker files")
      
     def add_init_script(self):
         if 'Script' in self.properties:
@@ -162,20 +162,20 @@ class FunctionPackageCreator():
     def prepare_udocker_image(self):
         image_path = utils.join_paths(self.os_tmp_folder, "udocker_image.tar.gz")
         shutil.copy(self.properties['ImageFile'], image_path)
-        cmd_out = self.execute_command([*self.udocker_exec, "load", "-i", image_path], cli_msg="Loading image file")
+        cmd_out = self.execute_command(self.udocker_exec + ["load", "-i", image_path], cli_msg="Loading image file")
         self.create_udocker_container(cmd_out)
         self.set_environment_variable('IMAGE_ID', cmd_out)
         self.set_udocker_local_registry()
     
     @udocker_env         
     def download_udocker_image(self):
-        self.execute_command([*self.udocker_exec, "pull", self.properties['ImageId']], cli_msg="Downloading container image")
+        self.execute_command(self.udocker_exec + ["pull", self.properties['ImageId']], cli_msg="Downloading container image")
         self.create_udocker_container(self.properties['ImageId'])
         self.set_udocker_local_registry()
         
     def create_udocker_container(self, image_id):
         if(utils.get_tree_size(self.scar_temporal_folder) < MAX_S3_PAYLOAD_SIZE/2):
-            self.execute_command([*self.udocker_exec, "create", "--name=lambda_cont", image_id], cli_msg="Creating container structure")
+            self.execute_command(self.udocker_exec + ["create", "--name=lambda_cont", image_id], cli_msg="Creating container structure")
         if(utils.get_tree_size(self.scar_temporal_folder) > MAX_S3_PAYLOAD_SIZE):
             shutil.rmtree(utils.join_paths(self.scar_temporal_folder, "udocker/containers/"))        
         
