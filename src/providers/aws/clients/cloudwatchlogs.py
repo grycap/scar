@@ -17,24 +17,22 @@
 from src.providers.aws.clients.boto import BotoClient
 import src.logger as logger
 from botocore.exceptions import ClientError
-import src.utils as utils
+import src.exceptions as excp
 
 class CloudWatchLogsClient(BotoClient):
     '''A low-level client representing Amazon CloudWatch Logs.
     https://boto3.readthedocs.io/en/latest/reference/services/logs.html'''
     
+    # Parameter used by the parent to create the appropriate boto3 client
     boto_client_name = 'logs'    
     
-    @utils.exception(logger)    
-    def get_log_events(self, log_group_name, log_stream_name=None):
+    @excp.exception(logger)    
+    def get_log_events(self, **kwargs):
         '''
         Lists log events from the specified log group.
         https://boto3.readthedocs.io/en/latest/reference/services/logs.html#CloudWatchLogs.Client.filter_log_events
         '''
         logs = []
-        kwargs = {"logGroupName" : log_group_name}
-        if log_stream_name:
-            kwargs["logStreamNames"] = [log_stream_name]
         response = self.client.filter_log_events(**kwargs)
         logs.append(response)
         while ('nextToken' in response) and (response['nextToken']):
@@ -43,39 +41,38 @@ class CloudWatchLogsClient(BotoClient):
             logs.append(response)
         return logs
             
-    @utils.exception(logger)            
-    def create_log_group(self, log_group_name, tags):
+    @excp.exception(logger)            
+    def create_log_group(self, **kwargs):
         '''
         Creates a log group with the specified name.
         https://boto3.readthedocs.io/en/latest/reference/services/logs.html#CloudWatchLogs.Client.create_log_group
         '''         
         try:
-            return self.client.create_log_group(logGroupName=log_group_name, tags=tags)
+            return self.client.create_log_group(**kwargs)
         except ClientError as ce:
             if ce.response['Error']['Code'] == 'ResourceAlreadyExistsException':
-                logger.warning("Using existent log group '{0}'".format(log_group_name))
-                pass
+                raise excp.ExistentLogGroupWarning(logGroupName=kwargs['logGroupName'])
             else:
                 raise
     
-    @utils.exception(logger)
-    def set_log_retention_policy(self, log_group_name, log_retention_policy_in_days):
+    @excp.exception(logger)
+    def set_log_retention_policy(self, **kwargs):
         '''
         Sets the retention of the specified log group.
         https://boto3.readthedocs.io/en/latest/reference/services/logs.html#CloudWatchLogs.Client.put_retention_policy
         '''         
-        return self.client.put_retention_policy(logGroupName=log_group_name, retentionInDays=log_retention_policy_in_days)
+        return self.client.put_retention_policy(**kwargs)
             
-    @utils.exception(logger)
-    def delete_log_group(self, log_group_name):
+    @excp.exception(logger)
+    def delete_log_group(self, **kwargs):
         '''
         Deletes the specified log group and permanently deletes all the archived log events associated with the log group.
         https://boto3.readthedocs.io/en/latest/reference/services/logs.html#CloudWatchLogs.Client.delete_log_group
         '''         
         try:
-            return self.client.delete_log_group(logGroupName=log_group_name)
+            return self.client.delete_log_group(**kwargs)
         except ClientError as ce:
             if ce.response['Error']['Code'] == 'ResourceNotFoundException':
-                logger.warning("Cannot delete log group '%s'. Group not found." % log_group_name)
+                raise excp.NotExistentLogGroupWarning(**kwargs)
             else:
                 raise

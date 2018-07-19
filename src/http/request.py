@@ -15,9 +15,17 @@
 
 import requests
 
-def invoke_function(url, parameters=None, data=None, headers=None):
-    if data is None:
-        response = requests.get(url, headers=headers, params=parameters)
+def invoke_http_endpoint(url, **kwargs):
+    """
+    Does a 'GET' or 'PUT' request if the parameter 'data' exists or not respectively
+
+    :param url: URL for the request.        
+    :param data: (optional) Dictionary (will be form-encoded), bytes, or file-like object to send in the body of the request.
+    :param headers: (optional) Dictionary of HTTP Headers to send with the request.
+    :param parameters: (optional) Dictionary or bytes to be sent in the query string.
+    """
+    if 'data' in kwargs and kwargs['data']:
+        response = requests.post(url, **kwargs)
     else:
-        response = requests.post(url, headers=headers, data=data, params=parameters)
+        response = requests.get(url, **kwargs)
     return response

@@ -15,85 +15,47 @@
 
 import yaml
 import os
-
-class Function:
-    def __init__(self, name, image):
-        self.name = name
-        self.image_id = image
+from src.exceptions import YamlFileNotFoundError
+import src.utils as utils
 
 class YamlParser(object):
     
-    def __init__(self, args):
-        file_path = args.conf_file
-        self.func = args.func
+    def __init__(self, scar_args):
+        file_path = scar_args['conf_file']
         if os.path.isfile(file_path):
             with open(file_path) as cfg_file:
                 self.__setattr__("yaml_data", yaml.safe_load(cfg_file))
+        else:
+            raise YamlFileNotFoundError(file_path=file_path)
         
     def parse_arguments(self):
-        functions = []
+        functions = []        
         for function in self.yaml_data['functions']:
-            functions.append(self.parse_function(function, self.yaml_data['functions'][function]))
+            functions.append(self.parse_aws_function(function, self.yaml_data['functions'][function]))
         return functions[0]
     
-    def parse_function(self, function_name, function_data):
-        args = {'func' : self.func }
+    def parse_aws_function(self, function_name, function_data):
+        aws_args = {}
         # Get function name
-        args['name'] = function_name
-        # Parse function information
-        if 'image' in function_data:
-            args['image_id'] = function_data['image']
-        if 'image_file' in function_data:
-            args['image_file'] = function_data['image_file']
-        if 'time' in function_data:
-            args['time'] = function_data['time']
-        if 'memory' in function_data:
-            args['memory'] = function_data['memory']
-        if 'timeout_threshold' in function_data:
-            args['timeout_threshold'] = function_data['timeout_threshold']
-        if 'lambda_role' in function_data:
-            args['lambda_role'] = function_data['lambda_role']
-        if 'description' in function_data:
-            args['description'] = function_data['description']
-        if 'init_script' in function_data:
-            args['init_script'] = function_data['init_script']
-        if 'run_script' in function_data:
-            args['run_script'] = function_data['run_script']            
-        if 'extra_payload' in function_data:
-            args['extra_payload'] = function_data['extra_payload']
-        if 'log_level' in function_data:
-            args['log_level'] = function_data['log_level']
-        if 'environment' in function_data:
-            variables = []
-            for k,v in function_data['environment'].items():
-                variables.append(str(k) + '=' + str(v))
-            args['environment_variables'] = variables
-        # LOG COMMANDS
-        if 'log_stream_name' in function_data:
-            args['log_stream_name'] = function_data['log_stream_name']
-        if 'request_id' in function_data:
-            args['request_id'] = function_data['request_id']
-            
-        if 'data_binary' in function_data:
-            args['data_binary'] = function_data['data_binary']
-                                
-        if 's3' in function_data:
-            s3_data = function_data['s3']
-            if 'deployment_bucket' in s3_data:
-                args['deployment_bucket'] = s3_data['deployment_bucket']
-            if 'input_bucket' in s3_data:
-                args['input_bucket'] = s3_data['input_bucket']
-            if 'input_folder' in s3_data:
-                args['input_folder'] = s3_data['input_folder']
-            if 'output_bucket' in s3_data:
-                args['output_bucket'] = s3_data['output_bucket']
-            if 'output_folder' in s3_data:
-                args['output_folder'] = s3_data['output_folder']
-        if 'api_gateway' in function_data:
-            api_data = function_data['api_gateway']
-            if 'name' in api_data:
-                args['api_gateway_name'] = api_data['name']
-            if 'parameters' in api_data:
-                args['parameters'] = api_data['parameters']
-        return args
+        aws_args['lambda'] = self.parse_lambda_args(function_data)
+        aws_args['lambda']['name'] = function_name
+        if 'iam' in function_data:
+            aws_args['iam'] = function_data['iam']
+        if 'cloudwatch' in function_data:            
+            aws_args['cloudwatch'] = function_data['cloudwatch']
+        if 's3' in function_data:        
+            aws_args['s3'] = function_data['s3']
+        if 'api_gateway' in function_data:        
+            aws_args['api_gateway'] = function_data['api_gateway']
+        other_args = [('profile','boto_profile'),'region']
+        aws_args.update(utils.parse_arg_list(other_args, function_data))
+        aws = {}     
+        aws['aws'] = aws_args
+        return aws
+    
+    def parse_lambda_args(self, cmd_args):
+        lambda_args = ['asynchronous', 'init_script', 'run_script', 'c_args', 'memory', 'time',
+                       'timeout_threshold', 'log_level', 'image', 'image_file', 'description', 
+                       'lambda_role', 'extra_payload', ('environment', 'environment_variables')]
+        return utils.parse_arg_list(lambda_args, cmd_args)    
         

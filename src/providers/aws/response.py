@@ -23,7 +23,7 @@ class OutputType(Enum):
     PLAIN_TEXT = 1
     JSON = 2
     VERBOSE = 3
-
+    
 def parse_http_response(response, function_name, asynch):
     if response.ok:
         text_message = "Request Id: {0}".format(response.headers['amz-lambda-request-id'])
@@ -86,7 +86,7 @@ def parse_delete_log_response(response, log_group_name, output_type):
     print_generic_response(response, output_type, 'CloudWatchOutput', text_message)
     
 def parse_delete_api_response(response, api_id, output_type):
-    text_message = "REST API '%s' successfully deleted." % api_id
+    text_message = "API Endpoint '%s' successfully deleted." % api_id
     print_generic_response(response, output_type, 'APIGateway', text_message)      
 
 def parse_ls_response(lambda_functions, output_type):

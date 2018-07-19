@@ -75,15 +75,8 @@ darknet/output/68f5c9d5-5826-44gr-basc-8f8b23f44cdf/result.out
 
 The files are created in the output folder following the `s3://scar-darknet-bucket/scar-darknet-s3/output/$REQUEST_ID/*.*` structure.
 
-To download the created files you can also use SCAR:
 
-Download an specific file with :
-
-```sh
-scar get -b scar-darknet-bucket -bf scar-darknet-s3/output/68f5c9d5-5826-44gr-basc-8f8b23f44cdf/image-result.png -p /tmp/result.png
-```
-
-Download a folder with:
+To download the created files you can also use SCAR. Download a folder with:
 
 ```sh
 scar get -b scar-darknet-bucket -bf scar-darknet-s3/output -p /tmp/lambda/

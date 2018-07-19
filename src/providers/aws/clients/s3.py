@@ -17,21 +17,22 @@
 from src.providers.aws.clients.boto import BotoClient
 from botocore.exceptions import ClientError
 import src.logger as logger
-import src.utils as utils
+import src.exceptions as excp
 
 class S3Client(BotoClient):
     '''A low-level client representing Amazon Simple Storage Service (S3Client).
     https://boto3.readthedocs.io/en/latest/reference/services/s3.html'''
     
+    # Parameter used by the parent to create the appropriate boto3 client
     boto_client_name = 's3'    
     
-    @utils.exception(logger)    
+    @excp.exception(logger)    
     def create_bucket(self, bucket_name):
         '''Creates a new S3 bucket.
         https://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.ServiceResource.create_bucket'''        
         self.client.create_bucket(ACL='private', Bucket=bucket_name)
     
-    @utils.exception(logger)
+    @excp.exception(logger)
     def find_bucket(self, bucket_name):
         '''Checks bucket existence.
         https://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Client.get_bucket_location'''         
@@ -46,46 +47,42 @@ class S3Client(BotoClient):
             else:
                 raise
       
-    @utils.exception(logger)      
+    @excp.exception(logger)      
     def put_bucket_notification_configuration(self, bucket_name, notification):
         '''Enables notifications of specified events for a bucket.
         https://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Client.put_bucket_notification_configuration'''
         return self.client.put_bucket_notification_configuration(Bucket=bucket_name, 
                                                                  NotificationConfiguration=notification)  
     
-    @utils.exception(logger)    
+    @excp.exception(logger)    
     def get_bucket_notification_configuration(self, bucket_name):
         '''Returns the notification configuration of a bucket.
         https://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Client.get_bucket_notification_configuration'''
         return self.client.get_bucket_notification_configuration(Bucket=bucket_name)
             
-    @utils.exception(logger)
-    def upload_file(self, bucket_name, file_key, file_data=None):
+    @excp.exception(logger)
+    def upload_file(self, **kwargs):
         '''Adds an object to a bucket.
         https://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Client.put_object'''
-        kwargs = {'Bucket' : bucket_name, 'Key' : file_key}
-        if file_data:
-            kwargs['Body'] = file_data
         return self.client.put_object(**kwargs)          
             
-    @utils.exception(logger)            
-    def download_file(self, bucket_name, file_key, file):
+    @excp.exception(logger)            
+    def download_file(self, **kwargs):
         '''Download an object from S3 to a file-like object.
         https://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Client.download_fileobj'''
-        return self.client.download_fileobj(Bucket=bucket_name, Key=file_key, Fileobj=file)
+        return self.client.download_fileobj(**kwargs)
            
-    @utils.exception(logger)            
-    def list_files(self, bucket_name, key=''):
+    @excp.exception(logger)            
+    def list_files(self, **kwargs):
         '''Returns all of the objects in a bucket.
         https://boto3.readthedocs.io/en/latest/reference/services/s3.html#S3.Client.list_objects_v2'''
         file_list = []
-        kwargs = {"Bucket" : bucket_name, "Prefix" : key}
         response = self.client.list_objects_v2(**kwargs)
         file_list.append(response)
         while ('IsTruncated' in response) and (response['IsTruncated']):
             kwargs['ContinuationToken'] = response['NextContinuationToken']
             response = self.client.list_objects_v2(**kwargs)
             file_list.append(response)
-        return response
+        return file_list
     
     

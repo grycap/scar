@@ -15,6 +15,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import abc
+from enum import Enum
+
+class CallType(Enum):
+    INIT = "init"
+    INVOKE = "invoke"
+    RUN = "run"
+    UPDATE = "update"    
+    LS = "ls"
+    RM = "rm"
+    LOG = "log"
+    PUT = "put"
+    GET = "get"  
 
 class Commands(metaclass=abc.ABCMeta):
     ''' All the different cloud provider controllers must inherit 
@@ -57,5 +69,5 @@ class Commands(metaclass=abc.ABCMeta):
         pass    
     
     @abc.abstractmethod
-    def parse_command_arguments(self, args):
+    def parse_arguments(self, args):
         pass    

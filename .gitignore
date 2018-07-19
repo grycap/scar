@@ -4,3 +4,4 @@ test/*.zip
 *.pyc
 *.zip*
 *.log
+.settings

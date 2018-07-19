@@ -18,8 +18,11 @@
 from src.providers.aws.controller import AWS
 from src.parser.cli import CommandParser
 from src.parser.yaml import YamlParser
+from src.parser.cfgfile import ConfigFileParser
 from src.cmdtemplate import Commands
-import src.logger as logger 
+import src.logger as logger
+import src.exceptions as excp
+import src.utils as utils
 
 class Scar(Commands):
     
@@ -52,24 +55,30 @@ class Scar(Commands):
         
     def get(self):
         self.cloud_provider.get()        
+    
+    @excp.exception(logger)        
+    def parse_arguments(self):
+        '''
+        Merge the scar.conf parameters, the cmd parameters and the yaml file parameters in a single dictionary.
         
-    def parse_command_arguments(self):
-        args = CommandParser(self).parse_arguments()
-        if hasattr(args, 'func'):
-            if hasattr(args, 'conf_file') and args.conf_file:
-                # Update the arguments with the values extracted from the configuration file
-                args.__dict__.update(YamlParser(args).parse_arguments())
-            self.cloud_provider.parse_command_arguments(args)
-            args.func()
-        else:
-            logger.error("Incorrect arguments: use scar -h to see the options available")
+        The precedence of parameters is CMD >> YAML >> SCAR.CONF
+        That is, the CMD parameter will override any other configuration, 
+        and the YAML parameters will override the SCAR.CONF settings
+        '''
+        merged_args = ConfigFileParser().get_properties()
+        cmd_args = CommandParser(self).parse_arguments()
+        if 'conf_file' in cmd_args['scar'] and cmd_args['scar']['conf_file']:
+            yaml_args = YamlParser(cmd_args['scar']).parse_arguments()
+            merged_args = utils.merge_dicts(yaml_args, merged_args)
+        merged_args = utils.merge_dicts(cmd_args, merged_args)
+        self.cloud_provider.parse_arguments(**merged_args)
+        merged_args['scar']['func']()
 
 if __name__ == "__main__":
     logger.init_execution_trace()
     try:
-        Scar().parse_command_arguments()
+        Scar().parse_arguments()
         logger.end_execution_trace()
-    except Exception as ex:
-        logger.exception(ex)
+    except:
         logger.end_execution_trace_with_errors()
     
