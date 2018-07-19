@@ -22,6 +22,16 @@ import subprocess
 import tarfile
 import tempfile
 import uuid
+import sys
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
 def join_paths(*paths):
     return os.path.join(*paths)
@@ -127,7 +137,7 @@ def create_tar_gz(files_to_archive, destination_tar_path):
         for file_path in files_to_archive:
             tar.add(file_path, arcname=os.path.basename(file_path))
     return destination_tar_path
-         
+      
 def extract_tar_gz(tar_path, destination_path):
     with tarfile.open(tar_path, "r:gz") as tar:
         tar.extractall(path=destination_path)
