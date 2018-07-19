@@ -80,16 +80,22 @@ class FunctionPackageCreator():
 
     def add_mandatory_files(self):
         os.makedirs(self.scar_temporal_folder, exist_ok=True)
-        shutil.copy(self.supervisor_source, self.supervisor_dest)
-        shutil.copy(self.udocker_source, self.udocker_dest)
+        shutil.copy(utils.resource_path(self.supervisor_source), self.supervisor_dest)
+        shutil.copy(utils.resource_path(self.udocker_source), self.udocker_dest)
         
         os.makedirs(utils.join_paths(self.scar_temporal_folder, "src"), exist_ok=True)
-        shutil.copy(utils.join_paths(self.lambda_code_files_path, "__init__.py"),
-                    utils.join_paths(self.scar_temporal_folder, "src/__init__.py"))
-        shutil.copy(utils.join_paths(self.src_path, "utils.py"),
-                    utils.join_paths(self.scar_temporal_folder, "src/utils.py"))
-        shutil.copy(utils.join_paths(self.src_path, "exceptions.py"),
-                    utils.join_paths(self.scar_temporal_folder, "src/exceptions.py"))                
+        
+        initpy_source = utils.resource_path(utils.join_paths(self.lambda_code_files_path, "__init__.py"))
+        initpy_dest = utils.join_paths(self.scar_temporal_folder, "src/__init__.py")
+        shutil.copy(initpy_source, initpy_dest)
+        
+        utils_source = utils.resource_path(utils.join_paths(self.src_path, "utils.py"))
+        utils_dest = utils.join_paths(self.scar_temporal_folder, "src/utils.py")
+        shutil.copy(utils_source, utils_dest)
+        
+        exceptions_source = utils.resource_path(utils.join_paths(self.src_path, "exceptions.py"))
+        exceptions_dest = utils.join_paths(self.scar_temporal_folder, "src/exceptions.py")
+        shutil.copy(exceptions_source, exceptions_dest)                
         
         self.set_environment_variable('UDOCKER_DIR', "/tmp/home/udocker")
         self.set_environment_variable('UDOCKER_LIB', "/var/task/udocker/lib/")
