@@ -1,23 +1,18 @@
-FROM python:3.7.0-stretch
+FROM ubuntu:latest
 
-MAINTAINER @iMerica <imerica@me.com>
-
-RUN apt-get update && apt-get install -y \
-    zip \
+RUN apt-get update && apt-get install -y wget \    
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
-RUN addgroup --system scar  && adduser --system --group scar
+RUN addgroup --system scar && adduser --system --group scar
 
-RUN git clone --branch master --depth 1 https://github.com/grycap/scar.git /usr/bin/scar && \
-    pip install -r /usr/bin/scar/requirements.txt 
-
-RUN touch /scar.log && chown scar /scar.log
-
-ENV PYTHONUNBUFFERED=1
+RUN wget https://github.com/grycap/scar/releases/download/v1.0.0/scar -O /usr/bin/scar \
+ && chmod +x /usr/bin/scar
 
 USER scar
 
-ENTRYPOINT ["python3", "/usr/bin/scar/scar.py"]
+ENV SCAR_LOG_PATH ~/
+
+ENTRYPOINT ["/usr/bin/scar"]
 
 
