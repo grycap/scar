@@ -61,6 +61,13 @@ class ScarError(Exception):
 ################################################
 ##             GENERAL EXCEPTIONS             ##
 ################################################
+class MissingCommandError(ScarError):
+    """
+    SCAR was launched without a command
+
+    """
+    fmt = "Please use one of the scar available commands (init,invoke,run,update,rm,ls,log,put,get)"
+    
 class ScarConfigFileError(ScarError):
     """
     The SCAR configuration file does not exist and it has been created

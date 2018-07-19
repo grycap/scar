@@ -155,7 +155,7 @@ class AWS(Commands):
     def add_extra_aws_properties(self):
         self.add_tags()
         self.add_output()
-        self.add_call_type()
+#         self.add_call_type()
         self.add_account_id()
         
     def add_tags(self):
@@ -174,15 +174,6 @@ class AWS(Commands):
     def add_account_id(self):
         self.properties['account_id'] = utils.find_expression(self.properties['iam']['role'], '\d{12}')        
         
-    def add_call_type(self):
-        scar_func_name = self.scar_properties['func'].__name__
-        for call_type in CallType:
-            if call_type.value == scar_func_name:
-                self.properties['call_type'] = call_type
-                break
-        if 'call_type' not in self.properties:
-            raise excp.ScarFunctionNotFoundError(func_name=scar_func_name)
-                
     def get_all_functions(self):
         user_id = self.iam.get_user_name_or_id()
         functions_arn_list = self.resource_groups.get_lambda_functions_arn_list(user_id)        

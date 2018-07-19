@@ -37,7 +37,6 @@ class Lambda(GenericClient):
     
     def __init__(self, aws_properties):
         GenericClient.__init__(self, aws_properties)
-        self.call_type = aws_properties['call_type']
         self.properties = aws_properties['lambda']
         self.properties['environment'] = {'Variables' : {}}
         self.properties['zip_file_path'] = utils.join_paths(utils.get_temp_dir(), 'function.zip')

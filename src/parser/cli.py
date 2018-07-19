@@ -17,6 +17,7 @@
 import argparse
 import src.logger as logger
 import src.utils as utils
+import src.exceptions as excp
 
 class CommandParser(object):
     
@@ -61,7 +62,6 @@ class CommandParser(object):
         parser_init.add_argument("-p", "--preheat", help="Preheats the function running it once and downloading the necessary container", action="store_true")
         parser_init.add_argument("-ep", "--extra_payload", help="Folder containing files that are going to be added to the lambda function")
         parser_init.add_argument("-ll", "--log_level", help="Set the log level of the lambda function. Accepted values are: 'CRITICAL','ERROR','WARNING','INFO','DEBUG'", default="INFO")
-        # parser_init.add_argument("-out-func", "--output_function", help="Function name where the output will be redirected")
         # S3 conf
         parser_init.add_argument("-db", "--deployment_bucket", help="Bucket where the deployment package is going to be uploaded.")
         parser_init.add_argument("-ib", "--input_bucket", help="Bucket name where the input files will be stored.")
@@ -104,11 +104,7 @@ class CommandParser(object):
         parser_update.add_argument("-ll", "--log_level", help="Set the log level of the lambda function. Accepted values are: 'CRITICAL','ERROR','WARNING','INFO','DEBUG'", default="INFO")
         # General AWS conf        
         parser_update.add_argument("-pf", "--profile", help="AWS profile to use")        
-        #parser_update.add_argument("-s", "--script", nargs='?', type=argparse.FileType('r'), help="Path to the input file passed to the function")
-        #parser_update.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
-        #parser_update.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
-        #parser_update.add_argument("-es", "--event_source", help="Name specifying the source of the events that will launch the lambda function. Only supporting buckets right now.")
-    
+
     def create_run_parser(self):
         parser_run = self.subparsers.add_parser('run', help="Deploy function")
         parser_run.set_defaults(func=self.scar.run)
@@ -180,16 +176,20 @@ class CommandParser(object):
         # General AWS conf
         parser_get.add_argument("-pf", "--profile", help="AWS profile to use")
 
+    @excp.exception(logger)
     def parse_arguments(self):
         '''Command parsing and selection'''
         try:
             cmd_args = vars(self.parser.parse_args())
+            if 'func' not in cmd_args:
+                raise excp.MissingCommandError()
             scar_args = self.parse_scar_args(cmd_args)
             aws_args = self.parse_aws_args(cmd_args)
             return utils.merge_dicts(scar_args, aws_args)
         except AttributeError as ae:
             logger.error("Incorrect arguments: use scar -h to see the options available",
                              "Error parsing arguments: %s" % ae)            
+        else:
             raise
         
     def set_args(self, args, key, val):
