@@ -19,6 +19,8 @@ import os
 
 log_folder_name = ".scar"
 log_file_folder = os.path.join(os.path.expanduser("~"), log_folder_name)
+if 'SCAR_LOG_PATH' in os.environ:
+    log_file_folder = os.environ['SCAR_LOG_PATH']
 log_file_name = "scar.log"
 log_file_path = os.path.join(log_file_folder, log_file_name)
 
