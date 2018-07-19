@@ -22,6 +22,10 @@ log_file_folder = os.path.join(os.path.expanduser("~"), log_folder_name)
 log_file_name = "scar.log"
 log_file_path = os.path.join(log_file_folder, log_file_name)
 
+# Create scar config dir
+if not os.path.isdir(log_file_folder):
+    os.makedirs(log_file_folder, exist_ok=True)
+
 loglevel = logging.INFO
 FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 logging.basicConfig(filename=log_file_path, level=loglevel, format=FORMAT)
