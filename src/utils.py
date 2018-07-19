@@ -137,7 +137,7 @@ def create_tar_gz(files_to_archive, destination_tar_path):
         for file_path in files_to_archive:
             tar.add(file_path, arcname=os.path.basename(file_path))
     return destination_tar_path
-         
+      
 def extract_tar_gz(tar_path, destination_path):
     with tarfile.open(tar_path, "r:gz") as tar:
         tar.extractall(path=destination_path)
