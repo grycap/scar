@@ -51,7 +51,7 @@ class FunctionPackageCreator():
     udocker_source = utils.join_paths(lambda_code_files_path, "udockerb")
     udocker_dest = utils.join_paths(scar_temporal_folder, "udockerb")
     
-    udocker_exec = ["python3", udocker_dest]
+    udocker_exec = [udocker_dest]
     udocker_tarball = ""
     udocker_dir = ""
     init_script_name = "init_script.sh"
