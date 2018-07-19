@@ -20,16 +20,29 @@ import src.utils as utils
 import src.exceptions as excp
 import src.logger as logger
 
+default_cfg = { 
+    "aws" : {
+        "boto_profile" : "default",
+        "region" : "us-east-1",
+        "iam" : {"role" : ""},
+        "lambda" : {
+          "time" : 300,
+          "memory" : 512,
+          "description" : "Automatically generated lambda function",
+          "timeout_threshold" : 10 
+        },
+        "cloudwatch" : { "log_retention_policy_in_days" : 30 }
+    }
+}
+
 class ConfigFileParser(object):
     
     config_file_name = "scar.cfg"
     backup_config_file_name = "scar.cfg_old"
     config_folder_name = ".scar"
-    default_file_name = "default_config_file.json"
     config_file_folder = utils.join_paths(os.path.expanduser("~"), config_folder_name)
     config_file_path = utils.join_paths(config_file_folder, config_file_name)
     backup_file_path = utils.join_paths(config_file_folder, backup_config_file_name)
-    default_file_path = utils.join_paths(os.path.dirname(os.path.realpath(__file__)), default_file_name)
 
 
     @excp.exception(logger)
@@ -47,18 +60,17 @@ class ConfigFileParser(object):
             raise excp.ScarConfigFileError(file_path=self.config_file_path)
         
     def create_default_config_file(self):
-        shutil.copy(self.default_file_path, self.config_file_path)
+        with open(self.config_file_path, mode='w') as cfg_file:
+            cfg_file.write(json.dumps(default_cfg, indent=2))        
         
     def get_properties(self):
         return self.cfg_data
         
     def add_missing_attributes(self):
-        print("Updating old scar config file '{0}'.\n".format(self.config_file_path))
+        logger.info("Updating old scar config file '{0}'.\n".format(self.config_file_path))
         shutil.copy(self.config_file_path, self.backup_file_path)
-        print("Old scar config file saved in '{0}'.\n".format(self.backup_file_path))       
-        with open(self.default_file_path) as default_file:
-            default_data = json.load(default_file)
-            self.merge_files(self.cfg_data, default_data)
+        logger.info("Old scar config file saved in '{0}'.\n".format(self.backup_file_path))       
+        self.merge_files(self.cfg_data, default_cfg)    
         self.delete_unused_data()
         with open(self.config_file_path, mode='w') as cfg_file:
             cfg_file.write(json.dumps(self.cfg_data, indent=2))

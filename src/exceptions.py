@@ -15,6 +15,7 @@
 
 import functools
 from botocore.exceptions import ClientError
+import sys
 
 def exception(logger):
     '''
@@ -30,17 +31,17 @@ def exception(logger):
                 print("There was an exception in {0}".format(func.__name__))
                 print(ce.response['Error']['Message'])
                 logger.exception(ce)
-                exit(1)
+                sys.exit(1)
             except ScarError as se:
                 print(se.args[0])
                 logger.exception(se)
                 # Finish the execution if it's an error
                 if 'Error' in se.__class__.__name__:
-                    exit(1)
+                    sys.exit(1)
             except Exception as ex:
                 print("There was an unmanaged exception in {0}".format(func.__name__))
                 logger.exception(ex)
-                exit(1)
+                sys.exit(1)
         return wrapper
     return decorator
 
