@@ -18,10 +18,10 @@ import base64
 import json
 import os
 import re
-import uuid
 import subprocess
 import tarfile
 import tempfile
+import uuid
 
 def join_paths(*paths):
     return os.path.join(*paths)
@@ -57,9 +57,6 @@ def utf8_to_base64_string(value):
 def dict_to_base64_string(value):
     return base64.b64encode(json.dumps(value)).decode("utf-8")
 
-def print_json(value):
-    print(json.dumps(value))
-    
 def divide_list_in_chunks(elements, chunk_size):
     """Yield successive n-sized chunks from th elements list."""
     if len(elements) == 0:
@@ -70,14 +67,6 @@ def divide_list_in_chunks(elements, chunk_size):
 def get_random_uuid4_str():
     return str(uuid.uuid4())
 
-def has_dict_value(dictionary, value):
-    return value in dictionary and dictionary[value]
-
-def load_json_file(file_path):
-    if os.path.isfile(file_path):
-        with open(file_path) as f:
-            return json.load(f)
-        
 def merge_dicts(d1, d2):
     '''
     Merge 'd1' and 'd2' dicts into 'd1'.
@@ -93,8 +82,8 @@ def merge_dicts(d1, d2):
                 d1[k] += v
     return d1
 
-def check_key_in_dictionary(key, dictionary):
-    return (key in dictionary) and dictionary[key] and dictionary[key] != ""
+def is_value_in_dict(dictionary, value):
+    return value in dictionary and dictionary[value]
 
 def get_tree_size(path):
     """Return total size of files in given path and subdirs."""
@@ -138,7 +127,7 @@ def create_tar_gz(files_to_archive, destination_tar_path):
         for file_path in files_to_archive:
             tar.add(file_path, arcname=os.path.basename(file_path))
     return destination_tar_path
-        
+         
 def extract_tar_gz(tar_path, destination_path):
     with tarfile.open(tar_path, "r:gz") as tar:
         tar.extractall(path=destination_path)
@@ -154,14 +143,14 @@ def execute_command_and_return_output(command):
     return subprocess.check_output(command).decode("utf-8")
 
 def is_variable_in_environment(variable):
-    return check_key_in_dictionary(variable, os.environ)
+    return is_value_in_dict(os.environ, variable)
 
 def set_environment_variable(key, variable):
     if key and variable:
         os.environ[key] = variable
 
 def get_environment_variable(variable):
-    if check_key_in_dictionary(variable, os.environ):
+    if is_variable_in_environment(variable):
         return os.environ[variable]
 
 def parse_arg_list(arg_keys, cmd_args):

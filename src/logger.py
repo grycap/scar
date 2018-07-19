@@ -15,10 +15,16 @@
 
 import logging
 import json
+import os
+
+log_folder_name = ".scar"
+log_file_folder = os.path.join(os.path.expanduser("~"), log_folder_name)
+log_file_name = "scar.log"
+log_file_path = os.path.join(log_file_folder, log_file_name)
 
 loglevel = logging.INFO
 FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-logging.basicConfig(filename='scar.log', level=loglevel, format=FORMAT)
+logging.basicConfig(filename=log_file_path, level=loglevel, format=FORMAT)
 
 def init_execution_trace():
     logging.info('----------------------------------------------------')

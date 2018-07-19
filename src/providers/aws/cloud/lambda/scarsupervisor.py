@@ -32,8 +32,8 @@ sys.path.append(".")
 import src.utils as utils
 
 logger = logging.getLogger()
-if os.environ['LOG_LEVEL']:
-    logger.setLevel(os.environ['LOG_LEVEL'])
+if utils.is_variable_in_environment('LOG_LEVEL'):
+    logger.setLevel(utils.get_environment_variable('LOG_LEVEL'))
 else:
     logger.setLevel('INFO')
 logger.info('SCAR: Loading lambda function')
@@ -50,7 +50,7 @@ class S3():
         return client
     
     def __init__(self):
-        if utils.check_key_in_dictionary('Records', lambda_instance.event):
+        if utils.is_value_in_dict(lambda_instance.event, 'Records'):
             self.record = self.get_s3_record()
             self.input_bucket = self.record['bucket']['name']
             self.file_key = unquote_plus(self.record['object']['key'])
@@ -62,7 +62,7 @@ class S3():
             logger.warning("Multiple records detected. Only processing the first one.")
             
         record = lambda_instance.event['Records'][0]
-        if utils.check_key_in_dictionary('s3', record):
+        if utils.is_value_in_dict(record, 's3'):
             return record['s3']
 
     def download_input(self):
@@ -238,10 +238,10 @@ class Udocker():
         self.add_container_volumes()
         self.add_container_environment_variables()
         # Container running script
-        if utils.check_key_in_dictionary('script', lambda_instance.event): 
+        if utils.is_value_in_dict(lambda_instance.event, 'script'): 
             self.add_script_as_entrypoint()
         # Container with args
-        elif utils.check_key_in_dictionary('cmd_args', lambda_instance.event):
+        elif utils.is_value_in_dict(lambda_instance.event,'cmd_args'):
             self.add_args()
         # Script to be executed every time (if defined)
         elif utils.is_variable_in_environment('INIT_SCRIPT_PATH'):
@@ -384,7 +384,7 @@ class Supervisor():
         self.create_event_file()
 
     def is_s3_event(self):
-        if utils.check_key_in_dictionary('Records', lambda_instance.event):
+        if utils.is_value_in_dict(lambda_instance.event, 'Records'):
             # Check if the event is an S3 event
             return lambda_instance.event['Records'][0]['eventSource'] == "aws:s3"
         return False

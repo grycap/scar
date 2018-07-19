@@ -133,9 +133,9 @@ class FunctionPackageCreator():
     @classmethod
     def save_tmp_udocker_env(cls):
         #Avoid override global variables
-        if utils.has_dict_value(os.environ, 'UDOCKER_TARBALL'):
+        if utils.is_value_in_dict(os.environ, 'UDOCKER_TARBALL'):
             cls.udocker_tarball = os.environ['UDOCKER_TARBALL']
-        if utils.has_dict_value(os.environ, 'UDOCKER_DIR'):
+        if utils.is_value_in_dict(os.environ, 'UDOCKER_DIR'):
             cls.udocker_dir = os.environ['UDOCKER_DIR']
         # Set temporal global vars
         utils.set_environment_variable('UDOCKER_TARBALL', utils.join_paths(cls.lambda_code_files_path, "udocker-1.1.0-RC2.tar.gz"))

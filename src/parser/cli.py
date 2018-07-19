@@ -193,7 +193,7 @@ class CommandParser(object):
             raise
         
     def set_args(self, args, key, val):
-        if val:
+        if key and val:
             args[key] = val
         
     def parse_aws_args(self, cmd_args):
@@ -205,15 +205,11 @@ class CommandParser(object):
         self.set_args(aws_args, 's3', self.parse_s3_args(cmd_args))
         self.set_args(aws_args, 'api_gateway', self.parse_api_gateway_args(cmd_args))
         aws_args.update(utils.parse_arg_list(other_args, cmd_args))
-        aws = {}
-        aws['aws'] = aws_args
-        return aws
+        return {'aws' : aws_args }
 
     def parse_scar_args(self, cmd_args):
         scar_args = ['func', 'conf_file', 'json', 'verbose', 'path', ('all', 'delete_all'), 'preheat']
-        scar = {}
-        scar['scar'] = utils.parse_arg_list(scar_args, cmd_args)
-        return scar
+        return {'scar' : utils.parse_arg_list(scar_args, cmd_args)}
 
     def parse_lambda_args(self, cmd_args):
         lambda_args = ['name', 'asynchronous', 'init_script', 'run_script', 'c_args', 'memory', 'time',

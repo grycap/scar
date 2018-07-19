@@ -20,8 +20,6 @@ from botocore.exceptions import ClientError
 import time
 import src.exceptions as excp
 
-
-
 class APIGatewayClient(BotoClient):
     '''A low-level client representing Amazon API Gateway.
     https://boto3.readthedocs.io/en/latest/reference/services/apigateway.html'''
