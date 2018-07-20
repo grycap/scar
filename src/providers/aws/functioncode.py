@@ -74,7 +74,8 @@ class FunctionPackageCreator():
             self.prepare_udocker_image()
             
         self.add_init_script() 
-        self.add_extra_payload()     
+        self.add_extra_payload()
+        self.set_permissions()
         self.zip_scar_folder()
         self.check_code_size()
 
@@ -86,16 +87,16 @@ class FunctionPackageCreator():
         os.makedirs(utils.join_paths(self.scar_temporal_folder, "src"), exist_ok=True)
         
         initpy_source = utils.resource_path(utils.join_paths(self.lambda_code_files_path, "__init__.py"))
-        initpy_dest = utils.join_paths(self.scar_temporal_folder, "src/__init__.py")
-        shutil.copy(initpy_source, initpy_dest)
+        self.initpy_dest = utils.join_paths(self.scar_temporal_folder, "src/__init__.py")
+        shutil.copy(initpy_source, self.initpy_dest)
         
         utils_source = utils.resource_path(utils.join_paths(self.src_path, "utils.py"))
-        utils_dest = utils.join_paths(self.scar_temporal_folder, "src/utils.py")
-        shutil.copy(utils_source, utils_dest)
+        self.utils_dest = utils.join_paths(self.scar_temporal_folder, "src/utils.py")
+        shutil.copy(utils_source, self.utils_dest)
         
         exceptions_source = utils.resource_path(utils.join_paths(self.src_path, "exceptions.py"))
-        exceptions_dest = utils.join_paths(self.scar_temporal_folder, "src/exceptions.py")
-        shutil.copy(exceptions_source, exceptions_dest)                
+        self.exceptions_dest = utils.join_paths(self.scar_temporal_folder, "src/exceptions.py")
+        shutil.copy(exceptions_source, self.exceptions_dest)                
         
         self.set_environment_variable('UDOCKER_DIR', "/tmp/home/udocker")
         self.set_environment_variable('UDOCKER_LIB', "/var/task/udocker/lib/")
@@ -131,8 +132,16 @@ class FunctionPackageCreator():
         if os.path.isdir(self.scar_temporal_folder):
             shutil.rmtree(self.scar_temporal_folder, ignore_errors=True)
         
+    def set_permissions(self):
+        self.execute_command(['chmod', '0664', self.supervisor_dest])
+        self.execute_command(['chmod', '0775', self.udocker_dest])
+        self.execute_command(['chmod', '0664', self.initpy_dest])
+        self.execute_command(['chmod', '0664', self.utils_dest])
+        self.execute_command(['chmod', '0664', self.exceptions_dest])
+        
     def zip_scar_folder(self):
-        self.execute_command(["zip", "-r9y", self.properties['ZipFilePath'], "."],
+        zip_exe = utils.resource_path("src/bin/zip", bin_path='/usr/bin/zip')
+        self.execute_command([zip_exe, "-r9y", self.properties['ZipFilePath'], "."],
                              cmd_wd=self.scar_temporal_folder,
                              cli_msg="Creating function package")
         
