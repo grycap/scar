@@ -31,7 +31,7 @@ def resource_path(relative_path, bin_path=None):
         base_path = sys._MEIPASS
     except Exception:
         if bin_path:
-            base_path = bin_path
+            return bin_path
         else:
             base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
