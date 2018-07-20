@@ -134,10 +134,10 @@ class FunctionPackageCreator():
         
     def set_permissions(self):
         self.execute_command(['chmod', '0664', self.supervisor_dest])
-        #self.execute_command(['chmod', '0775', self.udocker_dest])
-        #self.execute_command(['chmod', '0664', self.initpy_dest])
-        #self.execute_command(['chmod', '0664', self.utils_dest])
-        #self.execute_command(['chmod', '0664', self.exceptions_dest])
+        self.execute_command(['chmod', '0775', self.udocker_dest])
+        self.execute_command(['chmod', '0664', self.initpy_dest])
+        self.execute_command(['chmod', '0664', self.utils_dest])
+        self.execute_command(['chmod', '0664', self.exceptions_dest])
         
     def zip_scar_folder(self):
         zip_exe = utils.resource_path("src/bin/zip", bin_path='/usr/bin/zip')
