@@ -846,7 +846,7 @@ class FileUtil(object):
         cmd = self._find_exec("type -p " + self.basename)
         if cmd:
             return cmd
-        cmd = resource_path(self.basename, "/usr/bin/")
+        cmd = resource_path("src/bin/" + self.basename)
         if cmd:
             return cmd        
         return ""

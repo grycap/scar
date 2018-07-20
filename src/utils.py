@@ -24,15 +24,17 @@ import tempfile
 import uuid
 import sys
 
-def resource_path(relative_path, base_path=None):
+def resource_path(relative_path, bin_path=None):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
     except Exception:
-        if not base_path:
+        if not bin_path:
             base_path = os.path.abspath(".")
-    return os.path.join(base_path, relative_path)
+            return os.path.join(base_path, relative_path)
+        else:
+            return bin_path
 
 def join_paths(*paths):
     return os.path.join(*paths)
