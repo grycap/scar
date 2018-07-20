@@ -135,6 +135,7 @@ class FunctionPackageCreator():
         self.execute_command(["zip", "-r9y", self.properties['ZipFilePath'], "."],
                              cmd_wd=self.scar_temporal_folder,
                              cli_msg="Creating function package")
+        self.execute_command(["chmod","0777",self.properties['ZipFilePath']])
         
     @classmethod
     def save_tmp_udocker_env(cls):

@@ -106,6 +106,14 @@ def encode(obj):
     else:
         return obj
 
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
 class Uprocess(object):
     """Provide alternative implementations for subprocess"""
@@ -837,6 +845,9 @@ class FileUtil(object):
         cmd = self._find_exec("type -p " + self.basename)
         if cmd:
             return cmd
+        cmd = resource_path("/usr/lib/" + self.basename)
+        if cmd:
+            return cmd        
         return ""
 
     def find_inpath(self, path, rootdir=""):

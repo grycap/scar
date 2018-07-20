@@ -317,7 +317,6 @@ class Lambda(GenericClient):
         
     def invoke_http_endpoint(self):
         invoke_args = {'headers' : self.get_http_invocation_headers()}
-        print(invoke_args)
         if 'api_gateway' in self.aws_properties:
             api_props = self.aws_properties['api_gateway']
             if 'data_binary' in api_props and api_props['data_binary']:
