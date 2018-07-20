@@ -10,16 +10,16 @@ RUN apt-get update && apt-get install -y \
  && rm -rf /var/lib/apt/lists/*
 
 RUN addgroup --system scar && adduser --system --group scar
-USER scar
-WORKDIR ~/
 
-RUN git clone --branch update-dockerfile https://github.com/grycap/scar code
-WORKDIR ~/code
+RUN git clone --branch update-dockerfile https://github.com/grycap/scar /home/scar/code
+WORKDIR /home/scar/code
 RUN pip3 install -r requirements.txt \
  && pip3 install pyinstaller
+RUN chown -R scar:scar /home/scar/code
 
+USER scar
 RUN pyinstaller --onefile src/providers/aws/cloud/lambda/udockerb.py
-RUN pyinstaller --onedir \
+RUN pyinstaller --onefile \
   --add-data="src/providers/aws/cloud/lambda/scarsupervisor.py:src/providers/aws/cloud/lambda" \
   --add-data="src/providers/aws/cloud/lambda/__init__.py:src/providers/aws/cloud/lambda" \
   --add-data="src/exceptions.py:src" \
