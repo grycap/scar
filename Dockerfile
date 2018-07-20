@@ -35,6 +35,6 @@ FROM ubuntu:latest
 RUN addgroup --system scar && adduser --system --group scar
 USER scar
 WORKDIR /home/scar/
-COPY --from=builder /home/scar/code/dist/scar .
+COPY --from=builder /home/scar/code/dist/scar /usr/bin/
 ENV SCAR_LOG_PATH=/home/scar/
-ENTRYPOINT ["./scar"]
+ENTRYPOINT ["/usr/bin/scar"]
