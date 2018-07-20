@@ -132,7 +132,8 @@ class FunctionPackageCreator():
             shutil.rmtree(self.scar_temporal_folder, ignore_errors=True)
         
     def zip_scar_folder(self):
-        self.execute_command(["zip", "-r9y", self.properties['ZipFilePath'], "."],
+        zip_exe = utils.resource_path("/usr/bin/zip")
+        self.execute_command([zip_exe, "-r9y", self.properties['ZipFilePath'], "."],
                              cmd_wd=self.scar_temporal_folder,
                              cli_msg="Creating function package")
         self.execute_command(["chmod","0777",self.properties['ZipFilePath']])

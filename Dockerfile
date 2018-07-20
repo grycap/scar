@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
-RUN git clone https://github.com/grycap/scar
+RUN git clone --branch update-dockerfile https://github.com/grycap/scar
 WORKDIR /scar
 RUN pip3 install -r requirements.txt \
  && pip3 install pyinstaller
@@ -24,8 +24,7 @@ RUN pyinstaller --onefile \
   --add-data="src/providers/aws/cloud/lambda/udocker-1.1.0-RC2.tar.gz:src/providers/aws/cloud/lambda" \
   --add-binary="dist/udockerb:src/providers/aws/cloud/lambda" \
   --add-binary="/usr/bin/curl:/usr/bin" \
-  --add-binary="/usr/bin/zip:/usr/bin" \  
-  --add-binary="/usr/bin/wget:/usr/bin" \
+  --add-binary="/usr/bin/zip:/usr/bin" \
   scar.py
 
 
