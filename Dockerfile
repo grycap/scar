@@ -44,4 +44,3 @@ USER scar
 WORKDIR /home/scar/
 COPY --from=sbuilder /scar/dist/scar /usr/bin/
 ENV SCAR_LOG_PATH=/home/scar/
-ENTRYPOINT ["/usr/bin/scar"]
