@@ -9,6 +9,7 @@ Welcome to SCAR's documentation!
    approach
    limitations
    installation
+   scar_container
    configuration
    basic_usage
    advanced_usage

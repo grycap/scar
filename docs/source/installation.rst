@@ -1,6 +1,8 @@
 Installation
 ============
 
+If you want to avoid installing packages and you can launch docker containers check the :doc:`/scar_container` section.
+
 1) SCAR requires python3, pip3 and a configured AWS credentials file in your system.
    More info about the AWS credentials file can be found `here <https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html>`_.
 
