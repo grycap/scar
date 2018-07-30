@@ -61,6 +61,13 @@ class ScarError(Exception):
 ################################################
 ##             GENERAL EXCEPTIONS             ##
 ################################################
+class InvalidPlatformError(ScarError):
+    """
+    SCAR binary is not launched on a Linux platform
+
+    """
+    fmt = "The SCAR binary only works on a Linux Platform.\nTry executing the Python version."
+
 class MissingCommandError(ScarError):
     """
     SCAR was launched without a command
