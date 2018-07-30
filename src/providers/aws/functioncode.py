@@ -48,7 +48,8 @@ class FunctionPackageCreator():
     
     supervisor_source = utils.join_paths(lambda_code_files_path, "scarsupervisor.py")
     
-    udocker_source = utils.join_paths(lambda_code_files_path, "udockerb")
+    udocker_file = "udockerb" if utils.is_binary_execution() else "udockerpy"
+    udocker_source = utils.join_paths(lambda_code_files_path, udocker_file)
     udocker_dest = utils.join_paths(scar_temporal_folder, "udockerb")
     
     udocker_exec = [udocker_dest]
@@ -162,7 +163,7 @@ class FunctionPackageCreator():
         cls.restore_environ_var('UDOCKER_TARBALL', cls.udocker_tarball)
         cls.restore_environ_var('UDOCKER_DIR', cls.udocker_dir)
         
-    @classmethod        
+    @classmethod
     def restore_environ_var(cls, key, var):
         if var:
             utils.set_environment_variable(key, var)

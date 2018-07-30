@@ -23,6 +23,8 @@ import tarfile
 import tempfile
 import uuid
 import sys
+import platform
+from .exceptions import InvalidPlatformError
 
 def resource_path(relative_path, bin_path=None):
     """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -35,6 +37,15 @@ def resource_path(relative_path, bin_path=None):
         else:
             base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
+
+def is_binary_execution():
+    try:
+        binary_env = sys._MEIPASS
+        if platform.system().lower() != 'linux':
+            raise InvalidPlatformError()
+        return True
+    except Exception:
+        return False
 
 def join_paths(*paths):
     return os.path.join(*paths)
