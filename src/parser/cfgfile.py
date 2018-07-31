@@ -29,7 +29,8 @@ default_cfg = {
           "time" : 300,
           "memory" : 512,
           "description" : "Automatically generated lambda function",
-          "timeout_threshold" : 10 
+          "timeout_threshold" : 10 ,
+          "runtime" : "python3.6"
         },
         "cloudwatch" : { "log_retention_policy_in_days" : 30 }
     }
