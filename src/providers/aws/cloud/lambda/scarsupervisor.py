@@ -288,7 +288,8 @@ class Udocker():
     def get_iam_credentials(self):
         creds = []
         iam_creds = {'CONT_VAR_AWS_ACCESS_KEY_ID':'AWS_ACCESS_KEY_ID',
-                     'CONT_VAR_AWS_SECRET_ACCESS_KEY':'AWS_SECRET_ACCESS_KEY'}
+                     'CONT_VAR_AWS_SECRET_ACCESS_KEY':'AWS_SECRET_ACCESS_KEY',
+                     'CONT_VAR_AWS_SESSION_TOKEN':'AWS_SESSION_TOKEN'}
         # Add IAM credentials
         for key,value in iam_creds.items():
             if not utils.is_variable_in_environment(key):
