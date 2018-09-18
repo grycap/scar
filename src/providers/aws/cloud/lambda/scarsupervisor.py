@@ -29,8 +29,7 @@ from urllib.parse import unquote_plus
 sys.path.append("..")
 sys.path.append(".")
 # Works in lambda environment
-import src.utils as utils
-
+import src.utils as utils 
 logger = logging.getLogger()
 if utils.is_variable_in_environment('LOG_LEVEL'):
     logger.setLevel(utils.get_environment_variable('LOG_LEVEL'))
@@ -55,8 +54,7 @@ class S3():
             self.input_bucket = self.record['bucket']['name']
             self.file_key = unquote_plus(self.record['object']['key'])
             self.file_name = os.path.basename(self.file_key).replace(' ', '')
-            self.file_download_path = '{0}/{1}'.format(lambda_instance.input_folder, self.file_name)
-
+            self.file_download_path = '{0}/{1}'.format(lambda_instance.input_folder, self.file_name) 
     def get_s3_record(self):
         if len(lambda_instance.event['Records']) > 1:
             logger.warning("Multiple records detected. Only processing the first one.")
@@ -275,21 +273,29 @@ class Udocker():
         if key and value and key != "" and value != "":
             var += ["--env", str(key) + '=' + str(value)]
         return var
-        
+
     def get_user_defined_variables(self):
         user_vars = []
         for key in os.environ.keys():
             # Find global variables with the specified prefix
             if re.match("CONT_VAR_.*", key):
-                user_vars += self.parse_container_environment_variable(key.replace("CONT_VAR_", ""),
-                                                                       utils.get_environment_variable(key)) 
-        return user_vars                      
+                if re.match("CONT_VAR_ENC_.*", key):
+                    session = boto3.session.Session()
+                    client = session.client('kms')
+                    secret  = utils.get_environment_variable(key)
+                    decrypt = client.decrypt(CiphertextBlob=bytes(base64.b64decode(secret)))["Plaintext"]
+                    user_vars += self.parse_container_environment_variable(key.replace("CONT_VAR_ENC", "DEC"),
+                                                                           decrypt.decode("utf-8"))
+                else:
+                    user_vars += self.parse_container_environment_variable(key.replace("CONT_VAR_", ""),
+                                                                           utils.get_environment_variable(key))
+        return user_vars
 
     def get_iam_credentials(self):
         creds = []
         iam_creds = {'CONT_VAR_AWS_ACCESS_KEY_ID':'AWS_ACCESS_KEY_ID',
                      'CONT_VAR_AWS_SECRET_ACCESS_KEY':'AWS_SECRET_ACCESS_KEY',
-                     'CONT_VAR_AWS_SESSION_TOKEN':'AWS_SESSION_TOKEN'}
+                     'CONT_VAR_AWS_SESSION_TOKEN': 'AWS_SESSION_TOKEN'}
         # Add IAM credentials
         for key,value in iam_creds.items():
             if not utils.is_variable_in_environment(key):
@@ -302,7 +308,7 @@ class Udocker():
         if self.scar_input_file and self.scar_input_file != "":
             file += self.parse_container_environment_variable("SCAR_INPUT_FILE", self.scar_input_file)
         return file
-    
+
     def get_output_dir(self):
         return self.parse_container_environment_variable("SCAR_OUTPUT_DIR", 
                                                          "/tmp/{0}/output".format(lambda_instance.request_id))
