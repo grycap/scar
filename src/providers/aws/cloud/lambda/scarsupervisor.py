@@ -29,7 +29,8 @@ from urllib.parse import unquote_plus
 sys.path.append("..")
 sys.path.append(".")
 # Works in lambda environment
-import src.utils as utils 
+import src.utils as utils
+
 logger = logging.getLogger()
 if utils.is_variable_in_environment('LOG_LEVEL'):
     logger.setLevel(utils.get_environment_variable('LOG_LEVEL'))
@@ -262,7 +263,8 @@ class Udocker():
         self.cmd_container_execution += self.parse_container_environment_variable("INSTANCE_IP", 
                                                                                   socket.gethostbyname(socket.gethostname()))        
         self.cmd_container_execution += self.get_user_defined_variables()
-        self.cmd_container_execution += self.get_iam_credentials()        
+        self.cmd_container_execution += self.get_decrypted_variables()
+        self.cmd_container_execution += self.get_iam_credentials()
         self.cmd_container_execution += self.get_input_file()
         self.cmd_container_execution += self.get_output_dir()
         self.cmd_container_execution += self.get_extra_payload_path()
@@ -279,23 +281,27 @@ class Udocker():
         for key in os.environ.keys():
             # Find global variables with the specified prefix
             if re.match("CONT_VAR_.*", key):
-                if re.match("CONT_VAR_ENC_.*", key):
-                    session = boto3.session.Session()
-                    client = session.client('kms')
-                    secret  = utils.get_environment_variable(key)
-                    decrypt = client.decrypt(CiphertextBlob=bytes(base64.b64decode(secret)))["Plaintext"]
-                    user_vars += self.parse_container_environment_variable(key.replace("CONT_VAR_ENC", "DEC"),
-                                                                           decrypt.decode("utf-8"))
-                else:
-                    user_vars += self.parse_container_environment_variable(key.replace("CONT_VAR_", ""),
-                                                                           utils.get_environment_variable(key))
+                user_vars += self.parse_container_environment_variable(key.replace("CONT_VAR_", ""),
+                                                                       utils.get_environment_variable(key))
         return user_vars
+
+    def get_decrypted_variables(self):
+        decrypted_vars = []
+        session = boto3.session.Session()
+        client = session.client('kms')
+        for key in os.environ.keys():
+            if re.match("CONT_VAR_KMS_ENC_.*", key):
+                secret  = utils.get_environment_variable(key)
+                decrypt = client.decrypt(CiphertextBlob=bytes(base64.b64decode(secret)))["Plaintext"]
+                decrypted_vars += self.parse_container_environment_variable(key.replace("CONT_VAR_KMS_ENC", "KMS_DEC"),
+                                                                            decrypt.decode("utf-8"))
+        return decrypted_vars
 
     def get_iam_credentials(self):
         creds = []
         iam_creds = {'CONT_VAR_AWS_ACCESS_KEY_ID':'AWS_ACCESS_KEY_ID',
                      'CONT_VAR_AWS_SECRET_ACCESS_KEY':'AWS_SECRET_ACCESS_KEY',
-                     'CONT_VAR_AWS_SESSION_TOKEN': 'AWS_SESSION_TOKEN'}
+                     'CONT_VAR_AWS_SESSION_TOKEN':'AWS_SESSION_TOKEN'}
         # Add IAM credentials
         for key,value in iam_creds.items():
             if not utils.is_variable_in_environment(key):
