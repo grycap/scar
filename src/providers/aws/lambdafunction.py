@@ -88,6 +88,11 @@ class Lambda(GenericClient):
     def set_required_environment_variables(self):
         self.add_lambda_environment_variable('TIMEOUT_THRESHOLD', str(self.properties['timeout_threshold']))
         self.add_lambda_environment_variable('LOG_LEVEL', self.properties['log_level'])
+        ###
+        self.add_lambda_environment_variable('EXECUTION_MODE',  self.properties['execution_mode'])
+        self.add_lambda_environment_variable('ROLE',  self.aws_properties['iam']['role'])
+        self.add_lambda_environment_variable('MEMORY',  str(self.properties['memory']))
+        ###
         if utils.is_value_in_dict(self.properties, 'image'):     
             self.add_lambda_environment_variable('IMAGE_ID', self.properties['image'])
         self.add_s3_environment_vars()

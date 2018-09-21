@@ -15,6 +15,8 @@
 
 from src.providers.aws.lambdafunction import Lambda
 from src.providers.aws.cloudwatchlogs import CloudWatchLogs
+###
+from src.providers.aws.batchfunction import Batch
 from src.providers.aws.apigateway import APIGateway
 from src.providers.aws.s3 import S3
 from src.providers.aws.iam import IAM
@@ -38,6 +40,11 @@ class AWS(Commands):
         it's a restricted word in python'''
         _lambda = Lambda(self.properties)
         return _lambda
+    ###
+    @utils.lazy_property
+    def batch(self):
+        batch = Batch(self.properties)
+        return batch
     
     @utils.lazy_property
     def cloudwatch_logs(self):
@@ -66,6 +73,7 @@ class AWS(Commands):
        
     @excp.exception(logger)
     def init(self):
+        
         if self._lambda.find_function():
             raise excp.FunctionExistsError(function_name=self._lambda.properties['name'])
         
@@ -93,6 +101,14 @@ class AWS(Commands):
         # If preheat is activated, the function is launched at the init step
         if 'preheat' in self.scar_properties:    
             self._lambda.preheat_function()
+        
+        ###        
+        if 'execution_mode' in self._lambda.properties:
+            if (self._lambda.properties["execution_mode"]== "batch" or self._lambda.properties["execution_mode"]== "lambda-batch" ):
+                self.batch.create_compute_environment()
+        ###
+        
+        
     
     @excp.exception(logger)    
     def invoke(self):
@@ -135,6 +151,11 @@ class AWS(Commands):
     @excp.exception(logger)
     def log(self):
         aws_log = self.cloudwatch_logs.get_aws_log()
+        ###
+        if 'request_id' in self.properties["cloudwatch"]:
+            if(self.batch.exist_job(self.properties["cloudwatch"]["request_id"])):
+                aws_log = self.batch.get_logs_job(self.properties["cloudwatch"]["request_id"])
+        ###
         print(aws_log)
         
     @excp.exception(logger)        
@@ -253,7 +274,16 @@ class AWS(Commands):
         # Delete associated notifications
         self.delete_bucket_notifications()        
         # Delete function
-        self.delete_lambda_function() 
+        self.delete_lambda_function()
+        ###
+        # Delete resources batch  
+        self.delete_batch_resources()
+        ###
+    ###
+    def delete_batch_resources(self):
+        if(self.batch.existe_compute_environments(self._lambda.properties['name'])):
+            self.batch.delete_compute_environment(self._lambda.properties['name'])
+    ###
 
     def delete_lambda_function(self):
         response = self._lambda.delete_function()

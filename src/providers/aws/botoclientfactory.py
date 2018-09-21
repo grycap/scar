@@ -21,6 +21,8 @@ from src.providers.aws.clients.cloudwatchlogs import CloudWatchLogsClient
 from src.providers.aws.clients.iam import IAMClient
 from src.providers.aws.clients.resourcegroups import ResourceGroupsClient
 from src.providers.aws.clients.s3 import S3Client
+###
+from src.providers.aws.clients.batchfunction import BatchClient
 
 class GenericClient(object):
 

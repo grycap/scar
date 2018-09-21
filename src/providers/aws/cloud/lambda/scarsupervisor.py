@@ -24,7 +24,11 @@ import socket
 import uuid
 import base64
 import sys
+###
+import time
+###
 from urllib.parse import unquote_plus
+
 
 sys.path.append("..")
 sys.path.append(".")
@@ -38,6 +42,143 @@ else:
     logger.setLevel('INFO')
 logger.info('SCAR: Loading lambda function')
 lambda_instance = None
+
+###
+#######################################
+#        BATCH RELATED FUNCTIONS      #
+#######################################
+class Batch():
+    scarfile_id_image="dooros/scarfile"
+    bucket_name_input="NO"
+    bucket_name_output="NO"
+    
+    @utils.lazy_property
+    def client(self):
+        client = boto3.client('batch')
+        return client
+    
+    def get_create_job_definition_args(self,name,image):
+        return {
+            'type':'container',
+            'containerProperties':{
+                'command': [],
+                'mountPoints': [
+                    {"sourceVolume": "SCAR_INPUT_DIR",
+                    "readOnly": False,
+                    "containerPath": lambda_instance.input_folder},
+                    {"sourceVolume": "SCAR_OUTPUT_DIR",
+                    "readOnly": False,
+                    "containerPath": lambda_instance.output_folder},
+                    ],
+                'jobRoleArn': utils.get_environment_variable("ROLE"),
+                "volumes": [
+                    {"host": {"sourcePath": lambda_instance.input_folder},
+                    "name": "SCAR_INPUT_DIR"},
+                    {"host":{"sourcePath": lambda_instance.output_folder},
+                    "name": "SCAR_OUTPUT_DIR"},
+                    ],
+                'readonlyRootFilesystem':False,
+                "privileged": True,
+                'image': image,
+                'memory':int(utils.get_environment_variable("MEMORY")),
+                'vcpus': 1,
+                },
+            'jobDefinitionName':name,
+        }
+    
+    
+    def get_submit_job_args(self,name,vcpu,mode,script,bucket_input,bucket_output,comando,scar_input_file,palabras,idJob=None):
+        if not scar_input_file:
+            scar_input_file=""
+        if comando=="":
+            comando= []
+        else:
+            comando=[comando]
+        variables= []
+        variables.append({"name": "SCRIPT","value": str(script)})
+        variables.append({"name": "NAME_FUNCT","value":lambda_instance.function_name})
+        variables.append({"name":"SCAR_INPUT_FILE","value": scar_input_file})
+        variables.append({"name": "SCAR_INPUT_DIR","value": lambda_instance.input_folder})
+        variables.append({"name": "MODE","value": mode})
+        variables.append({"name": "SCAR_OUTPUT_DIR","value": lambda_instance.output_folder})
+        variables.append({"name": "REQUEST_ID","value": lambda_instance.request_id})
+        variables.append({"name": "BUCKET_OUTPUT","value": bucket_output})
+        variables.append({"name": "BUCKET_INPUT","value": bucket_input})
+        for palabra in palabras:
+            if palabra!="--env":
+                variable = {"name":palabra.split('=')[0],"value":palabra.split("=")[1]}
+                variables.append(variable)
+        
+
+
+        if idJob:
+            return {
+                'jobDefinition':name,
+                'jobName':name,
+                'jobQueue':lambda_instance.function_name,
+                'dependsOn':[
+                    {'jobId': idJob,
+                    'type': 'SEQUENTIAL'},
+                    ],
+                'containerOverrides':{
+                    "vcpus": vcpu,
+                    "command": comando,
+                    "environment": variables
+                    }
+                }
+        else:
+            return {
+                'jobDefinition':name,
+                'jobName':name,
+                'jobQueue':lambda_instance.function_name,
+                'containerOverrides':{
+                    "vcpus": vcpu,
+                    "command": comando,
+                    "environment": variables
+                    }
+                }
+
+    def register_job_definition(self,name,image):
+        create_args= self.get_create_job_definition_args(name,image)
+        self.client.register_job_definition(**create_args)
+    def submit_job(self,name,vcpu,mode,script,bucket_input,bucket_output,comando,scar_input_file,variables,idJob=None):
+        if idJob:
+            create_args= self.get_submit_job_args(name,vcpu,mode,script,bucket_input,bucket_output,comando,scar_input_file,variables,idJob=idJob)
+        else: 
+            create_args= self.get_submit_job_args(name,vcpu,mode,script,bucket_input,bucket_output,comando,scar_input_file,variables)
+        return self.client.submit_job(**create_args)
+    
+    def invoke_function_batch(self,scar_input_file,variables):
+        self.register_job_definition(lambda_instance.function_name, utils.get_environment_variable("IMAGE_ID"))
+        data=""
+        if utils.is_variable_in_environment('INIT_SCRIPT_PATH') : 
+            with open(str(os.environ['INIT_SCRIPT_PATH'])) as myfile:
+                data = myfile.read()
+        if utils.is_value_in_dict(lambda_instance.event, 'script'):
+            data=utils.base64_to_utf8_string(lambda_instance.event['script'])
+        if lambda_instance.has_input_bucket():
+                self.bucket_name_input = lambda_instance.input_bucket
+        if lambda_instance.has_output_bucket():
+            self.bucket_name_output = lambda_instance.output_bucket
+        
+        if (data!=""):
+            self.register_job_definition("scarfiles",self.scarfile_id_image)
+            response = self.submit_job("scarfiles",1,"INIT",data,self.bucket_name_input,self.bucket_name_output,"script.sh",scar_input_file,variables)
+            idJob = self.submit_job(lambda_instance.function_name,1,"MED",data,self.bucket_name_input,self.bucket_name_output,lambda_instance.input_folder+"/script.sh",scar_input_file,variables,idJob=response["jobId"])["jobId"]
+            response = self.submit_job("scarfiles",1,"FINISH",data,self.bucket_name_input,self.bucket_name_output,"script.sh",scar_input_file,variables,idJob=idJob)
+        elif(self.bucket_name_output!="NO" or self.bucket_name_input!="NO"):
+            self.register_job_definition("scarfiles",self.scarfile_id_image)
+            response = self.submit_job("scarfiles",1,"INIT",data,self.bucket_name_input,self.bucket_name_output,"",scar_input_file,variables)
+            idJob = self.submit_job(lambda_instance.function_name,1,"MED",data,self.bucket_name_input,self.bucket_name_output,"",scar_input_file,variables,idJob=response["jobId"])["jobId"]
+            response = self.submit_job("scarfiles",1,"FINISH",data,self.bucket_name_input,self.bucket_name_output,"",scar_input_file,variables,idJob=idJob)
+        else:
+            idJob = self.submit_job(lambda_instance.function_name,1,"MED",data,self.bucket_name_input,self.bucket_name_output,"",scar_input_file,variables)["jobId"]
+        return idJob
+
+        
+
+###
+
 
 #######################################
 #        S3 RELATED FUNCTIONS         #
@@ -55,7 +196,8 @@ class S3():
             self.input_bucket = self.record['bucket']['name']
             self.file_key = unquote_plus(self.record['object']['key'])
             self.file_name = os.path.basename(self.file_key).replace(' ', '')
-            self.file_download_path = '{0}/{1}'.format(lambda_instance.input_folder, self.file_name) 
+            self.file_download_path = '{0}/{1}'.format(lambda_instance.input_folder, self.file_name)
+
     def get_s3_record(self):
         if len(lambda_instance.event['Records']) > 1:
             logger.warning("Multiple records detected. Only processing the first one.")
@@ -179,6 +321,12 @@ class Udocker():
     udocker_exec = "/var/task/udockerb"
     container_name = "udocker_container"
     script_exec = "/bin/sh"
+    ###
+    @utils.lazy_property
+    def supervisor(self):
+        supervisor = Supervisor()
+        return supervisor
+    ###
 
     def __init__(self, scar_input_file):
         self.container_output_file = "{0}/container-stdout.txt".format(lambda_instance.temporal_folder)
@@ -263,8 +411,7 @@ class Udocker():
         self.cmd_container_execution += self.parse_container_environment_variable("INSTANCE_IP", 
                                                                                   socket.gethostbyname(socket.gethostname()))        
         self.cmd_container_execution += self.get_user_defined_variables()
-        self.cmd_container_execution += self.get_decrypted_variables()
-        self.cmd_container_execution += self.get_iam_credentials()
+        self.cmd_container_execution += self.get_iam_credentials()        
         self.cmd_container_execution += self.get_input_file()
         self.cmd_container_execution += self.get_output_dir()
         self.cmd_container_execution += self.get_extra_payload_path()
@@ -275,27 +422,15 @@ class Udocker():
         if key and value and key != "" and value != "":
             var += ["--env", str(key) + '=' + str(value)]
         return var
-
+        
     def get_user_defined_variables(self):
         user_vars = []
         for key in os.environ.keys():
             # Find global variables with the specified prefix
             if re.match("CONT_VAR_.*", key):
                 user_vars += self.parse_container_environment_variable(key.replace("CONT_VAR_", ""),
-                                                                       utils.get_environment_variable(key))
-        return user_vars
-
-    def get_decrypted_variables(self):
-        decrypted_vars = []
-        session = boto3.session.Session()
-        client = session.client('kms')
-        for key in os.environ.keys():
-            if re.match("CONT_VAR_KMS_ENC_.*", key):
-                secret  = utils.get_environment_variable(key)
-                decrypt = client.decrypt(CiphertextBlob=bytes(base64.b64decode(secret)))["Plaintext"]
-                decrypted_vars += self.parse_container_environment_variable(key.replace("CONT_VAR_KMS_ENC", "KMS_DEC"),
-                                                                            decrypt.decode("utf-8"))
-        return decrypted_vars
+                                                                       utils.get_environment_variable(key)) 
+        return user_vars                      
 
     def get_iam_credentials(self):
         creds = []
@@ -314,7 +449,7 @@ class Udocker():
         if self.scar_input_file and self.scar_input_file != "":
             file += self.parse_container_environment_variable("SCAR_INPUT_FILE", self.scar_input_file)
         return file
-
+    
     def get_output_dir(self):
         return self.parse_container_environment_variable("SCAR_OUTPUT_DIR", 
                                                          "/tmp/{0}/output".format(lambda_instance.request_id))
@@ -367,6 +502,31 @@ class Udocker():
         
         if os.path.isfile(self.container_output_file):
             return utils.read_file(self.container_output_file)
+    ###        
+    def launch_udocker_container_batch(self):
+        remaining_seconds = lambda_instance.get_invocation_remaining_seconds()
+        data =""
+        logger.info("Executing udocker container. Timeout set to {0} - 10 seconds".format(remaining_seconds))
+        logger.debug("Udocker command: {0}".format(self.cmd_container_execution))
+        process = subprocess.Popen(self.cmd_container_execution, 
+                              stderr=subprocess.STDOUT, 
+                              stdout=open(self.container_output_file, "w"), 
+                              preexec_fn=os.setsid)  
+        remaining_seconds-=10
+        while (process.poll() is None and remaining_seconds > 0):
+            time.sleep(1)
+            remaining_seconds-=1
+            logger.info("time: "+str(remaining_seconds))
+        if (remaining_seconds<=0):
+            process.terminate()
+            logger.info("Executing udocker container in batch")
+            data = self.supervisor.execute_lambda_batch(self.scar_input_file)
+        else:
+            if os.path.isfile(self.container_output_file):
+                data= read_file(self.container_output_file)
+        
+        return data
+    ###
         
 #####################################################################################################################
 
@@ -381,6 +541,12 @@ class Supervisor():
     def s3(self):
         s3 = S3()
         return s3
+    ###
+    @utils.lazy_property
+    def batch(self):
+        batch = Batch()
+        return batch
+    ###
     
     @utils.lazy_property
     def http(self):
@@ -474,7 +640,21 @@ class Supervisor():
     
     def create_event_file(self):
         utils.create_file_with_content("{0}/event.json".format(lambda_instance.temporal_folder), json.dumps(lambda_instance.event))        
-        
+    ###
+    def execute_batch(self):
+        logger.error(str(self.udocker.get_user_defined_variables()))
+        self.body["udocker_output"] = "Job delegated to batch. Consult: \n  scar log -n "+lambda_instance.function_name+" -ri "+self.batch.invoke_function_batch(self.scar_input_file,self.udocker.get_user_defined_variables())
+
+    def execute_udocker_batch(self):
+        udocker_output = self.udocker.launch_udocker_container_batch()
+        self.body["udocker_output"] = udocker_output
+    
+    def execute_lambda_batch(self,scar_input_file):
+        return "Job delegated to batch. Consult: \n  scar log -n "+lambda_instance.function_name+" -ri "+self.batch.invoke_function_batch(self.scar_input_file,self.udocker.get_user_defined_variables())
+    ####             
+
+
+
 #####################################################################################################################
 def set_instance_properties(event, context):
     global lambda_instance
@@ -486,9 +666,23 @@ def lambda_handler(event, context):
     supervisor = Supervisor()
     try:
         supervisor.parse_input()
-        supervisor.prepare_udocker()
-        supervisor.execute_udocker()                                      
-        supervisor.parse_output()
+        if utils.is_variable_in_environment("EXECUTION_MODE"):
+            if(utils.get_environment_variable("EXECUTION_MODE")=="lambda-batch"):
+                logger.info("Mode lambda - batch")
+                supervisor.prepare_udocker()
+                supervisor.execute_udocker_batch()
+            elif (utils.get_environment_variable("EXECUTION_MODE")=="batch"):
+                logger.info("Mode batch")
+                supervisor.execute_batch()
+            else:
+                supervisor.prepare_udocker()
+                supervisor.execute_udocker()                                      
+            supervisor.parse_output()
+        else:
+            supervisor.prepare_udocker()
+            supervisor.execute_udocker()                                      
+            supervisor.parse_output()
+
     except Exception:
         logger.error("Exception launched:\n {0}".format(traceback.format_exc()))
         supervisor.body["exception"] = traceback.format_exc()

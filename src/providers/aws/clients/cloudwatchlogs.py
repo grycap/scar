@@ -40,6 +40,16 @@ class CloudWatchLogsClient(BotoClient):
             response = self.client.filter_log_events(**kwargs)
             logs.append(response)
         return logs
+    ###
+    def get_log_events_batch(self, **kwargs):
+        '''
+        Lists log events from the specified log group.
+        https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/logs.html#CloudWatchLogs.Client.get_log_events
+        '''
+        logs = []
+        response = self.client.get_log_events(**kwargs)
+        return response
+    ###
             
     @excp.exception(logger)            
     def create_log_group(self, **kwargs):

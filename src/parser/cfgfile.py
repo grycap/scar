@@ -32,7 +32,19 @@ default_cfg = {
           "timeout_threshold" : 10 ,
           "runtime" : "python3.6"
         },
-        "cloudwatch" : { "log_retention_policy_in_days" : 30 }
+        "cloudwatch" : { "log_retention_policy_in_days" : 30 },
+        "batch": {
+                "state": "ENABLED",
+                "type": "MANAGED",                 
+                "securityGroupIds": [],
+                "type_inst": "EC2",
+                "minvCpus": 0,
+                "desiredvCpus": 0,
+                "maxvCpus": 1,
+                "subnets": [],
+                "instanceTypes": ["m3.medium"],
+                "instanceRole": "ecsInstanceRole"
+        }
     }
 }
 

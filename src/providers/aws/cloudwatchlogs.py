@@ -41,7 +41,7 @@ class CloudWatchLogs(GenericClient):
       
     def delete_log_group(self):
         return self.client.delete_log_group(**self.get_log_group_name_arg())
-    
+    ###
     def get_aws_log(self):
         function_logs = ""
         try:
@@ -55,6 +55,12 @@ class CloudWatchLogs(GenericClient):
         except ClientError as ce:
             print ("Error getting the function logs: %s" % ce)
         return function_logs
+    ###    
+    def get_logs_batch(self,group,streamName):
+        kwargs = {'logGroupName':group,'logStreamName':streamName}
+        response = self.client.get_log_events_batch(**kwargs)
+        return response
+    ###
 
     def sort_events_in_message(self, response):
         sorted_msg = ""

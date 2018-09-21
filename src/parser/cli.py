@@ -62,6 +62,8 @@ class CommandParser(object):
         parser_init.add_argument("-p", "--preheat", help="Preheats the function running it once and downloading the necessary container", action="store_true")
         parser_init.add_argument("-ep", "--extra_payload", help="Folder containing files that are going to be added to the lambda function")
         parser_init.add_argument("-ll", "--log_level", help="Set the log level of the lambda function. Accepted values are: 'CRITICAL','ERROR','WARNING','INFO','DEBUG'", default="INFO")
+        ###
+        parser_init.add_argument("-em", "--execution_mode", help="Specifies the execution mode of the job that can be lambda (default), lambda-batch and batch mode")
         # S3 conf
         parser_init.add_argument("-db", "--deployment_bucket", help="Bucket where the deployment package is going to be uploaded.")
         parser_init.add_argument("-ib", "--input_bucket", help="Bucket name where the input files will be stored.")
@@ -208,13 +210,14 @@ class CommandParser(object):
         return {'aws' : aws_args }
 
     def parse_scar_args(self, cmd_args):
-        scar_args = ['func', 'conf_file', 'json', 'verbose', 'path', ('all', 'delete_all'), 'preheat']
+        scar_args = ['func', 'conf_file', 'json', 'verbose', 'path', ('all', 'delete_all'), 'preheat','execution_mode',]
         return {'scar' : utils.parse_arg_list(scar_args, cmd_args)}
 
     def parse_lambda_args(self, cmd_args):
+        ###
         lambda_args = ['name', 'asynchronous', 'init_script', 'run_script', 'c_args', 'memory', 'time',
                        'timeout_threshold', 'log_level', 'image', 'image_file', 'description', 
-                       'lambda_role', 'extra_payload', ('environment', 'environment_variables')]
+                       'lambda_role', 'extra_payload','execution_mode', ('environment', 'environment_variables')]
         return utils.parse_arg_list(lambda_args, cmd_args)
     
     def parse_iam_args(self, cmd_args):
@@ -227,7 +230,8 @@ class CommandParser(object):
     
     def parse_api_gateway_args(self, cmd_args):
         api_gtw_args = [('api_gateway_name', 'name'), 'parameters', 'data_binary']
-        return utils.parse_arg_list(api_gtw_args, cmd_args)     
+        return utils.parse_arg_list(api_gtw_args, cmd_args)
+    
         
     def parse_s3_args(self, cmd_args):
         s3_args = ['deployment_bucket', 
