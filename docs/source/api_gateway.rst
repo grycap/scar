@@ -67,6 +67,9 @@ or::
 The file specified after the parameter ``-db`` is codified and passed as the POST body.
 Take into account that the file limitations for request response and asynchronous requests are 6MB and 128KB respectively, as specified in the `AWS lambda documentation <https://docs.aws.amazon.com/lambda/latest/dg/limits.html>`_.
 
+Lastly, You can also submit JSON as the body to the HTTP endpoint with no other configuration, as long Content-Type is application/json. If SCAR sees a JSON body, it will write this body to /tmp/{REQUEST_ID}/api_event.json. Otherwise, it will default the post body to it being a file.
+
+
 Passing parameters in the requests
 ----------------------------------
 
