@@ -69,6 +69,10 @@ Take into account that the file limitations for request response and asynchronou
 
 Lastly, You can also submit JSON as the body to the HTTP endpoint with no other configuration, as long Content-Type is application/json. If SCAR sees a JSON body, it will write this body to /tmp/{REQUEST_ID}/api_event.json. Otherwise, it will default the post body to it being a file.
 
+This can invoked via the cli::
+
+  scar invoke -n scar-cowsay -jd '{"key1": "value1", "key2": "value3"}'
+ 
 
 Passing parameters in the requests
 ----------------------------------

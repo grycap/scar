@@ -323,8 +323,8 @@ class Lambda(GenericClient):
                 invoke_args['data'] = self.get_encoded_binary_data(api_props['data_binary'])
             if 'parameters' in api_props and api_props['parameters']:
                 invoke_args['parameters'] = self.parse_http_parameters(api_props['parameters'])
-            if 'json_body' in api_props and api_props['json_body']:
-                invoke_args['data'] = self.parse_http_parameters(api_props['json_body'])
+            if 'json_data' in api_props and api_props['json_data']:
+                invoke_args['data'] = self.parse_http_parameters(api_props['json_data'])
                 invoke_args['headers'] = {'Content-Type': 'application/json'}
         return request.invoke_http_endpoint(self.get_api_gateway_url(), **invoke_args)
         
