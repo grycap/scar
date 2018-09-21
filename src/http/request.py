@@ -26,6 +26,8 @@ def invoke_http_endpoint(url, **kwargs):
     """
     if 'data' in kwargs and kwargs['data']:
         response = requests.post(url, **kwargs)
+    elif 'json' in kwargs and kwargs['json']:
+        response = request.post(url, **kwargs)
     else:
         response = requests.get(url, **kwargs)
     return response
