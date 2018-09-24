@@ -114,20 +114,37 @@ class S3():
 #######################################
 
 class HTTP():
-    
+
     def is_post_request_with_body(self):
         return lambda_instance.event['httpMethod'] == 'POST' and lambda_instance.event['body'] is not None
-    
+
+    def is_post_request_with_body_json(self):
+        return lambda_instance.event['httpMethod'] == 'POST' and lambda_instance.event['headers']['Content-Type'].strip() == 'application/json'
+
+    def save_post_body_json(self):
+        body = lambda_instance.event['body']
+        file_path = "/tmp/{0}/api_event.json".format(lambda_instance.request_id)
+        logger.info("Received JSON from POST request and saved it in path '{0}'".format(file_path))
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)  
+        with open(file_path, 'w') as event_file:
+            event_file.write(body)
+        return file_path
+
+    def save_post_body_file(self):
+        body = base64.b64decode(lambda_instance.event['body'])
+        body_file_name = uuid.uuid4().hex
+        file_path = "/tmp/{0}/{1}".format(lambda_instance.request_id, body_file_name)
+        logger.info("Received file from POST request and saved it in path '{0}'".format(file_path))
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)  
+        with open(file_path, 'wb') as data:
+            data.write(body)
+        return file_path
+
     def save_post_body(self):
-        if self.is_post_request_with_body():
-            body = base64.b64decode(lambda_instance.event['body'])
-            body_file_name = uuid.uuid4().hex
-            file_path = "/tmp/{0}/{1}".format(lambda_instance.request_id, body_file_name)
-            logger.info("Received file from POST request and saved it in path '{0}'".format(file_path))
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)  
-            with open(file_path, 'wb') as data:
-                data.write(body)
-            return file_path
+        if self.is_post_request_with_body_json():
+            return self.save_post_body_json()
+        elif self.is_post_request_with_body:
+            return self.save_post_body_file()
 
 class Lambda():
 

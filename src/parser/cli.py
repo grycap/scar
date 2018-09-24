@@ -86,6 +86,7 @@ class CommandParser(object):
         group.add_argument("-n", "--name", help="Lambda function name")
         group.add_argument("-f", "--conf_file", help="Yaml file with the function configuration") 
         parser_invoke.add_argument("-db", "--data_binary", help="File path of the HTTP data to POST.")
+        parser_invoke.add_argument("-jd", "--json_data", help="JSON Body to Post")
         parser_invoke.add_argument("-a", "--asynchronous", help="Launch an asynchronous function.", action="store_true")
         parser_invoke.add_argument("-p", "--parameters", help="In addition to passing the parameters in the URL, you can pass the parameters here (i.e. '{\"key1\": \"value1\", \"key2\": [\"value2\", \"value3\"]}').")
         # General AWS conf          
@@ -226,7 +227,7 @@ class CommandParser(object):
         return utils.parse_arg_list(cw_log_args, cmd_args)
     
     def parse_api_gateway_args(self, cmd_args):
-        api_gtw_args = [('api_gateway_name', 'name'), 'parameters', 'data_binary']
+        api_gtw_args = [('api_gateway_name', 'name'), 'parameters', 'data_binary', 'json_data']
         return utils.parse_arg_list(api_gtw_args, cmd_args)     
         
     def parse_s3_args(self, cmd_args):
