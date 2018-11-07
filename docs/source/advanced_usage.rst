@@ -92,26 +92,12 @@ or::
 
   scar update -e EST1: 145 -e TEST2: i69 -e TEST2: 42 -n scar-cowsay  
 
-
-Also, you can specify encrypted variables here. If SCAR detects an encrypted value, it will attempt to use AWS KMS to decrypt it and add it to the executed Docker container. It does this by looking for the "KMS_ENC" prefix on a user defined environment variable. In the Docker container, the variable prefix will be renamed to "KMS_DEC"::
-
-  cat >> env-var.yaml << EOF
-  functions:
-    scar-cowsay:
-      image: grycap/cowsay
-      init_script: src/test/test-global-vars.sh
-      environment:
-        KMS_ENC_TEST1: ASSDKDJSKDJSENCRYPTEDVALUE
-  EOF
-
-  scar init -f env-var.yaml
-
-
 In addition, the following environment variables are automatically made available to the underlying Docker container:
 
 * AWS_ACCESS_KEY_ID
 * AWS_SECRET_ACCESS_KEY
 * AWS_SESSION_TOKEN
+* AWS_SECURITY_TOKEN
 
 This allows a script running in the Docker container to access other AWS services. As an example, see how the AWS CLI runs on AWS Lambda in the `examples/aws-cli <https://github.com/grycap/scar/tree/master/examples/aws-cli>`_ folder.
 

@@ -76,28 +76,32 @@ class FunctionPackageCreator():
             
         self.add_init_script() 
         self.add_extra_payload()
-        self.set_permissions()
         self.zip_scar_folder()
         self.check_code_size()
 
     def add_mandatory_files(self):
         os.makedirs(self.scar_temporal_folder, exist_ok=True)
         shutil.copy(utils.resource_path(self.supervisor_source), self.supervisor_dest)
+        self.execute_command(['chmod', '0664', self.supervisor_dest])
         shutil.copy(utils.resource_path(self.udocker_source), self.udocker_dest)
+        self.execute_command(['chmod', '0775', self.udocker_dest])
         
         os.makedirs(utils.join_paths(self.scar_temporal_folder, "src"), exist_ok=True)
+        os.makedirs(utils.join_paths(self.scar_temporal_folder, "src", "clients"), exist_ok=True)
         
-        initpy_source = utils.resource_path(utils.join_paths(self.lambda_code_files_path, "__init__.py"))
-        self.initpy_dest = utils.join_paths(self.scar_temporal_folder, "src/__init__.py")
-        shutil.copy(initpy_source, self.initpy_dest)
-        
-        utils_source = utils.resource_path(utils.join_paths(self.src_path, "utils.py"))
-        self.utils_dest = utils.join_paths(self.scar_temporal_folder, "src/utils.py")
-        shutil.copy(utils_source, self.utils_dest)
-        
-        exceptions_source = utils.resource_path(utils.join_paths(self.src_path, "exceptions.py"))
-        self.exceptions_dest = utils.join_paths(self.scar_temporal_folder, "src/exceptions.py")
-        shutil.copy(exceptions_source, self.exceptions_dest)                
+        files = ["utils.py", "exceptions.py"]
+        for file in files:
+            file_source = utils.resource_path(utils.join_paths(self.src_path, file))
+            self.file_dest = utils.join_paths(self.scar_temporal_folder, "src/{0}".format(file))
+            shutil.copy(file_source, self.file_dest)
+            self.execute_command(['chmod', '0664', self.file_dest])
+            
+        files = ["apigateway.py", "batch.py", "lambdafunction.py", "s3.py", "udocker.py"]
+        for file in files:
+            file_source = utils.resource_path(utils.join_paths(self.lambda_code_files_path, 'clients', file))
+            self.file_dest = utils.join_paths(self.scar_temporal_folder, "src/clients/{0}".format(file))
+            shutil.copy(file_source, self.file_dest)
+            self.execute_command(['chmod', '0664', self.file_dest])             
         
         self.set_environment_variable('UDOCKER_DIR', "/tmp/home/udocker")
         self.set_environment_variable('UDOCKER_LIB', "/var/task/udocker/lib/")
@@ -132,13 +136,6 @@ class FunctionPackageCreator():
         # Delete created temporal files
         if os.path.isdir(self.scar_temporal_folder):
             shutil.rmtree(self.scar_temporal_folder, ignore_errors=True)
-        
-    def set_permissions(self):
-        self.execute_command(['chmod', '0664', self.supervisor_dest])
-        self.execute_command(['chmod', '0775', self.udocker_dest])
-        self.execute_command(['chmod', '0664', self.initpy_dest])
-        self.execute_command(['chmod', '0664', self.utils_dest])
-        self.execute_command(['chmod', '0664', self.exceptions_dest])
         
     def zip_scar_folder(self):
         zip_exe = utils.resource_path("src/bin/zip", bin_path='/usr/bin/zip')

@@ -24,7 +24,9 @@ import tempfile
 import uuid
 import sys
 import platform
+import shutil
 from .exceptions import InvalidPlatformError
+import logging
 
 def resource_path(relative_path, bin_path=None):
     """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -46,6 +48,14 @@ def is_binary_execution():
         return True
     except Exception:
         return False
+
+def get_logger():
+    logger = logging.getLogger()
+    if is_variable_in_environment('LOG_LEVEL'):
+        logger.setLevel(get_environment_variable('LOG_LEVEL'))
+    else:
+        logger.setLevel('INFO')
+    return logger
 
 def join_paths(*paths):
     return os.path.join(*paths)
@@ -145,6 +155,9 @@ def read_file(file_path, mode="r"):
 def delete_file(path):
     if os.path.isfile(path):
         os.remove(path)
+
+def delete_folder(path):
+    shutil.rmtree(path)
     
 def create_tar_gz(files_to_archive, destination_tar_path):
     with tarfile.open(destination_tar_path, "w:gz") as tar:

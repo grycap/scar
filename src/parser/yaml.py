@@ -47,15 +47,17 @@ class YamlParser(object):
             aws_args['s3'] = function_data['s3']
         if 'api_gateway' in function_data:        
             aws_args['api_gateway'] = function_data['api_gateway']
-        other_args = [('profile','boto_profile'),'region']
+        if 'batch' in function_data:        
+            aws_args['batch'] = function_data['batch']
+        other_args = [('profile','boto_profile'),'region','execution_mode']
         aws_args.update(utils.parse_arg_list(other_args, function_data))
         aws = {}     
         aws['aws'] = aws_args
         return aws
-    
+
     def parse_lambda_args(self, cmd_args):
         lambda_args = ['asynchronous', 'init_script', 'run_script', 'c_args', 'memory', 'time',
                        'timeout_threshold', 'log_level', 'image', 'image_file', 'description', 
                        'lambda_role', 'extra_payload', ('environment', 'environment_variables')]
-        return utils.parse_arg_list(lambda_args, cmd_args)    
+        return utils.parse_arg_list(lambda_args, cmd_args)   
         
