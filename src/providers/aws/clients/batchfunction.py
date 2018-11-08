@@ -53,8 +53,24 @@ class BatchClient(BotoClient):
         Describe a new job queue.
         https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/batch.html#Batch.Client.describe_job_queues
         '''
-        logger.debug("Descripting job queue.")
+        logger.debug("Describing job queue.")
         return self.client.describe_job_queues(**kwargs)
+    
+    def describe_job_definitions(self, **kwargs):
+        '''
+        Describes a list of job definitions.
+        https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/batch.html#Batch.Client.describe_job_definitions
+        '''
+        logger.debug("Describing job definition.")
+        return self.client.describe_job_definitions(**kwargs)
+    
+    def deregister_job_definition(self, **kwargs):
+        '''
+        Deregisters an AWS Batch job definition.
+        https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/batch.html#Batch.Client.deregister_job_definition
+        '''
+        logger.debug("Deleting job definition.")
+        return self.client.deregister_job_definition(**kwargs)     
 
     def update_job_queue(self, **kwargs):
         '''

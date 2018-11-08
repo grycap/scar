@@ -41,8 +41,24 @@ class Batch(GenericClient):
         return len(response["computeEnvironments"]) > 0
 
     def delete_compute_environment(self,name):
+        self.delete_job_definitions(name)
         self.delete_job_queue(name)
         self.delete_compute_env(name)
+            
+    def delete_job_definitions(self, name):
+        job_definitions = []
+        # Get IO definitions (if any)
+        kwargs = {"jobDefinitionName" : '{0}-io'.format(name)}
+        io_job_info = self.client.describe_job_definitions(**kwargs)
+        job_definitions.extend(["{0}:{1}".format(definition['jobDefinitionName'], definition['revision']) for definition in io_job_info['jobDefinitions']])
+        # Get main job definition
+        kwargs = {"jobDefinitionName" : name}
+        job_info = self.client.describe_job_definitions(**kwargs)
+        job_definitions.extend(["{0}:{1}".format(definition['jobDefinitionName'], definition['revision']) for definition in job_info['jobDefinitions']])
+        for job_def in job_definitions:
+            kwars = {"jobDefinition" : job_def}
+            self.client.deregister_job_definition(**kwars)
+        logger.info("Job definitions deleted")            
             
     def delete_job_queue(self, name):
         while True:
