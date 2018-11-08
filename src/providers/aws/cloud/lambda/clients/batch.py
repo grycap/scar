@@ -49,6 +49,8 @@ class Batch():
             self.add_environment_variable("INPUT_BUCKET", self.lambda_instance.input_bucket)
         if self.lambda_instance.has_output_bucket():
             self.add_environment_variable("OUTPUT_BUCKET", self.lambda_instance.output_bucket)
+        if self.lambda_instance.has_output_bucket_folder():
+            self.add_environment_variable("OUTPUT_FOLDER", self.lambda_instance.output_bucket_folder)                 
         
         for user_var, value in self.get_user_defined_variables().items():
             self.add_environment_variable(user_var, value)
@@ -113,9 +115,9 @@ class Batch():
     
     def get_user_script(self):
         script = ""
-        if utils.is_variable_in_environment('INIT_SCRIPT_PATH') : 
-            with open(str(os.environ['INIT_SCRIPT_PATH'])) as init_script:
-                script = utils.utf8_to_base64_string(init_script.read())
+        if utils.is_variable_in_environment('INIT_SCRIPT_PATH'):
+            file_content = utils.read_file(utils.get_environment_variable('INIT_SCRIPT_PATH'), 'rb')
+            script = utils.utf8_to_base64_string(file_content)        
         if utils.is_value_in_dict(self.lambda_instance.event, 'script'):
             script = self.lambda_instance.event['script']
         return script

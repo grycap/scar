@@ -181,7 +181,7 @@ class Udocker():
     
     def add_init_script(self):
         init_script_path = "{0}/init_script.sh".format(self.lambda_instance.temporal_folder)
-        shutil.copyfile("{0}/init_script.sh".format(self.lambda_instance.permanent_folder), init_script_path)    
+        shutil.copyfile(utils.get_environment_variable("INIT_SCRIPT_PATH"), init_script_path)    
         self.cmd_container_execution += ["--entrypoint={0} {1}".format(self.script_exec, init_script_path), self.container_name]
     
     def launch_udocker_container(self):
