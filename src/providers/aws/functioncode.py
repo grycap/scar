@@ -49,7 +49,7 @@ class FunctionPackageCreator():
     supervisor_source = utils.join_paths(lambda_code_files_path, "scarsupervisor.py")
     
     udocker_file = "udockerb" if utils.is_binary_execution() else "udockerpy"
-    udocker_source = utils.join_paths(lambda_code_files_path, udocker_file)
+    udocker_source = utils.join_paths(lambda_code_files_path, "udocker", udocker_file)
     udocker_dest = utils.join_paths(scar_temporal_folder, "udockerb")
     
     udocker_exec = [udocker_dest]
@@ -151,7 +151,7 @@ class FunctionPackageCreator():
         if utils.is_value_in_dict(os.environ, 'UDOCKER_DIR'):
             cls.udocker_dir = os.environ['UDOCKER_DIR']
         # Set temporal global vars
-        udocker_tarball = utils.resource_path(utils.join_paths(cls.lambda_code_files_path, "udocker-1.1.0-RC2.tar.gz"))
+        udocker_tarball = utils.resource_path(utils.join_paths(cls.lambda_code_files_path, "udocker", "udocker-1.1.0-RC2.tar.gz"))
         utils.set_environment_variable('UDOCKER_TARBALL', udocker_tarball)
         utils.set_environment_variable('UDOCKER_DIR', utils.join_paths(cls.scar_temporal_folder, "udocker"))
         

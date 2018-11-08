@@ -152,7 +152,7 @@ class Supervisor():
             self.execute_batch()
         else:
             self.prepare_udocker()
-            self.execute_udocker()  
+            self.execute_udocker()
 
 def lambda_handler(event, context):
     logger.debug("Received event: " + json.dumps(event))

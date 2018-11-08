@@ -77,18 +77,16 @@ class Batch():
                 "environment" : self.container_environment_variables,                             
                 'mountPoints': [
                     {"sourceVolume": "SCAR_INPUT_DIR",
-                     "readOnly": False,
                      "containerPath": self.lambda_instance.input_folder},
                     {"sourceVolume": "SCAR_OUTPUT_DIR",
-                     "readOnly": False,
                      "containerPath": self.lambda_instance.output_folder},
                 ],
-                'readonlyRootFilesystem':False,
-                "privileged": True,
-                },
+            },
         }
         if step == "MED":
-            job_def_args["containerProperties"]["command"] = ["{0}/script.sh".format(self.lambda_instance.input_folder)]
+            job_def_args["containerProperties"]["command"] = []
+            if self.script != "":
+                job_def_args["containerProperties"]["command"] = ["{0}/script.sh".format(self.lambda_instance.input_folder)]
             job_def_args["containerProperties"]["image"] = utils.get_environment_variable("IMAGE_ID")
         
         return job_def_args
@@ -102,7 +100,7 @@ class Batch():
         self.register_job_definition(self.lambda_instance.function_name, "MED")
         # Submit download input Job
         job_id = None
-        if self.lambda_instance.has_input_bucket():
+        if self.lambda_instance.has_input_bucket() or self.script != "":
             self.register_job_definition(self.io_job_name, "INIT")
             job_id = self.submit_init_job()
         # Submit lambda Job
@@ -164,7 +162,7 @@ class Batch():
     def submit_init_job(self):
         return self.submit_batch_job(self.get_job_args('INIT'))
     
-    def submit_lambda_job(self, job_id=None):
+    def submit_lambda_job(self, job_id):
         return self.submit_batch_job(self.get_job_args('MED', job_id))
     
     def submit_end_job(self, job_id):

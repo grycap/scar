@@ -58,11 +58,11 @@ class CloudWatchLogs(GenericClient):
     
     def get_batch_job_log(self, jobs_info):
         batch_logs = "" 
-        batch_logs += "Batch job status: {0}".format(jobs_info[0]["status"])
+        batch_logs += "Batch job status: {0}\n".format(jobs_info[0]["status"])
         if jobs_info[0]["status"] == "SUCCEEDED":
             kwargs = {'logGroupName': "/aws/batch/job", 'logStreamNames': [jobs_info[0]["container"]["logStreamName"],]}
             batch_events = self.client.get_log_events(**kwargs)
-            batch_logs += '\n'.join([event['message'] for event in batch_events["events"]])
+            batch_logs += '\n'.join([event['message'] for response in batch_events for event in response["events"]])
         return batch_logs
 
     def sort_events_in_message(self, response):
