@@ -29,7 +29,7 @@ class Batch():
     
     def __init__(self, lambda_instance, scar_input_file):
         self.lambda_instance = lambda_instance
-        self.scar_batch_io_image_id="alpegon/scarbatchio"
+        self.scar_batch_io_image_id="grycap/scarbatchio"
         self.script = self.get_user_script()
         self.scar_input_file = scar_input_file
         self.io_job_name = "{0}-io".format(lambda_instance.function_name)
@@ -41,6 +41,7 @@ class Batch():
         self.add_environment_variable("SCRIPT", self.script)
         self.add_environment_variable("FUNCTION_NAME", self.lambda_instance.function_name)
         self.add_environment_variable("LAMBDA_EVENT", json.dumps(self.lambda_instance.event))
+        self.add_environment_variable("SCAR_INPUT_FILE", self.scar_input_file)
         self.add_environment_variable("SCAR_INPUT_DIR", self.lambda_instance.input_folder)
         self.add_environment_variable("SCAR_OUTPUT_DIR", self.lambda_instance.output_folder)
         self.add_environment_variable("REQUEST_ID", self.lambda_instance.request_id)

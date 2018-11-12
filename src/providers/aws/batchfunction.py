@@ -92,14 +92,14 @@ class Batch(GenericClient):
                 'type' : self.batch_properties['type'],
                 'state' :  self.batch_properties['state'],
                 'computeResources':{
-                    'instanceRole' : self.instance_role,
-                    'subnets' : self.batch_properties['subnets'],
-                    'instanceTypes': self.batch_properties['instance_types'],
-                    'maxvCpus': self.batch_properties['max_v_cpus'],
-                    'minvCpus': self.batch_properties['min_v_cpus'],
-                    'desiredvCpus': self.batch_properties['desired_v_cpus'],
-                    'securityGroupIds': self.batch_properties['security_group_ids'],
                     'type': self.batch_properties['comp_type'],
+                    'minvCpus': self.batch_properties['min_v_cpus'],
+                    'maxvCpus': self.batch_properties['max_v_cpus'],
+                    'desiredvCpus': self.batch_properties['desired_v_cpus'],
+                    'instanceTypes': self.batch_properties['instance_types'],                    
+                    'subnets' : self.batch_properties['subnets'],
+                    'securityGroupIds': self.batch_properties['security_group_ids'],
+                    'instanceRole' : self.instance_role,
                     }
                 }
         

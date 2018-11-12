@@ -63,7 +63,7 @@ class Lambda(GenericClient):
     @excp.exception(logger)
     def create_function(self):
         self.set_environment_variables()
-        self.set_function_code()           
+        self.set_function_code()
         creation_args = self.get_creations_args()
         response = self.client.create_function(**creation_args)
         if response and 'FunctionArn' in response:
@@ -93,16 +93,16 @@ class Lambda(GenericClient):
             self.add_lambda_environment_variable('IMAGE_ID', self.properties['image'])
         self.add_s3_environment_vars()
         if 'api_gateway' in self.aws_properties:
-            self.add_lambda_environment_variable('API_GATEWAY_ID', self.aws_properties['api_gateway']['id'])                           
+            self.add_lambda_environment_variable('API_GATEWAY_ID', self.aws_properties['api_gateway']['id'])
 
     def add_s3_environment_vars(self):
         if utils.is_value_in_dict(self.aws_properties, 's3'):
             s3_props = self.aws_properties['s3']
-            if utils.is_value_in_dict(self.aws_properties, 'input_bucket'):
+            if utils.is_value_in_dict(s3_props, 'input_bucket'):
                 self.add_lambda_environment_variable('INPUT_BUCKET', s3_props['input_bucket'])
-            if utils.is_value_in_dict(self.aws_properties, 'output_bucket'):
+            if utils.is_value_in_dict(s3_props, 'output_bucket'):
                 self.add_lambda_environment_variable('OUTPUT_BUCKET', s3_props['output_bucket'])
-            if utils.is_value_in_dict(self.aws_properties, 'output_folder'):
+            if utils.is_value_in_dict(s3_props, 'output_folder'):
                 self.add_lambda_environment_variable('OUTPUT_FOLDER', s3_props['output_folder'])        
         
 
