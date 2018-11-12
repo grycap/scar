@@ -77,7 +77,7 @@ class CommandParser(object):
         parser_init.add_argument("-api", "--api_gateway_name", help="API Gateway name created to launch the lambda function")
         # General AWS conf           
         parser_init.add_argument("-pf", "--profile", help="AWS profile to use")
-        parser_init.add_argument("-em", "--execution_mode", help="Specifies the execution mode of the job. It can be 'lambda' (default), 'lambda-batch' or 'batch'", default="lambda")        
+        parser_init.add_argument("-em", "--execution_mode", help="Specifies the execution mode of the job. It can be 'lambda', 'lambda-batch' or 'batch'")
         
     def create_invoke_parser(self):
         parser_invoke = self.subparsers.add_parser('invoke', help="Call a lambda function using an HTTP request")

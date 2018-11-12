@@ -51,8 +51,7 @@ class YamlParser(object):
             aws_args['batch'] = function_data['batch']
         other_args = [('profile','boto_profile'),'region','execution_mode']
         aws_args.update(utils.parse_arg_list(other_args, function_data))
-        aws = {}     
-        aws['aws'] = aws_args
+        aws = {'aws' : aws_args if aws_args else {}}
         return aws
 
     def parse_lambda_args(self, cmd_args):
