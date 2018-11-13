@@ -151,7 +151,7 @@ class Batch():
         if self.lambda_instance.has_output_bucket():
             self.add_environment_variable("OUTPUT_BUCKET", self.lambda_instance.output_bucket)
         
-        for user_var, value in self.get_user_defined_variables().items():
+        for user_var, value in utils.get_user_defined_variables().items():
             variables.append({"name" : user_var, "value" : value})
 
         job_def = {"jobDefinition" : job_name,
@@ -174,11 +174,3 @@ class Batch():
     
     def submit_end_job(self, job_id):
         return self.submit_batch_job(self.get_job_args('END', job_id))
-    
-    def get_user_defined_variables(self):
-        user_vars = {}
-        for key in os.environ.keys():
-            # Find global variables with the specified prefix
-            if re.match("CONT_VAR_.*", key):
-                user_vars[key.replace("CONT_VAR_", "")] = utils.get_environment_variable(key) 
-        return user_vars    

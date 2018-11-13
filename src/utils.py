@@ -200,3 +200,11 @@ def parse_arg_list(arg_keys, cmd_args):
             if key in cmd_args and cmd_args[key]:
                 result[key] = cmd_args[key]
     return result
+
+def get_user_defined_variables():
+    user_vars = {}
+    for key in os.environ.keys():
+        # Find global variables with the specified prefix
+        if re.match("CONT_VAR_.*", key):
+            user_vars[key.replace("CONT_VAR_", "")] = get_environment_variable(key)
+    return user_vars

@@ -134,13 +134,8 @@ class Udocker():
         return var
         
     def get_user_defined_variables(self):
-        user_vars = {}
-        for key in os.environ.keys():
-            # Find global variables with the specified prefix
-            if re.match("CONT_VAR_.*", key):
-                user_vars[key.replace("CONT_VAR_", "")] = utils.get_environment_variable(key)
         result = []
-        for key,value in user_vars.items():
+        for key,value in utils.get_user_defined_variables().items():
             result += self.parse_container_environment_variable(key, value)
         return result
 
