@@ -133,11 +133,9 @@ class Batch():
             script = self.lambda_instance.event['script']
         return script
     
-    def get_job_args(self, step, job_id=None):
-        job_name =  self.lambda_instance.function_name if step == 'MED' else self.io_job_name
-        scar_input_file = "" if not self.scar_input_file else self.scar_input_file
-            
+    def get_job_env_vars(self, step):
         variables= []
+        scar_input_file = "" if not self.scar_input_file else self.scar_input_file
         self.add_environment_variable("STEP", step)
         self.add_environment_variable("SCRIPT", self.get_user_script())
         self.add_environment_variable("FUNCTION_NAME", self.lambda_instance.function_name)
@@ -153,11 +151,16 @@ class Batch():
         
         for user_var, value in utils.get_user_defined_variables().items():
             variables.append({"name" : user_var, "value" : value})
-
+        return variables
+    
+    def get_job_args(self, step, job_id=None):
+        job_name =  self.lambda_instance.function_name if step == 'MED' else self.io_job_name
         job_def = {"jobDefinition" : job_name,
                    "jobName" : job_name,
                    "jobQueue" : self.lambda_instance.function_name,
-                   "containerOverrides" : { "environment" : variables }
+                   "containerOverrides" : {
+                       "environment" : self.get_job_env_vars(step)
+                    }
                   }
         if job_id:
             job_def['dependsOn'] = [{'jobId' : job_id, 'type' : 'SEQUENTIAL'}]
