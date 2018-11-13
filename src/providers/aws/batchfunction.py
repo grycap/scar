@@ -37,16 +37,19 @@ class Batch(GenericClient):
         self.delete_job_queue(name)
         self.delete_compute_env(name)
             
+    def get_job_definitions(self, jobs_info):
+        return ["{0}:{1}".format(definition['jobDefinitionName'], definition['revision']) for definition in jobs_info['jobDefinitions']]
+            
     def delete_job_definitions(self, name):
         job_definitions = []
         # Get IO definitions (if any)
         kwargs = {"jobDefinitionName" : '{0}-io'.format(name)}
         io_job_info = self.client.describe_job_definitions(**kwargs)
-        job_definitions.extend(["{0}:{1}".format(definition['jobDefinitionName'], definition['revision']) for definition in io_job_info['jobDefinitions']])
+        job_definitions.extend(self.get_job_definitions(io_job_info))
         # Get main job definition
         kwargs = {"jobDefinitionName" : name}
         job_info = self.client.describe_job_definitions(**kwargs)
-        job_definitions.extend(["{0}:{1}".format(definition['jobDefinitionName'], definition['revision']) for definition in job_info['jobDefinitions']])
+        job_definitions.extend(self.get_job_definitions(job_info))
         for job_def in job_definitions:
             kwars = {"jobDefinition" : job_def}
             self.client.deregister_job_definition(**kwars)
@@ -60,7 +63,7 @@ class Batch(GenericClient):
         response = self.describe_jobs(job_id)
         return len(response["jobs"]) != 0            
             
-    def exist_jobs_queue(self,name):
+    def exist_jobs_queue(self, name):
         response = self.get_job_queue_info(name)
         return len(response["jobQueues"]) != 0            
             
