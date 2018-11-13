@@ -87,13 +87,22 @@ class Udocker():
         self.add_container_environment_variables()
         # Container running script
         if utils.is_value_in_dict(self.lambda_instance.event, 'script'): 
-            self.add_script_as_entrypoint()
+            # Add script in memory as entrypoint
+            script_path = "{0}/script.sh".format(self.lambda_instance.temporal_folder)
+            script_content = utils.base64_to_utf8_string(self.lambda_instance.event['script'])
+            utils.create_file_with_content(script_path, script_content)
+            self.cmd_container_execution += ["--entrypoint={0} {1}".format(self.script_exec, script_path), self.container_name]
         # Container with args
         elif utils.is_value_in_dict(self.lambda_instance.event,'cmd_args'):
-            self.add_args()
+            # Add args
+            self.cmd_container_execution += [self.container_name]
+            self.cmd_container_execution += json.loads(self.lambda_instance.event['cmd_args'])
         # Script to be executed every time (if defined)
         elif utils.is_variable_in_environment('INIT_SCRIPT_PATH'):
-            self.add_init_script()
+            # Add init script
+            init_script_path = "{0}/init_script.sh".format(self.lambda_instance.temporal_folder)
+            shutil.copyfile(utils.get_environment_variable("INIT_SCRIPT_PATH"), init_script_path)    
+            self.cmd_container_execution += ["--entrypoint={0} {1}".format(self.script_exec, init_script_path), self.container_name]
         # Only container
         else:
             self.cmd_container_execution += [self.container_name]
@@ -136,16 +145,15 @@ class Udocker():
         return result
 
     def get_iam_credentials(self):
-        creds = []
+        credentials = []
         iam_creds = {'CONT_VAR_AWS_ACCESS_KEY_ID':'AWS_ACCESS_KEY_ID',
                      'CONT_VAR_AWS_SECRET_ACCESS_KEY':'AWS_SECRET_ACCESS_KEY',
                      'CONT_VAR_AWS_SESSION_TOKEN':'AWS_SESSION_TOKEN'}
         # Add IAM credentials
         for key,value in iam_creds.items():
             if not utils.is_variable_in_environment(key):
-                creds += self.parse_container_environment_variable(value, 
-                                                                   utils.get_environment_variable(value))
-        return creds
+                credentials += self.parse_container_environment_variable(value, utils.get_environment_variable(value))
+        return credentials
     
     def get_input_file(self):
         file = []
@@ -172,21 +180,6 @@ class Udocker():
                                                                     utils.get_environment_variable("EXTRA_PAYLOAD"))
         return out_lambda      
             
-    def add_script_as_entrypoint(self):
-        script_path = "{0}/script.sh".format(self.lambda_instance.temporal_folder)
-        script_content = utils.base64_to_utf8_string(self.lambda_instance.event['script'])
-        utils.create_file_with_content(script_path, script_content)
-        self.cmd_container_execution += ["--entrypoint={0} {1}".format(self.script_exec, script_path), self.container_name]
-
-    def add_args(self):
-        self.cmd_container_execution += [self.container_name]
-        self.cmd_container_execution += json.loads(self.lambda_instance.event['cmd_args'])
-    
-    def add_init_script(self):
-        init_script_path = "{0}/init_script.sh".format(self.lambda_instance.temporal_folder)
-        shutil.copyfile(utils.get_environment_variable("INIT_SCRIPT_PATH"), init_script_path)    
-        self.cmd_container_execution += ["--entrypoint={0} {1}".format(self.script_exec, init_script_path), self.container_name]
-    
     def launch_udocker_container(self):
         remaining_seconds = self.lambda_instance.get_invocation_remaining_seconds()
         logger.info("Executing udocker container. Timeout set to {0} seconds".format(remaining_seconds))

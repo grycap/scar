@@ -134,11 +134,7 @@ class Batch():
         return script
     
     def get_job_args(self, step, job_id=None):
-        job_name = self.io_job_name
-        
-        if step == 'MED':
-            job_name = self.lambda_instance.function_name
-
+        job_name =  self.lambda_instance.function_name if step == 'MED' else self.io_job_name
         scar_input_file = "" if not self.scar_input_file else self.scar_input_file
             
         variables= []
@@ -161,9 +157,7 @@ class Batch():
         job_def = {"jobDefinition" : job_name,
                    "jobName" : job_name,
                    "jobQueue" : self.lambda_instance.function_name,
-                   "containerOverrides" : {
-                       "environment" : variables,
-                    },
+                   "containerOverrides" : { "environment" : variables }
                   }
         if job_id:
             job_def['dependsOn'] = [{'jobId' : job_id, 'type' : 'SEQUENTIAL'}]
