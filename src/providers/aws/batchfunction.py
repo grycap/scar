@@ -14,11 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from src.providers.aws.cloudwatchlogs import CloudWatchLogs
 from src.providers.aws.botoclientfactory import GenericClient
 import src.logger as logger
-import src.utils as utils
-
 
 class Batch(GenericClient):
 
@@ -30,11 +27,6 @@ class Batch(GenericClient):
         self.instance_role = "arn:aws:iam::{0}:instance-profile/ecsInstanceRole".format(aws_properties['account_id'])
         self.service_role = "arn:aws:iam::{0}:role/service-role/AWSBatchServiceRole".format(aws_properties['account_id'])  
     
-    @utils.lazy_property
-    def cloudwatch_logs(self):
-        cloudwatch_logs = CloudWatchLogs(self.aws_properties)
-        return cloudwatch_logs
-
     def exist_compute_environments(self,name):
         creation_args = self.get_describe_compute_env_args(name_c=name)
         response = self.client.describe_compute_environments(**creation_args)
@@ -68,10 +60,11 @@ class Batch(GenericClient):
             status = response["jobQueues"][0]["status"]
             if status == "VALID":
                 if state == "ENABLED":
-                    updating_args = self.get_update_job_queue_args(name_j=name)
+                    updating_args = {'jobQueue' : self.get_resource_name(name),
+                                     'state':'DISABLED'}
                     self.client.update_job_queue(**updating_args)
                 elif state == "DISABLED":
-                    deleting_args = self.get_delete_job_queue_args(name_j=name)
+                    deleting_args = {'jobQueue': self.get_resource_name(name)}
                     logger.info("Job queue deleted")
                     return self.client.delete_job_queue(**deleting_args)
                     
@@ -79,10 +72,11 @@ class Batch(GenericClient):
         while True:
             state, status = self.get_state_and_status_of_compute_env(name)
             if(state=="ENABLED"):
-                update_args = self.get_update_compute_env_args(name_c=name)
+                update_args = {'computeEnvironment': self.get_resource_name(name),
+                               'state':'DISABLED'}
                 self.client.update_compute_environment(**update_args)
             elif(state == "DISABLED" and status == "VALID" and (not self.exist_jobs_queue(name))):
-                delete_args = self.get_delete_compute_env_args(name_c=name)
+                delete_args = {'computeEnvironment' : self.get_resource_name(name)}
                 logger.info("Compute environment deleted")
                 return self.client.delete_compute_environment(**delete_args)
 
@@ -120,21 +114,6 @@ class Batch(GenericClient):
     def get_describe_job_queue_args(self,name_j=None):
         return {'jobQueues' : [self.get_resource_name(name_j)]}
     
-    def get_update_job_queue_args(self,name_j=None):
-        return {'jobQueue' : self.get_resource_name(name_j), 'state':'DISABLED'}  
-
-    def get_update_compute_env_args(self,name_c=None):
-        return {'computeEnvironment': self.get_resource_name(name_c), 'state':'DISABLED'}        
-    
-    def get_delete_job_queue_args(self, name_j=None):
-        return {'jobQueue': self.get_resource_name(name_j)}
-
-    def get_delete_compute_env_args(self, name_c=None):
-        return {'computeEnvironment' : self.get_resource_name(name_c)}
-
-    def get_describe_job_args(self, job_id):
-        return {'jobs' : [job_id]}
-
     def exist_jobs_queue(self,name):
         describe_args = self.get_describe_job_queue_args(name_j=name)
         response = self.client.describe_job_queues(**describe_args)
@@ -145,7 +124,7 @@ class Batch(GenericClient):
         return len(response["jobs"]) != 0
     
     def describe_jobs(self, job_id):
-        describe_args = self.get_describe_job_args(job_id)
+        describe_args = {'jobs' : [job_id]}
         return self.client.describe_jobs(**describe_args)
         
     def get_state_and_status_of_compute_env(self, name=None):
