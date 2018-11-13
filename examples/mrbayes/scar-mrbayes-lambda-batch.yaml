@@ -1,0 +1,8 @@
+functions:
+  scar-mrbayes-lambda-batch:
+    image: grycap/mrbayes
+    init_script: mrbayes-sample-run.sh
+    execution_mode: lambda-batch
+    s3:
+      input_bucket: scar-mrbayes
+    

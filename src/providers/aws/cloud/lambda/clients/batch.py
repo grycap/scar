@@ -35,17 +35,27 @@ class Batch():
         self.io_job_name = "{0}-io".format(lambda_instance.function_name)
         self.scar_batch_io_bin = "scar-batch-io"
         self.container_environment_variables = []
+        self.create_context()
+    
+    def create_context(self):
+        self.context = {'function_name': self.lambda_instance.context['function_name'],
+                        'memory_limit_in_mb': self.lambda_instance.context['memory_limit_in_mb'],
+                        'aws_request_id': self.lambda_instance.context['aws_request_id'],
+                        'log_group_name': self.lambda_instance.context['log_group_name'],
+                        'log_stream_name': self.lambda_instance.context['log_stream_name']}
     
     def set_container_variables(self, step):
         self.add_environment_variable("STEP", step)
         self.add_environment_variable("SCRIPT", self.script)
         self.add_environment_variable("FUNCTION_NAME", self.lambda_instance.function_name)
         self.add_environment_variable("LAMBDA_EVENT", json.dumps(self.lambda_instance.event))
-        self.add_environment_variable("SCAR_INPUT_FILE", self.scar_input_file)
+        self.add_environment_variable("LAMBDA_CONTEXT", json.dumps(self.context))
         self.add_environment_variable("SCAR_INPUT_DIR", self.lambda_instance.input_folder)
         self.add_environment_variable("SCAR_OUTPUT_DIR", self.lambda_instance.output_folder)
         self.add_environment_variable("REQUEST_ID", self.lambda_instance.request_id)
 
+        if self.scar_input_file:
+            self.add_environment_variable("SCAR_INPUT_FILE", self.scar_input_file)
         if self.lambda_instance.has_input_bucket():
             self.add_environment_variable("INPUT_BUCKET", self.lambda_instance.input_bucket)
         if self.lambda_instance.has_output_bucket():
@@ -55,6 +65,9 @@ class Batch():
         
         for user_var, value in self.get_user_defined_variables().items():
             self.add_environment_variable(user_var, value)
+            
+        import pprint
+        pprint.pprint(self.container_environment_variables)
     
     def add_environment_variable(self, name, value):
         return self.container_environment_variables.append({"name" : name, "value" : value})    

@@ -1,0 +1,6 @@
+functions:
+  scar-mrbayes:
+    image: grycap/mrbayes
+    init_script: mrbayes-sample-run.sh
+    s3:
+      input_bucket: scar-mrbayes    
