@@ -3,6 +3,10 @@ functions:
     image: grycap/mrbayes
     init_script: mrbayes-sample-run.sh
     execution_mode: lambda-batch
+    time: 30
+    log_level: DEBUG
+    environment:
+      ITERATIONS: "10000"
     s3:
       input_bucket: scar-mrbayes
-    
+     

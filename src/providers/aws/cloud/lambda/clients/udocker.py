@@ -129,8 +129,11 @@ class Udocker():
         for key in os.environ.keys():
             # Find global variables with the specified prefix
             if re.match("CONT_VAR_.*", key):
-                user_vars[key.replace("CONT_VAR_", "")] = utils.get_environment_variable(key) 
-        return [self.parse_container_environment_variable(key, value) for key,value in user_vars.keys()]                      
+                user_vars[key.replace("CONT_VAR_", "")] = utils.get_environment_variable(key)
+        result = []
+        for key,value in user_vars.items():
+            result += self.parse_container_environment_variable(key, value)
+        return result
 
     def get_iam_credentials(self):
         creds = []
@@ -196,10 +199,9 @@ class Udocker():
                 process.wait(timeout=remaining_seconds)
             except subprocess.TimeoutExpired:
                 logger.info("Stopping process '{0}'".format(process))
-                utils.kill_process(process)
+                process.kill()
                 logger.warning("Container timeout")
                 raise
         
         if os.path.isfile(self.container_output_file):
             return utils.read_file(self.container_output_file)
-     

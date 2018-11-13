@@ -90,7 +90,7 @@ class Supervisor():
         except subprocess.TimeoutExpired:
             logger.warning("Container execution timed out")
             if(utils.get_environment_variable("EXECUTION_MODE") == "lambda-batch"):
-                self.supervisor.execute_batch()
+                self.execute_batch()
                 
     def has_input_bucket(self):
         return hasattr(self, "input_bucket") and self.input_bucket and self.input_bucket != "" 
@@ -102,7 +102,6 @@ class Supervisor():
         if self.lambda_instance.has_output_bucket():
             bucket_name = self.lambda_instance.output_bucket
             logger.debug("OUTPUT BUCKET SET TO {0}".format(bucket_name))
-            
             if self.lambda_instance.has_output_bucket_folder():
                 bucket_folder = self.lambda_instance.output_bucket_folder
                 logger.debug("OUTPUT FOLDER SET TO {0}".format(bucket_folder))

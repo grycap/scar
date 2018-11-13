@@ -5,4 +5,6 @@ functions:
     execution_mode: batch
     s3:
       input_bucket: scar-mrbayes
+    environment:
+      ITERATIONS: "10000"
     

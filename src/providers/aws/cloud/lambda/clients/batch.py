@@ -38,11 +38,11 @@ class Batch():
         self.create_context()
     
     def create_context(self):
-        self.context = {'function_name': self.lambda_instance.context['function_name'],
-                        'memory_limit_in_mb': self.lambda_instance.context['memory_limit_in_mb'],
-                        'aws_request_id': self.lambda_instance.context['aws_request_id'],
-                        'log_group_name': self.lambda_instance.context['log_group_name'],
-                        'log_stream_name': self.lambda_instance.context['log_stream_name']}
+        self.context = {'function_name': self.lambda_instance.context.function_name,
+                        'memory_limit_in_mb': self.lambda_instance.context.memory_limit_in_mb,
+                        'aws_request_id': self.lambda_instance.context.aws_request_id,
+                        'log_group_name': self.lambda_instance.context.log_group_name,
+                        'log_stream_name': self.lambda_instance.context.log_stream_name}
     
     def set_container_variables(self, step):
         self.add_environment_variable("STEP", step)
@@ -65,9 +65,6 @@ class Batch():
         
         for user_var, value in self.get_user_defined_variables().items():
             self.add_environment_variable(user_var, value)
-            
-        import pprint
-        pprint.pprint(self.container_environment_variables)
     
     def add_environment_variable(self, name, value):
         return self.container_environment_variables.append({"name" : name, "value" : value})    
