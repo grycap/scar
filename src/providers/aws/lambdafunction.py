@@ -231,6 +231,11 @@ class Lambda(GenericClient):
         # To update the environment variables we need to retrieve the 
         # variables defined in lambda and update them with the new values
         env_vars = self.properties['environment']
+        if "environment_variables" in self.properties:
+            for env_var in self.properties['environment_variables']:
+                key_val = env_var.split("=")
+                # Add an specific prefix to be able to find the variables defined by the user
+                env_vars['Variables']['CONT_VAR_{0}'.format(key_val[0])] = key_val[1]
         if "timeout_threshold" in self.properties and self.properties['timeout_threshold']:
             env_vars['Variables']['TIMEOUT_THRESHOLD'] = str(self.properties['timeout_threshold'])
         if "log_level" in self.properties and self.properties['log_level']:
