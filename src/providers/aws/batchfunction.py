@@ -52,10 +52,25 @@ class Batch(GenericClient):
             self.client.deregister_job_definition(**kwars)
         logger.info("Job definitions deleted")            
             
+    def describe_jobs(self, job_id):
+        describe_args = {'jobs' : [job_id]}
+        return self.client.describe_jobs(**describe_args)            
+            
+    def exist_job(self, job_id):
+        response = self.describe_jobs(job_id)
+        return len(response["jobs"]) != 0            
+            
+    def exist_jobs_queue(self,name):
+        response = self.get_job_queue_info(name)
+        return len(response["jobQueues"]) != 0            
+            
+    def get_job_queue_info(self, name):
+        creation_args = {'jobQueues' : [self.get_resource_name(name)]}
+        return self.client.describe_job_queues(**creation_args)                 
+    
     def delete_job_queue(self, name):
         while True:
-            creation_args = self.get_describe_job_queue_args(name_j=name)
-            response = self.client.describe_job_queues(**creation_args)                
+            response = self.get_job_queue_info(name)
             state = response["jobQueues"][0]["state"]
             status = response["jobQueues"][0]["status"]
             if status == "VALID":
@@ -111,22 +126,6 @@ class Batch(GenericClient):
     def get_describe_compute_env_args(self, name_c=None):
         return {'computeEnvironments' : [self.get_resource_name(name_c)]}    
     
-    def get_describe_job_queue_args(self,name_j=None):
-        return {'jobQueues' : [self.get_resource_name(name_j)]}
-    
-    def exist_jobs_queue(self,name):
-        describe_args = self.get_describe_job_queue_args(name_j=name)
-        response = self.client.describe_job_queues(**describe_args)
-        return len(response["jobQueues"]) != 0
-        
-    def exist_job(self, job_id):
-        response = self.describe_jobs(job_id)
-        return len(response["jobs"]) != 0
-    
-    def describe_jobs(self, job_id):
-        describe_args = {'jobs' : [job_id]}
-        return self.client.describe_jobs(**describe_args)
-        
     def get_state_and_status_of_compute_env(self, name=None):
         creation_args = self.get_describe_compute_env_args(name_c=name)
         response = self.client.describe_compute_environments(**creation_args)
