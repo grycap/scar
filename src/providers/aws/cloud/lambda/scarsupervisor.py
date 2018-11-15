@@ -71,7 +71,10 @@ class Supervisor():
         if self.is_s3_event():
             self.input_bucket = self.s3.input_bucket
             logger.debug("INPUT BUCKET SET TO {0}".format(self.input_bucket))
-            self.scar_input_file = self.s3.download_input()
+            if self.is_batch_execution():
+                self.scar_input_file = self.s3.file_download_path
+            else:
+                self.scar_input_file = self.s3.download_input()
             logger.debug("INPUT FILE SET TO {0}".format(self.scar_input_file))
         elif self.is_apigateway_event():
             self.scar_input_file = self.apigateway.save_post_body()

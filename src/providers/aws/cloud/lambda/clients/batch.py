@@ -13,8 +13,6 @@
 # limitations under the License.
 
 import boto3
-import os
-import re
 import json
 # Works in lambda environment
 import src.utils as utils
@@ -63,7 +61,7 @@ class Batch():
         if self.lambda_instance.has_output_bucket_folder():
             self.add_environment_variable("OUTPUT_FOLDER", self.lambda_instance.output_bucket_folder)                 
         
-        for user_var, value in self.get_user_defined_variables().items():
+        for user_var, value in utils.get_user_defined_variables().items():
             self.add_environment_variable(user_var, value)
     
     def add_environment_variable(self, name, value):
@@ -119,7 +117,7 @@ class Batch():
         # Submit lambda Job
         lambda_job_id = self.submit_lambda_job(job_id)
         # Submit store output Job
-        if self.lambda_instance.has_output_bucket():
+        if self.lambda_instance.has_input_bucket() or self.lambda_instance.has_output_bucket():
             self.register_job_definition(self.io_job_name, "END")
             self.submit_end_job(lambda_job_id)
         return lambda_job_id

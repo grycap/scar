@@ -39,8 +39,8 @@ class Lambda():
     
     @utils.lazy_property
     def output_bucket_folder(self):
-        output_folder = utils.get_environment_variable('OUTPUT_FOLDER')
-        return output_folder
+        output_bucket_folder = utils.get_environment_variable('OUTPUT_FOLDER')
+        return output_bucket_folder
     
     @utils.lazy_property
     def input_bucket(self):

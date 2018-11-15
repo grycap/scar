@@ -33,9 +33,7 @@ class ApiGateway():
         body = self.lambda_instance.event['body']
         file_path = "/tmp/{0}/api_event.json".format(self.lambda_instance.request_id)
         logger.info("Received JSON from POST request and saved it in path '{0}'".format(file_path))
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)  
-        with open(file_path, 'w') as event_file:
-            event_file.write(body)
+        self.save_file(file_path, 'w', body)            
         return file_path
 
     def save_post_body_file(self):
@@ -43,10 +41,13 @@ class ApiGateway():
         body_file_name = uuid.uuid4().hex
         file_path = "/tmp/{0}/{1}".format(self.lambda_instance.request_id, body_file_name)
         logger.info("Received file from POST request and saved it in path '{0}'".format(file_path))
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)  
-        with open(file_path, 'wb') as data:
-            data.write(body)
+        self.save_file(file_path, 'wb', body)
         return file_path
+    
+    def save_file(self, file_path, write_mode, content):
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)  
+        with open(file_path, write_mode) as data:
+            data.write(content)
 
     def save_post_body(self):
         if self.is_post_request_with_body_json():

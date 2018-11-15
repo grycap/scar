@@ -68,16 +68,17 @@ class Batch(GenericClient):
         return len(response["jobQueues"]) != 0            
             
     def get_job_queue_info(self, name):
-        creation_args = {'jobQueues' : [self.get_resource_name(name)]}
-        return self.client.describe_job_queues(**creation_args)                 
+        job_queue_info_args = {'jobQueues' : [self.get_resource_name(name)]}
+        return self.client.describe_job_queues(**job_queue_info_args)                 
     
     def delete_job_queue(self, name):
-        while True:
-            response = self.get_job_queue_info(name)
+        response = self.get_job_queue_info(name)
+        while response["jobQueues"]:
             state = response["jobQueues"][0]["state"]
             status = response["jobQueues"][0]["status"]
             if status == "VALID":
                 self.delete_valid_job_queue(state, name)
+            response = self.get_job_queue_info(name)
     
     def delete_valid_job_queue(self, state, name):
         if state == "ENABLED":
@@ -88,19 +89,26 @@ class Batch(GenericClient):
             deleting_args = {'jobQueue': self.get_resource_name(name)}
             logger.info("Job queue deleted")
             return self.client.delete_job_queue(**deleting_args)        
+            
+    def get_compute_env_info(self, name):
+        creation_args = self.get_describe_compute_env_args(name_c=name)
+        return self.client.describe_compute_environments(**creation_args)
                     
     def delete_compute_env(self, name):
-        while True:
-            state, status = self.get_state_and_status_of_compute_env(name)
+        response = self.get_compute_env_info(name)
+        while response["computeEnvironments"]:
+            state = response["computeEnvironments"][0]["state"]
+            status = response["computeEnvironments"][0]["status"]
             if status == "VALID":
                 self.delete_valid_compute_environment(state, name)
+            response = self.get_compute_env_info(name)
 
     def delete_valid_compute_environment(self, state, name):
         if state == "ENABLED":
             update_args = {'computeEnvironment': self.get_resource_name(name),
                            'state':'DISABLED'}
             self.client.update_compute_environment(**update_args)
-        elif state == "DISABLED" and (not self.exist_jobs_queue(name)):
+        elif state == "DISABLED":
             delete_args = {'computeEnvironment' : self.get_resource_name(name)}
             logger.info("Compute environment deleted")
             return self.client.delete_compute_environment(**delete_args)        
@@ -134,7 +142,7 @@ class Batch(GenericClient):
         return  name if name else self.lambda_properties["name"]
         
     def get_describe_compute_env_args(self, name_c=None):
-        return {'computeEnvironments' : [self.get_resource_name(name_c)]}    
+        return {'computeEnvironments' : [self.get_resource_name(name_c)]}
     
     def get_state_and_status_of_compute_env(self, name=None):
         creation_args = self.get_describe_compute_env_args(name_c=name)

@@ -14,6 +14,7 @@ Welcome to SCAR's documentation!
    basic_usage
    advanced_usage
    api_gateway
+   batch
    prog_model
    testing
    license
