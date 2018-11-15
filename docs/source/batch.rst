@@ -39,6 +39,6 @@ For example, the Batch Job definition size is limited to 24KB and the invocation
 
 To create the Batch job, the Lambda function defines a Job with the payload content included, and sometimes (i.e. when the script passed as payload is greater than 24KB) the Batch Job definition can fail.
 
-The payload limit can be avoided by redefining the script used and passing the large payload files using other service (e.g S3 or some bash command like 'wget' or 'curl' to download the information in execution time). 
+The payload limit can be avoided by redefining the script used and passing the large payload files using other service (e.g S3 or some bash command like 'wget' or 'curl' to download the information in execution time).
 
-
+Also, AWS Batch does not allow to override the container entrypoint so containers with an entrypoint defined can not execute an user script.
