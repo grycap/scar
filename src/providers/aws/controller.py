@@ -15,11 +15,13 @@
 
 from src.providers.aws.lambdafunction import Lambda
 from src.providers.aws.cloudwatchlogs import CloudWatchLogs
+###
+from src.providers.aws.batchfunction import Batch
 from src.providers.aws.apigateway import APIGateway
 from src.providers.aws.s3 import S3
 from src.providers.aws.iam import IAM
 from src.providers.aws.resourcegroups import ResourceGroups
-from src.cmdtemplate import Commands, CallType
+from src.cmdtemplate import Commands
 from src.providers.aws.validators import AWSValidator
 
 import src.logger as logger
@@ -38,6 +40,11 @@ class AWS(Commands):
         it's a restricted word in python'''
         _lambda = Lambda(self.properties)
         return _lambda
+    ###
+    @utils.lazy_property
+    def batch(self):
+        batch = Batch(self.properties)
+        return batch
     
     @utils.lazy_property
     def cloudwatch_logs(self):
@@ -66,6 +73,7 @@ class AWS(Commands):
        
     @excp.exception(logger)
     def init(self):
+        
         if self._lambda.find_function():
             raise excp.FunctionExistsError(function_name=self._lambda.properties['name'])
         
@@ -93,6 +101,9 @@ class AWS(Commands):
         # If preheat is activated, the function is launched at the init step
         if 'preheat' in self.scar_properties:    
             self._lambda.preheat_function()
+        
+        if self.is_batch_execution():
+            self.batch.create_compute_environment()
     
     @excp.exception(logger)    
     def invoke(self):
@@ -135,6 +146,8 @@ class AWS(Commands):
     @excp.exception(logger)
     def log(self):
         aws_log = self.cloudwatch_logs.get_aws_log()
+        batch_logs = self.get_batch_logs()
+        aws_log += batch_logs if batch_logs else ""
         print(aws_log)
         
     @excp.exception(logger)        
@@ -155,7 +168,6 @@ class AWS(Commands):
     def add_extra_aws_properties(self):
         self.add_tags()
         self.add_output()
-#         self.add_call_type()
         self.add_account_id()
         
     def add_tags(self):
@@ -172,12 +184,17 @@ class AWS(Commands):
             self.properties["output"] = response_parser.OutputType.VERBOSE
             
     def add_account_id(self):
-        self.properties['account_id'] = utils.find_expression(self.properties['iam']['role'], '\d{12}')        
+        self.properties['account_id'] = utils.find_expression(self.properties['iam']['role'], '\d{12}')
         
     def get_all_functions(self):
         user_id = self.iam.get_user_name_or_id()
         functions_arn_list = self.resource_groups.get_lambda_functions_arn_list(user_id)        
         return self._lambda.get_all_functions(functions_arn_list)        
+
+    def get_batch_logs(self):
+        if 'request_id' in self.properties["cloudwatch"] and self.batch.exist_job(self.properties["cloudwatch"]["request_id"]):
+            batch_jobs = self.batch.describe_jobs(self.properties["cloudwatch"]["request_id"])
+            return self.cloudwatch_logs.get_batch_job_log(batch_jobs["jobs"])
 
     def manage_s3_init(self):
         if 'input_bucket' in self.properties['s3']:
@@ -253,7 +270,16 @@ class AWS(Commands):
         # Delete associated notifications
         self.delete_bucket_notifications()        
         # Delete function
-        self.delete_lambda_function() 
+        self.delete_lambda_function()
+        ###
+        # Delete resources batch  
+        self.delete_batch_resources()
+        ###
+    ###
+    def delete_batch_resources(self):
+        if(self.batch.exist_compute_environments(self._lambda.properties['name'])):
+            self.batch.delete_compute_environment(self._lambda.properties['name'])
+    ###
 
     def delete_lambda_function(self):
         response = self._lambda.delete_function()
@@ -285,4 +311,6 @@ class AWS(Commands):
                 response_parser.parse_delete_api_response(response,
                                                           self.properties['api_gateway']['id'],
                                                           self.properties['output'])
-        
+    
+    def is_batch_execution(self):
+        return self.properties["execution_mode"] == "batch" or self.properties["execution_mode"] == "lambda-batch"

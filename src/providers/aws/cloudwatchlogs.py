@@ -41,7 +41,7 @@ class CloudWatchLogs(GenericClient):
       
     def delete_log_group(self):
         return self.client.delete_log_group(**self.get_log_group_name_arg())
-    
+
     def get_aws_log(self):
         function_logs = ""
         try:
@@ -55,6 +55,15 @@ class CloudWatchLogs(GenericClient):
         except ClientError as ce:
             print ("Error getting the function logs: %s" % ce)
         return function_logs
+    
+    def get_batch_job_log(self, jobs_info):
+        batch_logs = "" 
+        batch_logs += "Batch job status: {0}\n".format(jobs_info[0]["status"])
+        if jobs_info[0]["status"] == "SUCCEEDED":
+            kwargs = {'logGroupName': "/aws/batch/job", 'logStreamNames': [jobs_info[0]["container"]["logStreamName"],]}
+            batch_events = self.client.get_log_events(**kwargs)
+            batch_logs += '\n'.join([event['message'] for response in batch_events for event in response["events"]])
+        return batch_logs
 
     def sort_events_in_message(self, response):
         sorted_msg = ""
@@ -79,12 +88,12 @@ class CloudWatchLogs(GenericClient):
             in_reqid_logs = False
             for line in function_logs.split('\n'):
                 if self.is_start_line(line):
-                    parsed_msg += line + '\n'
+                    parsed_msg += '{0}\n'.format(line)
                     in_reqid_logs = True                
                 elif self.is_end_line(line):
                     parsed_msg += line
                     break
                 elif in_reqid_logs:
-                    parsed_msg += line + '\n'
+                    parsed_msg += '{0}\n'.format(line)
             return parsed_msg
         

@@ -77,6 +77,7 @@ class CommandParser(object):
         parser_init.add_argument("-api", "--api_gateway_name", help="API Gateway name created to launch the lambda function")
         # General AWS conf           
         parser_init.add_argument("-pf", "--profile", help="AWS profile to use")
+        parser_init.add_argument("-em", "--execution_mode", help="Specifies the execution mode of the job. It can be 'lambda', 'lambda-batch' or 'batch'")
         
     def create_invoke_parser(self):
         parser_invoke = self.subparsers.add_parser('invoke', help="Call a lambda function using an HTTP request")
@@ -199,7 +200,7 @@ class CommandParser(object):
         
     def parse_aws_args(self, cmd_args):
         aws_args = {}
-        other_args = [('profile','boto_profile'),'region']
+        other_args = [('profile','boto_profile'),'region','execution_mode']
         self.set_args(aws_args, 'iam', self.parse_iam_args(cmd_args))
         self.set_args(aws_args, 'lambda', self.parse_lambda_args(cmd_args))
         self.set_args(aws_args, 'cloudwatch', self.parse_cloudwatchlogs_args(cmd_args))
@@ -209,7 +210,7 @@ class CommandParser(object):
         return {'aws' : aws_args }
 
     def parse_scar_args(self, cmd_args):
-        scar_args = ['func', 'conf_file', 'json', 'verbose', 'path', ('all', 'delete_all'), 'preheat']
+        scar_args = ['func', 'conf_file', 'json', 'verbose', 'path', ('all', 'delete_all'), 'preheat','execution_mode',]
         return {'scar' : utils.parse_arg_list(scar_args, cmd_args)}
 
     def parse_lambda_args(self, cmd_args):

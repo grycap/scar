@@ -1,0 +1,9 @@
+functions:
+  scar-batch-ffmpeg-split:
+    image: grycap/ffmpeg
+    init_script: split-video.sh
+    execution_mode: batch
+    s3:
+      input_bucket: scar-ffmpeg
+      output_bucket: scar-ffmpeg
+      output_folder: scar-batch-ffmpeg-split/video-output

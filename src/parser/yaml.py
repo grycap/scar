@@ -39,23 +39,17 @@ class YamlParser(object):
         # Get function name
         aws_args['lambda'] = self.parse_lambda_args(function_data)
         aws_args['lambda']['name'] = function_name
-        if 'iam' in function_data:
-            aws_args['iam'] = function_data['iam']
-        if 'cloudwatch' in function_data:            
-            aws_args['cloudwatch'] = function_data['cloudwatch']
-        if 's3' in function_data:        
-            aws_args['s3'] = function_data['s3']
-        if 'api_gateway' in function_data:        
-            aws_args['api_gateway'] = function_data['api_gateway']
-        other_args = [('profile','boto_profile'),'region']
+        aws_services = ['iam', 'cloudwatch', 's3', 'api_gateway', 'batch']
+        aws_args.update(utils.parse_arg_list(aws_services, function_data))
+        other_args = [('profile','boto_profile'),'region','execution_mode']
         aws_args.update(utils.parse_arg_list(other_args, function_data))
-        aws = {}     
-        aws['aws'] = aws_args
+        aws = {'aws' : aws_args if aws_args else {}}
         return aws
-    
+        
+        
     def parse_lambda_args(self, cmd_args):
         lambda_args = ['asynchronous', 'init_script', 'run_script', 'c_args', 'memory', 'time',
                        'timeout_threshold', 'log_level', 'image', 'image_file', 'description', 
                        'lambda_role', 'extra_payload', ('environment', 'environment_variables')]
-        return utils.parse_arg_list(lambda_args, cmd_args)    
+        return utils.parse_arg_list(lambda_args, cmd_args)   
         

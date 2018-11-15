@@ -24,6 +24,7 @@ default_cfg = {
     "aws" : {
         "boto_profile" : "default",
         "region" : "us-east-1",
+        "execution_mode": "lambda",        
         "iam" : {"role" : ""},
         "lambda" : {
           "time" : 300,
@@ -32,7 +33,20 @@ default_cfg = {
           "timeout_threshold" : 10 ,
           "runtime" : "python3.6"
         },
-        "cloudwatch" : { "log_retention_policy_in_days" : 30 }
+        "cloudwatch" : { "log_retention_policy_in_days" : 30 },
+        "batch" : {
+                "state": "ENABLED",
+                "type": "MANAGED",                 
+                "securityGroupIds": [],
+                "type_inst": "EC2",
+                "minvCpus": 0,
+                "desiredvCpus": 0,
+                "maxvCpus": 1,
+                "subnets": [],
+                "instanceTypes": ["m3.medium"],
+                "instanceRole": "",
+                "serviceRole": ""
+        }
     }
 }
 
@@ -52,7 +66,7 @@ class ConfigFileParser(object):
         if os.path.isfile(self.config_file_path):
             with open(self.config_file_path) as cfg_file:
                 self.__setattr__("cfg_data", json.load(cfg_file))
-            if 'region' not in self.cfg_data['aws'] or 'boto_profile' not in self.cfg_data['aws']:
+            if 'region' not in self.cfg_data['aws'] or 'boto_profile' not in self.cfg_data['aws'] or 'execution_mode' not in self.cfg_data['aws']:
                 self.add_missing_attributes()
         else:
             # Create scar config dir

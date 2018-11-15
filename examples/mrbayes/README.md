@@ -2,6 +2,12 @@
 
 Docker image for [MrBayes](http://mrbayes.sourceforge.net/) based on the [ubuntu:14.04](https://hub.docker.com/r/library/ubuntu/tags/14.04/) Docker image.
 
+## Building docker image
+
+```sh
+docker build -t grycap/mrbayes -f Dockerfile binary/
+```
+
 ## Local Usage
 
 Gaining shell access:

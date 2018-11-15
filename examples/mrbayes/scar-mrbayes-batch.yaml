@@ -1,0 +1,10 @@
+functions:
+  scar-mrbayes-batch:
+    image: grycap/mrbayes
+    init_script: mrbayes-sample-run.sh
+    execution_mode: batch
+    s3:
+      input_bucket: scar-mrbayes
+    environment:
+      ITERATIONS: "10000"
+    
