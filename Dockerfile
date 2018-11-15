@@ -7,10 +7,11 @@ RUN apt-get update && apt-get install -y \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 RUN pip3 install pyinstaller 
-RUN wget https://raw.githubusercontent.com/grycap/scar/master/src/providers/aws/cloud/lambda/udockerb.py
+RUN wget https://raw.githubusercontent.com/grycap/scar/master/src/providers/aws/cloud/lambda/udocker/udockerpy
 RUN pyinstaller --onefile \
   --add-binary="/usr/bin/curl:src/bin" \
-  udockerb.py
+  -n udockerb \
+  udockerpy
 
 FROM ubuntu:latest as sbuilder
 RUN apt-get update && apt-get install -y \
@@ -27,11 +28,15 @@ RUN pip3 install -r requirements.txt \
 COPY --from=ubuilder /dist/udockerb /scar/
 RUN pyinstaller --onefile \
   --add-data="src/providers/aws/cloud/lambda/scarsupervisor.py:src/providers/aws/cloud/lambda" \
-  --add-data="src/providers/aws/cloud/lambda/__init__.py:src/providers/aws/cloud/lambda" \
+  --add-data="src/providers/aws/cloud/lambda/clients/apigateway.py:src/providers/aws/cloud/lambda/clients" \
+  --add-data="src/providers/aws/cloud/lambda/clients/batch.py:src/providers/aws/cloud/lambda/clients" \
+  --add-data="src/providers/aws/cloud/lambda/clients/lambdafunction.py:src/providers/aws/cloud/lambda/clients" \
+  --add-data="src/providers/aws/cloud/lambda/clients/s3.py:src/providers/aws/cloud/lambda/clients" \
+  --add-data="src/providers/aws/cloud/lambda/clients/udocker.py:src/providers/aws/cloud/lambda/clients" \
   --add-data="src/exceptions.py:src" \
   --add-data="src/utils.py:src" \
-  --add-data="src/providers/aws/cloud/lambda/udocker-1.1.0-RC2.tar.gz:src/providers/aws/cloud/lambda" \
-  --add-binary="udockerb:src/providers/aws/cloud/lambda" \
+  --add-data="src/providers/aws/cloud/lambda/udocker/udocker-1.1.0-RC2.tar.gz:src/providers/aws/cloud/lambda/udocker" \
+  --add-binary="udockerb:src/providers/aws/cloud/lambda/udocker" \
   --add-binary="/usr/bin/zip:src/bin" \
   --hidden-import=urllib3 \
   --hidden-import=configparser \
