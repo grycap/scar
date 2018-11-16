@@ -1,7 +1,7 @@
-Scar container
+SCAR container
 ==============
 
-Other option to use SCAR is to create the container with the binaries included or to use the already available image with the packaged binaries installed from `grycap/scar <https://hub.docker.com/r/grycap/scar/>`_. Either you want to build the images from scratch or you want to use the already available image you will need `docker <https://www.docker.com/community-edition#/download>`_ installed in your machine.
+Other option to use SCAR is to create the container with the binaries included or to use the already available image with the packaged binaries installed from `grycap/scar <https://hub.docker.com/r/grycap/scar/>`_. Either you want to build the images from scratch or you want to use the already available image you will need `Docker <https://www.docker.com/community-edition#/download>`_ installed in your machine.
 
 Building the SCAR image
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -14,7 +14,7 @@ This command creates a scar image in your docker repository that can be launched
 
   docker run -it -v $AWS_CREDENTIALS_FOLDER:/home/scar/.aws -v $SCAR_CONFIG_FOLDER:/home/scar/.scar scar
 
-With the previous command we tell docker to mount the SCAR required folders (`~/.aws` and `~/.scar`) in the paths expected by the binary.
+With the previous command we tell Docker to mount the folders required by SCAR (`~/.aws` and `~/.scar`) in the paths expected by the binary.
 Launching the container with the command described above also allow us to have different configuration folders wherever we want in our host machine.
 
 Once we are inside the container you can execute SCAR like another system binary::
