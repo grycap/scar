@@ -1,3 +1,5 @@
+.vscode
+docs/source/_build
 work/
 test/*.zip
 .p*
