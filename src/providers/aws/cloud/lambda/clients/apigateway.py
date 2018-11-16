@@ -24,7 +24,7 @@ class ApiGateway():
         self.lambda_instance = lambda_instance
 
     def is_post_request_with_body(self):
-        return self.lambda_instance.event['httpMethod'] == 'POST' and self.lambda_instance.event['body'] is not None
+        return self.lambda_instance.event['httpMethod'] == 'POST'
 
     def is_post_request_with_body_json(self):
         return self.lambda_instance.event['httpMethod'] == 'POST' and self.lambda_instance.event['headers']['Content-Type'].strip() == 'application/json'
@@ -50,8 +50,9 @@ class ApiGateway():
             data.write(content)
 
     def save_post_body(self):
-        if self.is_post_request_with_body_json():
-            return self.save_post_body_json()
-        elif self.is_post_request_with_body:
-            return self.save_post_body_file()
+        if 'body' in self.lambda_instance.event and self.lambda_instance.event['body']:
+            if self.is_post_request_with_body_json():
+                return self.save_post_body_json()
+            elif self.is_post_request_with_body:
+                return self.save_post_body_file()
         
