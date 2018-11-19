@@ -4,7 +4,7 @@ API Gateway Integration
 Define an HTTP endpoint
 -----------------------
 
-SCAR allows to transparently integrate an HTTP endpoint with a Lambda function. To enable this functionality you only need to define an api name and SCAR will take care of the integration process (before using this feature make sure you have to correct rights set in your aws account).
+SCAR allows to transparently integrate an HTTP endpoint with a Lambda function via API Gateway. To enable this functionality you only need to define an API name and SCAR will take care of the integration process (before using this feature make sure you have to correct rights set in your aws account).
 
 The following configuration file creates a generic api endpoint that redirects the http petitions to your lambda function::
 
@@ -37,12 +37,12 @@ SCAR also allows you to make an HTTP request, for that you can use the command `
   scar invoke -f api-cow.yaml
 
 This command automatically creates a `GET` request and passes the petition to the API endpoint defined previously.
-Bear in mind that the timeout for the api gateway requests is 29s, so if the function takes more time to respond, the api will return an error message.
-To launch asynchronous functions you only need to add the `asynch` parameter to the call::
+Bear in mind that the timeout for the API Gateway requests is 29s. Therefore, if the function takes more time to respond, the API will return an error message.
+To launch asynchronous functions you only need to add the `-a` parameter to the call::
 
   scar invoke -f api-cow.yaml -a
 
-However, remember that when you launch an asynchronous function throught the API Gateway there is no way to know if the function finishes successfully until you check the function invocation logs.
+When you invoke an asynchronous function through the API Gateway there is no way to know if the function finishes successfully until you check the function invocation logs.
 
 POST Request
 ------------
@@ -65,9 +65,9 @@ or::
   scar invoke -n scar-cowsay -db /tmp/img.jpg
 
 The file specified after the parameter ``-db`` is codified and passed as the POST body.
-Take into account that the file limitations for request response and asynchronous requests are 6MB and 128KB respectively, as specified in the `AWS lambda documentation <https://docs.aws.amazon.com/lambda/latest/dg/limits.html>`_.
+Take into account that the file limitations for request response and asynchronous requests are 6MB and 128KB respectively, as specified in the `AWS Lambda documentation <https://docs.aws.amazon.com/lambda/latest/dg/limits.html>`_.
 
-Lastly, You can also submit JSON as the body to the HTTP endpoint with no other configuration, as long Content-Type is application/json. If SCAR sees a JSON body, it will write this body to /tmp/{REQUEST_ID}/api_event.json. Otherwise, it will default the post body to it being a file.
+Lastly, you can also submit a JSON as the body of the request to the HTTP endpoint with no other configuration, as long as `Content-Type` is `application/json`. If SCAR detects a JSON body, it will write this body to the file `/tmp/{REQUEST_ID}/api_event.json`. Otherwise, the body will be considered to be a file.
 
 This can invoked via the cli::
 
@@ -77,7 +77,7 @@ This can invoked via the cli::
 Passing parameters in the requests
 ----------------------------------
 
-You can add parameters to the invocations adding the parameters to the configuration file like this::
+You can add parameters to the invocations adding the `parameters` section to the configuration described as follows::
 
   cat >> api-cow.yaml << EOF
     functions:
@@ -95,4 +95,3 @@ You can add parameters to the invocations adding the parameters to the configura
 or::
 
   scar invoke -n scar-cowsay -p '{"key1": "value1", "key2": "value3"}'
-

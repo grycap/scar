@@ -24,10 +24,13 @@ class ApiGateway():
         self.lambda_instance = lambda_instance
 
     def is_post_request_with_body(self):
-        return self.lambda_instance.event['httpMethod'] == 'POST' and self.lambda_instance.event['body'] is not None
+        return self.lambda_instance.event['httpMethod'] == 'POST'
 
     def is_post_request_with_body_json(self):
         return self.lambda_instance.event['httpMethod'] == 'POST' and self.lambda_instance.event['headers']['Content-Type'].strip() == 'application/json'
+
+    def is_request_with_parameters(self):
+        return"queryStringParameters" in self.lambda_instance.event and self.lambda_instance.event["queryStringParameters"]
 
     def save_post_body_json(self):
         body = self.lambda_instance.event['body']
@@ -43,17 +46,22 @@ class ApiGateway():
         logger.info("Received file from POST request and saved it in path '{0}'".format(file_path))
         self.save_file(file_path, 'wb', body)
         return file_path
-
+    
     def save_file(self, file_path, write_mode, content):
         os.makedirs(os.path.dirname(file_path), exist_ok=True)  
         with open(file_path, write_mode) as data:
             data.write(content)
 
     def save_post_body(self):
-        file_path = ""
-        if self.is_post_request_with_body_json():
-            file_path = self.save_post_body_json()
-        elif self.is_post_request_with_body:
-            file_path = self.save_post_body_file()
-        return file_path
+        if 'body' in self.lambda_instance.event and self.lambda_instance.event['body']:
+            if self.is_post_request_with_body_json():
+                file_path = self.save_post_body_json()
+            elif self.is_post_request_with_body:
+                file_path = self.save_post_body_file()
+            return file_path
         
+    def save_request_parameters(self):
+        if self.is_request_with_parameters():
+            self.lambda_instance.http_params = {}
+            for key, value in self.lambda_instance.event["queryStringParameters"].items():
+                self.lambda_instance.http_params[format(key)] = value

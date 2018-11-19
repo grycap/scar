@@ -24,10 +24,8 @@ def invoke_http_endpoint(url, **kwargs):
     :param headers: (optional) Dictionary of HTTP Headers to send with the request.
     :param parameters: (optional) Dictionary or bytes to be sent in the query string.
     """
-    if 'data' in kwargs and kwargs['data']:
+    if ('data' in kwargs and kwargs['data']) or ('json' in kwargs and kwargs['json']):
         response = requests.post(url, **kwargs)
-    elif 'json' in kwargs and kwargs['json']:
-        response = request.post(url, **kwargs)
     else:
         response = requests.get(url, **kwargs)
     return response
