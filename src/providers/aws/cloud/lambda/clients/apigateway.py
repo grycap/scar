@@ -43,15 +43,17 @@ class ApiGateway():
         logger.info("Received file from POST request and saved it in path '{0}'".format(file_path))
         self.save_file(file_path, 'wb', body)
         return file_path
-    
+
     def save_file(self, file_path, write_mode, content):
         os.makedirs(os.path.dirname(file_path), exist_ok=True)  
         with open(file_path, write_mode) as data:
             data.write(content)
 
     def save_post_body(self):
+        file_path = ""
         if self.is_post_request_with_body_json():
-            return self.save_post_body_json()
+            file_path = self.save_post_body_json()
         elif self.is_post_request_with_body:
-            return self.save_post_body_file()
+            file_path = self.save_post_body_file()
+        return file_path
         
