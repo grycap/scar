@@ -65,3 +65,4 @@ class ApiGateway():
             self.lambda_instance.http_params = {}
             for key, value in self.lambda_instance.event["queryStringParameters"].items():
                 self.lambda_instance.http_params[format(key)] = value
+
