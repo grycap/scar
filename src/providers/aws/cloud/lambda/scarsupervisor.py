@@ -77,6 +77,7 @@ class Supervisor():
                 self.scar_input_file = self.s3.download_input()
             logger.debug("INPUT FILE SET TO {0}".format(self.scar_input_file))
         elif self.is_apigateway_event():
+            self.apigateway.save_request_parameters()
             self.scar_input_file = self.apigateway.save_post_body()
             logger.debug("INPUT FILE SET TO {0}".format(self.scar_input_file))
         

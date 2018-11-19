@@ -29,6 +29,9 @@ class ApiGateway():
     def is_post_request_with_body_json(self):
         return self.lambda_instance.event['httpMethod'] == 'POST' and self.lambda_instance.event['headers']['Content-Type'].strip() == 'application/json'
 
+    def is_request_with_parameters(self):
+        return"queryStringParameters" in self.lambda_instance.event and self.lambda_instance.event["queryStringParameters"]
+
     def save_post_body_json(self):
         body = self.lambda_instance.event['body']
         file_path = "/tmp/{0}/api_event.json".format(self.lambda_instance.request_id)
@@ -52,7 +55,14 @@ class ApiGateway():
     def save_post_body(self):
         if 'body' in self.lambda_instance.event and self.lambda_instance.event['body']:
             if self.is_post_request_with_body_json():
-                return self.save_post_body_json()
+                file_path = self.save_post_body_json()
             elif self.is_post_request_with_body:
-                return self.save_post_body_file()
+                file_path = self.save_post_body_file()
+            return file_path
         
+    def save_request_parameters(self):
+        if self.is_request_with_parameters():
+            self.lambda_instance.http_params = {}
+            for key, value in self.lambda_instance.event["queryStringParameters"].items():
+                self.lambda_instance.http_params[format(key)] = value
+
