@@ -7,11 +7,11 @@ RUN apt-get update && apt-get install -y \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 RUN pip3 install pyinstaller 
-RUN wget https://raw.githubusercontent.com/grycap/scar/master/src/providers/aws/cloud/lambda/udocker/udockerpy
+RUN wget https://raw.githubusercontent.com/grycap/scar/master/src/providers/aws/cloud/lambda/udocker/udocker.py
 RUN pyinstaller --onefile \
   --add-binary="/usr/bin/curl:src/bin" \
   -n udockerb \
-  udockerpy
+  udocker.py
 
 FROM ubuntu:latest as sbuilder
 RUN apt-get update && apt-get install -y \
