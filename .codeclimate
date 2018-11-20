@@ -1,0 +1,2 @@
+exclude_patterns:
+- "src/providers/aws/cloud/lambda/udocker/udocker.py"
