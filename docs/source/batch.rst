@@ -3,6 +3,31 @@
 AWS Batch Integration
 =======================
 
+Set up your configuration file
+------------------------------
+
+To be able to use the batch environment, first you need to set up your configuration file, located in `~/.scar/scar.cfg`
+
+The new variables added to the scar config file are::
+
+  "batch": {
+    "state": "ENABLED",
+    "type": "MANAGED",
+    "security_group_ids": [""],
+    "comp_type": "EC2",
+    "desired_v_cpus": 0,
+    "min_v_cpus": 0,
+    "max_v_cpus": 2,
+    "subnets": [""],
+    "instance_types": ["m3.medium"]
+  }
+  
+To be able to deploy EC2 instances you have to fill the `security_group_ids` and the `subnets` variables.
+The `subnets` variable defines the VPC subnets into which the compute resources are launched.
+The `security_group_ids` defines the EC2 security group that is associated with the instances launched in the compute environment.
+More info about the variables and the different values that can be assigned can be found in the `AWS API Documentation <https://docs.aws.amazon.com/batch/latest/APIReference/API_CreateComputeEnvironment.html>`_.
+
+
 Define a job to be executed in batch
 ------------------------------------
 
@@ -25,7 +50,7 @@ The following configuration file defines a Lambda function that creates an AWS B
   scar init -f scar-mrbayes-batch.yaml
  
 Combine AWS Lambda and AWS Batch executions
------------------------------------
+-------------------------------------------
 As explained in the section :doc:`/prog_model`, if you define an output bucket as the input bucket of another function, a workflow can be created.
 By doing this, AWS Batch and AWS Lambda executions can be combined through S3 events.
 

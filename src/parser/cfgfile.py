@@ -35,17 +35,15 @@ default_cfg = {
         },
         "cloudwatch" : { "log_retention_policy_in_days" : 30 },
         "batch" : {
-                "state": "ENABLED",
-                "type": "MANAGED",                 
-                "securityGroupIds": [],
-                "type_inst": "EC2",
-                "minvCpus": 0,
-                "desiredvCpus": 0,
-                "maxvCpus": 1,
-                "subnets": [],
-                "instanceTypes": ["m3.medium"],
-                "instanceRole": "",
-                "serviceRole": ""
+          "state": "ENABLED",
+          "type": "MANAGED",
+          "security_group_ids": [""],
+          "comp_type": "EC2",
+          "desired_v_cpus": 0,
+          "min_v_cpus": 0,
+          "max_v_cpus": 2,
+          "subnets": [""],
+          "instance_types": ["m3.medium"]                
         }
     }
 }
