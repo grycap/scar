@@ -4,7 +4,7 @@
 
 ## Choosing the Docker image
 
-There are several Docker images available in [Docker Hub](https://hub.docker.com/search/?isAutomated=0&isOfficial=0&page=1&pullCount=0&q=ffmpeg&starCount=0) that include FFmpeg. You have to discard those based on Alpine and those that will not fit within the 512 MB limit of AWS Lambda. The following Docker image is appropriate:
+There are several Docker images available in [Docker Hub](https://hub.docker.com/search/?isAutomated=0&isOfficial=0&page=1&pullCount=0&q=ffmpeg&starCount=0) that include FFmpeg. You have to discard those that will not fit within the 512 MB limit of AWS Lambda. The following Docker image is appropriate:
 
 * [sameersbn/ffmpeg](https://hub.docker.com/r/sameersbn/ffmpeg/), an 85 MB (compressed) Docker image based on Ubuntu 14.04.
 

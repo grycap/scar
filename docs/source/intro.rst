@@ -9,6 +9,8 @@ SCAR also supports a High Throughput Computing :doc:`/prog_model` to create high
 
 SCAR is integrated with API Gateway in order to expose an application via a highly-available HTTP-based REST API that supports both synchronous and asynchronous invocations. It is also integrated with AWS Batch. This way, AWS Lambda can be used to acommodate the execution of large bursts of short requests while long-running executions are delegated to AWS Batch.
 
+SCAR allows to create serverless workflows by combining functions that run on either AWS Batch or AWS Lambda which produce output files that trigger the execution of functions that, again, run on either AWS Batch or AWS Lambda, using the very same Docker images, thus effectively creating highly-scalable cross-services serverless workflows.
+
 SCAR has been developed by the `Grid and High Performance Computing Group (GRyCAP) <http://www.grycap.upv.es>`_ at the `Instituto de Instrumentación para Imagen Molecular (I3M) <http://www.i3m.upv.es>`_ from the `Universitat Politècnica de València (UPV) <http://www.upv.es>`_.
 
 .. image:: images/grycap.png
