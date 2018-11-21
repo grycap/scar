@@ -1,0 +1,7 @@
+functions:
+  scar-spectacle:
+    image: sourcey/spectacle
+    memory: 1024
+    init_script: generate-documentation.sh
+    s3:
+      input_bucket: scar-test
