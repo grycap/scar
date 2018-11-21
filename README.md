@@ -11,6 +11,10 @@ SCAR provides the benefits of AWS Lambda with the execution environment you deci
 
 SCAR also supports a High Throughput Computing [Programming Model](https://scar.readthedocs.io/en/latest/prog_model.html) to create highly-parallel event-driven file-processing serverless applications that execute on customized runtime environments provided by Docker containers run on AWS Lambda. The development of SCAR has been published in the [Future Generation Computer Systems](https://www.journals.elsevier.com/future-generation-computer-systems) scientific journal.
 
+SCAR is integrated with API Gateway in order to expose an application via a highly-available HTTP-based REST API that supports both synchronous and asynchronous invocations. It is also integrated with AWS Batch. This way, AWS Lambda can be used to acommodate the execution of large bursts of short requests while long-running executions are delegated to AWS Batch.
+
+SCAR allows to create serverless workflows by combining functions that run on either AWS Batch or AWS Lambda which produce output files that trigger the execution of functions that, again, run on either AWS Batch or AWS Lambda, using the very same Docker images, thus effectively creating highly-scalable cross-services serverless workflows.
+
 <a name="toc"></a>
 **Related resources**:
   [Website](https://grycap.github.io/scar/) |

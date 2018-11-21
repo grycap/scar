@@ -3,12 +3,23 @@
 AWS Batch Integration
 =======================
 
+AWS Batch allows to efficiently execute lots of batch computing jobs on AWS by dynamically provisioning the required underlying EC2 instances on which Docker-based jobs are executed.
+SCAR allows to transparently integrate the execution of the jobs through `AWS Batch <https://aws.amazon.com/batch/>`_. 
+Three execution modes are now available in SCAR:
+
+  * `lambda`: This is the default execution mode. All executions will be run on AWS Lambda.
+  * `lambda-batch`. Executions will be run on AWS Lambda. If the default timeout is reached, then the execution is automatically delegated to AWS Batch.
+  * `batch`. Executions will be automatically diverted to AWS Batch.
+
+This way, you can use AWS Lambda as a highly-scalable cache for burts of short computational jobs while longer executions can be automatically deleted to AWS Batch. 
+The very same `programming model <https://scar.readthedocs.io/en/latest/prog_model.html>`_ is maintained regardless of the service employed to perform the computation.
+
 Set up your configuration file
 ------------------------------
 
-To be able to use the batch environment, first you need to set up your configuration file, located in `~/.scar/scar.cfg`
+To be able to use `AWS Batch <https://aws.amazon.com/batch/>`_, first you need to set up your configuration file, located in `~/.scar/scar.cfg`
 
-The new variables added to the scar config file are::
+The new variables added to the SCAR config file are::
 
   "batch": {
     "state": "ENABLED",
@@ -22,18 +33,19 @@ The new variables added to the scar config file are::
     "instance_types": ["m3.medium"]
   }
   
-To be able to deploy EC2 instances you have to fill the `security_group_ids` and the `subnets` variables.
-The `subnets` variable defines the VPC subnets into which the compute resources are launched.
-The `security_group_ids` defines the EC2 security group that is associated with the instances launched in the compute environment.
+Since AWS Batch deploys Amazon EC2 instances, you have to fill the following variables: 
+ * `security_group_ids`: The EC2 security group that is associated with the instances launched in the compute environment. This allows to define the inbound and outbound network rules in order to allow or disallow TCP/UDP traffic generated from (or received by) the EC2 instance. You can choose the default VPC security group.
+ * `subnets`:  The VPC subnet(s) identifier(s) on which the EC2 instances will be deployed. This allows to use multiple Availability Zones for enhanced fault-tolerance.
+
 More info about the variables and the different values that can be assigned can be found in the `AWS API Documentation <https://docs.aws.amazon.com/batch/latest/APIReference/API_CreateComputeEnvironment.html>`_.
 
 
 Define a job to be executed in batch
 ------------------------------------
 
-SCAR allows to transparently integrate the executions of jobs through `AWS Batch <https://aws.amazon.com/batch/>`_. To enable this functionality you only need to set the execution mode of the Lambda function to one of the two available used to create batch jobs ('lambda-batch' or 'batch') and SCAR will take care of the integration process (before using this feature make sure you have the correct rights set in your aws account).
+To enable this functionality you only need to set the execution mode of the Lambda function to one of the two available used to create batch jobs ('lambda-batch' or 'batch') and SCAR will take care of the integration process (before using this feature make sure you have the correct rights set in your AWS account).
 
-The following configuration file defines a Lambda function that creates an AWS Batch job (the required script can be found in `mrbayes-sample-run.sh <https://raw.githubusercontent.com/grycap/scar/master/examples/mrbayes/mrbayes-sample-run.sh>`_)::
+As an example, the following configuration file defines a Lambda function that creates an AWS Batch job to execute the `MrBayes example <https://github.com/grycap/scar/tree/master/examples/mrbayes>`_ (the required script can be found in `mrbayes-sample-run.sh <https://raw.githubusercontent.com/grycap/scar/master/examples/mrbayes/mrbayes-sample-run.sh>`_)::
 
   cat >> scar-mrbayes-batch.yaml << EOF
   functions:
@@ -47,7 +59,19 @@ The following configuration file defines a Lambda function that creates an AWS B
         ITERATIONS: "10000"          
   EOF
 
+You can then create the function::
+
   scar init -f scar-mrbayes-batch.yaml
+
+And trigger the execution of the function by uploading a file to be processed to the corresponding folder::
+
+  aws s3 cp cynmix.nex s3://scar-mrbayes/scar-mrbayes-batch/input/cynmix.nex
+
+SCAR automatically creates the compute environment in AWS Batch and submits a job to be executed. Input and output data files are transparently managed as well according to the programming model.
+
+The CloudWatch logs will reveal the execution of the Lambda function as well as the execution of the AWS Batch job. 
+Notice that whenever the execution of the AWS Batch job has finished, the EC2 instances will be eventually terminated. 
+Also, the number of EC2 instances will increase and shrink to handle the incoming number of jobs.
  
 Combine AWS Lambda and AWS Batch executions
 -------------------------------------------
