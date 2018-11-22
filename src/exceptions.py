@@ -83,6 +83,14 @@ class ScarConfigFileError(ScarError):
     """
     fmt = "Config file '{file_path}' created.\n"
     fmt += "Please, set a valid iam role in the file field 'role' before the first execution."    
+
+class UploadFileNotFoundError(ScarError):
+    """
+    The file does not exist
+
+    :ivar file_path: Path of the file
+    """
+    fmt = "Unable to find the file to upload with path '{file_path}'"
                 
 class YamlFileNotFoundError(ScarError):
     """
