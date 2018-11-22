@@ -65,7 +65,7 @@ You can then create the function::
 
 And trigger the execution of the function by uploading a file to be processed to the corresponding folder::
 
-  aws s3 cp cynmix.nex s3://scar-mrbayes/scar-mrbayes-batch/input/cynmix.nex
+  scar put -b scar-ffmpeg -bf scar-mrbayes-batch/input -p cynmix.nex
 
 SCAR automatically creates the compute environment in AWS Batch and submits a job to be executed. Input and output data files are transparently managed as well according to the programming model.
 

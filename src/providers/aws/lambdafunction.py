@@ -129,7 +129,10 @@ class Lambda(GenericClient):
                         'ZipFilePath' : self.properties['zip_file_path'],
                         }
         if 'init_script' in self.properties:
-            package_args['Script'] = self.properties['init_script']
+            if 'config_path' in self.aws_properties:
+                package_args['Script'] = utils.join_paths(self.aws_properties['config_path'], self.properties['init_script'])
+            else:
+                package_args['Script'] = self.properties['init_script']
         if 'extra_payload' in self.properties:
             package_args['ExtraPayload'] = self.properties['extra_payload']
         if 'image_id' in self.properties:
@@ -194,9 +197,12 @@ class Lambda(GenericClient):
     def get_payload(self):
         # Default payload
         payload = {}
-
         if 'run_script' in self.properties:
-            file_content = utils.read_file(self.properties['run_script'], 'rb')
+            if 'config_path' in self.aws_properties:
+                script_path = utils.join_paths(self.aws_properties['config_path'], self.properties['run_script'])
+            else:
+                script_path = self.properties['run_script']
+            file_content = utils.read_file(script_path, 'rb')
             # We first code to base64 in bytes and then decode those bytes to allow the json lib to parse the data
             # https://stackoverflow.com/questions/37225035/serialize-in-json-a-base64-encoded-data#37239382
             payload = { "script" : utils.utf8_to_base64_string(file_content) }

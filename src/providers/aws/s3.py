@@ -99,7 +99,10 @@ class S3(GenericClient):
         kwargs = {'Bucket' : self.properties['input_bucket']}
         kwargs['Key'] = self.get_file_key(folder_name, file_path, file_key)
         if file_path:
-            kwargs['Body'] = utils.read_file(file_path, 'rb')
+            try:
+                kwargs['Body'] = utils.read_file(file_path, 'rb')
+            except FileNotFoundError:
+                raise excp.UploadFileNotFoundError(file_path=file_path)
         if folder_name and not file_path:
             logger.info("Folder '{0}' created in bucket '{1}'".format(kwargs['Key'], kwargs['Bucket']))
         else:

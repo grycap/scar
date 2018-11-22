@@ -169,6 +169,7 @@ class AWS(Commands):
         self.add_tags()
         self.add_output()
         self.add_account_id()
+        self.add_config_file_path()
         
     def add_tags(self):
         self.properties["tags"] = {}
@@ -186,6 +187,10 @@ class AWS(Commands):
     def add_account_id(self):
         self.properties['account_id'] = utils.find_expression(self.properties['iam']['role'], '\d{12}')
         
+    def add_config_file_path(self):
+        if 'conf_file' in self.scar_properties and self.scar_properties['conf_file']:
+            self.properties['config_path'] = os.path.dirname(self.scar_properties['conf_file'])
+
     def get_all_functions(self):
         user_id = self.iam.get_user_name_or_id()
         functions_arn_list = self.resource_groups.get_lambda_functions_arn_list(user_id)        
