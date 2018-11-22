@@ -48,20 +48,16 @@ def parse_http_response(response, function_name, asynch):
 def print_generic_response(response, output_type, aws_output, text_message=None, json_output=None, verbose_output=None):
     if output_type == OutputType.PLAIN_TEXT:
         output = text_message
-        logger.info(output, output)
+        logger.info(output)
     else:
         if output_type == OutputType.JSON:
-            if json_output:
-                output = json_output
-            else:
-                output = { aws_output : {'RequestId' : response['ResponseMetadata']['RequestId'],
-                                          'HTTPStatusCode' : response['ResponseMetadata']['HTTPStatusCode']}}         
+            output = json_output if json_output else { aws_output : 
+                                                      {'RequestId' : response['ResponseMetadata']['RequestId'],
+                                                       'HTTPStatusCode' : response['ResponseMetadata']['HTTPStatusCode']}}         
         elif output_type == OutputType.VERBOSE:
-            if verbose_output:
-                output = verbose_output
-            else:
-                output = { aws_output : response }        
-        logger.info_json(output, output)
+            output = verbose_output if verbose_output else { aws_output : response }
+                        
+        logger.info_json(output)
 
 def parse_lambda_function_creation_response(response, function_name, access_key, output_type):
     aws_output = 'LambdaOutput'

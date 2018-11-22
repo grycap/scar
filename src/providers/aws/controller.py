@@ -176,11 +176,11 @@ class AWS(Commands):
         self.properties["tags"]['owner'] = self.iam.get_user_name_or_id()
                 
     def add_output(self):
-        self.properties["output"] =  response_parser.OutputType.PLAIN_TEXT
-        if 'json' in self.properties and self.properties['json']:
+        self.properties["output"] = response_parser.OutputType.PLAIN_TEXT
+        if 'json' in self.scar_properties and self.scar_properties['json']:
             self.properties["output"] = response_parser.OutputType.JSON
         # Override json ouput if both of them are defined
-        if 'verbose' in self.properties and self.properties['verbose']:
+        if 'verbose' in self.scar_properties and self.scar_properties['verbose']:
             self.properties["output"] = response_parser.OutputType.VERBOSE
             
     def add_account_id(self):
@@ -271,15 +271,12 @@ class AWS(Commands):
         self.delete_bucket_notifications()        
         # Delete function
         self.delete_lambda_function()
-        ###
         # Delete resources batch  
         self.delete_batch_resources()
-        ###
-    ###
+
     def delete_batch_resources(self):
         if(self.batch.exist_compute_environments(self._lambda.properties['name'])):
             self.batch.delete_compute_environment(self._lambda.properties['name'])
-    ###
 
     def delete_lambda_function(self):
         response = self._lambda.delete_function()

@@ -1,5 +1,0 @@
-{
-	"aws_request_id": "999",
-    "log_group_name": "test-log-group-name",
-    "log_stream_name": "test-log-stream-name"
-}
