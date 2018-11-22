@@ -47,25 +47,16 @@ def end_execution_trace_with_errors():
 def debug(cli_msg, log_msg=None):
     if loglevel == logging.DEBUG:
         print(cli_msg)
-    if log_msg:
-        logging.debug(log_msg)
-    else:
-        logging.debug(cli_msg)
+    logging.debug(log_msg) if log_msg else logging.debug(cli_msg)
 
 def info(cli_msg=None, log_msg=None):
     if cli_msg and loglevel == logging.INFO:
         print(cli_msg)
-    if log_msg:
-        logging.info(log_msg)
-    else:
-        logging.info(cli_msg)
+    logging.info(log_msg) if log_msg else logging.info(cli_msg)
 
 def warning(cli_msg, log_msg=None):
     print(cli_msg)
-    if log_msg:
-        logging.warning(log_msg)
-    else:
-        logging.warning(cli_msg)
+    logging.warning(log_msg) if log_msg else logging.warning(cli_msg)
 
 def error(cli_msg, log_msg=None):
     if log_msg:
@@ -84,14 +75,14 @@ def log_exception(error_msg, exception):
 def print_json(value):
     print(json.dumps(value))
 
-def info_json(cli_msg, log_msg):
+def info_json(cli_msg, log_msg=None):
     print_json(cli_msg)
-    logging.info(log_msg)
+    logging.info(log_msg) if log_msg else logging.info(cli_msg)
 
-def warning_json(cli_msg, log_msg):
+def warning_json(cli_msg, log_msg=None):
     print_json(cli_msg)
-    logging.warning(log_msg)
+    logging.warning(log_msg) if log_msg else logging.warning(cli_msg)
 
-def error_json(cli_msg, log_msg):
+def error_json(cli_msg, log_msg=None):
     print_json(cli_msg)
-    logging.error(log_msg)            
+    logging.error(log_msg) if log_msg else logging.error(cli_msg)          
