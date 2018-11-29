@@ -78,7 +78,7 @@ Combine AWS Lambda and AWS Batch executions
 As explained in the section :doc:`/prog_model`, if you define an output bucket as the input bucket of another function, a workflow can be created.
 By doing this, AWS Batch and AWS Lambda executions can be combined through S3 events.
 
-An example of this execution can be found in the `video process example <https://github.com/grycap/scar/tree/master/examples/video-process>`_.
+An example of this execution can be found in the `video process example <https://github.com/grycap/scar/tree/master/examples/video-process>`_ and in the `plant classification example <https://github.com/grycap/scar/tree/master/examples/plant-classification>`_.
 
 Limits
 ------
