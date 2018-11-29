@@ -1,0 +1,8 @@
+functions:
+  scar-plant-classification:
+    image: deephdc/deep-oc-plant-classification-theano
+    memory: 528
+    execution_mode: batch
+    s3:
+      input_bucket: scar-test
+    init_script: bootstrap-plants.sh
