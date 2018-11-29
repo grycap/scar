@@ -13,6 +13,10 @@ This directory includes different use cases of applications packaged as Docker i
 * [R](https://www.r-project.org/), a free software environment for statistical computing and graphics.
 * [Ruby](ttps://www.ruby-lang.org), a dynamic, open source programming language with a focus on simplicity and productivity
 * [Theano](http://deeplearning.net/software/theano/), a Python library that allows you to define, optimize, and evaluate mathematical expressions involving multi-dimensional arrays efficiently.
-* Video-processing, an infrastructure to process videos and images using AWS Batch and AWS Lambda
+
+There are also examples that combine AWS Lambda and AWS Batch in order to offer event-driven file-processing computing for applications with requirements that do not fit in the AWS Lambda constraints:
+
+* video-process: an application to perform object recognition on videos using AWS Batch and AWS Lambda
+* plant-classification: an application to classify plants using Lasagne/Theano.
 
 Are you using SCAR for another application? Let us know by creating an issue.
