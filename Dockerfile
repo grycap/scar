@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 RUN pip3 install pyinstaller 
-RUN wget https://raw.githubusercontent.com/grycap/scar/fix-udocker/src/providers/aws/cloud/lambda/udocker/udocker.py
+RUN wget https://raw.githubusercontent.com/grycap/scar/master/src/providers/aws/cloud/lambda/udocker/udocker.py
 RUN pyinstaller --onefile \
   --add-binary="/usr/bin/curl:src/bin" \
   -n udockerb \
