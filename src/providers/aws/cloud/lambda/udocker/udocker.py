@@ -50,15 +50,8 @@ PY_VER = "%d.%d" % (sys.version_info[0], sys.version_info[1])
 
 START_PATH = os.path.dirname(os.path.realpath(sys.argv[0]))
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from io import BytesIO as StringIO
-# try:
-#     from cStringIO import StringIO
-# except ImportError:
-#     from io import BytesIO as StringIO    
-    
+from io import StringIO
+
 try:
     import pycurl
 except ImportError:
@@ -970,7 +963,7 @@ class FileUtil(object):
             filep.close()
             return buf
 
-    def get1stline(self, mode="r"):
+    def get1stline(self, mode="rb"):
         """Read file 1st line to a buffer"""
         try:
             filep = open(self.filename, mode)
@@ -979,16 +972,16 @@ class FileUtil(object):
         else:
             buf = filep.readline().strip()
             filep.close()
-            return buf
+            return decode(buf)
 
-    def putdata(self, buf, mode="w"):
+    def putdata(self, buf, mode="wb"):
         """Write buffer to file"""
         try:
             filep = open(self.filename, mode)
         except (IOError, OSError, TypeError):
             return ""
         else:
-            filep.write(buf)
+            filep.write(encode(buf))
             filep.close()
             return buf
 
@@ -1011,6 +1004,9 @@ class FileUtil(object):
         if cmd:
             return cmd
         cmd = self._find_exec("type -p " + self.basename)
+        if cmd:
+            return cmd
+        cmd = resource_path("src/bin/" + self.basename)
         if cmd:
             return cmd
         return ""
@@ -4724,13 +4720,13 @@ class CurlHeader(object):
 
     def write(self, buff):
         """Write is called by Curl()"""
-        pair = buff.split(":", 1)
+        pair = decode(buff).split(":", 1)
         if len(pair) == 2:
             key = pair[0].strip().lower()
             if key:
                 self.data[key] = pair[1].strip()
         elif pair[0].startswith("HTTP/"):
-            self.data["X-ND-HTTPSTATUS"] = buff.strip()
+            self.data["X-ND-HTTPSTATUS"] = decode(buff).strip()
         elif (self.sizeonly and
               pair[0].strip() == "" and
               "location" not in self.data):
@@ -5090,10 +5086,15 @@ class GetURLexeCurl(GetURL):
                 os.rename(self._files["output_file"], kwargs["ofile"])
         else:
             try:
-                buf = StringIO(open(self._files["output_file"], "rb").read())
+                try:
+                    with open(self._files["output_file"],'r') as of:
+                        buf = StringIO(of.read())
+                except:
+                    with open(self._files["output_file"],'rb') as of:
+                        buf = StringIO(decode(of.read()))
             except(IOError, OSError):
                 Msg().err("Error: reading curl output file to buffer")
-            FileUtil(self._files["output_file"]).remove()
+#           FileUtil(self._files["output_file"]).remove()
         FileUtil(self._files["error_file"]).remove()
         FileUtil(self._files["header_file"]).remove()
         return(hdr, buf)
@@ -5229,7 +5230,7 @@ class DockerIoAPI(object):
         try:
             self.v1_auth_header = "Authorization: Token " + \
                 hdr.data["x-docker-token"]
-            return hdr.data, json.loads(buf.getvalue())
+            return hdr.data, json.loads(decode(buf.getvalue()))
         except (IOError, OSError, AttributeError,
                 ValueError, TypeError, KeyError):
             self.v1_auth_header = ""
@@ -5247,7 +5248,7 @@ class DockerIoAPI(object):
         Msg().err("tags url:", url, l=Msg.DBG)
         (hdr, buf) = self._get_url(url)
         try:
-            return(hdr.data, json.loads(buf.getvalue()))
+            return(hdr.data, json.loads(decode(buf.getvalue())))
         except (IOError, OSError, AttributeError, ValueError, TypeError):
             return(hdr.data, [])
 
@@ -5257,7 +5258,7 @@ class DockerIoAPI(object):
         Msg().err("tags url:", url, l=Msg.DBG)
         (hdr, buf) = self._get_url(url)
         try:
-            return(hdr.data, json.loads(buf.getvalue()))
+            return(hdr.data, json.loads(decode(buf.getvalue())))
         except (IOError, OSError, AttributeError, ValueError, TypeError):
             return(hdr.data, [])
 
@@ -5267,7 +5268,7 @@ class DockerIoAPI(object):
         Msg().err("ancestry url:", url, l=Msg.DBG)
         (hdr, buf) = self._get_url(url)
         try:
-            return(hdr.data, json.loads(buf.getvalue()))
+            return(hdr.data, json.loads(decode(buf.getvalue())))
         except (IOError, OSError, AttributeError, ValueError, TypeError):
             return(hdr.data, [])
 
@@ -5369,15 +5370,13 @@ class DockerIoAPI(object):
         that is common to all layers in this image tag
         """
         if self._is_docker_registry() and "/" not in imagerepo:
-            url = self.registry_url + "/v2/library/" + \
-                imagerepo + "/manifests/" + tag
+            url = self.registry_url + "/v2/library/" + imagerepo + "/manifests/" + tag
         else:
-            url = self.registry_url + "/v2/" + imagerepo + \
-                "/manifests/" + tag
+            url = self.registry_url + "/v2/" + imagerepo + "/manifests/" + tag
         Msg().err("manifest url:", url, l=Msg.DBG)
         (hdr, buf) = self._get_url(url)
         try:
-            return(hdr.data, json.loads(buf.getvalue()))
+            return(hdr.data, json.loads(decode(buf.getvalue())))
         except (IOError, OSError, AttributeError, ValueError, TypeError):
             return(hdr.data, [])
 
@@ -5552,7 +5551,7 @@ class DockerIoAPI(object):
         url += "&page=" + str(self.search_page)
         (dummy, buf) = self._get_url(url)
         try:
-            repo_list = json.loads(buf.getvalue())
+            repo_list = json.loads(decode(buf.getvalue()))
             if repo_list["page"] == repo_list["num_pages"]:
                 self.search_ended = True
             return repo_list
@@ -5577,7 +5576,7 @@ class DockerIoAPI(object):
         except (AttributeError, NameError, KeyError):
             self.search_ended = True
         try:
-            return json.loads(buf.getvalue())
+            return json.loads(decode(buf.getvalue()))
         except (IOError, OSError, AttributeError,
                 ValueError, TypeError):
             self.search_ended = True

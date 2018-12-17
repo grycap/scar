@@ -35,7 +35,7 @@ RUN pyinstaller --onefile \
   --add-data="src/providers/aws/cloud/lambda/clients/udocker.py:src/providers/aws/cloud/lambda/clients" \
   --add-data="src/exceptions.py:src" \
   --add-data="src/utils.py:src" \
-  --add-data="src/providers/aws/cloud/lambda/udocker/udocker-1.1.0-RC2.tar.gz:src/providers/aws/cloud/lambda/udocker" \
+  --add-data="src/providers/aws/cloud/lambda/udocker/udocker-1.1.3.tar.gz:src/providers/aws/cloud/lambda/udocker" \
   --add-binary="udockerb:src/providers/aws/cloud/lambda/udocker" \
   --add-binary="/usr/bin/zip:src/bin" \
   --hidden-import=urllib3 \
