@@ -1,6 +1,5 @@
 #! /usr/bin/python
 
-# SCAR - Serverless Container-aware ARchitectures
 # Copyright (C) GRyCAP - I3M - UPV
 #
 # Licensed under the Apache License, Version 2.0 (the "License");

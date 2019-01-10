@@ -1,18 +1,16 @@
-# SCAR - Serverless Container-aware ARchitectures
-# Copyright (C) 2011 - GRyCAP - Universitat Politecnica de Valencia
+# Copyright (C) GRyCAP - I3M - UPV
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# http://www.apache.org/licenses/LICENSE-2.0
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import os
 import shutil
@@ -23,6 +21,7 @@ import tempfile
 from distutils import dir_util
 import src.exceptions as excp
 from src.providers.aws.validators import AWSValidator
+from zipfile import ZipFile
 
 MAX_PAYLOAD_SIZE = 50 * 1024 * 1024
 MAX_S3_PAYLOAD_SIZE = 250 * 1024 * 1024
@@ -43,13 +42,15 @@ class FunctionPackageCreator():
     src_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     aws_src_path = os.path.dirname(os.path.abspath(__file__))
     lambda_code_files_path = utils.join_paths(aws_src_path, "cloud/lambda/")
+    
     os_tmp_folder = tempfile.gettempdir()
     scar_temporal_folder = utils.join_paths(os_tmp_folder, "scar/")
     
     supervisor_source = utils.join_paths(lambda_code_files_path, "scarsupervisor.py")
     
-    udocker_file = "udockerb" if utils.is_binary_execution() else "udocker.py"
-    udocker_source = utils.join_paths(lambda_code_files_path, "udocker", udocker_file)
+#     udocker_file = "udockerb" if utils.is_binary_execution() else "udocker.py"
+#     udocker_source = utils.join_paths(lambda_code_files_path, "udocker", udocker_file)
+    udocker_code_file_path = utils.join_paths(lambda_code_files_path, "scar.zip")
     udocker_dest = utils.join_paths(scar_temporal_folder, "udockerb")
     
     udocker_exec = [udocker_dest]
@@ -79,34 +80,43 @@ class FunctionPackageCreator():
         self.zip_scar_folder()
         self.check_code_size()
 
+    def copy_udocker_file(self):
+        with ZipFile(self.udocker_code_file_path,'r') as myzip:
+            with myzip.open('udocker/udocker.py', 'rb') as usource:
+                with open(self.udocker_dest, 'wb') as udest:
+                    udest.write(usource.read())
+        self.execute_command(['chmod', '0775', self.udocker_dest])
+
     def add_mandatory_files(self):
         os.makedirs(self.scar_temporal_folder, exist_ok=True)
         shutil.copy(utils.resource_path(self.supervisor_source), self.supervisor_dest)
         self.execute_command(['chmod', '0664', self.supervisor_dest])
-        shutil.copy(utils.resource_path(self.udocker_source), self.udocker_dest)
-        self.execute_command(['chmod', '0775', self.udocker_dest])
-        
-        os.makedirs(utils.join_paths(self.scar_temporal_folder, "src"), exist_ok=True)
-        os.makedirs(utils.join_paths(self.scar_temporal_folder, "src", "clients"), exist_ok=True)
-        
-        files = ["utils.py", "exceptions.py"]
-        for file in files:
-            file_source = utils.resource_path(utils.join_paths(self.src_path, file))
-            self.file_dest = utils.join_paths(self.scar_temporal_folder, "src/{0}".format(file))
-            shutil.copy(file_source, self.file_dest)
-            self.execute_command(['chmod', '0664', self.file_dest])
-            
-        files = ["apigateway.py", "batch.py", "lambdafunction.py", "s3.py", "udocker.py"]
-        for file in files:
-            file_source = utils.resource_path(utils.join_paths(self.lambda_code_files_path, 'clients', file))
-            self.file_dest = utils.join_paths(self.scar_temporal_folder, "src/clients/{0}".format(file))
-            shutil.copy(file_source, self.file_dest)
-            self.execute_command(['chmod', '0664', self.file_dest])             
+#         self.copy_udocker_file()
+#         self.execute_command(['chmod', '0775', self.udocker_dest])
+#         shutil.copy(utils.resource_path(self.udocker_source), self.udocker_dest)
+#         self.execute_command(['chmod', '0775', self.udocker_dest])
+#         
+#         os.makedirs(utils.join_paths(self.scar_temporal_folder, "src"), exist_ok=True)
+#         os.makedirs(utils.join_paths(self.scar_temporal_folder, "src", "clients"), exist_ok=True)
+#         
+#         files = ["utils.py", "exceptions.py"]
+#         for file in files:
+#             file_source = utils.resource_path(utils.join_paths(self.src_path, file))
+#             self.file_dest = utils.join_paths(self.scar_temporal_folder, "src/{0}".format(file))
+#             shutil.copy(file_source, self.file_dest)
+#             self.execute_command(['chmod', '0664', self.file_dest])
+#             
+#         files = ["apigateway.py", "batch.py", "lambdafunction.py", "s3.py", "udocker.py"]
+#         for file in files:
+#             file_source = utils.resource_path(utils.join_paths(self.lambda_code_files_path, 'clients', file))
+#             self.file_dest = utils.join_paths(self.scar_temporal_folder, "src/clients/{0}".format(file))
+#             shutil.copy(file_source, self.file_dest)
+#             self.execute_command(['chmod', '0664', self.file_dest])             
         
         self.set_environment_variable('UDOCKER_DIR', "/tmp/home/udocker")
-        self.set_environment_variable('UDOCKER_LIB', "/var/task/udocker/lib/")
-        self.set_environment_variable('UDOCKER_BIN', "/var/task/udocker/bin/")
-        self.create_udocker_files()
+        self.set_environment_variable('UDOCKER_LIB', "/opt/udocker/lib/")
+        self.set_environment_variable('UDOCKER_BIN', "/opt/udocker/bin/")
+        # self.create_udocker_files()
      
     @udocker_env     
     def create_udocker_files(self):
@@ -129,20 +139,20 @@ class FunctionPackageCreator():
             AWSValidator.validate_s3_code_size(self.scar_temporal_folder, MAX_S3_PAYLOAD_SIZE)
         else:
             AWSValidator.validate_function_code_size(self.scar_temporal_folder, MAX_PAYLOAD_SIZE)        
-        
+
     def clean_tmp_folders(self):
         if os.path.isfile(self.properties['ZipFilePath']):    
             utils.delete_file(self.properties['ZipFilePath'])
         # Delete created temporal files
         if os.path.isdir(self.scar_temporal_folder):
             shutil.rmtree(self.scar_temporal_folder, ignore_errors=True)
-        
+
     def zip_scar_folder(self):
         zip_exe = utils.resource_path("src/bin/zip", bin_path='/usr/bin/zip')
         self.execute_command([zip_exe, "-r9y", self.properties['ZipFilePath'], "."],
                              cmd_wd=self.scar_temporal_folder,
                              cli_msg="Creating function package")
-        
+
     @classmethod
     def save_tmp_udocker_env(cls):
         #Avoid override global variables
@@ -154,7 +164,7 @@ class FunctionPackageCreator():
         udocker_tarball = utils.resource_path(utils.join_paths(cls.lambda_code_files_path, "udocker", "udocker-1.1.3.tar.gz"))
         utils.set_environment_variable('UDOCKER_TARBALL', udocker_tarball)
         utils.set_environment_variable('UDOCKER_DIR', utils.join_paths(cls.scar_temporal_folder, "udocker"))
-        
+
     @classmethod        
     def restore_udocker_env(cls):
         cls.restore_environ_var('UDOCKER_TARBALL', cls.udocker_tarball)

@@ -1,23 +1,22 @@
-# SCAR - Serverless Container-aware ARchitectures
-# Copyright (C) 2011 - GRyCAP - Universitat Politecnica de Valencia
+# Copyright (C) GRyCAP - I3M - UPV
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# http://www.apache.org/licenses/LICENSE-2.0
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from botocore.exceptions import ClientError
 from multiprocessing.pool import ThreadPool
 from src.providers.aws.botoclientfactory import GenericClient
 from src.providers.aws.functioncode import FunctionPackageCreator
+import src.providers.aws.layerscode as lambdalayers
 from src.providers.aws.s3 import S3
 import base64
 import json
@@ -45,7 +44,8 @@ class Lambda(GenericClient):
         if 'name' in self.properties:
             self.properties['handler'] = "{0}.lambda_handler".format(self.properties['name'])
         if 'asynchronous' not in self.properties:
-            self.properties['asynchronous'] = False         
+            self.properties['asynchronous'] = False
+        self.properties['layers'] = []
 
     def get_creations_args(self):
         return {'FunctionName' : self.properties['name'],
@@ -58,10 +58,12 @@ class Lambda(GenericClient):
                 'Timeout': self.properties['time'],
                 'MemorySize': self.properties['memory'],
                 'Tags': self.aws_properties['tags'],
+                'Layers': self.properties['layers'],
                 }    
     
     @excp.exception(logger)
     def create_function(self):
+        self.manage_scar_layer()
         self.set_environment_variables()
         self.set_function_code()
         creation_args = self.get_creations_args()
@@ -69,7 +71,26 @@ class Lambda(GenericClient):
         if response and 'FunctionArn' in response:
             self.properties["function_arn"] = response['FunctionArn']
         return response
-        
+
+    def manage_scar_layer(self):
+        scar_layer_info = self.get_scar_layer_info()
+        if not scar_layer_info:
+            scar_layer_info = self.create_scar_layer()
+        self.properties['layers'].append(scar_layer_info['LatestMatchingVersion']['LayerVersionArn'])
+
+    def get_scar_layer_info(self):
+        layers = self.get_lambda_layers()
+        for layer in layers:
+            if layer['LayerName'] == 'scar':
+                return layer
+
+    def get_lambda_layers(self):
+        return self.client.list_layers()['Layers']            
+    
+    def create_scar_layer(self):
+        scar_layer_props = lambdalayers.get_scar_layer_props()
+        return self.client.publish_layer_version(**scar_layer_props)
+
     def set_environment_variables(self):
         # Add required variables
         self.set_required_environment_variables()
