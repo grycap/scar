@@ -42,7 +42,7 @@ More info about the variables and the different values that can be assigned can 
 Set up your Batch role
 ----------------------
 
-The default role used in the creation of the Batch Compute Environment is **arn:aws:iam::$ACCOUNT_ID:role/service-role/AWSBatchServiceRole**. Thus, if you want to provide S3 access to your Batch jobs you have to provide S3-Access policies for this default role. 
+The default role used in the creation of the Batch Compute Environment is **arn:aws:iam::$ACCOUNT_ID:role/service-role/AWSBatchServiceRole**. Thus, if you want to provide S3 access to your Batch jobs you have to provide S3-Access policies to this default role. 
 
 
 Define a job to be executed in batch
