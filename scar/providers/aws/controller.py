@@ -159,7 +159,7 @@ class AWS(Commands):
     @excp.exception(logger)
     def parse_arguments(self, **kwargs):
         self.properties = kwargs['aws']
-        self.scar_properties = kwargs['scar_cli']
+        self.scar_properties = kwargs['scar']
         self.add_extra_aws_properties()
 
     def add_extra_aws_properties(self):
@@ -170,7 +170,7 @@ class AWS(Commands):
         
     def add_tags(self):
         self.properties["tags"] = {}
-        self.properties["tags"]['createdby'] = 'scar_cli'
+        self.properties["tags"]['createdby'] = 'scar'
         self.properties["tags"]['owner'] = self.iam.get_user_name_or_id()
                 
     def add_output(self):

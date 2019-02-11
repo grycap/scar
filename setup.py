@@ -19,15 +19,15 @@ with open('README.md', mode='r', encoding='utf-8') as f:
     readme = f.read()
 
 # Load version
-with open('scar_cli/version.py', mode='r', encoding='utf-8')  as f:
+with open('scar/version.py', mode='r', encoding='utf-8')  as f:
     exec(f.read())
 
-setup(name='scar_cli',
+setup(name='scar',
       version=__version__,
       description='CLI for deploying serverless infrastructures on multiple cloud environments',
       long_description=readme,
       long_description_content_type='text/markdown',      
-      url='https://github.com/grycap/scar_cli',
+      url='https://github.com/grycap/scar',
       author='GRyCAP - Universitat Politecnica de Valencia',
       author_email='alpegon3@upv.es',
       license='Apache 2.0',

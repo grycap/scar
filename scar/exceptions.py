@@ -72,7 +72,7 @@ class MissingCommandError(ScarError):
     SCAR was launched without a command
 
     """
-    fmt = "Please use one of the scar_cli available commands (init,invoke,run,update,rm,ls,log,put,get)"
+    fmt = "Please use one of the scar available commands (init,invoke,run,update,rm,ls,log,put,get)"
     
 class ScarConfigFileError(ScarError):
     """

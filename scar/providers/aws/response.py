@@ -106,7 +106,7 @@ def parse_lambda_function_info(function_info):
     api_gateway = function_info['Environment']['Variables'].get('API_GATEWAY_ID', "-")
     if api_gateway != '-':
         region = function_info['FunctionArn'].split(':')[3]
-        api_gateway = 'https://{0}.execute-api.{1}.amazonaws.com/scar_cli/launch'.format(api_gateway, region)
+        api_gateway = 'https://{0}.execute-api.{1}.amazonaws.com/scar/launch'.format(api_gateway, region)
         
     return {'Name' : name,
             'Memory' : memory,
