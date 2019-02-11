@@ -49,10 +49,9 @@ class LambdaLayers():
 
     def download_supervisor(self):
 #         supervisor_version = self.get_supervisor_version()
-#         supervisor_zip = request.get_file(self.supervisor_zip_url.format(supervisor_version))
-        temp_url = 'https://github.com/grycap/faas-supervisor/archive/master.zip'
-        self.version_path = 'faas-supervisor-aws'
-        supervisor_zip = request.get_file(temp_url)
+        supervisor_version = 'master'
+        self.version_path = 'faas-supervisor-{0}'.format(supervisor_version)
+        supervisor_zip = request.get_file(self.supervisor_zip_url.format(supervisor_version))
         with zipfile.ZipFile(io.BytesIO(supervisor_zip)) as thezip:
             for file in thezip.namelist():
                 if file.startswith('{}/extra'.format(self.version_path)) or \
