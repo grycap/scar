@@ -13,8 +13,8 @@
 # limitations under the License.
 
 from botocore.exceptions import ClientError
-import src.logger as logger
-from src.providers.aws.botoclientfactory import GenericClient
+import scar.logger as logger
+from scar.providers.aws.botoclientfactory import GenericClient
 
 class ResourceGroups(GenericClient):
     

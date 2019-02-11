@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import src.logger as logger
+import scar.logger as logger
 import os
-from src.providers.aws.botoclientfactory import GenericClient
-import src.exceptions as excp 
-import src.utils as utils
+from scar.providers.aws.botoclientfactory import GenericClient
+import scar.exceptions as excp 
+import scar.utils as utils
 
 class S3(GenericClient):
     

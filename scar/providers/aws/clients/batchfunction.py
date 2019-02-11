@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from src.providers.aws.clients.boto import BotoClient
-import src.logger as logger
+from scar.providers.aws.clients.boto import BotoClient
+import scar.logger as logger
 
 class BatchClient(BotoClient):
     '''A low-level client representing aws batchClient.

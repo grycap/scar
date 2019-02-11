@@ -13,8 +13,8 @@
 # limitations under the License.
 import yaml
 import os
-from src.exceptions import YamlFileNotFoundError
-import src.utils as utils
+from scar.exceptions import YamlFileNotFoundError
+import scar.utils as utils
 
 class YamlParser(object):
     

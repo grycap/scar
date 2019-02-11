@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from src.providers.aws.clients.boto import BotoClient
-import src.logger as logger
+from scar.providers.aws.clients.boto import BotoClient
+import scar.logger as logger
 from botocore.exceptions import ClientError
-import src.exceptions as excp
+import scar.exceptions as excp
 
 class CloudWatchLogsClient(BotoClient):
     '''A low-level client representing Amazon CloudWatch Logs.

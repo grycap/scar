@@ -12,22 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from src.providers.aws.lambdafunction import Lambda
-from src.providers.aws.cloudwatchlogs import CloudWatchLogs
-###
-from src.providers.aws.batchfunction import Batch
-from src.providers.aws.apigateway import APIGateway
-from src.providers.aws.s3 import S3
-from src.providers.aws.iam import IAM
-from src.providers.aws.resourcegroups import ResourceGroups
-from src.cmdtemplate import Commands
-from src.providers.aws.validators import AWSValidator
+from scar.providers.aws.lambdafunction import Lambda
+from scar.providers.aws.cloudwatchlogs import CloudWatchLogs
+from scar.providers.aws.batchfunction import Batch
+from scar.providers.aws.apigateway import APIGateway
+from scar.providers.aws.s3 import S3
+from scar.providers.aws.iam import IAM
+from scar.providers.aws.resourcegroups import ResourceGroups
+from scar.cmdtemplate import Commands
+from scar.providers.aws.validators import AWSValidator
 
-import src.logger as logger
-import src.providers.aws.response as response_parser
-import src.utils as utils
+import scar.logger as logger
+import scar.providers.aws.response as response_parser
+import scar.utils as utils
 import os
-import src.exceptions as excp
+import scar.exceptions as excp
 
 class AWS(Commands):
 

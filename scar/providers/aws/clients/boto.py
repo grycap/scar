@@ -14,7 +14,7 @@
 
 import boto3
 import botocore
-import src.utils as utils
+import scar.utils as utils
 
 # Default values
 botocore_client_read_timeout = 360

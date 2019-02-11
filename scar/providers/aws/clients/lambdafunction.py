@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from src.providers.aws.clients.boto import BotoClient
-import src.logger as logger
-import src.utils as utils
-import src.exceptions as excp
+from scar.providers.aws.clients.boto import BotoClient
+import scar.logger as logger
+import scar.utils as utils
+import scar.exceptions as excp
 
 class LambdaClient(BotoClient):
     '''A low-level client representing aws LambdaClient.

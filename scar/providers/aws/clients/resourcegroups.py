@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from src.providers.aws.clients.boto import BotoClient
-import src.logger as logger
-import src.exceptions as ex
+from scar.providers.aws.clients.boto import BotoClient
+import scar.logger as logger
+import scar.exceptions as ex
 
 class ResourceGroupsClient(BotoClient):
     '''A low-level client representing aws Resource Groups Tagging API.

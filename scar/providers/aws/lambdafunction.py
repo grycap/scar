@@ -14,17 +14,17 @@
 
 from botocore.exceptions import ClientError
 from multiprocessing.pool import ThreadPool
-from src.providers.aws.botoclientfactory import GenericClient
-from src.providers.aws.functioncode import FunctionPackageCreator
-from src.providers.aws.lambdalayers import LambdaLayers
-from src.providers.aws.s3 import S3
+from scar.providers.aws.botoclientfactory import GenericClient
+from scar.providers.aws.functioncode import FunctionPackageCreator
+from scar.providers.aws.lambdalayers import LambdaLayers
+from scar.providers.aws.s3 import S3
 import base64
 import json
-import src.exceptions as excp
-import src.http.request as request
-import src.logger as logger
-import src.providers.aws.response as response_parser
-import src.utils as utils
+import scar.exceptions as excp
+import scar.http.request as request
+import scar.logger as logger
+import scar.providers.aws.response as response_parser
+import scar.utils as utils
 
 MAX_CONCURRENT_INVOCATIONS = 1000
 MB = 1024*1024

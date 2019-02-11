@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from src.providers.aws.botoclientfactory import GenericClient
-import src.logger as logger
+from scar.providers.aws.botoclientfactory import GenericClient
+import scar.logger as logger
 
 class Batch(GenericClient):
 

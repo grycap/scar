@@ -14,8 +14,8 @@
 
 from enum import Enum
 from tabulate import tabulate
-import src.logger as logger
-import src.utils as utils
+import scar.logger as logger
+import scar.utils as utils
 import json
 
 class OutputType(Enum):

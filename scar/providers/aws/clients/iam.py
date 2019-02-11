@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from src.providers.aws.clients.boto import BotoClient
+from scar.providers.aws.clients.boto import BotoClient
 from botocore.exceptions import ClientError
-import src.logger as logger
-import src.utils as utils
-import src.exceptions as excp
+import scar.logger as logger
+import scar.utils as utils
+import scar.exceptions as excp
 
 class IAMClient(BotoClient):
     '''A low-level client representing aws Identity and Access Management (IAMClient).

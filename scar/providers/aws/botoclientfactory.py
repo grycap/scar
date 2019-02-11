@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import src.utils as utils
-from src.providers.aws.clients.lambdafunction import LambdaClient
-from src.providers.aws.clients.apigateway import APIGatewayClient
-from src.providers.aws.clients.cloudwatchlogs import CloudWatchLogsClient
-from src.providers.aws.clients.iam import IAMClient
-from src.providers.aws.clients.resourcegroups import ResourceGroupsClient
-from src.providers.aws.clients.s3 import S3Client
-from src.providers.aws.clients.batchfunction import BatchClient
+import scar.utils as utils
+from scar.providers.aws.clients.lambdafunction import LambdaClient
+from scar.providers.aws.clients.apigateway import APIGatewayClient
+from scar.providers.aws.clients.cloudwatchlogs import CloudWatchLogsClient
+from scar.providers.aws.clients.iam import IAMClient
+from scar.providers.aws.clients.resourcegroups import ResourceGroupsClient
+from scar.providers.aws.clients.s3 import S3Client
+from scar.providers.aws.clients.batchfunction import BatchClient
 
 class GenericClient(object):
 

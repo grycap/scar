@@ -13,10 +13,10 @@
 # limitations under the License.
 
 import os
-import src.utils as utils
-import src.http.request as request
+import scar.utils as utils
+import scar.http.request as request
 import zipfile
-import src.logger as logger
+import scar.logger as logger
 import json
 import io
 import shutil

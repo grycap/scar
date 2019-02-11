@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from src.providers.aws.clients.boto import BotoClient
+from scar.providers.aws.clients.boto import BotoClient
 from botocore.exceptions import ClientError
-import src.logger as logger
-import src.exceptions as excp
+import scar.logger as logger
+import scar.exceptions as excp
 
 class S3Client(BotoClient):
     '''A low-level client representing Amazon Simple Storage Service (S3Client).

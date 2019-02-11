@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import argparse
-import src.logger as logger
-import src.utils as utils
-import src.exceptions as excp
+import scar.logger as logger
+import scar.utils as utils
+import scar.exceptions as excp
 
 class CommandParser(object):
     

@@ -15,9 +15,9 @@
 import os
 import shutil
 import json
-import src.utils as utils
-import src.exceptions as excp
-import src.logger as logger
+import scar.utils as utils
+import scar.exceptions as excp
+import scar.logger as logger
 
 default_cfg = { 
     "aws" : {

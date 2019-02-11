@@ -14,13 +14,13 @@
 
 import os
 import shutil
-import src.logger as logger
-import src.utils as utils
-import src.http.request as request
+import scar.logger as logger
+import scar.utils as utils
+import scar.http.request as request
 import subprocess
 from distutils import dir_util
-import src.exceptions as excp
-from src.providers.aws.validators import AWSValidator
+import scar.exceptions as excp
+from scar.providers.aws.validators import AWSValidator
 from zipfile import ZipFile
 import io
 

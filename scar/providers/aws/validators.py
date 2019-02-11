@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import src.utils as utils
-from src.exceptions import ValidatorError, S3CodeSizeError, FunctionCodeSizeError
-from src.validator import GenericValidator
+import scar.utils as utils
+from scar.exceptions import ValidatorError, S3CodeSizeError, FunctionCodeSizeError
+from scar.validator import GenericValidator
 import os
 
 valid_lambda_name_regex = "(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}(-gov)?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\$LATEST|[a-zA-Z0-9-_]+))?"

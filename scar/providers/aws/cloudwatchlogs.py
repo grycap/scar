@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from botocore.exceptions import ClientError
-from src.providers.aws.botoclientfactory import GenericClient
+from scar.providers.aws.botoclientfactory import GenericClient
 
 class CloudWatchLogs(GenericClient):
     
