@@ -40,7 +40,7 @@ def udocker_env(func):
 
 class FunctionPackageCreator():
     
-    udocker_url = 'https://github.com/grycap/faas-supervisor/raw/aws/extra/udocker.zip'
+    udocker_url = 'https://github.com/grycap/faas-supervisor/raw/master/extra/udocker.zip'
     
     aws_src_path = os.path.dirname(os.path.abspath(__file__))
     lambda_code_file_path = utils.join_paths(aws_src_path, "cloud")
@@ -86,9 +86,6 @@ class FunctionPackageCreator():
         udocker_zip = request.get_file(self.udocker_url)
         with ZipFile(io.BytesIO(udocker_zip)) as thezip:
             thezip.extractall(self.udocker_tmp_folder_path)
-        
-#         with ZipFile(self.udocker_zip_path,"r") as zip_ref:
-#             zip_ref.extractall(self.udocker_tmp_folder_path)        
 
     def add_mandatory_files(self):
         shutil.copy(utils.resource_path(self.function_handler_source), self.function_handler_dest)
@@ -136,7 +133,6 @@ class FunctionPackageCreator():
 
     @classmethod        
     def restore_udocker_env(cls):
-#        cls.restore_environ_var('UDOCKER_TARBALL', cls.udocker_tarball)
         cls.restore_environ_var('UDOCKER_DIR', cls.udocker_dir)
         
     @classmethod
