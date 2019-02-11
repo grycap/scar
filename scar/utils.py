@@ -12,19 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from .exceptions import InvalidPlatformError
 import base64
 import json
+import logging
 import os
+import platform
 import re
+import shutil
 import subprocess
+import sys
 import tarfile
 import tempfile
 import uuid
-import sys
-import platform
-import shutil
-from .exceptions import InvalidPlatformError
-import logging
 
 def resource_path(relative_path, bin_path=None):
     """ Get absolute path to resource, works for dev and for PyInstaller """

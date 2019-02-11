@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import shutil
 import json
-import scar.utils as utils
+import os
 import scar.exceptions as excp
 import scar.logger as logger
+import scar.utils as utils
+import shutil
 
 default_cfg = { 
     "aws" : {
@@ -49,9 +49,9 @@ default_cfg = {
 
 class ConfigFileParser(object):
     
-    config_file_name = "scar.cfg"
-    backup_config_file_name = "scar.cfg_old"
-    config_folder_name = ".scar"
+    config_file_name = "scar_cli.cfg"
+    backup_config_file_name = "scar_cli.cfg_old"
+    config_folder_name = ".scar_cli"
     config_file_folder = utils.join_paths(os.path.expanduser("~"), config_folder_name)
     config_file_path = utils.join_paths(config_file_folder, config_file_name)
     backup_file_path = utils.join_paths(config_file_folder, backup_config_file_name)
@@ -66,7 +66,7 @@ class ConfigFileParser(object):
             if 'region' not in self.cfg_data['aws'] or 'boto_profile' not in self.cfg_data['aws'] or 'execution_mode' not in self.cfg_data['aws']:
                 self.add_missing_attributes()
         else:
-            # Create scar config dir
+            # Create scar_cli config dir
             os.makedirs(self.config_file_folder, exist_ok=True)
             self.create_default_config_file()
             raise excp.ScarConfigFileError(file_path=self.config_file_path)
@@ -79,9 +79,9 @@ class ConfigFileParser(object):
         return self.cfg_data
         
     def add_missing_attributes(self):
-        logger.info("Updating old scar config file '{0}'.\n".format(self.config_file_path))
+        logger.info("Updating old scar_cli config file '{0}'.\n".format(self.config_file_path))
         shutil.copy(self.config_file_path, self.backup_file_path)
-        logger.info("Old scar config file saved in '{0}'.\n".format(self.backup_file_path))       
+        logger.info("Old scar_cli config file saved in '{0}'.\n".format(self.backup_file_path))       
         self.merge_files(self.cfg_data, default_cfg)    
         self.delete_unused_data()
         with open(self.config_file_path, mode='w') as cfg_file:

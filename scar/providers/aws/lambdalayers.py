@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import scar.utils as utils
-import scar.http.request as request
-import zipfile
-import scar.logger as logger
-import json
 import io
+import json
+import os
+import scar.http.request as request
+import scar.logger as logger
+import scar.utils as utils
 import shutil
+import zipfile
 
 class LambdaLayers():
 

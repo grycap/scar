@@ -20,7 +20,7 @@ import unittest
 class AwsTest(unittest.TestCase):
     
     scar_base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-    scar_bin = ["python3", scar_base_path + "/scar.py"]
+    scar_bin = ["python3", scar_base_path + "/scar_cli.py"]
     
     def tearDown(self):
         self.execute_command(self.get_cmd(["rm","-a"]))
@@ -53,7 +53,7 @@ class AwsTest(unittest.TestCase):
         self.assertEqual(json.loads(cmd_out), {"Functions": []})                 
                   
     def test_init_ls_run_rm_function(self):
-        func_name = "scar-test-init-ls-run-rm"
+        func_name = "scar_cli-test-init-ls-run-rm"
         self.create_function(func_name)
          
         cmd = self.get_cmd(["ls"])
@@ -74,7 +74,7 @@ class AwsTest(unittest.TestCase):
         self.assertTrue("Function '{0}' successfully deleted".format(func_name) in cmd_out)
          
     def test_init_ls_rm_function_json(self):
-        func_name = "scar-test-init-ls-rm-json"
+        func_name = "scar_cli-test-init-ls-rm-json"
         self.create_function(func_name)
         
         cmd = self.get_cmd(["ls", "-j"])
@@ -94,13 +94,13 @@ class AwsTest(unittest.TestCase):
         self.assertTrue(json.loads(lambda_out)['LambdaOutput']['HTTPStatusCode'], 204)
          
     def test_init_ls_rm_simple_function_verbose(self):
-        func_name = "scar-test-init-ls-rm-verbose"
+        func_name = "scar_cli-test-init-ls-rm-verbose"
         self.create_function(func_name)
         cmd = self.scar_bin + ["ls", "-v"]
         cmd_out = self.execute_command(cmd)
         output = json.loads(cmd_out)
-        self.assertTrue(output['Functions'][0]['FunctionName'], "scar-func-test")
-        self.assertTrue(output['Functions'][0]['Handler'], "scar-func-test.lambda_handler")
+        self.assertTrue(output['Functions'][0]['FunctionName'], "scar_cli-func-test")
+        self.assertTrue(output['Functions'][0]['Handler'], "scar_cli-func-test.lambda_handler")
 
         cmd = self.scar_bin + ["rm","-n", func_name, "-v"]
         cmd_out = self.execute_command(cmd)
@@ -109,7 +109,7 @@ class AwsTest(unittest.TestCase):
         self.assertTrue(json.loads(lambda_out)['LambdaOutput']['ResponseMetadata']['HTTPStatusCode'], 204)
         
     def test_init_ls_rm_several_functions(self):
-        function_names = ["scar-test-init-ls-rm-mult", "scar-test-init-ls-rm-mult-1", "scar-test-init-ls-rm-mult-2"]
+        function_names = ["scar_cli-test-init-ls-rm-mult", "scar_cli-test-init-ls-rm-mult-1", "scar_cli-test-init-ls-rm-mult-2"]
         for function_name in function_names:
             self.create_function(function_name)
 

@@ -12,18 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
 import json
+import logging
 import os
 
-log_folder_name = ".scar"
+log_folder_name = ".scar_cli"
 log_file_folder = os.path.join(os.path.expanduser("~"), log_folder_name)
 if 'SCAR_LOG_PATH' in os.environ:
     log_file_folder = os.environ['SCAR_LOG_PATH']
-log_file_name = "scar.log"
+log_file_name = "scar_cli.log"
 log_file_path = os.path.join(log_file_folder, log_file_name)
 
-# Create scar config dir
+# Create scar_cli config dir
 if not os.path.isdir(log_file_folder):
     os.makedirs(log_file_folder, exist_ok=True)
 

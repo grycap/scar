@@ -106,7 +106,7 @@ class Lambda(GenericClient):
         self.add_lambda_environment_variable('LOG_LEVEL', self.properties['log_level'])
         self.add_lambda_environment_variable('EXECUTION_MODE',  self.aws_properties['execution_mode'])
         if (self.aws_properties['execution_mode']=='lambda-batch' or self.aws_properties['execution_mode']=='batch'):
-            self.add_lambda_environment_variable('BATCH_SUPERVISOR_IMG',  'alpegon/scar-batch-io:devel')
+            self.add_lambda_environment_variable('BATCH_SUPERVISOR_IMG',  'alpegon/scar_cli-batch-io:devel')
         
         self.add_lambda_environment_variable('EXECUTION_MODE',  self.aws_properties['execution_mode'])
         if utils.is_value_in_dict(self.properties, 'image'):     
@@ -317,7 +317,7 @@ class Lambda(GenericClient):
         # Testing permission
         self.client.add_invocation_permission(**kwargs)
         # Invocation permission
-        kwargs['SourceArn'] = 'arn:aws:execute-api:{0}:{1}:{2}/scar/ANY'.format(aws_region, aws_acc_id, api_gateway_id)
+        kwargs['SourceArn'] = 'arn:aws:execute-api:{0}:{1}:{2}/scar_cli/ANY'.format(aws_region, aws_acc_id, api_gateway_id)
         self.client.add_invocation_permission(**kwargs)                              
 
     def get_api_gateway_id(self):
@@ -329,7 +329,7 @@ class Lambda(GenericClient):
         api_id = self.get_api_gateway_id()
         if not api_id:
             raise excp.ApiEndpointNotFoundError(self.properties['name'])
-        return 'https://{0}.execute-api.{1}.amazonaws.com/scar/launch'.format(api_id, self.aws_properties["region"])        
+        return 'https://{0}.execute-api.{1}.amazonaws.com/scar_cli/launch'.format(api_id, self.aws_properties["region"])        
         
     def get_http_invocation_headers(self):
         if self.is_asynchronous():

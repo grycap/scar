@@ -11,10 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import yaml
-import os
 from scar.exceptions import YamlFileNotFoundError
+import os
 import scar.utils as utils
+import yaml
 
 class YamlParser(object):
     

@@ -13,9 +13,9 @@
 # limitations under the License.
 
 from scar.providers.aws.clients.boto import BotoClient
+import scar.exceptions as excp
 import scar.logger as logger
 import scar.utils as utils
-import scar.exceptions as excp
 
 class LambdaClient(BotoClient):
     '''A low-level client representing aws LambdaClient.

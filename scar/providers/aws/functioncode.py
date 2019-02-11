@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import shutil
-import scar.logger as logger
-import scar.utils as utils
-import scar.http.request as request
-import subprocess
 from distutils import dir_util
-import scar.exceptions as excp
 from scar.providers.aws.validators import AWSValidator
 from zipfile import ZipFile
 import io
+import os
+import scar.exceptions as excp
+import scar.http.request as request
+import scar.logger as logger
+import scar.utils as utils
+import shutil
+import subprocess
 
 MAX_PAYLOAD_SIZE = 50 * 1024 * 1024
 MAX_S3_PAYLOAD_SIZE = 250 * 1024 * 1024

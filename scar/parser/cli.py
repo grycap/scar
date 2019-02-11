@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import argparse
+import scar.exceptions as excp
 import scar.logger as logger
 import scar.utils as utils
-import scar.exceptions as excp
 
 class CommandParser(object):
     
@@ -25,9 +25,9 @@ class CommandParser(object):
         self.create_subparsers()
 
     def create_parser(self):
-        self.parser = argparse.ArgumentParser(prog="scar",
+        self.parser = argparse.ArgumentParser(prog="scar_cli",
                                               description="Deploy containers in serverless architectures",
-                                              epilog="Run 'scar COMMAND --help' for more information on a command.")
+                                              epilog="Run 'scar_cli COMMAND --help' for more information on a command.")
 
     def create_subparsers(self):
         self.subparsers = self.parser.add_subparsers(title='Commands')    
@@ -190,7 +190,7 @@ class CommandParser(object):
             aws_args = self.parse_aws_args(cmd_args)
             return utils.merge_dicts(scar_args, aws_args)
         except AttributeError as ae:
-            logger.error("Incorrect arguments: use scar -h to see the options available",
+            logger.error("Incorrect arguments: use scar_cli -h to see the options available",
                              "Error parsing arguments: %s" % ae)            
         else:
             raise
@@ -212,7 +212,7 @@ class CommandParser(object):
 
     def parse_scar_args(self, cmd_args):
         scar_args = ['func', 'conf_file', 'json', 'verbose', 'path', ('all', 'delete_all'), 'preheat','execution_mode',]
-        return {'scar' : utils.parse_arg_list(scar_args, cmd_args)}
+        return {'scar_cli' : utils.parse_arg_list(scar_args, cmd_args)}
 
     def parse_lambda_args(self, cmd_args):
         lambda_args = ['name', 'asynchronous', 'init_script', 'run_script', 'c_args', 'memory', 'time',

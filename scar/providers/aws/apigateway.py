@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import scar.logger as logger
 from scar.providers.aws.botoclientfactory import GenericClient
+import scar.logger as logger
 
 class APIGateway(GenericClient):
 
@@ -30,7 +30,7 @@ class APIGateway(GenericClient):
     # {0}: lambda function region, {1}: aws account id, {1}: lambda function name
     generic_lambda_uri = 'arn:aws:lambda:{0}:{1}:function:{2}/invocations'
     # {0}: api_id, {1}: api_region
-    generic_endpoint = 'https://{0}.execute-api.{1}.amazonaws.com/scar/launch'
+    generic_endpoint = 'https://{0}.execute-api.{1}.amazonaws.com/scar_cli/launch'
 
     def __init__(self, aws_properties):
         GenericClient.__init__(self, aws_properties)
@@ -71,7 +71,7 @@ class APIGateway(GenericClient):
         resource_info = self.client.create_resource(self.properties['id'], self.properties['root_resource_id'], "{proxy+}")
         self.client.create_method(**self.get_method_args(resource_info))
         self.client.set_integration(**self.get_integration_args(resource_info))
-        self.client.create_deployment(self.properties['id'], 'scar')
+        self.client.create_deployment(self.properties['id'], 'scar_cli')
         self.endpoint = self.generic_endpoint.format(self.properties['id'], self.aws_properties['region'])
         logger.info('API Gateway endpoint: {0}'.format(self.endpoint))
     

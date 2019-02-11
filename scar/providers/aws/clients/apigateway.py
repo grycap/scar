@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from scar.providers.aws.clients.boto import BotoClient
-import scar.logger as logger
 from botocore.exceptions import ClientError
-import time
+from scar.providers.aws.clients.boto import BotoClient
 import scar.exceptions as excp
+import scar.logger as logger
+import time
 
 class APIGatewayClient(BotoClient):
     '''A low-level client representing Amazon API Gateway.

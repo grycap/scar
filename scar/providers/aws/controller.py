@@ -12,21 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from scar.providers.aws.lambdafunction import Lambda
-from scar.providers.aws.cloudwatchlogs import CloudWatchLogs
-from scar.providers.aws.batchfunction import Batch
-from scar.providers.aws.apigateway import APIGateway
-from scar.providers.aws.s3 import S3
-from scar.providers.aws.iam import IAM
-from scar.providers.aws.resourcegroups import ResourceGroups
 from scar.cmdtemplate import Commands
+from scar.providers.aws.apigateway import APIGateway
+from scar.providers.aws.batchfunction import Batch
+from scar.providers.aws.cloudwatchlogs import CloudWatchLogs
+from scar.providers.aws.iam import IAM
+from scar.providers.aws.lambdafunction import Lambda
+from scar.providers.aws.resourcegroups import ResourceGroups
+from scar.providers.aws.s3 import S3
 from scar.providers.aws.validators import AWSValidator
-
+import os
+import scar.exceptions as excp
 import scar.logger as logger
 import scar.providers.aws.response as response_parser
 import scar.utils as utils
-import os
-import scar.exceptions as excp
 
 class AWS(Commands):
 
@@ -160,7 +159,7 @@ class AWS(Commands):
     @excp.exception(logger)
     def parse_arguments(self, **kwargs):
         self.properties = kwargs['aws']
-        self.scar_properties = kwargs['scar']
+        self.scar_properties = kwargs['scar_cli']
         self.add_extra_aws_properties()
 
     def add_extra_aws_properties(self):
@@ -171,7 +170,7 @@ class AWS(Commands):
         
     def add_tags(self):
         self.properties["tags"] = {}
-        self.properties["tags"]['createdby'] = 'scar'
+        self.properties["tags"]['createdby'] = 'scar_cli'
         self.properties["tags"]['owner'] = self.iam.get_user_name_or_id()
                 
     def add_output(self):

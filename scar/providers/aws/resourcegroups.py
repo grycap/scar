@@ -13,8 +13,8 @@
 # limitations under the License.
 
 from botocore.exceptions import ClientError
-import scar.logger as logger
 from scar.providers.aws.botoclientfactory import GenericClient
+import scar.logger as logger
 
 class ResourceGroups(GenericClient):
     
@@ -23,7 +23,7 @@ class ResourceGroups(GenericClient):
         try:
             # Creation of a function_info filter by tags
             tag_filters = [ { 'Key': 'owner', 'Values': [ iam_user_id ] },
-                            { 'Key': 'createdby', 'Values': ['scar'] } ]
+                            { 'Key': 'createdby', 'Values': ['scar_cli'] } ]
             resource_type_filters = ['lambda']
             tagged_resources = self.client.get_tagged_resources(tag_filters, resource_type_filters)
             for element in tagged_resources:
