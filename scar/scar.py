@@ -73,11 +73,14 @@ class Scar(Commands):
         self.cloud_provider.parse_arguments(**merged_args)
         merged_args['scar']['func']()
 
-if __name__ == "__main__":
+def main():
     logger.init_execution_trace()
     try:
         Scar().parse_arguments()
         logger.end_execution_trace()
     except:
         logger.end_execution_trace_with_errors()
+        
+if __name__ == "__main__":
+    main()
     

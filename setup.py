@@ -40,7 +40,11 @@ setup(name='scar',
                         'pyyaml',
       ],
       platforms=["any"],
-      scripts=["scar_cli.py"],
+      entry_points={
+          'console_scripts': [
+              'scar=scar.scar:main'
+          ]
+      },
       classifiers=['Programming Language :: Python :: 3',
                    'License :: OSI Approved :: Apache Software License'
       ]      
