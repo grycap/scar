@@ -14,14 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from src.providers.aws.controller import AWS
-from src.parser.cli import CommandParser
-from src.parser.yaml import YamlParser
-from src.parser.cfgfile import ConfigFileParser
-from src.cmdtemplate import Commands
-import src.logger as logger
-import src.exceptions as excp
-import src.utils as utils
+from scar.providers.aws.controller import AWS
+from scar.parser.cli import CommandParser
+from scar.parser.yaml import YamlParser
+from scar.parser.cfgfile import ConfigFileParser
+from scar.cmdtemplate import Commands
+import scar.logger as logger
+import scar.exceptions as excp
+import scar.utils as utils
 
 class Scar(Commands):
     
