@@ -100,7 +100,7 @@ class LambdaClient(BotoClient):
         logger.debug("Listing lambda layers.")
         return self.client.list_layers(**kwargs)     
     
-    def publish_layer(self, **kwargs):
+    def publish_layer_version(self, **kwargs):
         '''
         Creates a function layer from a ZIP archive.
         https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/lambda.html#Lambda.Client.publish_layer_version

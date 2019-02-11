@@ -55,11 +55,17 @@ def get_logger():
         logger.setLevel('INFO')
     return logger
 
+def copy_file(source, dest):
+    shutil.copy(source, dest)    
+
 def join_paths(*paths):
     return os.path.join(*paths)
 
-def get_temp_dir():
+def get_tmp_dir():
     return tempfile.gettempdir()
+
+def create_tmp_dir():
+    return tempfile.TemporaryDirectory()
 
 def lazy_property(func):
     ''' A decorator that makes a property lazy-evaluated.'''
@@ -206,3 +212,20 @@ def get_user_defined_variables():
         if re.match("CONT_VAR_.*", key):
             user_vars[key.replace("CONT_VAR_", "")] = get_environment_variable(key)
     return user_vars
+
+def unzip_folder(zip_path, folder_where_unzip_path):
+    '''Must use the binary to preserve the file properties and the symlinks'''
+    zip_exe = resource_path("src/bin/unzip", bin_path='/usr/bin/unzip')
+    execute_command_with_msg([zip_exe, zip_path], cmd_wd=folder_where_unzip_path, cli_msg="Creating function package")    
+                
+def zip_folder(zip_path, folder_to_zip_path):
+    '''Must use the binary to preserve the file properties and the symlinks'''
+    zip_exe = resource_path("src/bin/zip", bin_path='/usr/bin/zip')
+    execute_command_with_msg([zip_exe, "-r9y", zip_path, "."], cmd_wd=folder_to_zip_path, cli_msg="Creating function package")
+    
+def execute_command_with_msg(command, cmd_wd=None, cli_msg=None):
+    cmd_out = subprocess.check_output(command, cwd=cmd_wd).decode("utf-8")
+    get_logger().debug(cmd_out)
+    get_logger().info(cli_msg)
+    return cmd_out[:-1]   
+                 

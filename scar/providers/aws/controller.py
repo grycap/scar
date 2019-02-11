@@ -39,7 +39,7 @@ class AWS(Commands):
         it's a restricted word in python'''
         _lambda = Lambda(self.properties)
         return _lambda
-    ###
+
     @utils.lazy_property
     def batch(self):
         batch = Batch(self.properties)

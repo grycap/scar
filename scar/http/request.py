@@ -28,3 +28,8 @@ def invoke_http_endpoint(url, **kwargs):
     else:
         response = requests.get(url, **kwargs)
     return response
+
+def get_file(url):
+    response = requests.get(url)
+    return response.content
+    

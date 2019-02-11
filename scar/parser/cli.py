@@ -96,14 +96,17 @@ class CommandParser(object):
         parser_update.set_defaults(func=self.scar.update)
         group = parser_update.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name", help="Lambda function name")
-        group.add_argument("-f", "--conf_file", help="Yaml file with the function configuration")        
+        group.add_argument("-a", "--all", help="Update all lambda functions", action="store_true")
+        group.add_argument("-f", "--conf_file", help="Yaml file with the function configuration") 
         parser_update.add_argument("-m", "--memory", type=int, help="Lambda function memory in megabytes. Range from 128 to 1536 in increments of 64")
         parser_update.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 300.")
         parser_update.add_argument("-e", "--environment", action='append', help="Pass environment variable to the container (VAR=val). Can be defined multiple times.")
         parser_update.add_argument("-tt", "--timeout_threshold", type=int, help="Extra time used to postprocess the data. This time is extracted from the total time of the lambda function.")
         parser_update.add_argument("-ll", "--log_level", help="Set the log level of the lambda function. Accepted values are: 'CRITICAL','ERROR','WARNING','INFO','DEBUG'", default="INFO")
         # General AWS conf        
-        parser_update.add_argument("-pf", "--profile", help="AWS profile to use")        
+        parser_update.add_argument("-pf", "--profile", help="AWS profile to use")
+        # AWS lambda layers conf         
+        parser_update.add_argument("-sl", "--supervisor_layer", help="Update supervisor layer.")   
 
     def create_run_parser(self):
         parser_run = self.subparsers.add_parser('run', help="Deploy function")

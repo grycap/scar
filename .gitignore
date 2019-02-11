@@ -7,3 +7,7 @@ test/*.zip
 *.zip*
 *.log
 .settings
+build/
+dist/
+*.egg-info/
+

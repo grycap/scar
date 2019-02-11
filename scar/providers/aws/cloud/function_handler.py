@@ -12,16 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import src.utils as utils
+import faassupervisor.supervisor as supervisor
 
-aws_src_path = os.path.dirname(os.path.abspath(__file__))
-lambda_code_files_path = utils.join_paths(aws_src_path, "cloud/lambda/")
-scar_zip_path = utils.join_paths(lambda_code_files_path, "scar.zip")
-
-def get_scar_layer_props():
-    return {'LayerName' : 'scar',
-            'Description' : 'SCAR supervisor',
-            'Content' : { 'ZipFile': utils.read_file(scar_zip_path, mode="rb") },
-            'CompatibleRuntimes' : ['python3.6','python3.7'],
-            'LicenseInfo' : 'Apache 2.0'}
+def lambda_handler(event, context):
+    kwargs = {"event" : event, "context" : context}
+    return supervisor.python_main(**kwargs)

@@ -239,5 +239,17 @@ class GetUserInfoError(ScarError):
 
     :ivar error_msg: General error message    
     """
-    fmt = "Error getting the AWS user information.\n{error_msg}."    
+    fmt = "Error getting the AWS user information.\n{error_msg}."
+    
+################################################
+##              BATCH EXCEPTIONS              ##
+################################################
+class InvalidComputeEnvironmentError(ScarError):
+    """
+    There was an error creating the Batch Compute Environment
+
+    :ivar error_msg: General error message    
+    """
+    fmt = "Error creating the AWS Batch Compute Environment\n."
+    
     

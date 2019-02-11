@@ -43,7 +43,7 @@ class BatchClient(BotoClient):
         Creates a new job queue.
         http://boto3.readthedocs.io/en/latest/reference/services/batch.html#Batch.Client.describe_compute_environments
         '''
-        logger.debug("creating compute environment.")
+        logger.debug("Describing Compute Environment.")
         return self.client.describe_compute_environments(**kwargs)
 
     def describe_job_queues(self, **kwargs):

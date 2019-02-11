@@ -16,7 +16,7 @@ from botocore.exceptions import ClientError
 from multiprocessing.pool import ThreadPool
 from src.providers.aws.botoclientfactory import GenericClient
 from src.providers.aws.functioncode import FunctionPackageCreator
-import src.providers.aws.layerscode as lambdalayers
+from src.providers.aws.lambdalayers import LambdaLayers
 from src.providers.aws.s3 import S3
 import base64
 import json
@@ -38,7 +38,7 @@ class Lambda(GenericClient):
         GenericClient.__init__(self, aws_properties)
         self.properties = aws_properties['lambda']
         self.properties['environment'] = {'Variables' : {}}
-        self.properties['zip_file_path'] = utils.join_paths(utils.get_temp_dir(), 'function.zip')
+        self.properties['zip_file_path'] = utils.join_paths(utils.get_tmp_dir(), 'function.zip')
         self.properties['invocation_type'] = 'RequestResponse'
         self.properties['log_type'] = 'Tail'
         if 'name' in self.properties:
@@ -63,7 +63,7 @@ class Lambda(GenericClient):
     
     @excp.exception(logger)
     def create_function(self):
-        self.manage_scar_layer()
+        self.manage_layers()
         self.set_environment_variables()
         self.set_function_code()
         creation_args = self.get_creations_args()
@@ -72,24 +72,13 @@ class Lambda(GenericClient):
             self.properties["function_arn"] = response['FunctionArn']
         return response
 
-    def manage_scar_layer(self):
-        scar_layer_info = self.get_scar_layer_info()
-        if not scar_layer_info:
-            scar_layer_info = self.create_scar_layer()
-        self.properties['layers'].append(scar_layer_info['LatestMatchingVersion']['LayerVersionArn'])
-
-    def get_scar_layer_info(self):
-        layers = self.get_lambda_layers()
-        for layer in layers:
-            if layer['LayerName'] == 'scar':
-                return layer
-
-    def get_lambda_layers(self):
-        return self.client.list_layers()['Layers']            
-    
-    def create_scar_layer(self):
-        scar_layer_props = lambdalayers.get_scar_layer_props()
-        return self.client.publish_layer_version(**scar_layer_props)
+    def manage_layers(self):
+        layers = LambdaLayers(self.client)
+        if not layers.is_supervisor_layer_created():
+            layers.create_supervisor_layer()
+        else:
+            logger.info("Using existent 'faas-supervisor' layer")
+        self.properties['layers'] = layers.get_layers_arn()
 
     def set_environment_variables(self):
         # Add required variables
@@ -107,8 +96,18 @@ class Lambda(GenericClient):
                     self.add_lambda_environment_variable('CONT_VAR_{0}'.format(key_val[0]), key_val[1])
         
     def set_required_environment_variables(self):
+        self.add_lambda_environment_variable('SUPERVISOR_TYPE', 'LAMBDA')
+        self.add_lambda_environment_variable('UDOCKER_EXEC', "/opt/udocker/udocker.py")
+        self.add_lambda_environment_variable('UDOCKER_DIR', "/tmp/shared/udocker")
+        self.add_lambda_environment_variable('UDOCKER_LIB', "/opt/udocker/lib/")
+        self.add_lambda_environment_variable('UDOCKER_BIN', "/opt/udocker/bin/")
+        
         self.add_lambda_environment_variable('TIMEOUT_THRESHOLD', str(self.properties['timeout_threshold']))
         self.add_lambda_environment_variable('LOG_LEVEL', self.properties['log_level'])
+        self.add_lambda_environment_variable('EXECUTION_MODE',  self.aws_properties['execution_mode'])
+        if (self.aws_properties['execution_mode']=='lambda-batch' or self.aws_properties['execution_mode']=='batch'):
+            self.add_lambda_environment_variable('BATCH_SUPERVISOR_IMG',  'alpegon/scar-batch-io:devel')
+        
         self.add_lambda_environment_variable('EXECUTION_MODE',  self.aws_properties['execution_mode'])
         if utils.is_value_in_dict(self.properties, 'image'):     
             self.add_lambda_environment_variable('IMAGE_ID', self.properties['image'])
