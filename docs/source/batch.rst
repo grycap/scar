@@ -8,8 +8,8 @@ SCAR allows to transparently integrate the execution of the jobs through `AWS Ba
 Three execution modes are now available in SCAR:
 
   * `lambda`: This is the default execution mode. All executions will be run on AWS Lambda.
-  * `lambda-batch`. Executions will be run on AWS Lambda. If the default timeout is reached, then the execution is automatically delegated to AWS Batch.
-  * `batch`. Executions will be automatically diverted to AWS Batch.
+  * `lambda-batch`: Executions will be run on AWS Lambda. If the default timeout is reached, then the execution is automatically delegated to AWS Batch.
+  * `batch`: Executions will be automatically diverted to AWS Batch.
 
 This way, you can use AWS Lambda as a highly-scalable cache for burts of short computational jobs while longer executions can be automatically deleted to AWS Batch. 
 The very same `programming model <https://scar.readthedocs.io/en/latest/prog_model.html>`_ is maintained regardless of the service employed to perform the computation.
@@ -38,6 +38,11 @@ Since AWS Batch deploys Amazon EC2 instances, you have to fill the following var
  * `subnets`:  The VPC subnet(s) identifier(s) on which the EC2 instances will be deployed. This allows to use multiple Availability Zones for enhanced fault-tolerance.
 
 More info about the variables and the different values that can be assigned can be found in the `AWS API Documentation <https://docs.aws.amazon.com/batch/latest/APIReference/API_CreateComputeEnvironment.html>`_.
+
+Set up your Batch IAM role
+----------------------
+
+The default IAM role used in the creation of the EC2 for the Batch Compute Environment is **arn:aws:iam::$ACCOUNT_ID:instance-profile/**ecsInstanceRole****. Thus, if you want to provide S3 access to your Batch jobs you have to specify the corresponding policies  in the aforementioned role. 
 
 
 Define a job to be executed in batch
