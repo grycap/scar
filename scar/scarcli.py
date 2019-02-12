@@ -14,8 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# import sys
-# sys.path.append('.')
+import sys
+sys.path.append('.')
 
 from scar.cmdtemplate import Commands
 from scar.parser.cfgfile import ConfigFileParser
