@@ -70,7 +70,6 @@ class AWS(Commands):
        
     @excp.exception(logger)
     def init(self):
-        
         if self._lambda.find_function():
             raise excp.FunctionExistsError(function_name=self._lambda.properties['name'])
         
@@ -78,27 +77,22 @@ class AWS(Commands):
             self.api_gateway.create_api_gateway()
 
         response = self._lambda.create_function()
-        if response:
-            response_parser.parse_lambda_function_creation_response(response,
-                                                                    self._lambda.properties['name'],
-                                                                    self._lambda.client.get_access_key(),
-                                                                    self.properties['output'])
+        response_parser.parse_lambda_function_creation_response(response,
+                                                                self._lambda.properties['name'],
+                                                                self._lambda.client.get_access_key(),
+                                                                self.properties['output'])
         response = self.cloudwatch_logs.create_log_group()
-        if response:
-            response_parser.parse_log_group_creation_response(response,
-                                                              self.cloudwatch_logs.get_log_group_name(),
-                                                              self.properties['output'])        
+        response_parser.parse_log_group_creation_response(response,
+                                                          self.cloudwatch_logs.get_log_group_name(),
+                                                          self.properties['output'])        
     
         if 's3' in self.properties:
             self.manage_s3_init()
-
         if 'api_gateway' in self.properties:
             self._lambda.add_invocation_permission_from_api_gateway() 
-            
         # If preheat is activated, the function is launched at the init step
-        if 'preheat' in self.scar_properties:    
+        if 'preheat' in self.scar_properties:
             self._lambda.preheat_function()
-        
         if self.is_batch_execution():
             self.batch.create_compute_environment()
     

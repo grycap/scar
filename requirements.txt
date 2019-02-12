@@ -1,4 +1,5 @@
 boto3
+urllib3
 tabulate
 configparser
 requests
