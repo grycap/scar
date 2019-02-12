@@ -192,7 +192,6 @@ class CommandParser(object):
                 sys.exit(0)                 
             
             cmd_args = vars(cmd_args)
-                
             if 'func' not in cmd_args:
                 raise excp.MissingCommandError()
             scar_args = self.parse_scar_args(cmd_args)

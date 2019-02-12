@@ -42,7 +42,7 @@ setup(name='scar',
       platforms=["any"],
       entry_points={
           'console_scripts': [
-              'scar=scar.scar:main'
+              'scar=scar.scarcli:main'
           ]
       },
       classifiers=['Programming Language :: Python :: 3',

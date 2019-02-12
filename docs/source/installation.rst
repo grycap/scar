@@ -27,10 +27,14 @@ Clone the Github Repository
 2) Install the Python required dependencies automatically with the command::
 
     pip3 install -r requirements.txt
+    
+3) Execute the SCAR cli with the command::
+
+    python3 scar/scarcli.py ...
 
 3) (Optional) Define an alias for easier usability::
 
-    alias scar='python3 `pwd`/scar.py'
+    alias scar='python3 `pwd`/scar/scarcli.py'
 
 Extra dependencies
 ^^^^^^^^^^^^^^^^^^
