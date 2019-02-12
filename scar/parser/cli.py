@@ -16,11 +16,13 @@ import argparse
 import scar.exceptions as excp
 import scar.logger as logger
 import scar.utils as utils
+import scar.version as version
+import sys
 
 class CommandParser(object):
     
-    def __init__(self, scar):
-        self.scar = scar
+    def __init__(self, scar_cli):
+        self.scar_cli = scar_cli
         self.create_parser()
         self.create_subparsers()
 
@@ -28,6 +30,7 @@ class CommandParser(object):
         self.parser = argparse.ArgumentParser(prog="scar",
                                               description="Deploy containers in serverless architectures",
                                               epilog="Run 'scar COMMAND --help' for more information on a command.")
+        self.parser.add_argument('--version', help='Show SCAR version.', dest="version", action="store_true", default=False)        
 
     def create_subparsers(self):
         self.subparsers = self.parser.add_subparsers(title='Commands')    
@@ -44,7 +47,7 @@ class CommandParser(object):
     def create_init_parser(self):
         parser_init = self.subparsers.add_parser('init', help="Create lambda function")
         # Set default function
-        parser_init.set_defaults(func=self.scar.init)
+        parser_init.set_defaults(func=self.scar_cli.init)
         # Lambda conf
         group = parser_init.add_mutually_exclusive_group(required=True)
         group.add_argument("-i", "--image", help="Container image id (i.e. centos:7)")
@@ -80,7 +83,7 @@ class CommandParser(object):
     def create_invoke_parser(self):
         parser_invoke = self.subparsers.add_parser('invoke', help="Call a lambda function using an HTTP request")
         # Set default function
-        parser_invoke.set_defaults(func=self.scar.invoke)
+        parser_invoke.set_defaults(func=self.scar_cli.invoke)
         group = parser_invoke.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name", help="Lambda function name")
         group.add_argument("-f", "--conf_file", help="Yaml file with the function configuration") 
@@ -93,7 +96,7 @@ class CommandParser(object):
  
     def create_update_parser(self):
         parser_update = self.subparsers.add_parser('update', help="Update function properties")
-        parser_update.set_defaults(func=self.scar.update)
+        parser_update.set_defaults(func=self.scar_cli.update)
         group = parser_update.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name", help="Lambda function name")
         group.add_argument("-a", "--all", help="Update all lambda functions", action="store_true")
@@ -110,7 +113,7 @@ class CommandParser(object):
 
     def create_run_parser(self):
         parser_run = self.subparsers.add_parser('run', help="Deploy function")
-        parser_run.set_defaults(func=self.scar.run)
+        parser_run.set_defaults(func=self.scar_cli.run)
         group = parser_run.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name", help="Lambda function name")
         group.add_argument("-f", "--conf_file", help="Yaml file with the function configuration")        
@@ -124,7 +127,7 @@ class CommandParser(object):
     
     def create_rm_parser(self):
         parser_rm = self.subparsers.add_parser('rm', help="Delete function")
-        parser_rm.set_defaults(func=self.scar.rm)
+        parser_rm.set_defaults(func=self.scar_cli.rm)
         group = parser_rm.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name", help="Lambda function name")
         group.add_argument("-a", "--all", help="Delete all lambda functions", action="store_true")
@@ -136,7 +139,7 @@ class CommandParser(object):
                              
     def create_log_parser(self):
         parser_log = self.subparsers.add_parser('log', help="Show the logs for the lambda function")
-        parser_log.set_defaults(func=self.scar.log)
+        parser_log.set_defaults(func=self.scar_cli.log)
         group = parser_log.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name", help="Lambda function name")
         group.add_argument("-f", "--conf_file", help="Yaml file with the function configuration")
@@ -148,7 +151,7 @@ class CommandParser(object):
         
     def create_ls_parser(self):
         parser_ls = self.subparsers.add_parser('ls', help="List lambda functions")
-        parser_ls.set_defaults(func=self.scar.ls)
+        parser_ls.set_defaults(func=self.scar_cli.ls)
         parser_ls.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
         parser_ls.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
         # S3 args
@@ -159,7 +162,7 @@ class CommandParser(object):
     
     def create_put_parser(self):
         parser_put = self.subparsers.add_parser('put', help="Upload file(s) to bucket")
-        parser_put.set_defaults(func=self.scar.put)
+        parser_put.set_defaults(func=self.scar_cli.put)
         # S3 args
         parser_put.add_argument("-b", "--bucket", help="Bucket to use as storage", required=True)
         parser_put.add_argument("-bf", "--bucket_folder", help="Folder used to store the file(s) in the bucket")
@@ -170,7 +173,7 @@ class CommandParser(object):
     
     def create_get_parser(self):
         parser_get = self.subparsers.add_parser('get', help="Download file(s) from bucket")
-        parser_get.set_defaults(func=self.scar.get)
+        parser_get.set_defaults(func=self.scar_cli.get)
         # S3 args
         parser_get.add_argument("-b", "--bucket", help="Bucket to use as storage", required=True)
         parser_get.add_argument("-bf", "--bucket_folder", help="Path of the file or folder to download")
@@ -183,7 +186,13 @@ class CommandParser(object):
     def parse_arguments(self):
         '''Command parsing and selection'''
         try:
-            cmd_args = vars(self.parser.parse_args())
+            cmd_args = self.parser.parse_args()
+            if cmd_args.version:
+                print("SCAR {}".format(version.__version__))
+                sys.exit(0)                 
+            
+            cmd_args = vars(cmd_args)
+                
             if 'func' not in cmd_args:
                 raise excp.MissingCommandError()
             scar_args = self.parse_scar_args(cmd_args)

@@ -14,16 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from scar.providers.aws.controller import AWS
+from scar.cmdtemplate import Commands
+from scar.parser.cfgfile import ConfigFileParser
 from scar.parser.cli import CommandParser
 from scar.parser.yaml import YamlParser
-from scar.parser.cfgfile import ConfigFileParser
-from scar.cmdtemplate import Commands
-import scar.logger as logger
+from scar.providers.aws.controller import AWS
 import scar.exceptions as excp
+import scar.logger as logger
 import scar.utils as utils
 
-class Scar(Commands):
+class ScarCLI(Commands):
     
     def __init__(self):
         self.cloud_provider = AWS()
@@ -76,7 +76,7 @@ class Scar(Commands):
 def main():
     logger.init_execution_trace()
     try:
-        Scar().parse_arguments()
+        ScarCLI().parse_arguments()
         logger.end_execution_trace()
     except:
         logger.end_execution_trace_with_errors()
