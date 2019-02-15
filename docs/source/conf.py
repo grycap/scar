@@ -20,8 +20,8 @@
 # -- Project information -----------------------------------------------------
 
 project = 'scar'
-copyright = '2018, Alfonso Pérez'
-author = 'Alfonso Pérez'
+copyright = 'GRyCAP - I3M - UPV'
+author = 'Alfonso Perez'
 
 # The short X.Y version
 version = ''
@@ -130,7 +130,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'scar.tex', 'scar Documentation',
-     'Alfonso Pérez', 'manual'),
+     'GRyCAP - I3M - UPV', 'manual'),
 ]
 
 
