@@ -31,5 +31,6 @@ def invoke_http_endpoint(url, **kwargs):
 
 def get_file(url):
     response = requests.get(url)
-    return response.content
+    if response:
+        return response.content
     

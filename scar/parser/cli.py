@@ -42,7 +42,7 @@ class CommandParser(object):
         self.create_ls_parser()
         self.create_log_parser()
         self.create_put_parser()
-        self.create_get_parser()        
+        self.create_get_parser()
     
     def create_init_parser(self):
         parser_init = self.subparsers.add_parser('init', help="Create lambda function")
@@ -79,6 +79,8 @@ class CommandParser(object):
         # General AWS conf           
         parser_init.add_argument("-pf", "--profile", help="AWS profile to use")
         parser_init.add_argument("-em", "--execution_mode", help="Specifies the execution mode of the job. It can be 'lambda', 'lambda-batch' or 'batch'")
+        # Layer args
+        parser_init.add_argument("-ul", "--update-layer", help="Update the faas-supervisor layer code and all the scar lambda functions that are linked to the previous version of the layer.")        
         
     def create_invoke_parser(self):
         parser_invoke = self.subparsers.add_parser('invoke', help="Call a lambda function using an HTTP request")
@@ -157,6 +159,8 @@ class CommandParser(object):
         # S3 args
         parser_ls.add_argument("-b", "--bucket", help="Show bucket files")
         parser_ls.add_argument("-bf", "--bucket_folder", help="Show bucket files")
+        # Layer args
+        parser_ls.add_argument("-l", "--layers", help="Show lambda layers information", action="store_true")
         # General AWS conf        
         parser_ls.add_argument("-pf", "--profile", help="AWS profile to use")                
     
@@ -225,7 +229,7 @@ class CommandParser(object):
     def parse_lambda_args(self, cmd_args):
         lambda_args = ['name', 'asynchronous', 'init_script', 'run_script', 'c_args', 'memory', 'time',
                        'timeout_threshold', 'log_level', 'image', 'image_file', 'description', 
-                       'lambda_role', 'extra_payload', ('environment', 'environment_variables')]
+                       'lambda_role', 'extra_payload', ('environment', 'environment_variables'), 'layers']
         return utils.parse_arg_list(lambda_args, cmd_args)
     
     def parse_iam_args(self, cmd_args):

@@ -48,12 +48,13 @@ def is_binary_execution():
         return False
 
 def get_logger():
-    logger = logging.getLogger()
+    loglevel = logging.INFO
     if is_variable_in_environment('LOG_LEVEL'):
-        logger.setLevel(get_environment_variable('LOG_LEVEL'))
-    else:
-        logger.setLevel('INFO')
-    return logger
+        loglevel = get_environment_variable('LOG_LEVEL')
+    FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    logging.basicConfig(level=loglevel, format=FORMAT)
+
+    return logging.getLogger('oscar')
 
 def copy_file(source, dest):
     shutil.copy(source, dest)    

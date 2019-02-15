@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from distutils import dir_util
+from scar.parser.cfgfile import ConfigFileParser
 from scar.providers.aws.validators import AWSValidator
 from zipfile import ZipFile
 import io
@@ -39,8 +40,6 @@ def udocker_env(func):
     return wrapper
 
 class FunctionPackageCreator():
-    
-    udocker_url = 'https://github.com/grycap/faas-supervisor/raw/master/extra/udocker.zip'
     
     aws_src_path = os.path.dirname(os.path.abspath(__file__))
     lambda_code_file_path = utils.join_paths(aws_src_path, "cloud")
@@ -83,7 +82,8 @@ class FunctionPackageCreator():
         self.check_code_size()
 
     def install_tmp_udocker(self):
-        udocker_zip = request.get_file(self.udocker_url)
+        udocker_zip_url = ConfigFileParser().get_properties()['scar']['udocker']['zip_url']
+        udocker_zip = request.get_file(udocker_zip_url)
         with ZipFile(io.BytesIO(udocker_zip)) as thezip:
             thezip.extractall(self.udocker_tmp_folder_path)
 

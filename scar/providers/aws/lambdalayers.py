@@ -12,101 +12,178 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from scar.parser.cfgfile import ConfigFileParser
 import io
 import json
-import os
 import scar.http.request as request
 import scar.logger as logger
 import scar.utils as utils
 import shutil
 import zipfile
+from tabulate import tabulate
+
+class Layer():
+    
+    def __init__(self, lambda_client):
+        self.client = lambda_client
+
+    def create(self, **kwargs):
+        return self.client.publish_layer_version(**kwargs)
+    
+    def _find(self, layers_info, layer_name):
+        if 'Layers' in layers_info:
+            for layer in layers_info:
+                if layer['LayerName'] == layer_name:
+                    return layer        
+    
+    def get_info(self, layer_name):
+        layers_info = self.client.list_layers()
+        # Look for the layer in the first batch
+        layer = self._find(layers_info, layer_name)
+        if layer:
+            return layer         
+        while 'NextMarker' in layers_info:
+            layers_info = self.client.list_layers(Marker=layers_info['NextMarker'])
+            layer = self._find(layers_info, layer_name)
+            if layer:
+                return layer                  
+                    
+    def exists(self, layer_name):
+        return self.get_info(layer_name) != None
+        
+    def delete(self, **kwargs):
+        layer_args = {'LayerName' : kwargs['name']}
+        layer_args['VersionNumber'] = int(kwargs['version']) if kwargs['version'] else self.get_latest_version(kwargs['name'])
+        return self.client.delete_layer_version(**layer_args)
+    
+    def update(self, **kwargs):
+        layer_args = { 'LayerName' : kwargs['name'], 'Content' : { 'ZipFile': kwargs['zip-file'] } }
+        response = self.client.publish_layer_version(**layer_args)
+        if response and 'Version' in response and 'update-functions' in kwargs:
+            self.update_functions(self, kwargs['name'], response['Version'])
+            
+    def update_functions(self, layer_name, new_version):
+        response = self.client.list_functions()
+        
+        
+    def get_latest_version(self, layer_name):
+        layers = self.get_layers_info()
+        for layer in layers['Layers']:
+            if layer['LayerName'] == layer_name:
+                return layer['LatestMatchingVersion']['Version']
+            
+class ScarProperties(dict):
+    def __init__(self, *args, **kwargs):
+        super(ScarProperties, self).__init__(*args, **kwargs)
+        self.__dict__ = self
 
 class LambdaLayers():
 
-    aws_path = os.path.dirname(os.path.abspath(__file__))
-    supervisor_layer_name = "faas-supervisor"
-    supervisor_zip_path = utils.join_paths(aws_path, "cloud", "layer", "supervisor.zip")
-    udocker_zip_path = utils.join_paths(aws_path, "cloud", "layer", "udocker.zip")
-    supervisor_version_url = 'https://api.github.com/repos/grycap/faas-supervisor/releases/latest'
-    supervisor_zip_url = 'https://github.com/grycap/faas-supervisor/archive/{0}.zip'
+    @utils.lazy_property
+    def layer(self):
+        layer = Layer(self.client)
+        return layer    
     
     def __init__(self, lambda_client):
-        self.lambda_client = lambda_client
-        self.layers_info = self.get_lambda_layers_info()
+        '''
+        Default scar's configuration file structure:
+          "scar": {
+            "faas-supervisor": {
+              "version_url": "https://api.github.com/repos/grycap/faas-supervisor/releases/latest",
+              "zip_url": "https://github.com/grycap/faas-supervisor/archive/{0}.zip",
+              "default_version": "master",
+              "layer_name": "faas-supervisor"
+            },
+            "udocker": {
+              "zip_url": "https://github.com/grycap/faas-supervisor/raw/master/extra/udocker.zip"
+            }
+          }
+        '''
+        self.client = lambda_client
+        self.cfg_data = ConfigFileParser().get_properties()['scar']
+        self.supervisor_version = self.cfg_data['faas-supervisor']['default_version']
+        self.supervisor_zip_url = self.cfg_data['faas-supervisor']['zip_url'].format(self.supervisor_version)        
+        self.layer_name = self.cfg_data['faas-supervisor']['layer_name']
+        self.layer_zip_path = utils.join_paths(utils.get_tmp_dir(), '{}.zip'.format(self.layer_name))
         
-    def get_lambda_layers_info(self):
-        return self.lambda_client.list_layers()['Layers']        
-        
-    def create_tmp_folders(self):
+    def _create_tmp_folders(self):
         self.tmp_zip_folder = utils.create_tmp_dir()
         self.tmp_zip_path = self.tmp_zip_folder.name
         self.layer_code_folder = utils.create_tmp_dir()
         self.layer_code_path = self.layer_code_folder.name
 
-    def get_supervisor_version(self):
-        j = json.loads(request.invoke_http_endpoint(self.supervisor_version_url).text)
+    def _get_supervisor_version(self):
+        j = json.loads(request.invoke_http_endpoint(self.cfg_data['faas-supervisor']['version_url']).text)
         return j['tag_name']        
 
-    def download_supervisor(self):
-#         supervisor_version = self.get_supervisor_version()
-        supervisor_version = 'master'
-        self.version_path = 'faas-supervisor-{0}'.format(supervisor_version)
-        supervisor_zip = request.get_file(self.supervisor_zip_url.format(supervisor_version))
+    def _download_supervisor(self):
+#         supervisor_version = self._get_supervisor_version()
+        self.version_path = 'faas-supervisor-{0}'.format(self.supervisor_version)
+        supervisor_zip = request.get_file(self.supervisor_zip_url)
         with zipfile.ZipFile(io.BytesIO(supervisor_zip)) as thezip:
             for file in thezip.namelist():
                 if file.startswith('{}/extra'.format(self.version_path)) or \
                    file.startswith('{}/faassupervisor'.format(self.version_path)):
                     thezip.extract(file, self.tmp_zip_path)
 
-    def get_layer_info(self, layer_name):
-        for layer in self.layers_info:
-            if layer['LayerName'] == layer_name:
-                return layer
-
-    def is_layer_created(self, layer_name):
-        if self.get_layer_info(layer_name):
-            return True
-        return False
-    
-    def is_supervisor_layer_created(self):
-        return self.is_layer_created(self.supervisor_layer_name)
-    
-    def create_layer(self, **layer_properties):
-        return self.lambda_client.publish_layer_version(**layer_properties)    
-    
-    def copy_supervisor_files(self):
+    def _copy_supervisor_files(self):
         supervisor_path = utils.join_paths(self.tmp_zip_path, self.version_path, 'faassupervisor')
         shutil.move(supervisor_path, utils.join_paths(self.layer_code_path, 'python', 'faassupervisor'))
         
-    def copy_udocker_files(self):
+    def _copy_udocker_files(self):
         utils.unzip_folder(utils.join_paths(self.tmp_zip_path, self.version_path, 'extra', 'udocker.zip'), self.layer_code_path)
             
-    def create_zip(self):
-        self.layer_zip_path = utils.join_paths(utils.get_tmp_dir(), 'faas-supervisor.zip')
+    def _create_layer_zip(self):
         utils.zip_folder(self.layer_zip_path, self.layer_code_path)
+    
+    def _get_supervisor_layer_props(self):
+        return {'LayerName' : self.layer_name,
+                'Description' : 'FaaS supervisor that allows to run containers in rootless environments',
+                'Content' : { 'ZipFile': utils.read_file(self.layer_zip_path, mode="rb") },
+                'LicenseInfo' : 'Apache 2.0'}    
+    
+    def is_supervisor_layer_created(self):
+        return self.layer.exists(self.layer_name)    
     
     def create_supervisor_layer(self):
         logger.info("Creating faas-supervisor layer")
-        self.create_tmp_folders()
-        self.download_supervisor()        
-        self.copy_supervisor_files()
-        self.copy_udocker_files()
-        self.create_zip()
-        supervisor_layer_props = self.get_supervisor_layer_props()
-        self.supervisor_layer_info = self.create_layer(**supervisor_layer_props)
+        self._create_tmp_folders()
+        self._download_supervisor()        
+        self._copy_supervisor_files()
+        self._copy_udocker_files()
+        self._create_layer_zip()
+        supervisor_layer_props = self._get_supervisor_layer_props()
+        self.supervisor_layer_info = self.layer.create(**supervisor_layer_props)
         logger.info("Faas-supervisor layer created")
-    
-    def get_supervisor_layer_props(self):
-        return {'LayerName' : self.supervisor_layer_name,
-                'Description' : 'FaaS supervisor that allows to run containers in rootless environments',
-                'Content' : { 'ZipFile': utils.read_file(self.layer_zip_path, mode="rb") },
-                'LicenseInfo' : 'Apache 2.0'}      
+        utils.delete_file(self.layer_zip_path)
         
     def get_layers_arn(self):
         layers = []
         if not hasattr(self, "supervisor_layer_info"):
-            self.supervisor_layer_info = self.get_layer_info(self.supervisor_layer_name)
+            self.supervisor_layer_info = self.layer.get_info(self.layer_name)
             layers.append(self.supervisor_layer_info['LatestMatchingVersion']['LayerVersionArn'])
         else:
             layers.append(self.supervisor_layer_info['LayerVersionArn'])
         return layers
+    
+    def get_all_layers_info(self):
+        result = []
+        layers_info = self.client.list_layers()
+        if 'Layers' in layers_info:
+            result.extend(layers_info['Layers'])
+        while 'NextMarker' in layers_info:
+            layers_info = self.client.list_layers(Marker=layers_info['NextMarker'])
+            if 'Layers' in layers_info:
+                result.extend(layers_info['Layers'])            
+        return result    
+    
+    def print_layers_info(self):
+        layers_info = self.get_all_layers_info()
+        headers = ['NAME', 'VERSION', 'ARN', 'RUNTIMES']
+        table = []
+        for layer in layers_info:
+            table.append([layer['LayerName'],
+                          layer['LatestMatchingVersion']['Version'],
+                          layer['LayerArn'],
+                          layer['LatestMatchingVersion'].get('CompatibleRuntimes','-')])
+        print(tabulate(table, headers))       

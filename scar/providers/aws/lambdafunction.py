@@ -34,6 +34,11 @@ MAX_POST_BODY_SIZE_ASYNC = KB*95
 
 class Lambda(GenericClient):
     
+    @utils.lazy_property
+    def layers(self):
+        layers = LambdaLayers(self.client)
+        return layers    
+    
     def __init__(self, aws_properties):
         GenericClient.__init__(self, aws_properties)
         self.properties = aws_properties['lambda']
@@ -73,12 +78,11 @@ class Lambda(GenericClient):
         return response
 
     def manage_layers(self):
-        layers = LambdaLayers(self.client)
-        if not layers.is_supervisor_layer_created():
-            layers.create_supervisor_layer()
+        if not self.layers.is_supervisor_layer_created():
+            self.layers.create_supervisor_layer()
         else:
             logger.info("Using existent 'faas-supervisor' layer")
-        self.properties['layers'] = layers.get_layers_arn()
+        self.properties['layers'] = self.layers.get_layers_arn()
 
     def set_environment_variables(self):
         # Add required variables

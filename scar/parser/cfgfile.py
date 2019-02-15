@@ -19,7 +19,18 @@ import scar.logger as logger
 import scar.utils as utils
 import shutil
 
-default_cfg = { 
+default_cfg = {
+    "scar" : {
+        "faas-supervisor" : {
+            "version_url" : "https://api.github.com/repos/grycap/faas-supervisor/releases/latest",
+            "zip_url" : "https://github.com/grycap/faas-supervisor/archive/{0}.zip",
+            "default_version" : "master",
+            "layer_name" : "faas-supervisor",        
+        },
+        "udocker" : {
+            "zip_url" : "https://github.com/grycap/faas-supervisor/raw/master/extra/udocker.zip"
+        },
+    },
     "aws" : {
         "boto_profile" : "default",
         "region" : "us-east-1",
@@ -63,7 +74,10 @@ class ConfigFileParser(object):
         if os.path.isfile(self.config_file_path):
             with open(self.config_file_path) as cfg_file:
                 self.__setattr__("cfg_data", json.load(cfg_file))
-            if 'region' not in self.cfg_data['aws'] or 'boto_profile' not in self.cfg_data['aws'] or 'execution_mode' not in self.cfg_data['aws']:
+            if 'region' not in self.cfg_data['aws'] or \
+               'boto_profile' not in self.cfg_data['aws'] or \
+               'execution_mode' not in self.cfg_data['aws'] or \
+               'scar' not in self.cfg_data:
                 self.add_missing_attributes()
         else:
             # Create scar config dir
