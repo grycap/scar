@@ -80,6 +80,8 @@ class Lambda(GenericClient):
     def manage_layers(self):
         if not self.layers.is_supervisor_layer_created():
             self.layers.create_supervisor_layer()
+        elif 'update_layer' in self.properties:
+            self.layers.update_layer_and_functions()
         else:
             logger.info("Using existent 'faas-supervisor' layer")
         self.properties['layers'] = self.layers.get_layers_arn()
@@ -322,7 +324,7 @@ class Lambda(GenericClient):
         self.client.add_invocation_permission(**kwargs)
         # Invocation permission
         kwargs['SourceArn'] = 'arn:aws:execute-api:{0}:{1}:{2}/scar/ANY'.format(aws_region, aws_acc_id, api_gateway_id)
-        self.client.add_invocation_permission(**kwargs)                              
+        self.client.add_invocation_permission(**kwargs)
 
     def get_api_gateway_id(self):
         env_vars = self.get_function_environment_variables()
@@ -333,11 +335,11 @@ class Lambda(GenericClient):
         api_id = self.get_api_gateway_id()
         if not api_id:
             raise excp.ApiEndpointNotFoundError(self.properties['name'])
-        return 'https://{0}.execute-api.{1}.amazonaws.com/scar/launch'.format(api_id, self.aws_properties["region"])        
+        return 'https://{0}.execute-api.{1}.amazonaws.com/scar/launch'.format(api_id, self.aws_properties["region"])
         
     def get_http_invocation_headers(self):
         if self.is_asynchronous():
-            return {'X-Amz-Invocation-Type':'Event'}  
+            return {'X-Amz-Invocation-Type':'Event'}
         
     def parse_http_parameters(self, parameters):
         if type(parameters) is dict:
@@ -346,10 +348,10 @@ class Lambda(GenericClient):
 
     def get_encoded_binary_data(self, data_path):
         if data_path:
-            self.check_file_size(data_path)                
+            self.check_file_size(data_path)
             with open(data_path, 'rb') as f:
                 data = f.read()
-            return base64.b64encode(data)        
+            return base64.b64encode(data)
         
     def invoke_http_endpoint(self):
         invoke_args = {'headers' : self.get_http_invocation_headers()}
