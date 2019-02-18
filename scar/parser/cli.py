@@ -24,7 +24,7 @@ class CommandParser(object):
     def __init__(self, scar_cli):
         self.scar_cli = scar_cli
         self.create_parser()
-        self.create_subparsers()
+        self.add_subparsers()
 
     def create_parser(self):
         self.parser = argparse.ArgumentParser(prog="scar",
@@ -32,19 +32,19 @@ class CommandParser(object):
                                               epilog="Run 'scar COMMAND --help' for more information on a command.")
         self.parser.add_argument('--version', help='Show SCAR version.', dest="version", action="store_true", default=False)        
 
-    def create_subparsers(self):
+    def add_subparsers(self):
         self.subparsers = self.parser.add_subparsers(title='Commands')    
-        self.create_init_parser()
-        self.create_invoke_parser()
-        self.create_run_parser()
-        self.create_update_parser()
-        self.create_rm_parser()
-        self.create_ls_parser()
-        self.create_log_parser()
-        self.create_put_parser()
-        self.create_get_parser()
+        self.add_init_parser()
+        self.add_invoke_parser()
+        self.add_run_parser()
+        self.add_update_parser()
+        self.add_rm_parser()
+        self.add_ls_parser()
+        self.add_log_parser()
+        self.add_put_parser()
+        self.add_get_parser()
     
-    def create_init_parser(self):
+    def add_init_parser(self):
         parser_init = self.subparsers.add_parser('init', help="Create lambda function")
         # Set default function
         parser_init.set_defaults(func=self.scar_cli.init)
@@ -79,10 +79,8 @@ class CommandParser(object):
         # General AWS conf           
         parser_init.add_argument("-pf", "--profile", help="AWS profile to use")
         parser_init.add_argument("-em", "--execution_mode", help="Specifies the execution mode of the job. It can be 'lambda', 'lambda-batch' or 'batch'")
-        # Layer args
-        parser_init.add_argument("-ul", "--update-layer", help="Update the faas-supervisor layer code and all the scar lambda functions that are linked to the previous version of the layer.", action="store_true")
         
-    def create_invoke_parser(self):
+    def add_invoke_parser(self):
         parser_invoke = self.subparsers.add_parser('invoke', help="Call a lambda function using an HTTP request")
         # Set default function
         parser_invoke.set_defaults(func=self.scar_cli.invoke)
@@ -96,13 +94,13 @@ class CommandParser(object):
         # General AWS conf          
         parser_invoke.add_argument("-pf", "--profile", help="AWS profile to use")  
  
-    def create_update_parser(self):
+    def add_update_parser(self):
         parser_update = self.subparsers.add_parser('update', help="Update function properties")
         parser_update.set_defaults(func=self.scar_cli.update)
         group = parser_update.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name", help="Lambda function name")
         group.add_argument("-a", "--all", help="Update all lambda functions", action="store_true")
-        group.add_argument("-f", "--conf_file", help="Yaml file with the function configuration") 
+        group.add_argument("-f", "--conf_file", help="Yaml file with the function configuration")
         parser_update.add_argument("-m", "--memory", type=int, help="Lambda function memory in megabytes. Range from 128 to 1536 in increments of 64")
         parser_update.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 300.")
         parser_update.add_argument("-e", "--environment", action='append', help="Pass environment variable to the container (VAR=val). Can be defined multiple times.")
@@ -111,9 +109,9 @@ class CommandParser(object):
         # General AWS conf        
         parser_update.add_argument("-pf", "--profile", help="AWS profile to use")
         # AWS lambda layers conf         
-        parser_update.add_argument("-sl", "--supervisor_layer", help="Update supervisor layer.")   
+        parser_update.add_argument("-sl", "--supervisor_layer", help="Update supervisor layer in related functions.", action="store_true")
 
-    def create_run_parser(self):
+    def add_run_parser(self):
         parser_run = self.subparsers.add_parser('run', help="Deploy function")
         parser_run.set_defaults(func=self.scar_cli.run)
         group = parser_run.add_mutually_exclusive_group(required=True)
@@ -127,7 +125,7 @@ class CommandParser(object):
         # General AWS conf
         parser_run.add_argument("-pf", "--profile", help="AWS profile to use")
     
-    def create_rm_parser(self):
+    def add_rm_parser(self):
         parser_rm = self.subparsers.add_parser('rm', help="Delete function")
         parser_rm.set_defaults(func=self.scar_cli.rm)
         group = parser_rm.add_mutually_exclusive_group(required=True)
@@ -139,7 +137,7 @@ class CommandParser(object):
         # General AWS conf           
         parser_rm.add_argument("-pf", "--profile", help="AWS profile to use")  
                              
-    def create_log_parser(self):
+    def add_log_parser(self):
         parser_log = self.subparsers.add_parser('log', help="Show the logs for the lambda function")
         parser_log.set_defaults(func=self.scar_cli.log)
         group = parser_log.add_mutually_exclusive_group(required=True)
@@ -151,7 +149,7 @@ class CommandParser(object):
         # General AWS conf        
         parser_log.add_argument("-pf", "--profile", help="AWS profile to use")
         
-    def create_ls_parser(self):
+    def add_ls_parser(self):
         parser_ls = self.subparsers.add_parser('ls', help="List lambda functions")
         parser_ls.set_defaults(func=self.scar_cli.ls)
         parser_ls.add_argument("-j", "--json", help="Return data in JSON format", action="store_true")
@@ -164,7 +162,7 @@ class CommandParser(object):
         # General AWS conf        
         parser_ls.add_argument("-pf", "--profile", help="AWS profile to use")                
     
-    def create_put_parser(self):
+    def add_put_parser(self):
         parser_put = self.subparsers.add_parser('put', help="Upload file(s) to bucket")
         parser_put.set_defaults(func=self.scar_cli.put)
         # S3 args
@@ -175,7 +173,7 @@ class CommandParser(object):
         # General AWS conf        
         parser_put.add_argument("-pf", "--profile", help="AWS profile to use")
     
-    def create_get_parser(self):
+    def add_get_parser(self):
         parser_get = self.subparsers.add_parser('get', help="Download file(s) from bucket")
         parser_get.set_defaults(func=self.scar_cli.get)
         # S3 args
@@ -223,14 +221,14 @@ class CommandParser(object):
         return {'aws' : aws_args }
 
     def parse_scar_args(self, cmd_args):
-        scar_args = ['func', 'conf_file', 'json', 'verbose', 'path', ('all', 'delete_all'), 'preheat','execution_mode',]
+        scar_args = ['func', 'conf_file', 'json', 'verbose', 'path', 'all', 'preheat', 'execution_mode',]
         return {'scar' : utils.parse_arg_list(scar_args, cmd_args)}
 
     def parse_lambda_args(self, cmd_args):
         lambda_args = ['name', 'asynchronous', 'init_script', 'run_script', 'c_args', 'memory', 'time',
                        'timeout_threshold', 'log_level', 'image', 'image_file', 'description', 
                        'lambda_role', 'extra_payload', ('environment', 'environment_variables'),
-                       'layers', 'update-layer']
+                       'layers', 'supervisor_layer']
         return utils.parse_arg_list(lambda_args, cmd_args)
     
     def parse_iam_args(self, cmd_args):

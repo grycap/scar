@@ -32,7 +32,7 @@ class Layer():
     
     def _find(self, layers_info, layer_name):
         if 'Layers' in layers_info:
-            for layer in layers_info:
+            for layer in layers_info['Layers']:
                 if layer['LayerName'] == layer_name:
                     return layer        
     
@@ -56,10 +56,6 @@ class Layer():
         layer_args['VersionNumber'] = int(kwargs['version']) if kwargs['version'] else self.get_latest_version(kwargs['name'])
         return self.client.delete_layer_version(**layer_args)
     
-    def update(self):
-        layer_args = { 'LayerName' : kwargs['name'], 'Content' : { 'ZipFile': kwargs['zip-file'] } }
-        return self.client.publish_layer_version(**layer_args)
-            
     def get_latest_version(self, layer_name):
         layers = self.get_layers_info()
         for layer in layers['Layers']:
@@ -139,8 +135,7 @@ class LambdaLayers():
     def is_supervisor_layer_created(self):
         return self.layer.exists(self.layer_name)    
     
-    def create_supervisor_layer(self):
-        logger.info("Creating faas-supervisor layer")
+    def _create_layer(self):
         self._create_tmp_folders()
         self._download_supervisor()        
         self._copy_supervisor_files()
@@ -148,8 +143,17 @@ class LambdaLayers():
         self._create_layer_zip()
         supervisor_layer_props = self._get_supervisor_layer_props()
         self.supervisor_layer_info = self.layer.create(**supervisor_layer_props)
-        logger.info("Faas-supervisor layer created")
-        utils.delete_file(self.layer_zip_path)
+        utils.delete_file(self.layer_zip_path)        
+    
+    def create_supervisor_layer(self):
+        logger.info("Creating faas-supervisor layer")
+        self._create_layer()
+        logger.info("Faas-supervisor layer created")        
+        
+    def update_supervisor_layer(self):
+        logger.info("Updating faas-supervisor layer")
+        self._create_layer()
+        logger.info("Faas-supervisor layer updated")
         
     def get_layers_arn(self):
         layers = []
@@ -171,18 +175,6 @@ class LambdaLayers():
                 result.extend(layers_info['Layers'])            
         return result
     
-    def _update_functions_layer(self, layer_info):
-#         if response and 'Version' in response and 'update-functions' in kwargs:
-#             self.update_functions(self, kwargs['name'], response['Version'])         
-        # TODO
-        pass
-    
-    def update_layer_and_functions(self):
-        logger.info("Updating existent 'faas-supervisor' layer")
-        layer_info = self.layer.update()
-        logger.info("Updating functions' layer")
-        self._update_functions_layer(layer_info)
-        
     def print_layers_info(self):
         layers_info = self.get_all_layers_info()
         headers = ['NAME', 'VERSION', 'ARN', 'RUNTIMES']
@@ -192,4 +184,8 @@ class LambdaLayers():
                           layer['LatestMatchingVersion']['Version'],
                           layer['LayerArn'],
                           layer['LatestMatchingVersion'].get('CompatibleRuntimes','-')])
-        print(tabulate(table, headers))       
+        print(tabulate(table, headers))
+        
+    def get_latest_supervisor_layer_arn(self):
+        self.supervisor_layer_info = self.layer.get_info(self.layer_name)
+        return self.supervisor_layer_info['LatestMatchingVersion']['LayerVersionArn']

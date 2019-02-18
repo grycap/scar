@@ -112,22 +112,27 @@ def parse_lambda_function_info(function_info):
     if api_gateway != '-':
         region = function_info['FunctionArn'].split(':')[3]
         api_gateway = 'https://{0}.execute-api.{1}.amazonaws.com/scar/launch'.format(api_gateway, region)
+    super_layer_arn = [":".join(layer['Arn'].split(":")[-2:]) for layer in function_info['Layers'] if 'faas-supervisor' in layer['Arn']]
+    if not super_layer_arn:
+        super_layer_arn = ['-']
         
     return {'Name' : name,
             'Memory' : memory,
             'Timeout' : timeout,
             'Image_id': image_id,
-            'Api_gateway': api_gateway}
+            'Api_gateway': api_gateway,
+            'Sup_layer_arn': super_layer_arn[0]}
   
 def get_table(functions_info):
-    headers = ['NAME', 'MEMORY', 'TIME', 'IMAGE_ID', 'API_URL']
+    headers = ['NAME', 'MEMORY', 'TIME', 'IMAGE_ID', 'API_URL', 'SUPERVISOR_LAYER_VERSION']
     table = []
     for function in functions_info:
         table.append([function['Name'],
                       function['Memory'],
                       function['Timeout'],
                       function['Image_id'],
-                      function['Api_gateway']])
+                      function['Api_gateway'],
+                      function['Sup_layer_arn']])
     return tabulate(table, headers)    
 
 def parse_error_invocation_response(response, function_name):

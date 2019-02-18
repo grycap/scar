@@ -114,7 +114,12 @@ class AWS(Commands):
     
     @excp.exception(logger)    
     def update(self):
-        self._lambda.update_function_attributes()
+        if 'supervisor_layer' in self.properties['lambda'] and self.properties['lambda']['supervisor_layer']:
+            self._lambda.layers.update_supervisor_layer()
+        if 'all' in self.scar_properties and self.scar_properties['all']:
+            self.update_all_functions(self.get_all_functions())        
+        else:
+            self._lambda.update_function_attributes()
     
     @excp.exception(logger)
     def ls(self):
@@ -131,7 +136,7 @@ class AWS(Commands):
     
     @excp.exception(logger)    
     def rm(self):
-        if 'delete_all' in self.scar_properties and self.scar_properties['delete_all']:
+        if 'all' in self.scar_properties and self.scar_properties['all']:
             self.delete_all_resources(self.get_all_functions())        
         else:
             self.delete_resources()
@@ -252,6 +257,10 @@ class AWS(Commands):
                 if dir_path and not os.path.isdir(dir_path):
                     os.makedirs(dir_path, exist_ok=True) 
                 self.s3.download_file(bucket_name, s3_file, file_path)                    
+     
+    def update_all_functions(self, lambda_functions):
+        for function_info in lambda_functions:
+            self._lambda.update_function_attributes(function_info)
      
     def delete_all_resources(self, lambda_functions):
         for function in lambda_functions:

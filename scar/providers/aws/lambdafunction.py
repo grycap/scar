@@ -80,8 +80,6 @@ class Lambda(GenericClient):
     def manage_layers(self):
         if not self.layers.is_supervisor_layer_created():
             self.layers.create_supervisor_layer()
-        elif 'update_layer' in self.properties:
-            self.layers.update_layer_and_functions()
         else:
             logger.info("Using existent 'faas-supervisor' layer")
         self.properties['layers'] = self.layers.get_layers_arn()
@@ -255,8 +253,10 @@ class Lambda(GenericClient):
         self.properties['log_type'] = "Tail"
         self.properties['asynchronous'] = "False"        
         
-    def update_function_attributes(self):
-        update_args = {'FunctionName' : self.properties['name'] }
+    def update_function_attributes(self, function_info=None):
+        if not function_info:
+            function_info = self.get_function_info()
+        update_args = {'FunctionName' : function_info['FunctionName'] }
         if "memory" in self.properties and self.properties['memory']:
             update_args['MemorySize'] = self.properties['memory']
         if "time" in self.properties and self.properties['time']:
@@ -273,12 +273,19 @@ class Lambda(GenericClient):
             env_vars['Variables']['TIMEOUT_THRESHOLD'] = str(self.properties['timeout_threshold'])
         if "log_level" in self.properties and self.properties['log_level']:
             env_vars['Variables']['LOG_LEVEL'] = self.properties['log_level']            
-        defined_lambda_env_variables = self.get_function_environment_variables()
-        defined_lambda_env_variables['Variables'].update(env_vars['Variables'])
-        update_args['Environment'] = defined_lambda_env_variables
+        function_info['Environment']['Variables'].update(env_vars['Variables'])
+        update_args['Environment'] = function_info['Environment']
+        
+        if 'supervisor_layer' in self.properties:
+            # Set supervisor layer Arn
+            function_layers = [self.layers.get_latest_supervisor_layer_arn()]
+            # Add the rest of layers (if exist)
+            if 'Layers' in function_info:
+                function_layers.extend([layer for layer in function_info['Layers'] if self.layers.layer_name not in layer['Arn']])
+            update_args['Layers'] = function_layers
         
         self.client.update_function(**update_args)
-        logger.info("Function updated successfully.")
+        logger.info("Function '{}' updated successfully.".format(function_info['FunctionName']))
 
     def get_function_environment_variables(self):
         return self.get_function_info()['Environment']
