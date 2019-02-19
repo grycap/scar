@@ -21,13 +21,12 @@ import shutil
 
 default_cfg = {
     "scar" : {
-        "faas-supervisor" : {
-            "version_url" : "https://api.github.com/repos/grycap/faas-supervisor/releases/latest",
-            "zip_url" : "https://github.com/grycap/faas-supervisor/archive/{0}.zip",
-            "default_version" : "master",
-            "layer_name" : "faas-supervisor",        
+        "layers": { "faas-supervisor" : {"version_url" : "https://api.github.com/repos/grycap/faas-supervisor/releases/latest",
+                                         "zip_url" : "https://github.com/grycap/faas-supervisor/archive/{0}.zip",
+                                         "default_version" : "master",
+                                         "layer_name" : "faas-supervisor"}
         },
-        "udocker" : {
+        "udocker_info" : {
             "zip_url" : "https://github.com/grycap/faas-supervisor/raw/master/extra/udocker.zip"
         },
     },
@@ -67,50 +66,55 @@ class ConfigFileParser(object):
     config_file_path = utils.join_paths(config_file_folder, config_file_name)
     backup_file_path = utils.join_paths(config_file_folder, backup_config_file_name)
 
-
     @excp.exception(logger)
     def __init__(self):
         # Check if the config file exists
         if os.path.isfile(self.config_file_path):
             with open(self.config_file_path) as cfg_file:
-                self.__setattr__("cfg_data", json.load(cfg_file))
-            if 'region' not in self.cfg_data['aws'] or \
-               'boto_profile' not in self.cfg_data['aws'] or \
-               'execution_mode' not in self.cfg_data['aws'] or \
-               'scar' not in self.cfg_data:
-                self.add_missing_attributes()
+                self.__setattr__("cfg_layer_info", json.load(cfg_file))
+            if 'region' not in self.cfg_layer_info['aws'] or \
+               'boto_profile' not in self.cfg_layer_info['aws'] or \
+               'execution_mode' not in self.cfg_layer_info['aws'] or \
+               'scar' not in self.cfg_layer_info:
+                self._add_missing_attributes()
         else:
             # Create scar config dir
             os.makedirs(self.config_file_folder, exist_ok=True)
-            self.create_default_config_file()
+            self._create_default_config_file()
             raise excp.ScarConfigFileError(file_path=self.config_file_path)
         
-    def create_default_config_file(self):
+    def _create_default_config_file(self):
         with open(self.config_file_path, mode='w') as cfg_file:
             cfg_file.write(json.dumps(default_cfg, indent=2))        
         
     def get_properties(self):
-        return self.cfg_data
+        return self.cfg_layer_info
+    
+    def get_faas_supervisor_layer_info(self):
+        return self.cfg_layer_info['scar']['layers']['faas-supervisor']    
+    
+    def get_udocker_zip_url(self):
+        return self.cfg_layer_info['scar']['udocker_info']['zip_url']
         
-    def add_missing_attributes(self):
+    def _add_missing_attributes(self):
         logger.info("Updating old scar config file '{0}'.\n".format(self.config_file_path))
         shutil.copy(self.config_file_path, self.backup_file_path)
         logger.info("Old scar config file saved in '{0}'.\n".format(self.backup_file_path))       
-        self.merge_files(self.cfg_data, default_cfg)    
-        self.delete_unused_data()
+        self._merge_files(self.cfg_layer_info, default_cfg)    
+        self._delete_unused_data()
         with open(self.config_file_path, mode='w') as cfg_file:
-            cfg_file.write(json.dumps(self.cfg_data, indent=2))
+            cfg_file.write(json.dumps(self.cfg_layer_info, indent=2))
     
-    def merge_files(self, cfg_data, default_data):
+    def _merge_files(self, cfg_data, default_data):
         for k, v in default_data.items():
             if k not in cfg_data:
                 cfg_data[k] = v
             elif type(cfg_data[k]) is dict:
-                self.merge_files(cfg_data[k], default_data[k])
+                self._merge_files(cfg_data[k], default_data[k])
                 
-    def delete_unused_data(self):
-        if 'region' in self.cfg_data['aws']['lambda']:
-            region = self.cfg_data['aws']['lambda'].pop('region', None)
+    def _delete_unused_data(self):
+        if 'region' in self.cfg_layer_info['aws']['lambda']:
+            region = self.cfg_layer_info['aws']['lambda'].pop('region', None)
             if region:
-                self.cfg_data['aws']['region'] = region                             
+                self.cfg_layer_info['aws']['region'] = region                             
             

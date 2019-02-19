@@ -20,7 +20,7 @@ import unittest
 class AwsTest(unittest.TestCase):
     
     scar_base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-    scar_bin = ["python3", scar_base_path + "/scar.py"]
+    scar_bin = ["scar"]
     
     def tearDown(self):
         self.execute_command(self.get_cmd(["rm","-a"]))

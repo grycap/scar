@@ -77,23 +77,24 @@ class LambdaLayers():
     def __init__(self, lambda_client):
         '''
         Default scar's configuration file structure:
-          "scar": {
-            "faas-supervisor": {
-              "version_url": "https://api.github.com/repos/grycap/faas-supervisor/releases/latest",
-              "zip_url": "https://github.com/grycap/faas-supervisor/archive/{0}.zip",
-              "default_version": "master",
-              "layer_name": "faas-supervisor"
-            },
-            "udocker": {
-              "zip_url": "https://github.com/grycap/faas-supervisor/raw/master/extra/udocker.zip"
-            }
-          }
+        {
+            "scar" : {
+                "layers": { "faas-supervisor" : {"version_url" : "https://api.github.com/repos/grycap/faas-supervisor/releases/latest",
+                                                 "zip_url" : "https://github.com/grycap/faas-supervisor/archive/{0}.zip",
+                                                 "default_version" : "master",
+                                                 "layer_name" : "faas-supervisor"}
+                },
+                "udocker_info" : {
+                    "zip_url" : "https://github.com/grycap/faas-supervisor/raw/master/extra/udocker.zip"
+                },
+            }, ...
+        }
         '''
         self.client = lambda_client
-        self.cfg_data = ConfigFileParser().get_properties()['scar']
-        self.supervisor_version = self.cfg_data['faas-supervisor']['default_version']
-        self.supervisor_zip_url = self.cfg_data['faas-supervisor']['zip_url'].format(self.supervisor_version)        
-        self.layer_name = self.cfg_data['faas-supervisor']['layer_name']
+        self.cfg_layer_info = ConfigFileParser().get_faas_supervisor_layer_info()
+        self.supervisor_version = self.cfg_layer_info['default_version']
+        self.supervisor_zip_url = self.cfg_layer_info['zip_url'].format(self.supervisor_version)        
+        self.layer_name = self.cfg_layer_info['layer_name']
         self.layer_zip_path = utils.join_paths(utils.get_tmp_dir(), '{}.zip'.format(self.layer_name))
         
     def _create_tmp_folders(self):
@@ -103,7 +104,7 @@ class LambdaLayers():
         self.layer_code_path = self.layer_code_folder.name
 
     def _get_supervisor_version(self):
-        j = json.loads(request.invoke_http_endpoint(self.cfg_data['faas-supervisor']['version_url']).text)
+        j = json.loads(request.call_http_endpoint(self.cfg_layer_info['version_url']).text)
         return j['tag_name']        
 
     def _download_supervisor(self):

@@ -82,9 +82,7 @@ class FunctionPackageCreator():
         self.check_code_size()
 
     def install_tmp_udocker(self):
-        udocker_zip_url = ConfigFileParser().get_properties()['scar']['udocker']['zip_url']
-        udocker_zip = request.get_file(udocker_zip_url)
-        with ZipFile(io.BytesIO(udocker_zip)) as thezip:
+        with ZipFile(io.BytesIO(request.download_udocker_zip())) as thezip:
             thezip.extractall(self.udocker_tmp_folder_path)
 
     def add_mandatory_files(self):
@@ -126,7 +124,7 @@ class FunctionPackageCreator():
     @classmethod
     def save_tmp_udocker_env(cls):
         #Avoid override global variables
-        if utils.is_value_in_dict(os.environ, 'UDOCKER_DIR'):
+        if utils.is_value_in_dict('UDOCKER_DIR', os.environ):
             cls.udocker_dir = os.environ['UDOCKER_DIR']
         # Set temporal global vars
         utils.set_environment_variable('UDOCKER_DIR', cls.udocker_tmp_folder_path)

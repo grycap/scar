@@ -13,8 +13,9 @@
 # limitations under the License.
 
 import requests
+from scar.parser.cfgfile import ConfigFileParser
 
-def invoke_http_endpoint(url, **kwargs):
+def call_http_endpoint(url, **kwargs):
     """
     Does a 'GET' or 'PUT' request if the parameter 'data' exists or not respectively
 
@@ -33,4 +34,8 @@ def get_file(url):
     response = requests.get(url)
     if response:
         return response.content
+
+def download_udocker_zip():
+    return get_file(ConfigFileParser().get_udocker_zip_url())
+
     

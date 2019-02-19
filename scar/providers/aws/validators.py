@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from scar.exceptions import ValidatorError, S3CodeSizeError, FunctionCodeSizeError
+from scar.exceptions import ValidatorError, S3CodeSizeError, FunctionCodeSizeError, InvocationPayloadError
 from scar.validator import GenericValidator
 import os
 import scar.utils as utils
 
-valid_lambda_name_regex = "(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}(-gov)?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\$LATEST|[a-zA-Z0-9-_]+))?"
+VALID_LAMBDA_NAME_REGEX = "(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}(-gov)?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\$LATEST|[a-zA-Z0-9-_]+))?"
+KB = 1024
+MB = KB*KB
+MAX_POST_BODY_SIZE = MB*6
+MAX_POST_BODY_SIZE_ASYNC = KB*95
 
 class AWSValidator(GenericValidator):
     
@@ -58,7 +62,7 @@ class AWSValidator(GenericValidator):
 
     @staticmethod            
     def validate_function_name(function_name):
-        if not utils.find_expression(function_name, valid_lambda_name_regex):
+        if not utils.find_expression(function_name, VALID_LAMBDA_NAME_REGEX):
             error_msg = 'Find name restrictions in: https://docs.aws.amazon.com/lambda/latest/dg/API_CreateFunction.html#SSS-CreateFunction-request-FunctionName'
             raise ValidatorError(parameter='function_name', parameter_value=function_name, error_msg=error_msg)
     
@@ -71,4 +75,16 @@ class AWSValidator(GenericValidator):
     def validate_s3_code_size(scar_folder, MAX_S3_PAYLOAD_SIZE):
         if utils.get_tree_size(scar_folder) > MAX_S3_PAYLOAD_SIZE:         
             raise S3CodeSizeError(code_size='250MB')
+        
+    @staticmethod        
+    def validate_payload_size(file_path, async_call=False):        
+        file_size = utils.get_file_size(file_path)
+        if file_size > MAX_POST_BODY_SIZE:
+            filesize = '{0:.2f}MB'.format(file_size/MB)
+            maxsize = '{0:.2f}MB'.format(MAX_POST_BODY_SIZE/MB)            
+            raise InvocationPayloadError(file_size= filesize, max_size=maxsize)
+        elif async_call and file_size > MAX_POST_BODY_SIZE_ASYNC:
+            filesize = '{0:.2f}KB'.format(file_size/KB)
+            maxsize = '{0:.2f}KB'.format(MAX_POST_BODY_SIZE_ASYNC/KB)
+            raise InvocationPayloadError(file_size=filesize, max_size=maxsize)        
             

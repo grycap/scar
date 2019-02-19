@@ -98,7 +98,7 @@ class AWS(Commands):
     
     @excp.exception(logger)    
     def invoke(self):
-        response = self._lambda.invoke_http_endpoint()
+        response = self._lambda.call_http_endpoint()
         response_parser.parse_http_response(response, 
                                             self._lambda.properties['name'],
                                             self._lambda.is_asynchronous())

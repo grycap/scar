@@ -121,7 +121,7 @@ def merge_dicts(d1, d2):
                 d1[k] += v
     return d1
 
-def is_value_in_dict(dictionary, value):
+def is_value_in_dict(value, dictionary):
     return value in dictionary and dictionary[value]
 
 def get_tree_size(path):
@@ -185,7 +185,7 @@ def execute_command_and_return_output(command):
     return subprocess.check_output(command).decode("utf-8")
 
 def is_variable_in_environment(variable):
-    return is_value_in_dict(os.environ, variable)
+    return is_value_in_dict(variable, os.environ)
 
 def set_environment_variable(key, variable):
     if key and variable:
