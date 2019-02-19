@@ -20,8 +20,8 @@
 # -- Project information -----------------------------------------------------
 
 project = 'scar'
-copyright = '2018, Alfonso Pérez'
-author = 'Alfonso Pérez'
+copyright = 'GRyCAP - I3M - UPV'
+author = 'Alfonso Perez'
 
 # The short X.Y version
 version = ''
@@ -129,8 +129,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'scar.tex', 'Scar Documentation',
-     'Alfonso Pérez', 'manual'),
+    (master_doc, 'scar.tex', 'scar Documentation',
+     'GRyCAP - I3M - UPV', 'manual'),
 ]
 
 
@@ -139,7 +139,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'scar', 'Scar Documentation',
+    (master_doc, 'scar', 'scar Documentation',
      [author], 1)
 ]
 
@@ -150,7 +150,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'scar', 'Scar Documentation',
+    (master_doc, 'scar', 'scar Documentation',
      author, 'scar', 'One line description of project.',
      'Miscellaneous'),
 ]
