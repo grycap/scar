@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from .exceptions import InvalidPlatformError
+from distutils import dir_util
 import base64
 import json
 import logging
@@ -57,7 +58,13 @@ def get_logger():
     return logging.getLogger('oscar')
 
 def copy_file(source, dest):
-    shutil.copy(source, dest)    
+    shutil.copy(source, dest)
+
+def copy_dir(source, dest):    
+    dir_util.copy_tree(source, dest)    
+    
+def get_scar_root_path():
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def join_paths(*paths):
     return os.path.join(*paths)
@@ -194,6 +201,10 @@ def set_environment_variable(key, variable):
 def get_environment_variable(variable):
     if is_variable_in_environment(variable):
         return os.environ[variable]
+    
+def delete_environment_variable(variable):
+    if is_variable_in_environment(variable):
+        del os.environ[variable]
 
 def parse_arg_list(arg_keys, cmd_args):
     result = {}
@@ -219,14 +230,17 @@ def unzip_folder(zip_path, folder_where_unzip_path):
     zip_exe = resource_path("src/bin/unzip", bin_path='/usr/bin/unzip')
     execute_command_with_msg([zip_exe, zip_path], cmd_wd=folder_where_unzip_path, cli_msg="Creating function package")    
                 
-def zip_folder(zip_path, folder_to_zip_path):
+def zip_folder(zip_path, folder_to_zip_path, msg=""):
     '''Must use the binary to preserve the file properties and the symlinks'''
     zip_exe = resource_path("src/bin/zip", bin_path='/usr/bin/zip')
-    execute_command_with_msg([zip_exe, "-r9y", zip_path, "."], cmd_wd=folder_to_zip_path, cli_msg="Creating function package")
+    execute_command_with_msg([zip_exe, "-r9y", zip_path, "."],
+                             cmd_wd=folder_to_zip_path,
+                             cli_msg=msg)
+    
+    
     
 def execute_command_with_msg(command, cmd_wd=None, cli_msg=None):
     cmd_out = subprocess.check_output(command, cwd=cmd_wd).decode("utf-8")
     get_logger().debug(cmd_out)
     get_logger().info(cli_msg)
-    return cmd_out[:-1]   
-                 
+    return cmd_out[:-1]

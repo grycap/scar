@@ -40,7 +40,7 @@ class LambdaClient(BotoClient):
         return self.client.get_function_configuration(FunctionName=function_name_or_arn)
    
     @excp.exception(logger)    
-    def update_function(self, **kwargs):
+    def update_function_configuration(self, **kwargs):
         '''
         Updates the configuration parameters for the specified Lambda function by using the values provided in the request.
         http://boto3.readthedocs.io/en/latest/reference/services/lambda.html#Lambda.Client.update_function_configuration

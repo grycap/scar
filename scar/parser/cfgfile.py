@@ -40,7 +40,9 @@ default_cfg = {
           "memory" : 512,
           "description" : "Automatically generated lambda function",
           "timeout_threshold" : 10 ,
-          "runtime" : "python3.6"
+          "runtime" : "python3.6",
+          "max_payload_size" : 52428800,
+          "max_s3_payload_size" : 262144000
         },
         "cloudwatch" : { "log_retention_policy_in_days" : 30 },
         "batch" : {
@@ -52,8 +54,9 @@ default_cfg = {
           "min_v_cpus": 0,
           "max_v_cpus": 2,
           "subnets": [""],
-          "instance_types": ["m3.medium"]                
-        }
+          "instance_types": ["m3.medium"],
+          "supervisor_image": "alpegon/scar-batch-io:devel",
+        },
     }
 }
 
@@ -71,11 +74,11 @@ class ConfigFileParser(object):
         # Check if the config file exists
         if os.path.isfile(self.config_file_path):
             with open(self.config_file_path) as cfg_file:
-                self.__setattr__("cfg_layer_info", json.load(cfg_file))
-            if 'region' not in self.cfg_layer_info['aws'] or \
-               'boto_profile' not in self.cfg_layer_info['aws'] or \
-               'execution_mode' not in self.cfg_layer_info['aws'] or \
-               'scar' not in self.cfg_layer_info:
+                self.cfg_data = json.load(cfg_file)
+            if 'region' not in self.cfg_data['aws'] or \
+               'boto_profile' not in self.cfg_data['aws'] or \
+               'execution_mode' not in self.cfg_data['aws'] or \
+               'scar' not in self.cfg_data:
                 self._add_missing_attributes()
         else:
             # Create scar config dir
@@ -88,22 +91,22 @@ class ConfigFileParser(object):
             cfg_file.write(json.dumps(default_cfg, indent=2))        
         
     def get_properties(self):
-        return self.cfg_layer_info
+        return self.cfg_data
     
     def get_faas_supervisor_layer_info(self):
-        return self.cfg_layer_info['scar']['layers']['faas-supervisor']    
+        return self.cfg_data['scar']['layers']['faas-supervisor']
     
     def get_udocker_zip_url(self):
-        return self.cfg_layer_info['scar']['udocker_info']['zip_url']
-        
+        return self.cfg_data['scar']['udocker_info']['zip_url']
+
     def _add_missing_attributes(self):
         logger.info("Updating old scar config file '{0}'.\n".format(self.config_file_path))
         shutil.copy(self.config_file_path, self.backup_file_path)
         logger.info("Old scar config file saved in '{0}'.\n".format(self.backup_file_path))       
-        self._merge_files(self.cfg_layer_info, default_cfg)    
+        self._merge_files(self.cfg_data, default_cfg)
         self._delete_unused_data()
         with open(self.config_file_path, mode='w') as cfg_file:
-            cfg_file.write(json.dumps(self.cfg_layer_info, indent=2))
+            cfg_file.write(json.dumps(self.cfg_data, indent=2))
     
     def _merge_files(self, cfg_data, default_data):
         for k, v in default_data.items():
@@ -113,8 +116,7 @@ class ConfigFileParser(object):
                 self._merge_files(cfg_data[k], default_data[k])
                 
     def _delete_unused_data(self):
-        if 'region' in self.cfg_layer_info['aws']['lambda']:
-            region = self.cfg_layer_info['aws']['lambda'].pop('region', None)
+        if 'region' in self.cfg_data['aws']['lambda']:
+            region = self.cfg_data['aws']['lambda'].pop('region', None)
             if region:
-                self.cfg_layer_info['aws']['region'] = region                             
-            
+                self.cfg_data['aws']['region'] = region

@@ -18,36 +18,36 @@ import scar.logger as logger
 class Batch(GenericClient):
 
     def __init__(self, aws_properties):
-        GenericClient.__init__(self, aws_properties)
-        self.lambda_properties = aws_properties['lambda']
-        self.batch_properties = aws_properties['batch']
-        self.iam_properties = aws_properties['iam']
-        self.instance_role = "arn:aws:iam::{0}:instance-profile/ecsInstanceRole".format(aws_properties['account_id'])
-        self.service_role = "arn:aws:iam::{0}:role/service-role/AWSBatchServiceRole".format(aws_properties['account_id'])  
+        super().__init__(aws_properties)
+        self._initialize_properties()
+
+    def _initialize_properties(self):
+        self.aws.batch.instance_role = "arn:aws:iam::{0}:instance-profile/ecsInstanceRole".format(self.aws.account_id)
+        self.aws.batch.service_role = "arn:aws:iam::{0}:role/service-role/AWSBatchServiceRole".format(self.aws.account_id)
     
-    def exist_compute_environments(self,name):
+    def exist_compute_environments(self, name):
         creation_args = self.get_describe_compute_env_args(name_c=name)
         response = self.client.describe_compute_environments(**creation_args)
         return len(response["computeEnvironments"]) > 0
 
     def delete_compute_environment(self,name):
-        self.delete_job_definitions(name)
-        self.delete_job_queue(name)
-        self.delete_compute_env(name)
+        self._delete_job_definitions(name)
+        self._delete_job_queue(name)
+        self._delete_compute_env(name)
             
-    def get_job_definitions(self, jobs_info):
+    def _get_job_definitions(self, jobs_info):
         return ["{0}:{1}".format(definition['jobDefinitionName'], definition['revision']) for definition in jobs_info['jobDefinitions']]
             
-    def delete_job_definitions(self, name):
+    def _delete_job_definitions(self, name):
         job_definitions = []
         # Get IO definitions (if any)
         kwargs = {"jobDefinitionName" : '{0}-io'.format(name)}
         io_job_info = self.client.describe_job_definitions(**kwargs)
-        job_definitions.extend(self.get_job_definitions(io_job_info))
+        job_definitions.extend(self._get_job_definitions(io_job_info))
         # Get main job definition
         kwargs = {"jobDefinitionName" : name}
         job_info = self.client.describe_job_definitions(**kwargs)
-        job_definitions.extend(self.get_job_definitions(job_info))
+        job_definitions.extend(self._get_job_definitions(job_info))
         for job_def in job_definitions:
             kwars = {"jobDefinition" : job_def}
             self.client.deregister_job_definition(**kwars)
@@ -69,7 +69,7 @@ class Batch(GenericClient):
         job_queue_info_args = {'jobQueues' : [self.get_resource_name(name)]}
         return self.client.describe_job_queues(**job_queue_info_args)                 
     
-    def delete_job_queue(self, name):
+    def _delete_job_queue(self, name):
         response = self.get_job_queue_info(name)
         while response["jobQueues"]:
             state = response["jobQueues"][0]["state"]
@@ -86,13 +86,13 @@ class Batch(GenericClient):
         elif state == "DISABLED":
             deleting_args = {'jobQueue': self.get_resource_name(name)}
             logger.info("Job queue deleted")
-            return self.client.delete_job_queue(**deleting_args)        
+            return self.client._delete_job_queue(**deleting_args)        
             
     def get_compute_env_info(self, name):
         creation_args = self.get_describe_compute_env_args(name_c=name)
         return self.client.describe_compute_environments(**creation_args)
                     
-    def delete_compute_env(self, name):
+    def _delete_compute_env(self, name):
         response = self.get_compute_env_info(name)
         while response["computeEnvironments"]:
             state = response["computeEnvironments"][0]["state"]
@@ -112,32 +112,32 @@ class Batch(GenericClient):
             return self.client.delete_compute_environment(**delete_args)        
 
     def get_compute_env_args(self):
-        return {'computeEnvironmentName' : self.lambda_properties['name'],
-                'serviceRole' : self.service_role,
-                'type' : self.batch_properties['type'],
-                'state' :  self.batch_properties['state'],
+        return {'computeEnvironmentName' : self.aws._lambda.name,
+                'serviceRole' : self.aws.batch.service_role,
+                'type' : self.aws.batch.type,
+                'state' :  self.aws.batch.state,
                 'computeResources':{
-                    'type': self.batch_properties['comp_type'],
-                    'minvCpus': self.batch_properties['min_v_cpus'],
-                    'maxvCpus': self.batch_properties['max_v_cpus'],
-                    'desiredvCpus': self.batch_properties['desired_v_cpus'],
-                    'instanceTypes': self.batch_properties['instance_types'],                    
-                    'subnets' : self.batch_properties['subnets'],
-                    'securityGroupIds': self.batch_properties['security_group_ids'],
-                    'instanceRole' : self.instance_role,
+                    'type': self.aws.batch.comp_type,
+                    'minvCpus': self.aws.batch.min_v_cpus,
+                    'maxvCpus': self.aws.batch.max_v_cpus,
+                    'desiredvCpus': self.aws.batch.desired_v_cpus,
+                    'instanceTypes': self.aws.batch.instance_types,                    
+                    'subnets' : self.aws.batch.subnets,
+                    'securityGroupIds': self.aws.batch.security_group_ids,
+                    'instanceRole' : self.aws.batch.instance_role,
                     }
                 }
         
     def get_creations_job_queue_args(self):
         return { 
             'computeEnvironmentOrder': [{'computeEnvironment': self.lambda_properties["name"], 'order': 1},],
-            'jobQueueName': self.lambda_properties["name"],
+            'jobQueueName':  self.aws._lambda.name,
             'priority': 1,
-            'state': self.batch_properties['state'],
+            'state': self.aws.batch.state,
         }
 
     def get_resource_name(self, name=None):
-        return  name if name else self.lambda_properties["name"]
+        return  name if name else self.aws._lambda.name
         
     def get_describe_compute_env_args(self, name_c=None):
         return {'computeEnvironments' : [self.get_resource_name(name_c)]}

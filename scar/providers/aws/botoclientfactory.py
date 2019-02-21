@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import scar.utils as utils
 import importlib
+import scar.utils as utils
 
 class GenericClient(object):
     
@@ -28,11 +28,11 @@ class GenericClient(object):
                 }
 
     def __init__(self, aws_properties):
-        self.aws_properties = aws_properties
+        self.aws = aws_properties
 
     def get_client_args(self):
-        return {'client' : {'region_name' : self.aws_properties['region'] } ,
-                'session' : { 'profile_name' : self.aws_properties['boto_profile'] }}
+        return {'client' : {'region_name' : self.aws.region },
+                'session' : { 'profile_name' : self.aws.boto_profile }}
     
     @utils.lazy_property
     def client(self):
@@ -42,4 +42,3 @@ class GenericClient(object):
         class_ = getattr(module, self.clients[client_name]['class_name'])
         client = class_(**self.get_client_args())
         return client
-

@@ -201,7 +201,7 @@ class CommandParser(object):
             return utils.merge_dicts(scar_args, aws_args)
         except AttributeError as ae:
             logger.error("Incorrect arguments: use scar -h to see the options available",
-                             "Error parsing arguments: %s" % ae)            
+                             "Error parsing arguments: {}".format(ae))
         else:
             raise
         

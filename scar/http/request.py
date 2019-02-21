@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import requests
-from scar.parser.cfgfile import ConfigFileParser
 
 def call_http_endpoint(url, **kwargs):
     """
@@ -34,8 +33,4 @@ def get_file(url):
     response = requests.get(url)
     if response:
         return response.content
-
-def download_udocker_zip():
-    return get_file(ConfigFileParser().get_udocker_zip_url())
-
     

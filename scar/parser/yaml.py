@@ -49,5 +49,5 @@ class YamlParser(object):
         lambda_args = ['asynchronous', 'init_script', 'run_script', 'c_args', 'memory', 'time',
                        'timeout_threshold', 'log_level', 'image', 'image_file', 'description', 
                        'lambda_role', 'extra_payload', ('environment', 'environment_variables')]
-        return utils.parse_arg_list(lambda_args, cmd_args)   
+        return utils.parse_arg_list(lambda_args, cmd_args)
         

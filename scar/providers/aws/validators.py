@@ -77,7 +77,7 @@ class AWSValidator(GenericValidator):
             raise S3CodeSizeError(code_size='250MB')
         
     @staticmethod        
-    def validate_payload_size(file_path, async_call=False):        
+    def validate_http_payload_size(file_path, async_call=False):        
         file_size = utils.get_file_size(file_path)
         if file_size > MAX_POST_BODY_SIZE:
             filesize = '{0:.2f}MB'.format(file_size/MB)

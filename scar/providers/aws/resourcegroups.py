@@ -18,19 +18,19 @@ import scar.logger as logger
 
 class ResourceGroups(GenericClient):
     
+    def __init__(self, aws_properties):
+        super().__init__(aws_properties)
+
     def get_lambda_functions_arn_list(self, iam_user_id):
-        arn_list = []
         try:
             # Creation of a function_info filter by tags
             tag_filters = [ { 'Key': 'owner', 'Values': [ iam_user_id ] },
                             { 'Key': 'createdby', 'Values': ['scar'] } ]
             resource_type_filters = ['lambda']
             tagged_resources = self.client.get_tagged_resources(tag_filters, resource_type_filters)
-            for element in tagged_resources:
-                for function_info in element['ResourceTagMappingList']:
-                    arn_list.append(function_info['ResourceARN'])
+            return [function_info['ResourceARN'] for element in tagged_resources \
+                    for function_info in element['ResourceTagMappingList']]
         except ClientError as ce:
             logger.error("Error getting function_info arn by tag",
-                         "Error getting function_info arn by tag: %s" % ce)
-        return arn_list    
+                         "Error getting function_info arn by tag: {}".format(ce))
     
