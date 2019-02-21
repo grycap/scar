@@ -261,18 +261,24 @@ class AWS(Commands):
             self.delete_resources()
         
     def delete_resources(self):
+        
+        import pprint
+        pprint.pprint(self.aws_properties)
+        
         if not self._lambda.find_function():
             raise excp.FunctionNotFoundError(self.aws_properties._lambda.name)
         # Delete associated api
-        self._delete_api_gateway()
+        if hasattr(self.aws_properties, "api_gateway"):
+            self._delete_api_gateway()
         # Delete associated log
         self._delete_logs()
         # Delete associated notifications
         self._delete_bucket_notifications()        
         # Delete function
         self._delete_lambda_function()
-        # Delete resources batch  
-        self._delete_batch_resources()
+        # Delete resources batch
+        if hasattr(self.aws_properties, "batch"):
+            self._delete_batch_resources()
 
     def _delete_api_gateway(self):
         self.aws_properties.api_gateway.id = self._lambda.get_api_gateway_id()
@@ -303,5 +309,5 @@ class AWS(Commands):
                                                        self.aws_properties.output)
 
     def _delete_batch_resources(self):
-        if(self.batch.exist_compute_environments(self.aws_properties._lambda.name)):
+        if self.batch.exist_compute_environments(self.aws_properties._lambda.name):
             self.batch.delete_compute_environment(self.aws_properties._lambda.name)
