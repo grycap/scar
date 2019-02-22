@@ -89,7 +89,7 @@ class Lambda(GenericClient):
         creation_args = self._get_creations_args()
         response = self.client.create_function(**creation_args)
         if response and utils.is_value_in_dict("FunctionArn", response):
-            self.aws._lambda.function_arn = response['FunctionArn']
+            self.aws._lambda.arn = response['FunctionArn']
         return response
 
     def _manage_supervisor_layer(self):
@@ -288,7 +288,7 @@ class Lambda(GenericClient):
         try:
             return [self.client.get_function_info(function_arn) for function_arn in arn_list]
         except ClientError as ce:
-            print ("Error getting function info by arn: %s" % ce)
+            print ("Error getting function info by arn: {}".format(ce))
     
     def get_function_info(self):
         return self.client.get_function_info(self.aws._lambda.name)

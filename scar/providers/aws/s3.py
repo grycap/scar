@@ -17,11 +17,14 @@ import os
 import scar.exceptions as excp 
 import scar.logger as logger
 import scar.utils as utils
+from scar.providers.aws.properties import S3Properties
 
 class S3(GenericClient):
     
     def __init__(self, aws_properties):
         super().__init__(aws_properties)
+        if type(self.aws.s3) is dict:
+            self.aws.s3 = S3Properties(self.aws.s3)
         self._initialize_properties()    
     
     def _initialize_properties(self):
@@ -65,12 +68,12 @@ class S3(GenericClient):
         bucket_conf = self.client.get_bucket_notification_configuration(self.aws.s3.input_bucket)
         if bucket_conf and "LambdaFunctionConfigurations" in bucket_conf:
             lambda_conf = bucket_conf["LambdaFunctionConfigurations"]
-            filter_conf = [x for x in lambda_conf if x['LambdaFunctionArn'] != self.aws._lambda.function_arn]
+            filter_conf = [x for x in lambda_conf if x['LambdaFunctionArn'] != self.aws._lambda.arn]
             notification = { "LambdaFunctionConfigurations": filter_conf }
             self.client.put_bucket_notification_configuration(self.aws.s3.input_bucket, notification)        
         
     def get_trigger_configuration(self):
-        return  {"LambdaFunctionArn": self.aws._lambda.function_arn,
+        return  {"LambdaFunctionArn": self.aws._lambda.arn,
                  "Events": [ "s3:ObjectCreated:*" ],
                  "Filter": { "Key": { "FilterRules": [{ "Name": "prefix", "Value": self.aws.s3.input_folder }]}}
                  }        
