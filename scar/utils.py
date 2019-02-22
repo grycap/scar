@@ -14,6 +14,7 @@
 
 from .exceptions import InvalidPlatformError
 from distutils import dir_util
+import scar.logger as logger
 import base64
 import json
 import logging
@@ -47,15 +48,6 @@ def is_binary_execution():
         return True
     except Exception:
         return False
-
-def get_logger():
-    loglevel = logging.INFO
-    if is_variable_in_environment('LOG_LEVEL'):
-        loglevel = get_environment_variable('LOG_LEVEL')
-    FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    logging.basicConfig(level=loglevel, format=FORMAT)
-
-    return logging.getLogger('oscar')
 
 def copy_file(source, dest):
     shutil.copy(source, dest)
@@ -226,21 +218,19 @@ def get_user_defined_variables():
     return user_vars
 
 def unzip_folder(zip_path, folder_where_unzip_path):
-    '''Must use the binary to preserve the file properties and the symlinks'''
+    '''Must use the unzip binary to preserve the file properties and the symlinks'''
     zip_exe = resource_path("src/bin/unzip", bin_path='/usr/bin/unzip')
     execute_command_with_msg([zip_exe, zip_path], cmd_wd=folder_where_unzip_path, cli_msg="Creating function package")    
                 
 def zip_folder(zip_path, folder_to_zip_path, msg=""):
-    '''Must use the binary to preserve the file properties and the symlinks'''
+    '''Must use the zip binary to preserve the file properties and the symlinks'''
     zip_exe = resource_path("src/bin/zip", bin_path='/usr/bin/zip')
     execute_command_with_msg([zip_exe, "-r9y", zip_path, "."],
                              cmd_wd=folder_to_zip_path,
                              cli_msg=msg)
     
-    
-    
 def execute_command_with_msg(command, cmd_wd=None, cli_msg=None):
     cmd_out = subprocess.check_output(command, cwd=cmd_wd).decode("utf-8")
-    get_logger().debug(cmd_out)
-    get_logger().info(cli_msg)
+    logger.debug(cmd_out)
+    logger.info(cli_msg)
     return cmd_out[:-1]

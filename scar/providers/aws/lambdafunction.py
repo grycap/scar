@@ -83,7 +83,7 @@ class Lambda(GenericClient):
     
     @excp.exception(logger)
     def create_function(self):
-        self._manage_layers()
+        self._manage_supervisor_layer()
         self._set_environment_variables()
         self._set_function_code()
         creation_args = self._get_creations_args()
@@ -92,7 +92,7 @@ class Lambda(GenericClient):
             self.aws._lambda.function_arn = response['FunctionArn']
         return response
 
-    def _manage_layers(self):
+    def _manage_supervisor_layer(self):
         if not self.layers.is_supervisor_layer_created():
             self.layers.create_supervisor_layer()
         else:
@@ -108,13 +108,12 @@ class Lambda(GenericClient):
         self._set_required_environment_variables()
         # Add explicitly user defined variables
         if hasattr(self.aws._lambda, "environment_variables"):
-            env_vars = self.aws._lambda.environment_variables
-            if type(env_vars) is dict:
-                for key, val in env_vars.items():
+            if type(self.aws._lambda.environment_variables) is dict:
+                for key, val in self.aws._lambda.environment_variables.items():
                     # Add an specific prefix to be able to find the variables defined by the user
                     self._add_lambda_environment_variable('CONT_VAR_{0}'.format(key), val)                    
             else:
-                for env_var in env_vars:
+                for env_var in self.aws._lambda.environment_variables:
                     key_val = env_var.split("=")
                     # Add an specific prefix to be able to find the variables defined by the user
                     self._add_lambda_environment_variable('CONT_VAR_{0}'.format(key_val[0]), key_val[1])

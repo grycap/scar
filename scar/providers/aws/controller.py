@@ -71,31 +71,16 @@ class AWS(Commands):
     def init(self):
         if self._lambda.find_function():
             raise excp.FunctionExistsError(function_name=self.aws_properties._lambda.name)
-        
-        if hasattr(self.aws_properties, "api_gateway"):
-            self.api_gateway.create_api_gateway()
+        # We have to create the gateway before creating the function
+        self._create_api_gateway()
+        self._create_lambda_function()
+        self._create_log_group()
+        self._create_s3_buckets()
+        # The api_gateway permissions are added after the function creation
+        self._add_api_gateway_permissions()
+        self._create_batch_environment()
+        self._preheat_function()
 
-        response = self._lambda.create_function()
-        response_parser.parse_lambda_function_creation_response(response,
-                                                                self.aws_properties._lambda.name,
-                                                                self._lambda.client.get_access_key(),
-                                                                self.aws_properties.output)
-        response = self.cloudwatch_logs.create_log_group()
-        response_parser.parse_log_group_creation_response(response,
-                                                          self.cloudwatch_logs.get_log_group_name(),
-                                                          self.aws_properties.output)        
-    
-        if hasattr(self.aws_properties, "s3"):
-            self._create_s3_buckets()
-        if hasattr(self.aws_properties, "api_gateway"):
-            self._lambda.add_invocation_permission_from_api_gateway() 
-        # If preheat is activated, the function is launched at the init step
-        if hasattr(self.scar_properties, "preheat"):
-            self._lambda.preheat_function()
-        if self.aws_properties.execution_mode == "batch" or \
-        self.aws_properties.execution_mode == "lambda-batch":
-            self.batch.create_compute_environment()
-    
     @excp.exception(logger)    
     def invoke(self):
         response = self._lambda.call_http_endpoint()
@@ -114,7 +99,8 @@ class AWS(Commands):
     
     @excp.exception(logger)    
     def update(self):
-        if hasattr(self.aws_properties._lambda, "supervisor_layer") and self.aws_properties._lambda.supervisor_layer:
+        if hasattr( self.aws_properties._lambda, "supervisor_layer") and \
+                    self.aws_properties._lambda.supervisor_layer:
             self._lambda.layers.update_supervisor_layer()
         if hasattr(self.scar_properties, "all") and self.scar_properties.all:
             self._update_all_functions(self._get_all_functions())        
@@ -170,7 +156,8 @@ class AWS(Commands):
         self._add_config_file_path()
         
     def _add_tags(self):
-        self.aws_properties.tags = { "createdby" : "scar", "owner" : self.iam.get_user_name_or_id() }
+        self.aws_properties.tags = {"createdby" : "scar",
+                                    "owner" : self.iam.get_user_name_or_id() }
                 
     def _add_output(self):
         self.aws_properties.output = response_parser.OutputType.PLAIN_TEXT
@@ -198,13 +185,47 @@ class AWS(Commands):
             return self.cloudwatch_logs.get_batch_job_log(batch_jobs["jobs"])
 
     @excp.exception(logger)
+    def _create_lambda_function(self):
+        response = self._lambda.create_function()
+        response_parser.parse_lambda_function_creation_response(response,
+                                                                self.aws_properties._lambda.name,
+                                                                self._lambda.client.get_access_key(),
+                                                                self.aws_properties.output)
+
+    @excp.exception(logger)        
+    def _create_log_group(self):
+        response = self.cloudwatch_logs.create_log_group()
+        response_parser.parse_log_group_creation_response(response,
+                                                          self.cloudwatch_logs.get_log_group_name(),
+                                                          self.aws_properties.output)
+
+    @excp.exception(logger)
     def _create_s3_buckets(self):
-        if hasattr(self.aws_properties.s3, "input_bucket"):
-            self.s3.create_input_bucket(create_input_folder=True)
-            self._lambda.link_function_and_input_bucket()
-            self.s3.set_input_bucket_notification()
-        if hasattr(self.aws_properties.s3, "output_bucket"):
-            self.s3.create_output_bucket()
+        if hasattr(self.aws_properties, "s3"):        
+            if hasattr(self.aws_properties.s3, "input_bucket"):
+                self.s3.create_input_bucket(create_input_folder=True)
+                self._lambda.link_function_and_input_bucket()
+                self.s3.set_input_bucket_notification()
+            if hasattr(self.aws_properties.s3, "output_bucket"):
+                self.s3.create_output_bucket()
+        
+    def _create_api_gateway(self):
+        if hasattr(self.aws_properties, "api_gateway"):
+            self.api_gateway.create_api_gateway()
+
+    def _add_api_gateway_permissions(self):
+        if hasattr(self.aws_properties, "api_gateway"):
+            self._lambda.add_invocation_permission_from_api_gateway()
+            
+    def _create_batch_environment(self):
+        if self.aws_properties.execution_mode == "batch" or \
+        self.aws_properties.execution_mode == "lambda-batch":
+            self.batch.create_compute_environment()
+            
+    def _preheat_function(self):
+        # If preheat is activated, the function is launched at the init step
+        if hasattr(self.scar_properties, "preheat"):
+            self._lambda.preheat_function()
         
     def _process_input_bucket_calls(self):
         s3_file_list = self.s3.get_bucket_file_list()
@@ -261,10 +282,6 @@ class AWS(Commands):
             self.delete_resources()
         
     def delete_resources(self):
-        
-        import pprint
-        pprint.pprint(self.aws_properties)
-        
         if not self._lambda.find_function():
             raise excp.FunctionNotFoundError(self.aws_properties._lambda.name)
         # Delete associated api

@@ -22,7 +22,7 @@ class FunctionPackager():
     
     @utils.lazy_property
     def udocker(self):
-        udocker = Udocker(self.aws)
+        udocker = Udocker(self.aws, self.scar_tmp_folder_path)
         return udocker
     
     def __init__(self, aws_properties):
@@ -46,6 +46,7 @@ class FunctionPackager():
         self._add_extra_payload()
         self._zip_scar_folder()
         self._check_code_size()
+        #self._clean_tmp_folders()
 
     def _clean_tmp_folders(self):
         utils.delete_file(self.aws._lambda.zip_file_path)
@@ -56,11 +57,14 @@ class FunctionPackager():
         #utils.execute_command(['chmod', '0664', self.function_handler_dest])
      
     def _manage_udocker_images(self):
-        if hasattr(self.aws, "s3") and hasattr(self.aws.s3, "deployment_bucket"):
-            if hasattr(self.aws._lambda, "image"):
-                self.udocker.download_udocker_image()
-            if hasattr(self.aws._lambda, "image_file"):
-                self.udocker.prepare_udocker_image()        
+        if hasattr(self.aws._lambda, "image") and \
+           hasattr(self.aws, "s3") and \
+           hasattr(self.aws.s3, "deployment_bucket"):
+            self.udocker.download_udocker_image()
+        if hasattr(self.aws._lambda, "image_file"):
+            if hasattr(self.aws, "config_path"):
+                self.aws._lambda.image_file = utils.join_paths(self.aws.config_path, self.aws._lambda.image_file)
+            self.udocker.prepare_udocker_image()        
      
     def _add_init_script(self):
         if hasattr(self.aws._lambda, "init_script"):
