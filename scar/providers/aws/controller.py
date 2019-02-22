@@ -246,18 +246,18 @@ class AWS(Commands):
         for file_path in files:
             self.s3.upload_file(folder_name=self.aws_properties.s3.input_folder, file_path=file_path)
      
-    def _get_download_file_path(self, file_key="", prefix=""):
+    def _get_download_file_path(self, file_key=None, prefix=None):
         file_path = file_key
-        # Parse file path
-        if prefix:
-            # Get folder name
-            dir_name_to_add = os.path.basename(os.path.dirname(prefix))
-            # Don't replace last '/'
-            file_path = file_key.replace(prefix[:-1], dir_name_to_add)
+#         # Parse file path
+#         if prefix:
+#             # Get folder name
+#             dir_name_to_add = os.path.basename(os.path.dirname(prefix))
+#             # Don't replace last '/'
+#             file_path = file_key.replace(prefix[:-1], dir_name_to_add)
         if hasattr(self.scar_properties, "path") and self.scar_properties.path:
             file_path = utils.join_paths(self.scar_properties.path, file_path)
         return file_path
-
+    
     def download_file_or_folder_from_s3(self):
         bucket_name = self.aws_properties.s3.input_bucket
         file_prefix = self.aws_properties.s3.input_folder
@@ -266,6 +266,7 @@ class AWS(Commands):
             # Avoid download s3 'folders'
             if not s3_file.endswith('/'):
                 file_path = self._get_download_file_path(file_key=s3_file, prefix=file_prefix)
+                print("PATH", file_path)
                 # make sure the path folders are created
                 dir_path = os.path.dirname(file_path)              
                 if dir_path and not os.path.isdir(dir_path):

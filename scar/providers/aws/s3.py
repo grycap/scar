@@ -80,7 +80,9 @@ class S3(GenericClient):
             return file_key
         file_key = ''
         if file_path:
-            file_key = utils.join_paths(folder_name, file_key) if folder_name else os.path.basename(file_path)
+            file_key = os.path.basename(file_path)        
+            if folder_name:
+                file_key = utils.join_paths(folder_name, file_key)        
         elif folder_name:
             file_key = folder_name if folder_name.endswith('/') else '{0}/'.format(folder_name)
         return file_key
