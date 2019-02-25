@@ -340,6 +340,7 @@ class Lambda(GenericClient):
     def _set_api_gateway_props(self, invoke_args):
         if hasattr(self.aws.api_gateway, "data_binary"):
             invoke_args['data'] = self._get_b64encoded_binary_data(self.aws.api_gateway.data_binary)
+            invoke_args['headers'] = {'Content-Type': 'application/octet-stream'}
         if hasattr(self.aws.api_gateway, "parameters"):
             invoke_args['params'] = self._parse_http_parameters(self.aws.api_gateway.parameters)
         if hasattr(self.aws.api_gateway, "json_data"):

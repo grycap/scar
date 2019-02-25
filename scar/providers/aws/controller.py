@@ -85,8 +85,8 @@ class AWS(Commands):
     def invoke(self):
         response = self._lambda.call_http_endpoint()
         response_parser.parse_http_response(response, 
-                                            self.aws._lambda.name,
-                                            self.aws._lambda.asynchronous)
+                                            self.aws_properties._lambda.name,
+                                            self.aws_properties._lambda.asynchronous)
     
     @excp.exception(logger)    
     def run(self):

@@ -19,8 +19,8 @@ class APIGateway(GenericClient):
 
     def __init__(self, aws_properties):
         super().__init__(aws_properties)
-        self._set_api_lambda_uri()
         self._initialize_properties()
+        self._set_api_lambda_uri()
 
     def _initialize_properties(self):
         # {0}: api_region
@@ -38,6 +38,7 @@ class APIGateway(GenericClient):
                                                            'method.request.header.X-Amz-Invocation-Type' }
         # {0}: api_id, {1}: api_region
         self.aws.api_gateway.generic_endpoint = 'https://{0}.execute-api.{1}.amazonaws.com/scar/launch'
+        
 
     def _set_api_lambda_uri(self):
         self.aws.api_gateway.lambda_uri = self.aws.api_gateway.generic_lambda_uri.format(self.aws.region,
