@@ -333,6 +333,7 @@ class Lambda(GenericClient):
             api_props = self.aws_properties['api_gateway']
             if 'data_binary' in api_props and api_props['data_binary']:
                 invoke_args['data'] = self.get_encoded_binary_data(api_props['data_binary'])
+                invoke_args['headers'] = {'Content-Type': 'application/octet-stream'}
             if 'parameters' in api_props and api_props['parameters']:
                 invoke_args['params'] = self.parse_http_parameters(api_props['parameters'])
             if 'json_data' in api_props and api_props['json_data']:
