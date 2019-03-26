@@ -316,9 +316,18 @@ class AWS(Commands):
         func_info = self._lambda.get_function_info()
         self.aws_properties._lambda.arn = func_info['FunctionArn']
         self.aws_properties._lambda.environment = {'Variables' : func_info['Environment']['Variables']}
-        if 'INPUT_BUCKET' in self.aws_properties._lambda.environment['Variables']:
-            self.aws_properties.s3 = {'input_bucket' : self.aws_properties._lambda.environment['Variables']['INPUT_BUCKET']}
-            self.s3.delete_bucket_notification() 
+        input_bucket_name = self._get_s3_input_bucket_name()
+        if input_bucket_name:
+            self.aws_properties.s3 = {'input_bucket' : input_bucket_name}
+            self.s3.delete_bucket_notification()
+            
+    def _get_s3_input_bucket_name(self):
+        s3_provider_id = utils.get_storage_provider_id('S3', self.aws_properties._lambda.environment['Variables'])
+        input_bucket_id = 'STORAGE_PATH_INPUT_{}'.format(s3_provider_id) if s3_provider_id else ''
+        print(input_bucket_id)
+        if input_bucket_id in self.aws_properties._lambda.environment['Variables']:
+            return self.aws_properties._lambda.environment['Variables'][input_bucket_id]
+                
 
     def _delete_lambda_function(self):
         response = self._lambda.delete_function()

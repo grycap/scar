@@ -110,9 +110,9 @@ def parse_lambda_function_info(function_info):
     if api_gateway != '-':
         region = function_info['FunctionArn'].split(':')[3]
         api_gateway = 'https://{0}.execute-api.{1}.amazonaws.com/scar/launch'.format(api_gateway, region)
-    super_layer_arn = [":".join(layer['Arn'].split(":")[-2:]) for layer in function_info['Layers'] if 'faas-supervisor' in layer['Arn']]
-    if not super_layer_arn:
-        super_layer_arn = ['-']
+    super_layer_arn = ['-']
+    if 'Layers' in function_info:
+        super_layer_arn = [":".join(layer['Arn'].split(":")[-2:]) for layer in function_info['Layers'] if 'faas-supervisor' in layer['Arn']]
         
     return {'Name' : name,
             'Memory' : memory,

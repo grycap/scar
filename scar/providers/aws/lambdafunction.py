@@ -21,6 +21,7 @@ from scar.providers.aws.s3 import S3
 from scar.providers.aws.validators import AWSValidator
 import base64
 import json
+import random
 import scar.exceptions as excp
 import scar.http.request as request
 import scar.logger as logger
@@ -143,12 +144,14 @@ class Lambda(GenericClient):
 
     def _add_s3_environment_vars(self):
         if hasattr(self.aws, "s3"):
+            provider_id = random.randint(1,1000001)
             if hasattr(self.aws.s3, "input_bucket"):
-                self._add_lambda_environment_variable('INPUT_BUCKET', self.aws.s3.input_bucket)
+                self._add_lambda_environment_variable('STORAGE_PATH_INPUT_{}'.format(provider_id), self.aws.s3.input_bucket)
             if hasattr(self.aws.s3, "output_bucket"):
-                self._add_lambda_environment_variable('OUTPUT_BUCKET', self.aws.s3.output_bucket)
-            if hasattr(self.aws.s3, "output_folder"):
-                self._add_lambda_environment_variable('OUTPUT_FOLDER', self.aws.s3.output_folder)
+                self._add_lambda_environment_variable('STORAGE_PATH_OUTPUT_{}'.format(provider_id), self.aws.s3.output_bucket)
+            else:
+                self._add_lambda_environment_variable('STORAGE_PATH_OUTPUT_{}'.format(provider_id), self.aws.s3.input_bucket)
+            self._add_lambda_environment_variable('STORAGE_AUTH_S3_{}_USER'.format(provider_id), "scar")
         
     @excp.exception(logger)
     def _set_function_code(self):
@@ -278,7 +281,7 @@ class Lambda(GenericClient):
             update_args['Timeout'] = self.aws._lambda.time
         self._update_environment_variables(function_info, update_args)
         self._update_supervisor_layer(function_info, update_args)
-        self.client.update_function(**update_args)
+        self.client.update_function_configuration(**update_args)
         logger.info("Function '{}' updated successfully.".format(function_info['FunctionName']))
 
     def _get_function_environment_variables(self):

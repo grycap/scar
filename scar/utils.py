@@ -234,3 +234,14 @@ def execute_command_with_msg(command, cmd_wd=None, cli_msg=None):
     logger.debug(cmd_out)
     logger.info(cli_msg)
     return cmd_out[:-1]
+
+def get_storage_provider_id(storage_provider, env_vars):
+    '''
+    Searches the storage provider id in the environment variables:
+        get_provider_id(S3, {'STORAGE_AUTH_S3_41807_USER' : 'scar'})
+        returns -> 41807
+    '''
+    for env_key in env_vars.keys():
+        if env_key.startswith("STORAGE_AUTH_{}".format(storage_provider)):
+            return "_".join(env_key.split("_")[3:-1])
+
