@@ -78,13 +78,13 @@ class BatchClient(BotoClient):
         logger.debug("Updating job queue.")
         return self.client.update_job_queue(**kwargs)
     
-    def _delete_job_queue(self, **kwargs):
+    def delete_job_queue(self, **kwargs):
         '''
         Delete a job queue.
         https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/batch.html#Batch.Client._delete_job_queue
         '''
         logger.debug("Deleting job queue.")
-        return self.client._delete_job_queue(**kwargs)
+        return self.client.delete_job_queue(**kwargs)
 
     
     def update_compute_environment(self, **kwargs):

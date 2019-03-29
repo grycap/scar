@@ -4,7 +4,5 @@ functions:
     memory: 3008
     init_script: yolo-sample-object-detection.sh
     s3:
-      input_bucket: scar-ffmpeg
-      input_folder: scar-batch-ffmpeg-split/video-output
-      output_bucket: scar-ffmpeg
-      output_folder: scar-batch-ffmpeg-split/image-output
+      input_bucket: scar-ffmpeg/scar-batch-ffmpeg-split/video-output
+      output_bucket: scar-ffmpeg/scar-batch-ffmpeg-split/image-output

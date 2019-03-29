@@ -86,7 +86,7 @@ class Batch(GenericClient):
         elif state == "DISABLED":
             deleting_args = {'jobQueue': self.get_resource_name(name)}
             logger.info("Job queue deleted")
-            return self.client._delete_job_queue(**deleting_args)        
+            return self.client.delete_job_queue(**deleting_args)        
             
     def get_compute_env_info(self, name):
         creation_args = self.get_describe_compute_env_args(name_c=name)
@@ -130,7 +130,7 @@ class Batch(GenericClient):
         
     def get_creations_job_queue_args(self):
         return { 
-            'computeEnvironmentOrder': [{'computeEnvironment': self.lambda_properties["name"], 'order': 1},],
+            'computeEnvironmentOrder': [{'computeEnvironment': self.aws._lambda.name, 'order': 1},],
             'jobQueueName':  self.aws._lambda.name,
             'priority': 1,
             'state': self.aws.batch.state,

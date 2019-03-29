@@ -18,11 +18,11 @@
 # Sample configuration file
 cat << EOF > batch.txt
 set autoclose=yes nowarn=yes
-execute $SCAR_INPUT_FILE
+execute $INPUT_FILE_PATH
 lset nst=6 rates=gamma
-mcmc ngen=${ITERATIONS:=200} savebrlens=yes file=${SCAR_INPUT_FILE}1
-mcmc file=${SCAR_INPUT_FILE}2
-mcmc file=${SCAR_INPUT_FILE}3
+mcmc ngen=${ITERATIONS:=200} savebrlens=yes file=${INPUT_FILE_PATH}1
+mcmc file=${INPUT_FILE_PATH}2
+mcmc file=${INPUT_FILE_PATH}3
 quit
 EOF
 

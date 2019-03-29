@@ -66,9 +66,7 @@ class CommandParser(object):
         # S3 conf
         parser_init.add_argument("-db", "--deployment_bucket", help="Bucket where the deployment package is going to be uploaded.")
         parser_init.add_argument("-ib", "--input_bucket", help="Bucket name where the input files will be stored.")
-        parser_init.add_argument("-inf", "--input_folder", help="Folder name where the input files will be stored (Only works when an input bucket is defined).")
         parser_init.add_argument("-ob", "--output_bucket", help="Bucket name where the output files are saved.")
-        parser_init.add_argument("-outf", "--output_folder", help="Folder name where the output files are saved (Only works when an input bucket is defined).")
         # IAM conf
         parser_init.add_argument("-r", "--iam_role", help="IAM role used in the management of the functions")        
         # SCAR conf
@@ -156,7 +154,6 @@ class CommandParser(object):
         parser_ls.add_argument("-v", "--verbose", help="Show the complete aws output in json format", action="store_true")
         # S3 args
         parser_ls.add_argument("-b", "--bucket", help="Show bucket files")
-        parser_ls.add_argument("-bf", "--bucket_folder", help="Show bucket files")
         # Layer args
         parser_ls.add_argument("-l", "--layers", help="Show lambda layers information", action="store_true")
         # General AWS conf        
@@ -167,7 +164,6 @@ class CommandParser(object):
         parser_put.set_defaults(func=self.scar_cli.put)
         # S3 args
         parser_put.add_argument("-b", "--bucket", help="Bucket to use as storage", required=True)
-        parser_put.add_argument("-bf", "--bucket_folder", help="Folder used to store the file(s) in the bucket")
         # Local info args
         parser_put.add_argument("-p", "--path", help="Path of the file or folder to upload", required=True)
         # General AWS conf        
@@ -178,7 +174,6 @@ class CommandParser(object):
         parser_get.set_defaults(func=self.scar_cli.get)
         # S3 args
         parser_get.add_argument("-b", "--bucket", help="Bucket to use as storage", required=True)
-        parser_get.add_argument("-bf", "--bucket_folder", help="Path of the file or folder to download")
         # Local info args
         parser_get.add_argument("-p", "--path", help="Path to store the downloaded file or folder")
         # General AWS conf
@@ -246,10 +241,8 @@ class CommandParser(object):
     def parse_s3_args(self, cmd_args):
         s3_args = ['deployment_bucket', 
                    'input_bucket', 
-                   'input_folder', 
                    'output_bucket', 
-                   'output_folder', 
                    ('bucket', 'input_bucket'), 
-                   ('bucket_folder', 'input_folder')]
+                   ]
         return utils.parse_arg_list(s3_args, cmd_args)        
         

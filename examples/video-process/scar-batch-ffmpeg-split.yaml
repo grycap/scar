@@ -5,5 +5,4 @@ functions:
     execution_mode: batch
     s3:
       input_bucket: scar-ffmpeg
-      output_bucket: scar-ffmpeg
-      output_folder: scar-batch-ffmpeg-split/video-output
+      output_bucket: scar-ffmpeg/scar-batch-ffmpeg-split/video-output

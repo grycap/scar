@@ -1,5 +1,5 @@
 functions:
-  scar-plant-classification:
+  scar-plants:
     image: deephdc/deep-oc-plant-classification-theano
     memory: 528
     execution_mode: batch

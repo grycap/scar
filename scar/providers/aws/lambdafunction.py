@@ -145,12 +145,14 @@ class Lambda(GenericClient):
     def _add_s3_environment_vars(self):
         if hasattr(self.aws, "s3"):
             provider_id = random.randint(1,1000001)
+            
             if hasattr(self.aws.s3, "input_bucket"):
-                self._add_lambda_environment_variable('STORAGE_PATH_INPUT_{}'.format(provider_id), self.aws.s3.input_bucket)
+                self._add_lambda_environment_variable('STORAGE_PATH_INPUT_{}'.format(provider_id), self.aws.s3.storage_path_input)
+            
             if hasattr(self.aws.s3, "output_bucket"):
-                self._add_lambda_environment_variable('STORAGE_PATH_OUTPUT_{}'.format(provider_id), self.aws.s3.output_bucket)
+                self._add_lambda_environment_variable('STORAGE_PATH_OUTPUT_{}'.format(provider_id), self.aws.s3.storage_path_output)
             else:
-                self._add_lambda_environment_variable('STORAGE_PATH_OUTPUT_{}'.format(provider_id), self.aws.s3.input_bucket)
+                self._add_lambda_environment_variable('STORAGE_PATH_OUTPUT_{}'.format(provider_id), self.aws.s3.storage_path_input)
             self._add_lambda_environment_variable('STORAGE_AUTH_S3_{}_USER'.format(provider_id), "scar")
         
     @excp.exception(logger)
@@ -275,10 +277,14 @@ class Lambda(GenericClient):
         if not function_info:
             function_info = self.get_function_info()
         update_args = {'FunctionName' : function_info['FunctionName'] }
-        if hasattr(self.aws._lambda, "memory"):
-            update_args['MemorySize'] = self.aws._lambda.memory
-        if hasattr(self.aws._lambda, "time"):
-            update_args['Timeout'] = self.aws._lambda.time
+#         if hasattr(self.aws._lambda, "memory"):
+#             update_args['MemorySize'] = self.aws._lambda.memory
+#         else:
+#             update_args['MemorySize'] = function_info['MemorySize']
+#         if hasattr(self.aws._lambda, "time"):
+#             update_args['Timeout'] = self.aws._lambda.time
+#         else:
+#             update_args['Timeout'] = function_info['Timeout']
         self._update_environment_variables(function_info, update_args)
         self._update_supervisor_layer(function_info, update_args)
         self.client.update_function_configuration(**update_args)

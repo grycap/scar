@@ -18,7 +18,8 @@ from scar.providers.aws.batchfunction import Batch
 from scar.providers.aws.cloudwatchlogs import CloudWatchLogs
 from scar.providers.aws.iam import IAM
 from scar.providers.aws.lambdafunction import Lambda
-from scar.providers.aws.properties import AwsProperties, ScarProperties
+from scar.providers.aws.properties import AwsProperties, ScarProperties,\
+    S3Properties
 from scar.providers.aws.resourcegroups import ResourceGroups
 from scar.providers.aws.s3 import S3
 from scar.providers.aws.validators import AWSValidator
@@ -76,7 +77,7 @@ class AWS(Commands):
         self._create_lambda_function()
         self._create_log_group()
         self._create_s3_buckets()
-        # The api_gateway permissions are added after the function creation
+        # The api_gateway permissions are added after the function is created
         self._add_api_gateway_permissions()
         self._create_batch_environment()
         self._preheat_function()
@@ -268,7 +269,7 @@ class AWS(Commands):
                 file_path = self._get_download_file_path(file_key=s3_file, prefix=file_prefix)
                 print("PATH", file_path)
                 # make sure the path folders are created
-                dir_path = os.path.dirname(file_path)              
+                dir_path = os.path.dirname(file_path)    
                 if dir_path and not os.path.isdir(dir_path):
                     os.makedirs(dir_path, exist_ok=True) 
                 self.s3.download_file(bucket_name, s3_file, file_path)                    
@@ -316,19 +317,15 @@ class AWS(Commands):
         func_info = self._lambda.get_function_info()
         self.aws_properties._lambda.arn = func_info['FunctionArn']
         self.aws_properties._lambda.environment = {'Variables' : func_info['Environment']['Variables']}
-        input_bucket_name = self._get_s3_input_bucket_name()
-        if input_bucket_name:
-            self.aws_properties.s3 = {'input_bucket' : input_bucket_name}
-            self.s3.delete_bucket_notification()
-            
-    def _get_s3_input_bucket_name(self):
+        
         s3_provider_id = utils.get_storage_provider_id('S3', self.aws_properties._lambda.environment['Variables'])
         input_bucket_id = 'STORAGE_PATH_INPUT_{}'.format(s3_provider_id) if s3_provider_id else ''
-        print(input_bucket_id)
         if input_bucket_id in self.aws_properties._lambda.environment['Variables']:
-            return self.aws_properties._lambda.environment['Variables'][input_bucket_id]
-                
-
+            input_bucket_name = self.aws_properties._lambda.environment['Variables'][input_bucket_id]
+            setattr(self.aws_properties, 's3', S3Properties({'input_bucket': input_bucket_name}))
+            self.s3.delete_bucket_notification()
+            logger.info("Successfully delete bucket notifications")
+            
     def _delete_lambda_function(self):
         response = self._lambda.delete_function()
         response_parser.parse_delete_function_response(response,

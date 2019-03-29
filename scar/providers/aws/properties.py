@@ -133,6 +133,24 @@ class S3Properties(dict):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__dict__ = self
+        self.process_storagePaths()
+        
+    def process_storagePaths(self):
+        if hasattr(self, "input_bucket"):
+            self.storage_path_input = self.input_bucket
+            input_path = self.input_bucket.split("/")
+            if len(input_path) > 1:
+                # There are folders defined
+                self.input_bucket = input_path[0]
+                self.input_folder = "/".join(input_path[1:])
+            
+        if hasattr(self, "output_bucket"):
+            self.storage_path_output = self.output_bucket
+            output_path = self.output_bucket.split("/")
+            if len(output_path) > 1:
+                # There are folders defined
+                self.output_bucket = output_path[0]
+                self.output_folder = "/".join(output_path[1:])
         
 class CloudWatchProperties(dict):
     '''
