@@ -1,4 +1,4 @@
 #!/bin/sh
 
 echo "Generating HTML5 documentation"
-spectacle $SCAR_INPUT_FILE -t $SCAR_OUTPUT_DIR
+spectacle $INPUT_FILE_PATH -t $TMP_OUTPUT_DIR

@@ -40,7 +40,7 @@ Since AWS Batch deploys Amazon EC2 instances, you have to fill the following var
 More info about the variables and the different values that can be assigned can be found in the `AWS API Documentation <https://docs.aws.amazon.com/batch/latest/APIReference/API_CreateComputeEnvironment.html>`_.
 
 Set up your Batch IAM role
-----------------------
+--------------------------
 
 The default IAM role used in the creation of the EC2 for the Batch Compute Environment is **arn:aws:iam::$ACCOUNT_ID:instance-profile/**ecsInstanceRole****. Thus, if you want to provide S3 access to your Batch jobs you have to specify the corresponding policies  in the aforementioned role. 
 
