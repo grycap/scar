@@ -17,13 +17,13 @@
 
 #
 # 1. The video uploaded to the "input" folder of the S3 bucket will be made available 
-# for the container in /tmp/$REQUEST_ID/input (path indicated in the $SCAR_INPUT_FILE variable)
+# for the container in /tmp/$REQUEST_ID/input (path indicated in the $INPUT_FILE_PATH variable)
 # 2. The video will be converted using ffmpeg
 # 3. The output video generated in /tmp/$REQUEST_ID/output will be automatically uploaded to the output 
 # folder of the S3 bucket.
 #
 
-echo "SCRIPT: Invoked Video Grayifier. File available in $SCAR_INPUT_FILE"
+echo "SCRIPT: Invoked Video Grayifier. File available in $INPUT_FILE_PATH"
 FILENAME=`basename $INPUT_FILE_PATH .avi`
 OUTPUT_FILE=$TMP_OUTPUT_DIR/$FILENAME
 

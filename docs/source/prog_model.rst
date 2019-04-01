@@ -27,7 +27,7 @@ The following workflow summarises the programming model, which heavily uses the 
 
 #) The Amazon S3 bucket ``scar-test`` will be created if it does not exist, and if you don't specify any input folder, a folder with the name of the function ``scar-darknet`` will be created with an ``input`` folder inside it.
 #) The Lambda function is triggered upon uploading a file into the ``input`` folder created.
-#) The Lambda function retrieves the file from the Amazon S3 bucket and makes it available for the shell-script running inside the container in the ``/tmp/$REQUEST_ID/input`` folder. The ``$SCAR_INPUT_FILE`` environment variable will point to the location of the input file.
+#) The Lambda function retrieves the file from the Amazon S3 bucket and makes it available for the shell-script running inside the container in the ``/tmp/$REQUEST_ID/input`` folder. The ``$INPUT_FILE_PATH`` environment variable will point to the location of the input file.
 #) The shell-script processes the input file and produces the output (either one or multiple files) in the folder ``/tmp/$REQUEST_ID/output``.
 #) The output files are automatically uploaded by the Lambda function into the ``output/$REQUEST_ID/`` folder created inside of the ``scar-test/scar-darknet`` path.
 
@@ -52,7 +52,7 @@ The following workflow summarises the programming model, the differences with th
 
 #) **The folder 'scar-darknet/input' inside the amazon S3 bucket 'scar-test' will be searched for files.**
 #) **The Lambda function is triggered once for each file found in the 'input' folder. The first execution is of type 'request-response' and the rest are 'asynchronous' (this is done to ensure the caching and accelerate the execution).**
-#) The Lambda function retrieves the file from the Amazon S3 bucket and makes it available for the shell-script running inside the container in the ``/tmp/$REQUEST_ID/input`` folder. The ``$SCAR_INPUT_FILE`` environment variable will point to the location of the input file.
+#) The Lambda function retrieves the file from the Amazon S3 bucket and makes it available for the shell-script running inside the container in the ``/tmp/$REQUEST_ID/input`` folder. The ``$INPUT_FILE_PATH`` environment variable will point to the location of the input file.
 #) The shell-script processes the input file and produces the output (either one or multiple files) in the folder ``/tmp/$REQUEST_ID/output``.
 #) The output files are automatically uploaded by the Lambda function into the ``output`` folder of ``bucket-name``.
 
