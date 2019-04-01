@@ -55,7 +55,7 @@ default_cfg = {
           "max_v_cpus": 2,
           "subnets": [""],
           "instance_types": ["m3.medium"],
-          "supervisor_image": "alpegon/scar-batch-io:devel",
+          "supervisor_image": "grycap/scar-batch-io:storage",
         },
     }
 }

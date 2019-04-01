@@ -17,6 +17,6 @@ import faassupervisor.utils as utils
 import json
 
 if __name__ == "__main__":
-    kwargs = {"event" : json.loads(utils.get_environment_variable('LAMBDA_EVENT')),
-              "context" : json.loads(utils.get_environment_variable('LAMBDA_CONTEXT'))}
+    kwargs = {"event" : json.loads(utils.get_environment_variable('AWS_LAMBDA_EVENT')),
+              "context" : json.loads(utils.get_environment_variable('AWS_LAMBDA_CONTEXT'))}
     supervisor.python_main(**kwargs)
