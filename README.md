@@ -20,6 +20,17 @@ SCAR allows to create serverless workflows by combining functions that run on ei
   [Website](https://grycap.github.io/scar/) |
   [Scientific Paper](http://linkinghub.elsevier.com/retrieve/pii/S0167739X17316485) ([pre-print](http://www.grycap.upv.es/gmolto/publications/preprints/Perez2018scc.pdf)).
 
+## Update 3.0.0
+
+![SCAR-back](docs/source/images/scar-back.gif)
+
+Since version 3.0.0 SCAR creates a lambda layer called 'faas-supervisor' that is the core functionality of the lambda containers.
+This layer allows to deploy faster the new functions. The layer is created once (the first time that a function is created) and then it's linked by all the other functions.
+
+If a new version of the supervisor is released (e.g. when a new feature is added or a bug is found) the functions can be updated with the command `scar update -a -sl`.
+
+To check the supervisor layer version that your funciotn is using you only have to do an ls like `scar ls`
+
 ## Documentation
 
 SCAR documentation can be found in [readthedocs](http://scar.readthedocs.io/en/latest/).
