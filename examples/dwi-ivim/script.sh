@@ -1,9 +1,9 @@
 #!/bin/bash
 
-FILENAME=`basename $SCAR_INPUT_FILE .tar.gz`
+FILENAME=`basename $INPUT_FILE_PATH .tar.gz`
 
 # Untar the package
-tar -zxvf $SCAR_INPUT_FILE 
+tar -zxvf $INPUT_FILE_PATH 
 
 # Get the parameters
 PARAMS=`cat $FILENAME/valores_b.txt `
@@ -11,4 +11,4 @@ PARAMS=`cat $FILENAME/valores_b.txt `
 NPARAMS=`echo $PARAMS | awk '{print NF}'`
 
 # Execute the binary file
-/opt/dwi/modeloIVIM $FILENAME/$FILENAME.nii $NPARAMS $PARAMS > $SCAR_OUTPUT_DIR/$FILENAME.out
+/opt/dwi/modeloIVIM $FILENAME/$FILENAME.nii $NPARAMS $PARAMS > $TMP_OUTPUT_DIR/$FILENAME.out

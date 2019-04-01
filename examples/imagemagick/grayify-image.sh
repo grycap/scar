@@ -17,13 +17,13 @@
 
 #
 # 1. An image uploaded to the input folder of the S3 bucket will be made available 
-# for the container in /tmp/$REQUEST_ID/input. The path to the file is in $SCAR_INPUT_FILE
+# for the container in /tmp/$REQUEST_ID/input. The path to the file is in $INPUT_FILE_PATH
 # 2. The image will be converted to grayscale using ImageMagick
 # 3. The output image will be stored /tmp/$REQUEST_ID/output, and will be
 #    automatically uploaded by the Lambda function to the output folder of the S3 bucket.
 #    
 
-echo "SCRIPT: Invoked Image Grayifier. File available in $SCAR_INPUT_FILE"
+echo "SCRIPT: Invoked Image Grayifier. File available in $INPUT_FILE_PATH"
 FILE_NAME=`basename $INPUT_FILE_PATH`
 OUTPUT_FILE=$TMP_OUTPUT_DIR/$FILE_NAME
 

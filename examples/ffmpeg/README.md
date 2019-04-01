@@ -17,9 +17,9 @@ In this example, the goal is that videos uploaded to an Amazon S3 bucket are aut
 A sample script to be executed inside the Docker container running on AWS Lambda is shown in the file [grayify-video.sh](grayify-video.sh). This script is agnostic to the Lambda function and it assumes that:
 
 1. The user will upload the video into the `scar-ffmpeg/input` folder of an Amazon S3 bucket.
-2. The input video file will automatically be made available in `tmp/$REQUEST_ID/input`, as specified by the `$SCAR_INPUT_FILE` environment variable.
+2. The input video file will automatically be made available in `tmp/$REQUEST_ID/input`, as specified by the `$INPUT_FILE_PATH` environment variable.
 3. The script will convert to video to grayscale.
-4. The output video file will be saved in `/tmp/$REQUEST_ID/output` that is specified by the `$SCAR_OUTPUT_DIR` environment variable.
+4. The output video file will be saved in `/tmp/$REQUEST_ID/output` that is specified by the `$TMP_OUTPUT_DIR` environment variable.
 5. The video file will be automatically uploaded to the `scar-ffmpeg/output/$REQUEST_ID` folder of the Amazon S3 bucket and deleted from the underlying storage.
 
 ## Create the Lambda function
