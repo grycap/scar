@@ -33,6 +33,7 @@ setup(name='scar',
       license='Apache 2.0',
       packages=find_namespace_packages(),
       install_requires=['boto3',
+                        'urllib3'
                         'faas-supervisor',
                         'tabulate',
                         'configparser',
