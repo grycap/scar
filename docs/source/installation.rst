@@ -11,6 +11,10 @@ You can use pip3 or you can clone the GitHub repository and install the required
 
 Install using pip3
 ^^^^^^^^^^^^^^^^^^
+1) Update setuptools to the latest version (or at least to version >= 40.8.0) with::
+
+    pip3 install -U setuptools
+
 2) Install SCAR using the PyPI package with the command::
 
     pip3 install scar
