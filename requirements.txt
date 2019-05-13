@@ -4,3 +4,4 @@ tabulate
 configparser
 requests
 pyyaml
+setuptools>=40.8.0
