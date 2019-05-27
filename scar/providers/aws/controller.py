@@ -23,6 +23,7 @@ from scar.providers.aws.properties import AwsProperties, ScarProperties,\
 from scar.providers.aws.resourcegroups import ResourceGroups
 from scar.providers.aws.s3 import S3
 from scar.providers.aws.validators import AWSValidator
+from scar.providers.aws.properties import ApiGatewayProperties
 import os
 import scar.exceptions as excp
 import scar.logger as logger
@@ -293,8 +294,7 @@ class AWS(Commands):
         if not self._lambda.find_function():
             raise excp.FunctionNotFoundError(self.aws_properties._lambda.name)
         # Delete associated api
-        if hasattr(self.aws_properties, "api_gateway"):
-            self._delete_api_gateway()
+        self._delete_api_gateway()
         # Delete associated log
         self._delete_logs()
         # Delete associated notifications
@@ -306,7 +306,9 @@ class AWS(Commands):
             self._delete_batch_resources()
 
     def _delete_api_gateway(self):
-        self.aws_properties.api_gateway.id = self._lambda.get_api_gateway_id()
+        api_gateway_id = self._lambda.get_api_gateway_id()
+        if api_gateway_id:
+            setattr(self.aws_properties, 'api_gateway', ApiGatewayProperties({'id' : api_gateway_id}))
         if self.aws_properties.api_gateway.id:
             response = self.api_gateway.delete_api_gateway()
             response_parser.parse_delete_api_response(response,
