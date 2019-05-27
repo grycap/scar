@@ -85,9 +85,12 @@ class AWS(Commands):
     @excp.exception(logger)    
     def invoke(self):
         response = self._lambda.call_http_endpoint()
+        output_file = self.scar_properties.output_file if hasattr(self.scar_properties, "output_file") else ""
         response_parser.parse_http_response(response, 
                                             self.aws_properties._lambda.name,
-                                            self.aws_properties._lambda.asynchronous)
+                                            self.aws_properties._lambda.asynchronous,
+                                            self.aws_properties.output,
+                                            output_file)
     
     @excp.exception(logger)    
     def run(self):
@@ -167,6 +170,9 @@ class AWS(Commands):
         # Override json ouput if both of them are defined
         if hasattr(self.scar_properties, "verbose") and self.scar_properties.verbose:
             self.aws_properties.output = response_parser.OutputType.VERBOSE
+        if hasattr(self.scar_properties, "output_file") and self.scar_properties.output_file:
+            self.aws_properties.output = response_parser.OutputType.BINARY
+            self.aws_properties.output_file = self.scar_properties.output_file
             
     def _add_account_id(self):
         self.aws_properties.account_id = utils.find_expression(self.aws_properties.iam.role, '\d{12}')

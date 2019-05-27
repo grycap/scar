@@ -12,42 +12,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .exceptions import InvalidPlatformError
+# from .exceptions import InvalidPlatformError
 from distutils import dir_util
 import scar.logger as logger
 import base64
 import json
-import logging
+# import logging
 import os
-import platform
+# import platform
 import re
 import shutil
 import subprocess
-import sys
+# import sys
 import tarfile
 import tempfile
 import uuid
 
-def resource_path(relative_path, bin_path=None):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
-    try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
-    except Exception:
-        if bin_path:
-            return bin_path
-        else:
-            base_path = os.path.abspath(".")
-    return os.path.join(base_path, relative_path)
-
-def is_binary_execution():
-    try:
-        binary_env = sys._MEIPASS
-        if platform.system().lower() != 'linux':
-            raise InvalidPlatformError()
-        return True
-    except Exception:
-        return False
+# def resource_path(relative_path, bin_path=None):
+#     """ Get absolute path to resource, works for dev and for PyInstaller """
+#     try:
+#         # PyInstaller creates a temp folder and stores path in _MEIPASS
+#         base_path = sys._MEIPASS
+#     except Exception:
+#         if bin_path:
+#             return bin_path
+#         else:
+#             base_path = os.path.abspath(".")
+#     return os.path.join(base_path, relative_path)
+# 
+# def is_binary_execution():
+#     try:
+#         binary_env = sys._MEIPASS
+#         if platform.system().lower() != 'linux':
+#             raise InvalidPlatformError()
+#         return True
+#     except Exception:
+#         return False
 
 def copy_file(source, dest):
     shutil.copy(source, dest)
@@ -86,14 +86,20 @@ def find_expression(string_to_search, rgx_pattern):
         if match :
             return match.group()
 
+def decode_base64(value):
+    return base64.b64decode(value)
+
+def encode_base64(value):
+    return base64.b64encode(value)
+
 def base64_to_utf8_string(value):
-    return base64.b64decode(value).decode('utf-8')
+    return decode_base64(value).decode('utf-8')
 
 def utf8_to_base64_string(value):
-    return base64.b64encode(value).decode('utf-8')
+    return encode_base64(value).decode('utf-8')
 
 def dict_to_base64_string(value):
-    return base64.b64encode(json.dumps(value)).decode("utf-8")
+    return encode_base64(json.dumps(value)).decode("utf-8")
 
 def divide_list_in_chunks(elements, chunk_size):
     """Yield successive n-sized chunks from th elements list."""
@@ -219,12 +225,14 @@ def get_user_defined_variables():
 
 def unzip_folder(zip_path, folder_where_unzip_path):
     '''Must use the unzip binary to preserve the file properties and the symlinks'''
-    zip_exe = resource_path("src/bin/unzip", bin_path='/usr/bin/unzip')
+#     zip_exe = resource_path("src/bin/unzip", bin_path='/usr/bin/unzip')
+    zip_exe = '/usr/bin/unzip'
     execute_command_with_msg([zip_exe, zip_path], cmd_wd=folder_where_unzip_path, cli_msg="Creating function package")    
                 
 def zip_folder(zip_path, folder_to_zip_path, msg=""):
     '''Must use the zip binary to preserve the file properties and the symlinks'''
-    zip_exe = resource_path("src/bin/zip", bin_path='/usr/bin/zip')
+#     zip_exe = resource_path("src/bin/zip", bin_path='/usr/bin/zip')
+    zip_exe = '/usr/bin/zip'
     execute_command_with_msg([zip_exe, "-r9y", zip_path, "."],
                              cmd_wd=folder_to_zip_path,
                              cli_msg=msg)

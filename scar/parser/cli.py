@@ -90,7 +90,9 @@ class CommandParser(object):
         parser_invoke.add_argument("-a", "--asynchronous", help="Launch an asynchronous function.", action="store_true")
         parser_invoke.add_argument("-p", "--parameters", help="In addition to passing the parameters in the URL, you can pass the parameters here (i.e. '{\"key1\": \"value1\", \"key2\": [\"value2\", \"value3\"]}').")
         # General AWS conf          
-        parser_invoke.add_argument("-pf", "--profile", help="AWS profile to use")  
+        parser_invoke.add_argument("-pf", "--profile", help="AWS profile to use")
+        # SCAR conf
+        parser_invoke.add_argument("-o", "--output_file", help="Save output as a file")        
  
     def add_update_parser(self):
         parser_update = self.subparsers.add_parser('update', help="Update function properties")
@@ -122,6 +124,8 @@ class CommandParser(object):
         parser_run.add_argument('c_args', nargs=argparse.REMAINDER, help="Arguments passed to the container.")
         # General AWS conf
         parser_run.add_argument("-pf", "--profile", help="AWS profile to use")
+        # SCAR conf
+        parser_run.add_argument("-o", "--output_file", help="Save output as a file")         
     
     def add_rm_parser(self):
         parser_rm = self.subparsers.add_parser('rm', help="Delete function")
@@ -216,7 +220,7 @@ class CommandParser(object):
         return {'aws' : aws_args }
 
     def parse_scar_args(self, cmd_args):
-        scar_args = ['func', 'conf_file', 'json', 'verbose', 'path', 'all', 'preheat', 'execution_mode',]
+        scar_args = ['func', 'conf_file', 'json', 'verbose', 'path', 'all', 'preheat', 'execution_mode', 'output_file',]
         return {'scar' : utils.parse_arg_list(scar_args, cmd_args)}
 
     def parse_lambda_args(self, cmd_args):
