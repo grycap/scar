@@ -56,6 +56,7 @@ class CommandParser(object):
         parser_init.add_argument("-d", "--description", help="Lambda function description.")
         parser_init.add_argument("-n", "--name", help="Lambda function name")
         parser_init.add_argument("-e", "--environment", action='append', help="Pass environment variable to the container (VAR=val). Can be defined multiple times.")
+        parser_init.add_argument("-le", "--lambda_environment", action='append', help="Pass environment variable to the lambda function (VAR=val). Can be defined multiple times.")
         parser_init.add_argument("-m", "--memory", type=int, help="Lambda function memory in megabytes. Range from 128 to 1536 in increments of 64")
         parser_init.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 300.")
         parser_init.add_argument("-tt", "--timeout_threshold", type=int, help="Extra time used to postprocess the data. This time is extracted from the total time of the lambda function.")
@@ -92,7 +93,7 @@ class CommandParser(object):
         # General AWS conf          
         parser_invoke.add_argument("-pf", "--profile", help="AWS profile to use")
         # SCAR conf
-        parser_invoke.add_argument("-o", "--output_file", help="Save output as a file")        
+        parser_invoke.add_argument("-o", "--output_file", help="Save output as a file")
  
     def add_update_parser(self):
         parser_update = self.subparsers.add_parser('update', help="Update function properties")
@@ -220,14 +221,17 @@ class CommandParser(object):
         return {'aws' : aws_args }
 
     def parse_scar_args(self, cmd_args):
-        scar_args = ['func', 'conf_file', 'json', 'verbose', 'path', 'all', 'preheat', 'execution_mode', 'output_file',]
+        scar_args = ['func', 'conf_file', 'json',
+                     'verbose', 'path', 'all',
+                     'preheat', 'execution_mode',
+                     'output_file', 'binary_output',]
         return {'scar' : utils.parse_arg_list(scar_args, cmd_args)}
 
     def parse_lambda_args(self, cmd_args):
         lambda_args = ['name', 'asynchronous', 'init_script', 'run_script', 'c_args', 'memory', 'time',
                        'timeout_threshold', 'log_level', 'image', 'image_file', 'description', 
                        'lambda_role', 'extra_payload', ('environment', 'environment_variables'),
-                       'layers', 'supervisor_layer']
+                       'layers', 'supervisor_layer', 'lambda_environment']
         return utils.parse_arg_list(lambda_args, cmd_args)
     
     def parse_iam_args(self, cmd_args):

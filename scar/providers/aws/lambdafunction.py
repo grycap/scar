@@ -104,20 +104,26 @@ class Lambda(GenericClient):
         if key and value:
             self.aws._lambda.environment['Variables'][key] = value
 
+    def _add_custom_environment_variables(self, env_vars, prefix=''):
+            if type(env_vars) is dict:
+                for key, val in env_vars.items():
+                    # Add an specific prefix to be able to find the variables defined by the user
+                    self._add_lambda_environment_variable('{0}{1}'.format(prefix, key), val)                    
+            else:
+                for env_var in env_vars:
+                    key_val = env_var.split("=")
+                    # Add an specific prefix to be able to find the variables defined by the user
+                    self._add_lambda_environment_variable('{0}{1}'.format(prefix, key_val[0]), key_val[1])        
+
     def _set_environment_variables(self):
         # Add required variables
         self._set_required_environment_variables()
         # Add explicitly user defined variables
         if hasattr(self.aws._lambda, "environment_variables"):
-            if type(self.aws._lambda.environment_variables) is dict:
-                for key, val in self.aws._lambda.environment_variables.items():
-                    # Add an specific prefix to be able to find the variables defined by the user
-                    self._add_lambda_environment_variable('CONT_VAR_{0}'.format(key), val)                    
-            else:
-                for env_var in self.aws._lambda.environment_variables:
-                    key_val = env_var.split("=")
-                    # Add an specific prefix to be able to find the variables defined by the user
-                    self._add_lambda_environment_variable('CONT_VAR_{0}'.format(key_val[0]), key_val[1])
+            self._add_custom_environment_variables(self.aws._lambda.environment_variables, prefix='CONT_VAR_')
+        # Add explicitly user defined variables
+        if hasattr(self.aws._lambda, "lambda_environment"):
+            self._add_custom_environment_variables(self.aws._lambda.lambda_environment)                                
         
     def _set_required_environment_variables(self):
         self._add_lambda_environment_variable('SUPERVISOR_TYPE', 'LAMBDA')
