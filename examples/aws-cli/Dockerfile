@@ -1,11 +1,9 @@
-FROM bitnami/minideb:jessie
-
-MAINTAINER Germán Moltó - gmolto@dsic.upv.es
+FROM alpine
 
 ENV AWS_DEFAULT_REGION us-east-1
 
-RUN install_packages python python-pip
+RUN apk update && apk add python3
 
-RUN pip install --upgrade awscli
+RUN pip3 install awscli
 
-ENTRYPOINT ["/usr/bin/python", "/usr/local/bin/aws"]
+ENTRYPOINT ["aws"]

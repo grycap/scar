@@ -1,6 +1,6 @@
-# Alpine-less AWS CLI Docker Image
+# Alpine AWS CLI Docker Image
 
-Docker image for [AWS CLI](https://aws.amazon.com/cli/) based on the [bitnami/minideb:jessie](https://hub.docker.com/r/bitnami/minideb/) Docker image.
+Docker image for [AWS CLI](https://aws.amazon.com/cli/) based on the [alpine](https://hub.docker.com/_/alpine) Docker image.
 
 ## Local Usage
 

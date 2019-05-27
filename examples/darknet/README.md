@@ -22,7 +22,7 @@ Create the Lambda function using the `scar-darknet.yaml` configuration file:
 scar init -f scar-darknet.yaml
 ```
 
-Launch the Lambda function uploading a file to the `s3://scar-bucket/scar-darknet/input` folder in S3.
+Launch the Lambda function uploading a file to the `s3://scar-darknet/scar-darknet-s3/input` folder in S3.
 
 ```sh
 scar put -b scar-darknet-bucket -bf scar-darknet-s3/input -p dog.jpg
