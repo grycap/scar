@@ -23,6 +23,7 @@ from scar.providers.aws.properties import AwsProperties, ScarProperties,\
 from scar.providers.aws.resourcegroups import ResourceGroups
 from scar.providers.aws.s3 import S3
 from scar.providers.aws.validators import AWSValidator
+from scar.providers.aws.properties import ApiGatewayProperties
 import os
 import scar.exceptions as excp
 import scar.logger as logger
@@ -84,10 +85,14 @@ class AWS(Commands):
 
     @excp.exception(logger)    
     def invoke(self):
+        self._update_local_function_properties()
         response = self._lambda.call_http_endpoint()
+        output_file = self.scar_properties.output_file if hasattr(self.scar_properties, "output_file") else ""
         response_parser.parse_http_response(response, 
                                             self.aws_properties._lambda.name,
-                                            self.aws_properties._lambda.asynchronous)
+                                            self.aws_properties._lambda.asynchronous,
+                                            self.aws_properties.output,
+                                            output_file)
     
     @excp.exception(logger)    
     def run(self):
@@ -167,6 +172,9 @@ class AWS(Commands):
         # Override json ouput if both of them are defined
         if hasattr(self.scar_properties, "verbose") and self.scar_properties.verbose:
             self.aws_properties.output = response_parser.OutputType.VERBOSE
+        if hasattr(self.scar_properties, "output_file") and self.scar_properties.output_file:
+            self.aws_properties.output = response_parser.OutputType.BINARY
+            self.aws_properties.output_file = self.scar_properties.output_file
             
     def _add_account_id(self):
         self.aws_properties.account_id = utils.find_expression(self.aws_properties.iam.role, '\d{12}')
@@ -287,8 +295,7 @@ class AWS(Commands):
         if not self._lambda.find_function():
             raise excp.FunctionNotFoundError(self.aws_properties._lambda.name)
         # Delete associated api
-        if hasattr(self.aws_properties, "api_gateway"):
-            self._delete_api_gateway()
+        self._delete_api_gateway()
         # Delete associated log
         self._delete_logs()
         # Delete associated notifications
@@ -299,9 +306,23 @@ class AWS(Commands):
         if hasattr(self.aws_properties, "batch"):
             self._delete_batch_resources()
 
+    def _update_local_function_properties(self):
+        """
+        Update the defined properties with the AWS information
+        """
+        info = self._lambda.get_function_info()
+        if utils.is_value_in_dict('API_GATEWAY_ID', info['Environment']['Variables']):
+            api_gtw_id = info['Environment']['Variables']['API_GATEWAY_ID']
+            if hasattr(self.aws_properties, 'api_gateway'):
+                setattr(self.aws_properties.api_gateway, 'id', api_gtw_id)
+            else:
+                setattr(self.aws_properties, 'api_gateway', ApiGatewayProperties({'id' : api_gtw_id}))
+
     def _delete_api_gateway(self):
-        self.aws_properties.api_gateway.id = self._lambda.get_api_gateway_id()
-        if self.aws_properties.api_gateway.id:
+        self._update_local_function_properties()
+        if hasattr(self.aws_properties, 'api_gateway') and \
+           hasattr(self.aws_properties.api_gateway, 'id') and \
+           self.aws_properties.api_gateway.id:
             response = self.api_gateway.delete_api_gateway()
             response_parser.parse_delete_api_response(response,
                                                       self.aws_properties.api_gateway.id,
