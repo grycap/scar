@@ -224,7 +224,7 @@ class CommandParser(object):
         scar_args = ['func', 'conf_file', 'json',
                      'verbose', 'path', 'all',
                      'preheat', 'execution_mode',
-                     'output_file', 'binary_output',]
+                     'output_file',]
         return {'scar' : utils.parse_arg_list(scar_args, cmd_args)}
 
     def parse_lambda_args(self, cmd_args):

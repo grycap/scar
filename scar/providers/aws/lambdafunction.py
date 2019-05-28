@@ -129,8 +129,6 @@ class Lambda(GenericClient):
         self._add_lambda_environment_variable('SUPERVISOR_TYPE', 'LAMBDA')
         self._add_lambda_environment_variable('TIMEOUT_THRESHOLD', str(self.aws._lambda.timeout_threshold))
         self._add_lambda_environment_variable('LOG_LEVEL', self.aws._lambda.log_level)
-        if hasattr(self.aws, "output_file") and self.aws.output_file:
-            self._add_lambda_environment_variable('BINARY_OUTPUT', True)
         self._add_udocker_variables()
         self._add_execution_mode()
         self._add_s3_environment_vars()
