@@ -159,12 +159,6 @@ def kill_process(self, process):
     # Using SIGKILL instead of SIGTERM to ensure the process finalization 
     os.killpg(os.getpgid(process.pid), subprocess.signal.SIGKILL)
 
-def execute_command(command):
-    subprocess.call(command)
-    
-def execute_command_and_return_output(command):
-    return subprocess.check_output(command).decode("utf-8")
-
 def is_variable_in_environment(variable):
     return is_value_in_dict(variable, os.environ)
 

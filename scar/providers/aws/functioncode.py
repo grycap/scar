@@ -54,7 +54,6 @@ class FunctionPackager():
     def _add_mandatory_files(self):
         '''Copy function handler'''
         utils.copy_file(self.function_handler_source, self.function_handler_dest)
-        #utils.execute_command(['chmod', '0664', self.function_handler_dest])
      
     def _manage_udocker_images(self):
         if hasattr(self.aws._lambda, "image") and \

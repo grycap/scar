@@ -320,7 +320,9 @@ class AWS(Commands):
 
     def _delete_api_gateway(self):
         self._update_local_function_properties()
-        if self.aws_properties.api_gateway.id:
+        if hasattr(self.aws_properties, 'api_gateway') and \
+           hasattr(self.aws_properties.api_gateway, 'id') and \
+           self.aws_properties.api_gateway.id:
             response = self.api_gateway.delete_api_gateway()
             response_parser.parse_delete_api_response(response,
                                                       self.aws_properties.api_gateway.id,
