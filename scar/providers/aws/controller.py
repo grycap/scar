@@ -85,6 +85,7 @@ class AWS(Commands):
 
     @excp.exception(logger)    
     def invoke(self):
+        self._update_local_function_properties()
         response = self._lambda.call_http_endpoint()
         output_file = self.scar_properties.output_file if hasattr(self.scar_properties, "output_file") else ""
         response_parser.parse_http_response(response, 
@@ -305,10 +306,20 @@ class AWS(Commands):
         if hasattr(self.aws_properties, "batch"):
             self._delete_batch_resources()
 
+    def _update_local_function_properties(self):
+        """
+        Update the defined properties with the AWS information
+        """
+        info = self._lambda.get_function_info()
+        if utils.is_value_in_dict('API_GATEWAY_ID', info['Environment']['Variables']):
+            api_gtw_id = info['Environment']['Variables']['API_GATEWAY_ID']
+            if hasattr(self.aws_properties, 'api_gateway'):
+                setattr(self.aws_properties.api_gateway, 'id', api_gtw_id)
+            else:
+                setattr(self.aws_properties, 'api_gateway', ApiGatewayProperties({'id' : api_gtw_id}))
+
     def _delete_api_gateway(self):
-        api_gateway_id = self._lambda.get_api_gateway_id()
-        if api_gateway_id:
-            setattr(self.aws_properties, 'api_gateway', ApiGatewayProperties({'id' : api_gateway_id}))
+        self._update_local_function_properties()
         if self.aws_properties.api_gateway.id:
             response = self.api_gateway.delete_api_gateway()
             response_parser.parse_delete_api_response(response,

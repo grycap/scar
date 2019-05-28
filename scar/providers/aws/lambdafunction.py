@@ -353,10 +353,10 @@ class Lambda(GenericClient):
     def call_http_endpoint(self):
         invoke_args = {'headers' : {'X-Amz-Invocation-Type':'Event'} if self.is_asynchronous() else {}}
         if hasattr(self.aws, "api_gateway"):
-            self._set_api_gateway_props(invoke_args)
+            self._set_invoke_args(invoke_args)
         return request.call_http_endpoint(self._get_api_gateway_url(), **invoke_args)        
         
-    def _set_api_gateway_props(self, invoke_args):
+    def _set_invoke_args(self, invoke_args):
         if hasattr(self.aws.api_gateway, "data_binary"):
             invoke_args['data'] = self._get_b64encoded_binary_data(self.aws.api_gateway.data_binary)
             invoke_args['headers'] = {'Content-Type': 'application/octet-stream'}
