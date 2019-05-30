@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# from .exceptions import InvalidPlatformError
 from distutils import dir_util
 import scar.logger as logger
 import base64
