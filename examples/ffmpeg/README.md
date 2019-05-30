@@ -44,18 +44,18 @@ scar log -f scar-ffmpeg.yaml
 
 Whe the execution finishes, the converted video to grayscale will be available in `s3://scar-test/lambda-ffmpeg/output/$REQUEST_ID/seq1.avi`. Moreover you can list the files in the specified bucket with the command:
 ```sh
-scar ls -b scar-test -bf scar-ffmpeg/output/
+scar ls -b scar-test/scar-ffmpeg/output/
 ```
 
 After the function finishes you can download the generated output video using the following command:
 ```sh
-scar get -b scar-test -bf scar-ffmpeg/output -p /tmp/
+scar get -b scar-test/scar-ffmpeg/output -p /tmp/
 ```
 This command will download the ouput folder of the S3 bucket to the /tmp/ folder of your computer
 
 As an additional feature, you can also upload multiple videos to S3 using a folder instead an specific file.
 ```sh
-scar put -b scar-test -bf scar-ffmpeg/input -p /my-videos/
+scar put -b scar-test/scar-ffmpeg/input -p /my-videos/
 ```
 Multiple concurrent Lambda invocations of the same function will process in parallel the video files. Notice that the first invocation(s) will take considerably longer until caching of the Docker container is performed.
 
@@ -63,5 +63,5 @@ Multiple concurrent Lambda invocations of the same function will process in para
 
 Those of AWS Lambda:
 
-* Maximum execution time of 5 minutes.
+* Maximum execution time of 15 minutes.
 * Maximum temporary storage space in /tmp of 512 MB (which may be possible shared across different executions of the same Lambda function).
