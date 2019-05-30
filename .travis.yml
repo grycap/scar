@@ -1,12 +1,16 @@
+dist: xenial
 language: python
-
 python:
-  - 3.6
+  - "3.7.1"
 
-install:
-  - pip install nose mock 'coverage>=4.0,<4.4' codeclimate-test-reporter
-  - pip install -r requirements.txt
-
-script:
-  - nosetests-3.4 test/unit/TestStringUtils.py test/unit/TestScar.py test/unit/TestAwsClient.py test/unit/TestConfig.py test/unit/TestResult.py -v --stop --with-xunit --with-coverage --cover-erase --cover-package=scar
-  - codeclimate-test-reporter --token 9fb3fcd1b7df79ac9357e11fa8dc5df5514704fddd3cfc70807e61109172598a
+jobs:
+  include:
+    - stage: Deploy to PyPi on new releases
+      script: skip
+      deploy:
+        - provider: pypi
+          user: $PYPI_USER
+          password: $PYPI_PASS
+          on:
+            tags: true
+      if: tag IS present
