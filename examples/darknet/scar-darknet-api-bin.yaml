@@ -1,0 +1,7 @@
+functions:
+  scar-darknet-api-bin:
+    image: grycap/darknet
+    memory: 2048
+    init_script: yolo-bin.sh
+    api_gateway:
+      name: darknet-bin

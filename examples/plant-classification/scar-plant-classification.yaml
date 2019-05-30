@@ -1,7 +1,7 @@
 functions:
   scar-plants:
     image: deephdc/deep-oc-plant-classification-theano
-    memory: 528
+    memory: 1024
     execution_mode: batch
     s3:
       input_bucket: scar-test

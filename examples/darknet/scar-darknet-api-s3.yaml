@@ -2,6 +2,8 @@ functions:
   scar-darknet-api:
     image: grycap/darknet
     memory: 2048
-    init_script: yolo-api.sh
+    init_script: yolo.sh
     api_gateway:
       name: darknet
+    s3:
+      input_bucket: scar-darknet
