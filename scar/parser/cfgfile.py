@@ -50,7 +50,7 @@ default_cfg = {
           "max_v_cpus": 2,
           "subnets": [""],
           "instance_types": ["m3.medium"],
-          "enable_gpu": False          
+          "enable_gpu": False
         },
     }
 }
@@ -89,7 +89,7 @@ class ConfigFileParser(object):
     def get_properties(self):
         return self.cfg_data
 
-    def get_faas_supervisor_version(self):
+    def get_supervisor_version(self):
         return self.cfg_data['scar']['supervisor_version']
 
     def _add_missing_attributes(self):
