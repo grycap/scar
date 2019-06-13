@@ -21,14 +21,8 @@ import shutil
 
 default_cfg = {
     "scar" : {
-        "layers": { "faas-supervisor" : {"version_url" : "https://api.github.com/repos/grycap/faas-supervisor/releases/latest",
-                                         "zip_url" : "https://github.com/grycap/faas-supervisor/archive/{0}.zip",
-                                         "default_version" : "master",
-                                         "layer_name" : "faas-supervisor"}
-        },
-        "udocker_info" : {
-            "zip_url" : "https://github.com/grycap/faas-supervisor/raw/master/extra/udocker.zip"
-        },
+        # Must be a tag or "latest"
+        "supervisor_version": "latest"
     },
     "aws" : {
         "boto_profile" : "default",
@@ -42,7 +36,8 @@ default_cfg = {
           "timeout_threshold" : 10 ,
           "runtime" : "python3.6",
           "max_payload_size" : 52428800,
-          "max_s3_payload_size" : 262144000
+          "max_s3_payload_size" : 262144000,
+          "layers": [""]
         },
         "cloudwatch" : { "log_retention_policy_in_days" : 30 },
         "batch" : {
@@ -55,10 +50,11 @@ default_cfg = {
           "max_v_cpus": 2,
           "subnets": [""],
           "instance_types": ["m3.medium"],
-          "supervisor_image": "grycap/scar-batch-io:storage",
+          "enable_gpu": False          
         },
     }
 }
+
 
 class ConfigFileParser(object):
     
@@ -88,33 +84,30 @@ class ConfigFileParser(object):
         
     def _create_default_config_file(self):
         with open(self.config_file_path, mode='w') as cfg_file:
-            cfg_file.write(json.dumps(default_cfg, indent=2))        
-        
+            cfg_file.write(json.dumps(default_cfg, indent=2))
+
     def get_properties(self):
         return self.cfg_data
-    
-    def get_faas_supervisor_layer_info(self):
-        return self.cfg_data['scar']['layers']['faas-supervisor']
-    
-    def get_udocker_zip_url(self):
-        return self.cfg_data['scar']['udocker_info']['zip_url']
+
+    def get_faas_supervisor_version(self):
+        return self.cfg_data['scar']['supervisor_version']
 
     def _add_missing_attributes(self):
         logger.info("Updating old scar config file '{0}'.\n".format(self.config_file_path))
         shutil.copy(self.config_file_path, self.backup_file_path)
-        logger.info("Old scar config file saved in '{0}'.\n".format(self.backup_file_path))       
+        logger.info("Old scar config file saved in '{0}'.\n".format(self.backup_file_path))
         self._merge_files(self.cfg_data, default_cfg)
         self._delete_unused_data()
         with open(self.config_file_path, mode='w') as cfg_file:
             cfg_file.write(json.dumps(self.cfg_data, indent=2))
-    
+
     def _merge_files(self, cfg_data, default_data):
         for k, v in default_data.items():
             if k not in cfg_data:
                 cfg_data[k] = v
             elif type(cfg_data[k]) is dict:
                 self._merge_files(cfg_data[k], default_data[k])
-                
+
     def _delete_unused_data(self):
         if 'region' in self.cfg_data['aws']['lambda']:
             region = self.cfg_data['aws']['lambda'].pop('region', None)
