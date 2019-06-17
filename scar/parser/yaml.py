@@ -34,6 +34,7 @@ class YamlParser(object):
 
     def parse_aws_function(self, function_name, function_data):
         aws_args = {}
+        scar_args = {}
         # Get function name
         aws_args['lambda'] = self.parse_lambda_args(function_data)
         aws_args['lambda']['name'] = function_name
@@ -41,8 +42,10 @@ class YamlParser(object):
         aws_args.update(utils.parse_arg_list(aws_services, function_data))
         other_args = [('profile','boto_profile'),'region','execution_mode']
         aws_args.update(utils.parse_arg_list(other_args, function_data))
+        scar_args.update(utils.parse_arg_list(['supervisor_version'], function_data))
+        scar = {'scar' : scar_args if scar_args else {}}
         aws = {'aws' : aws_args if aws_args else {}}
-        return aws
+        return utils.merge_dicts(scar, aws)
 
     def parse_lambda_args(self, cmd_args):
         lambda_args = ['asynchronous', 'init_script', 'run_script', 'c_args', 'memory', 'time',

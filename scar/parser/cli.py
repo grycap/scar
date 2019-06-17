@@ -54,6 +54,7 @@ class CommandParser(object):
         self.function_definition_parser.add_argument("-ob", "--output-bucket", help="Bucket name where the output files are saved.")
         self.function_definition_parser.add_argument("-em", "--execution-mode", help="Specifies the execution mode of the job. It can be 'lambda', 'lambda-batch' or 'batch'")
         self.function_definition_parser.add_argument("-r", "--iam-role", help="IAM role used in the management of the functions")
+        self.function_definition_parser.add_argument("-sv", "--supervisor-version", help="FaaS Supervisor version. Can be a tag or 'latest'.")
         # Batch (job definition) options
         self.function_definition_parser.add_argument("-bm", "--batch-memory", help="Batch job memory in megabytes")
         self.function_definition_parser.add_argument("-bc", "--batch-vcpus", help="Number of vCPUs reserved for the Batch container")
@@ -210,7 +211,7 @@ class CommandParser(object):
         scar_args = ['func', 'conf_file', 'json',
                      'verbose', 'path', 'all',
                      'preheat', 'execution_mode',
-                     'output_file',]
+                     'output_file', 'supervisor_version']
         return {'scar' : utils.parse_arg_list(scar_args, cmd_args)}
 
     def parse_lambda_args(self, cmd_args):
