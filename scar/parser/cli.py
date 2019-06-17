@@ -49,7 +49,7 @@ class CommandParser(object):
         self.function_definition_parser.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 300.")
         self.function_definition_parser.add_argument("-tt", "--timeout-threshold", type=int, help="Extra time used to postprocess the data. This time is extracted from the total time of the lambda function.")
         self.function_definition_parser.add_argument("-ll", "--log-level", help="Set the log level of the lambda function. Accepted values are: 'CRITICAL','ERROR','WARNING','INFO','DEBUG'", default="INFO")
-        self.function_definition_parser.add_argument("-l", "--layers",action='append', help="Pass layers ARNs to the lambda function. Can be defined multiple times.")
+        self.function_definition_parser.add_argument("-l", "--layers", action='append', help="Pass layers ARNs to the lambda function. Can be defined multiple times.")
         self.function_definition_parser.add_argument("-ib", "--input-bucket", help="Bucket name where the input files will be stored.")
         self.function_definition_parser.add_argument("-ob", "--output-bucket", help="Bucket name where the output files are saved.")
         self.function_definition_parser.add_argument("-em", "--execution-mode", help="Specifies the execution mode of the job. It can be 'lambda', 'lambda-batch' or 'batch'")
@@ -217,7 +217,7 @@ class CommandParser(object):
         lambda_args = ['name', 'asynchronous', 'init_script', 'run_script', 'c_args', 'memory', 'time',
                        'timeout_threshold', 'log_level', 'image', 'image_file', 'description', 
                        'lambda_role', 'extra_payload', ('environment', 'environment_variables'),
-                       'layers', 'lambda_environment']
+                       'layers', 'lambda_environment', 'list_layers']
         return utils.parse_arg_list(lambda_args, cmd_args)
 
     def parse_batch_args(self, cmd_args):
