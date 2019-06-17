@@ -25,13 +25,13 @@ class YamlParser(object):
                 self.__setattr__("yaml_data", yaml.safe_load(cfg_file))
         else:
             raise YamlFileNotFoundError(file_path=file_path)
-        
+
     def parse_arguments(self):
         functions = []        
         for function in self.yaml_data['functions']:
             functions.append(self.parse_aws_function(function, self.yaml_data['functions'][function]))
         return functions[0]
-    
+
     def parse_aws_function(self, function_name, function_data):
         aws_args = {}
         # Get function name
@@ -43,11 +43,10 @@ class YamlParser(object):
         aws_args.update(utils.parse_arg_list(other_args, function_data))
         aws = {'aws' : aws_args if aws_args else {}}
         return aws
-        
-        
+
     def parse_lambda_args(self, cmd_args):
         lambda_args = ['asynchronous', 'init_script', 'run_script', 'c_args', 'memory', 'time',
                        'timeout_threshold', 'log_level', 'image', 'image_file', 'description', 
-                       'lambda_role', 'extra_payload', ('environment', 'environment_variables')]
+                       'lambda_role', 'extra_payload', ('environment', 'environment_variables'),
+                       'layers', 'lambda_environment']
         return utils.parse_arg_list(lambda_args, cmd_args)
-        

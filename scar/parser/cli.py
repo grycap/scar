@@ -45,14 +45,19 @@ class CommandParser(object):
         self.function_definition_parser.add_argument("-d", "--description", help="Lambda function description.")
         self.function_definition_parser.add_argument("-e", "--environment", action='append', help="Pass environment variable to the container (VAR=val). Can be defined multiple times.")
         self.function_definition_parser.add_argument("-le", "--lambda-environment", action='append', help="Pass environment variable to the lambda function (VAR=val). Can be defined multiple times.")
-        self.function_definition_parser.add_argument("-m", "--memory", type=int, help="Lambda function memory in megabytes. Range from 128 to 1536 in increments of 64")
+        self.function_definition_parser.add_argument("-m", "--memory", type=int, help="Lambda function memory in megabytes. Range from 128 to 3008 in increments of 64")
         self.function_definition_parser.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 300.")
         self.function_definition_parser.add_argument("-tt", "--timeout-threshold", type=int, help="Extra time used to postprocess the data. This time is extracted from the total time of the lambda function.")
         self.function_definition_parser.add_argument("-ll", "--log-level", help="Set the log level of the lambda function. Accepted values are: 'CRITICAL','ERROR','WARNING','INFO','DEBUG'", default="INFO")
+        self.function_definition_parser.add_argument("-l", "--layers",action='append', help="Pass layers ARNs to the lambda function. Can be defined multiple times.")
         self.function_definition_parser.add_argument("-ib", "--input-bucket", help="Bucket name where the input files will be stored.")
         self.function_definition_parser.add_argument("-ob", "--output-bucket", help="Bucket name where the output files are saved.")
         self.function_definition_parser.add_argument("-em", "--execution-mode", help="Specifies the execution mode of the job. It can be 'lambda', 'lambda-batch' or 'batch'")
         self.function_definition_parser.add_argument("-r", "--iam-role", help="IAM role used in the management of the functions")
+        # Batch (job definition) options
+        self.function_definition_parser.add_argument("-bm", "--batch-memory", help="Batch job memory in megabytes")
+        self.function_definition_parser.add_argument("-bc", "--batch-vcpus", help="Number of vCPUs reserved for the Batch container")
+        self.function_definition_parser.add_argument("-g", "--enable-gpu", help="Reserve one physical GPU for the Batch container (if it's available in the compute environment)", action="store_true")
 
     def create_exec_parser(self):
         self.exec_parser = argparse.ArgumentParser(add_help=False)
@@ -120,8 +125,6 @@ class CommandParser(object):
         group.add_argument("-n", "--name", help="Lambda function name")
         group.add_argument("-a", "--all", help="Update all lambda functions", action="store_true")
         group.add_argument("-f", "--conf-file", help="Yaml file with the function configuration")
-        # AWS lambda layers conf         
-        parser_update.add_argument("-sl", "--supervisor-layer", help="Update supervisor layer in related functions.", action="store_true")
 
     def add_run_parser(self):
         parser_run = self.subparsers.add_parser('run', parents=[self.output_parser, self.profile_parser, self.exec_parser], help="Deploy function")
@@ -156,7 +159,7 @@ class CommandParser(object):
         # S3 args
         parser_ls.add_argument("-b", "--bucket", help="Show bucket files")
         # Layer args
-        parser_ls.add_argument("-l", "--layers", help="Show lambda layers information", action="store_true")             
+        parser_ls.add_argument("-l", "--list-layers", help="Show lambda layers information", action="store_true")             
     
     def add_put_parser(self):
         parser_put = self.subparsers.add_parser('put', parents=[self.storage_parser, self.profile_parser], help="Upload file(s) to bucket")
@@ -196,6 +199,7 @@ class CommandParser(object):
         other_args = [('profile','boto_profile'),'region','execution_mode']
         self.set_args(aws_args, 'iam', self.parse_iam_args(cmd_args))
         self.set_args(aws_args, 'lambda', self.parse_lambda_args(cmd_args))
+        self.set_args(aws_args, 'batch', self.parse_batch_args(cmd_args))
         self.set_args(aws_args, 'cloudwatch', self.parse_cloudwatchlogs_args(cmd_args))
         self.set_args(aws_args, 's3', self.parse_s3_args(cmd_args))
         self.set_args(aws_args, 'api_gateway', self.parse_api_gateway_args(cmd_args))
@@ -213,9 +217,13 @@ class CommandParser(object):
         lambda_args = ['name', 'asynchronous', 'init_script', 'run_script', 'c_args', 'memory', 'time',
                        'timeout_threshold', 'log_level', 'image', 'image_file', 'description', 
                        'lambda_role', 'extra_payload', ('environment', 'environment_variables'),
-                       'layers', 'supervisor_layer', 'lambda_environment']
+                       'layers', 'lambda_environment']
         return utils.parse_arg_list(lambda_args, cmd_args)
-    
+
+    def parse_batch_args(self, cmd_args):
+        batch_args = [('batch_vcpus', 'vcpus'), ('batch_memory', 'memory'), 'enable_gpu']
+        return utils.parse_arg_list(batch_args, cmd_args)
+
     def parse_iam_args(self, cmd_args):
         iam_args = [('iam_role', 'role')]
         return utils.parse_arg_list(iam_args, cmd_args)    

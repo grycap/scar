@@ -30,28 +30,32 @@ default_cfg = {
         "execution_mode": "lambda",        
         "iam" : {"role" : ""},
         "lambda" : {
-          "time" : 300,
-          "memory" : 512,
-          "description" : "Automatically generated lambda function",
-          "timeout_threshold" : 10 ,
-          "runtime" : "python3.6",
-          "max_payload_size" : 52428800,
-          "max_s3_payload_size" : 262144000,
-          "layers": [""]
+            "time" : 300,
+            "memory" : 512,
+            "description" : "Automatically generated lambda function",
+            "timeout_threshold" : 10 ,
+            "runtime" : "python3.6",
+            "max_payload_size" : 52428800,
+            "max_s3_payload_size" : 262144000,
+            "layers": [""]
         },
         "cloudwatch" : { "log_retention_policy_in_days" : 30 },
         "batch" : {
-          "state": "ENABLED",
-          "type": "MANAGED",
-          "security_group_ids": [""],
-          "comp_type": "EC2",
-          "desired_v_cpus": 0,
-          "min_v_cpus": 0,
-          "max_v_cpus": 2,
-          "subnets": [""],
-          "instance_types": ["m3.medium"],
-          "enable_gpu": False
-        },
+            "vcpus": 1,
+            "memory": 1024,
+            "enable_gpu": False,
+            "compute_resources": {
+                "state": "ENABLED",
+                "type": "MANAGED",
+                "security_group_ids": [""],
+                "comp_type": "EC2",
+                "desired_v_cpus": 0,
+                "min_v_cpus": 0,
+                "max_v_cpus": 2,
+                "subnets": [""],
+                "instance_types": ["m3.medium"]
+            }
+        }
     }
 }
 
