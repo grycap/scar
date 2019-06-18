@@ -13,11 +13,12 @@
 # limitations under the License.
 
 from botocore.exceptions import ClientError
-from scar.providers.aws.botoclientfactory import GenericClient
+from scar.providers.aws import GenericClient
 import scar.logger as logger
 
+
 class ResourceGroups(GenericClient):
-    
+
     def __init__(self, aws_properties):
         super().__init__(aws_properties)
 
@@ -33,4 +34,4 @@ class ResourceGroups(GenericClient):
         except ClientError as ce:
             logger.error("Error getting function_info arn by tag",
                          "Error getting function_info arn by tag: {}".format(ce))
-    
+

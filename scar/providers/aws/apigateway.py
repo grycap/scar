@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from scar.providers.aws.botoclientfactory import GenericClient
+from scar.providers.aws import GenericClient
 import scar.logger as logger
+
 
 class APIGateway(GenericClient):
 
@@ -38,7 +39,6 @@ class APIGateway(GenericClient):
                                                            'method.request.header.X-Amz-Invocation-Type' }
         # {0}: api_id, {1}: api_region
         self.aws.api_gateway.generic_endpoint = 'https://{0}.execute-api.{1}.amazonaws.com/scar/launch'
-        
 
     def _set_api_lambda_uri(self):
         self.aws.api_gateway.lambda_uri = self.aws.api_gateway.generic_lambda_uri.format(self.aws.region,
@@ -56,7 +56,7 @@ class APIGateway(GenericClient):
                 'requestParameters' : {'method.request.header.X-Amz-Invocation-Type' : False} }
         method = self._get_common_args(resource_info)
         method.update(args)
-        return method        
+        return method
 
     def _get_integration_args(self, resource_info):
         args = {'type' : self.aws.api_gateway.default_type,
@@ -74,7 +74,7 @@ class APIGateway(GenericClient):
             if resource['path'] == '/':
                 self.aws.api_gateway.root_resource_id = resource['id']
                 break
-                
+
     def create_api_gateway(self):
         api_info = self.client.create_rest_api(self.aws.api_gateway.name)
         self._set_api_ids(api_info)
@@ -84,6 +84,6 @@ class APIGateway(GenericClient):
         self.client.create_deployment(self.aws.api_gateway.id, 'scar')
         self.endpoint = self.aws.api_gateway.generic_endpoint.format(self.aws.api_gateway.id, self.aws.region)
         logger.info('API Gateway endpoint: {0}'.format(self.endpoint))
-    
+
     def delete_api_gateway(self):
         return self.client.delete_rest_api(self.aws.api_gateway.id)

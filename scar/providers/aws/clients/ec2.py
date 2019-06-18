@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Module with boto3 calls to manage the EC2 client."""
 
 from typing import Dict
 from scar.providers.aws.clients.boto import BotoClient
@@ -73,7 +74,7 @@ class EC2Client(BotoClient):
         /services/ec2.html#EC2.Client.describe_launch_templates"""
         kwargs = {'LaunchTemplateNames': [name]}
         return self.client.describe_launch_templates(**kwargs)
-    
+
     @excp.exception(logger)
     def describe_launch_template_versions(self, name: str, version: str) -> Dict:
         """
@@ -84,4 +85,3 @@ class EC2Client(BotoClient):
         kwargs = {'LaunchTemplateName': name,
                   'Versions': [version]}
         return self.client.describe_launch_template_versions(**kwargs)
-

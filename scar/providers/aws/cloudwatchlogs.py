@@ -13,18 +13,19 @@
 # limitations under the License.
 
 from botocore.exceptions import ClientError
-from scar.providers.aws.botoclientfactory import GenericClient
+from scar.providers.aws import GenericClient
+
 
 class CloudWatchLogs(GenericClient):
-    
+
     def __init__(self, aws_properties):
         super().__init__(aws_properties)
 
     def get_log_group_name(self):
         return '/aws/lambda/{0}'.format(self.aws._lambda.name)
-    
+
     def _get_log_group_name_arg(self):
-        return { 'logGroupName' : self.get_log_group_name() }    
+        return { 'logGroupName' : self.get_log_group_name() }
 
     def create_log_group(self):
         creation_args = self._get_log_group_name_arg()
@@ -35,7 +36,7 @@ class CloudWatchLogs(GenericClient):
         retention_args['retentionInDays'] = self.aws.cloudwatch.log_retention_policy_in_days
         self.client.set_log_retention_policy(**retention_args)
         return response
-      
+
     def delete_log_group(self):
         return self.client.delete_log_group(**self._get_log_group_name_arg())
 
@@ -52,12 +53,12 @@ class CloudWatchLogs(GenericClient):
         except ClientError as ce:
             print ("Error getting the function logs: %s" % ce)
         return function_logs
-    
+
     def get_batch_job_log(self, jobs_info):
-        batch_logs = "" 
+        batch_logs = ""
         batch_logs += "Batch job status: {0}\n".format(jobs_info[0]["status"])
         if jobs_info[0]["status"] == "SUCCEEDED":
-            kwargs = {'logGroupName': "/aws/batch/job", 'logStreamNames': [jobs_info[0]["container"]["logStreamName"],]}
+            kwargs = {'logGroupName': "/aws/batch/job", 'logStreamNames': [jobs_info[0]["container"]["logStreamName"], ]}
             batch_events = self.client.get_log_events(**kwargs)
             batch_logs += '\n'.join([event['message'] for response in batch_events for event in response["events"]])
         return batch_logs
@@ -68,7 +69,7 @@ class CloudWatchLogs(GenericClient):
         for elem in response:
             for event in elem['events']:
                 data.append((event['message'], event['timestamp']))
-        sorted_data = sorted(data, key=lambda time: time[1])       
+        sorted_data = sorted(data, key=lambda time: time[1])
         for sdata in sorted_data:
             sorted_msg += sdata[0]
         return sorted_msg
@@ -86,11 +87,10 @@ class CloudWatchLogs(GenericClient):
             for line in function_logs.split('\n'):
                 if self.is_start_line(line):
                     parsed_msg += '{0}\n'.format(line)
-                    in_req_id_logs = True                
+                    in_req_id_logs = True
                 elif self.is_end_line(line):
                     parsed_msg += line
                     break
                 elif in_req_id_logs:
                     parsed_msg += '{0}\n'.format(line)
             return parsed_msg
-        

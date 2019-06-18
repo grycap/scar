@@ -31,49 +31,56 @@ Generic response from boto3:
               'RetryAttempts': 0}}"""
 
 from typing import Dict
-from scar.providers.aws.botoclientfactory import GenericClient
+from scar.providers.aws import GenericClient
 import scar.exceptions as excp
 import scar.logger as logger
 
 
+def _get_launch_template_id(response: Dict) -> str:
+    template_id = ''
+    if 'LaunchTemplates' in response:
+        templates = response['LaunchTemplates']
+        if templates and 'LaunchTemplateId' in templates[0]:
+            template_id = templates[0]['LaunchTemplateId']
+    return template_id
+
+
+def _get_launch_templates_supervisor_version(response: Dict) -> str:
+    s_version = ''
+    if 'LaunchTemplates' in response:
+        templates = response['LaunchTemplates']
+        if templates and 'Tags' in templates[0]:
+            tags = templates[0]['Tags']
+            if tags:
+                s_version = tags[0]['Value']
+    return s_version
+
+
 class EC2(GenericClient):
+    """Class to manage the creation and update of launch templates."""
 
     _TEMPLATE_NAME = 'faas-supervisor'
     _TAG_NAME = 'supervisor_version'
 
-    def _get_launch_template_id(self, response: Dict) -> str:
-        template_id = ''
-        if 'LaunchTemplates' in response:
-            templates = response['LaunchTemplates']
-            if templates and 'LaunchTemplateId' in templates[0]:
-                template_id = templates[0]['LaunchTemplateId']
-        return template_id
-
-    def _get_launch_templates_supervisor_version(self, response: Dict) -> str:
-        s_version = ''
-        if 'LaunchTemplates' in response:
-            templates = response['LaunchTemplates']
-            if templates and 'Tags' in templates[0]:
-                tags = templates[0]['Tags']
-                if tags:
-                    s_version = tags[0]['Value']
-        return s_version
-
     @excp.exception(logger)
     def create_launch_template_and_tag(self, data: Dict, supervisor_version: str) -> Dict:
+        """Creates the 'faas-supervisor' launch template and the supervisor version tag."""
         response = self.client.create_launch_template(self._TEMPLATE_NAME, data)
-        template_id = self._get_launch_template_id(response)
+        template_id = _get_launch_template_id(response)
         self.client.create_tag(template_id, self._TAG_NAME, supervisor_version)
         return response
 
     @excp.exception(logger)
     def update_launch_template_and_tag(self, data: Dict, supervisor_version: str) -> Dict:
+        """Updates the 'faas-supervisor' launch template and the supervisor version.
+        Needs that the 'faas-supervisor' template already exists."""
         response = self.client.create_launch_template_version(self._TEMPLATE_NAME, data)
-        template_id = self._get_launch_template_id(response)
+        template_id = _get_launch_template_id(response)
         self.client.create_tag(template_id, self._TAG_NAME, supervisor_version)
         return response
 
     @excp.exception(logger)
     def get_supervisor_version_of_launch_template(self) -> str:
+        """Returns the supervisor version linked to the 'faas-supervisor' launch template."""
         response = self.client.describe_launch_templates(self._TEMPLATE_NAME)
-        return self._get_launch_templates_supervisor_version(response)
+        return _get_launch_templates_supervisor_version(response)

@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from scar.providers.aws.botoclientfactory import GenericClient
+from scar.providers.aws import GenericClient
+
 
 class IAM(GenericClient):
 
@@ -23,4 +24,3 @@ class IAM(GenericClient):
         user = self.client.get_user_info()
         if user:
             return user.get('UserName', user['User']['UserId'])
-        
