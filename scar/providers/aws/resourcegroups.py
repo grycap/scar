@@ -29,9 +29,9 @@ class ResourceGroups(GenericClient):
                             { 'Key': 'createdby', 'Values': ['scar'] } ]
             resource_type_filters = ['lambda']
             tagged_resources = self.client.get_tagged_resources(tag_filters, resource_type_filters)
-            return [function_info['ResourceARN'] for element in tagged_resources \
-                    for function_info in element['ResourceTagMappingList']]
-        except ClientError as ce:
+            return [function_info['ResourceARN'] for function_info in tagged_resources]
+        except ClientError as cerr:
             logger.error("Error getting function_info arn by tag",
-                         "Error getting function_info arn by tag: {}".format(ce))
+                         f"Error getting function_info arn by tag: {cerr}")
+            raise cerr
 

@@ -11,26 +11,27 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Module with the class necessary to manage the
+Cloudwatch Logs creation, deletion and configuration."""
 
+
+from typing import Dict, List
 from botocore.exceptions import ClientError
 from scar.providers.aws.clients import BotoClient
-import scar.exceptions as excp
+from scar.exceptions import exception, ExistentLogGroupWarning, NotExistentLogGroupWarning
 import scar.logger as logger
 
 
 class CloudWatchLogsClient(BotoClient):
-    '''A low-level client representing Amazon CloudWatch Logs.
-    https://boto3.readthedocs.io/en/latest/reference/services/logs.html'''
+    """A low-level client representing Amazon CloudWatch Logs.
+    DOC_URL: https://boto3.readthedocs.io/en/latest/reference/services/logs.html"""
 
     # Parameter used by the parent to create the appropriate boto3 client
     _BOTO_CLIENT_NAME = 'logs'
 
-    @excp.exception(logger)
-    def get_log_events(self, **kwargs):
-        '''
-        Lists log events from the specified log group.
-        https://boto3.readthedocs.io/en/latest/reference/services/logs.html#CloudWatchLogs.Client.filter_log_events
-        '''
+    @exception(logger)
+    def get_log_events(self, **kwargs: Dict) -> List:
+        """Lists log events from the specified log group."""
         logs = []
         response = self.client.filter_log_events(**kwargs)
         logs.append(response)
@@ -40,38 +41,28 @@ class CloudWatchLogsClient(BotoClient):
             logs.append(response)
         return logs
 
-    @excp.exception(logger)
-    def create_log_group(self, **kwargs):
-        '''
-        Creates a log group with the specified name.
-        https://boto3.readthedocs.io/en/latest/reference/services/logs.html#CloudWatchLogs.Client.create_log_group
-        '''
+    @exception(logger)
+    def create_log_group(self, **kwargs: Dict) -> Dict:
+        """Creates a log group with the specified name."""
         try:
             return self.client.create_log_group(**kwargs)
-        except ClientError as ce:
-            if ce.response['Error']['Code'] == 'ResourceAlreadyExistsException':
-                raise excp.ExistentLogGroupWarning(logGroupName=kwargs['logGroupName'])
-            else:
-                raise
+        except ClientError as cerr:
+            if cerr.response['Error']['Code'] == 'ResourceAlreadyExistsException':
+                raise ExistentLogGroupWarning(logGroupName=kwargs['logGroupName'])
+            raise cerr
 
-    @excp.exception(logger)
-    def set_log_retention_policy(self, **kwargs):
-        '''
-        Sets the retention of the specified log group.
-        https://boto3.readthedocs.io/en/latest/reference/services/logs.html#CloudWatchLogs.Client.put_retention_policy
-        '''
+    @exception(logger)
+    def set_log_retention_policy(self, **kwargs: Dict) -> Dict:
+        """Sets the retention of the specified log group."""
         return self.client.put_retention_policy(**kwargs)
 
-    @excp.exception(logger)
-    def delete_log_group(self, **kwargs):
-        '''
-        Deletes the specified log group and permanently deletes all the archived log events associated with the log group.
-        https://boto3.readthedocs.io/en/latest/reference/services/logs.html#CloudWatchLogs.Client.delete_log_group
-        '''
+    @exception(logger)
+    def delete_log_group(self, **kwargs: Dict) -> Dict:
+        """Deletes the specified log group and permanently deletes
+        all the archived log events associated with the log group."""
         try:
             return self.client.delete_log_group(**kwargs)
-        except ClientError as ce:
-            if ce.response['Error']['Code'] == 'ResourceNotFoundException':
-                raise excp.NotExistentLogGroupWarning(**kwargs)
-            else:
-                raise
+        except ClientError as cerr:
+            if cerr.response['Error']['Code'] == 'ResourceNotFoundException':
+                raise NotExistentLogGroupWarning(**kwargs)
+            raise cerr

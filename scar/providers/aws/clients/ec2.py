@@ -11,29 +11,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Module with boto3 calls to manage the EC2 client."""
+"""Module with the class necessary to manage the
+EC2 creation, deletion and configuration."""
 
 from typing import Dict
 from scar.providers.aws.clients import BotoClient
-import scar.exceptions as excp
+from scar.exceptions import exception
 import scar.logger as logger
 
 
 class EC2Client(BotoClient):
     """A low-level client representing Amazon Elastic Compute Cloud (EC2).
-    https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html"""
+    DOC_URL: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html"""
 
     # Parameter used by the parent to create the appropriate boto3 client
     _BOTO_CLIENT_NAME = 'ec2'
 
-    @excp.exception(logger)
+    @exception(logger)
     def create_launch_template(self, name: str, data: Dict) -> Dict:
-        """
-        Creates a launch template.
-        A launch template contains the parameters to launch an instance.
-
-        https://boto3.amazonaws.com/v1/documentation/api/latest/reference
-        /services/ec2.html#EC2.Client.create_launch_template"""
+        """Creates a launch template.
+        A launch template contains the parameters to launch an instance."""
         kwargs = {'LaunchTemplateName': name,
                   'LaunchTemplateData': {'UserData' : data,
                                          'TagSpecifications': [{
@@ -42,46 +39,32 @@ class EC2Client(BotoClient):
                                                        'Value': '115'}]}]}}
         return self.client.create_launch_template(**kwargs)
 
-    @excp.exception(logger)
+    @exception(logger)
     def create_tag(self, resource_id: str, tag_key: str, tag_value: str) -> Dict:
-        """
-        Adds or overwrites the specified tags for the specified Amazon EC2 resource or resources.
-
-        https://boto3.amazonaws.com/v1/documentation/api/latest/reference
-        /services/ec2.html#EC2.Client.create_tags"""
+        """Adds or overwrites the specified tags for the
+        specified Amazon EC2 resource or resources."""
         kwargs = {'Resources': [resource_id],
                   'Tags': [{'Key': tag_key, 'Value': tag_value}]}
         return self.client.create_tags(**kwargs)
 
-    @excp.exception(logger)
+    @exception(logger)
     def create_launch_template_version(self, name: str, data: Dict) -> Dict:
-        """
-        Creates a new version for a launch template.
-        You can specify an existing version of launch template from which to base the new version.
-
-        https://boto3.amazonaws.com/v1/documentation/api/latest/reference
-        /services/ec2.html#EC2.Client.create_launch_template_version"""
+        """Creates a new version for a launch template.
+        You can specify an existing version of launch template
+        from which to base the new version."""
         kwargs = {'LaunchTemplateName': name,
                   'LaunchTemplateData': data}
         return self.client.create_launch_template_version(**kwargs)
 
-    @excp.exception(logger)
+    @exception(logger)
     def describe_launch_templates(self, name: str) -> Dict:
-        """
-        Describes one or more launch templates.
-
-        https://boto3.amazonaws.com/v1/documentation/api/latest/reference
-        /services/ec2.html#EC2.Client.describe_launch_templates"""
+        """Describes one or more launch templates."""
         kwargs = {'LaunchTemplateNames': [name]}
         return self.client.describe_launch_templates(**kwargs)
 
-    @excp.exception(logger)
+    @exception(logger)
     def describe_launch_template_versions(self, name: str, version: str) -> Dict:
-        """
-        Describes one or more versions of a specified launch template.
-
-        https://boto3.amazonaws.com/v1/documentation/api/latest/reference
-        /services/ec2.html#EC2.Client.describe_launch_template_versions"""
+        """Describes one or more versions of a specified launch template."""
         kwargs = {'LaunchTemplateName': name,
                   'Versions': [version]}
         return self.client.describe_launch_template_versions(**kwargs)
