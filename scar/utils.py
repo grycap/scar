@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Optional
 from distutils import dir_util
 import scar.logger as logger
+import scar.http.request as request
 import base64
 import json
 import os
@@ -219,4 +221,47 @@ def get_storage_provider_id(storage_provider, env_vars):
     for env_key in env_vars.keys():
         if env_key.startswith("STORAGE_AUTH_{}".format(storage_provider)):
             return "_".join(env_key.split("_")[3:-1])
+
+class GitHubUtils():
+    """Common methods for GitHub API Queries.
+    https://developer.github.com/v3/repos/releases/"""
+
+    @staticmethod
+    def get_latest_release(user: str, project: str) -> Optional[str]:
+        """Get the tag of the latest release in a repository"""
+        url = f'https://api.github.com/repos/{user}/{project}/releases/latest'
+        response = json.loads(request.get_file(url))
+        if is_value_in_dict(response, 'tag_name'):
+            return response['tag_name']
+        return None
+
+    @staticmethod
+    def exists_release_in_repo(user: str, project: str, tag_name: str) -> bool:
+        """Check if a tagged release exists in a repository"""
+        url = f'https://api.github.com/repos/{user}/{project}/releases'
+        response = json.loads(request.get_file(url))
+        if response and response is list:
+            for release in response:
+                if release['tag_name'] == tag_name:
+                    return True
+        else:
+            return False
+
+    @staticmethod
+    def get_asset_url(user: str, project: str, asset_name: str, tag_name: str = 'latest') -> Optional[str]:
+        """Get the download asset url from the specified github tagged project"""
+        if tag_name == 'latest':
+            url = f'https://api.github.com/repos/{user}/{project}/releases/latest'
+        else:
+            if GitHubUtils.exists_release_in_repo(user, project, tag_name):
+                url = f'https://api.github.com/repos/{user}/{project}/releases/tags/{tag_name}'
+            else:
+                return None
+        response = json.loads(request.get_file(url))
+        if isinstance(response, dict) and 'assets' in response:
+            for asset in response['assets']:
+                if asset['name'] == asset_name:
+                    return asset['browser_download_url']
+        return None
+
 
