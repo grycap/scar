@@ -25,6 +25,7 @@ class GenericClient(object):
                 'Lambda': {'module' : '{}.lambdafunction'.format(src_path), 'class_name' : 'LambdaClient'},
                 'ResourceGroups': {'module' : '{}.resourcegroups'.format(src_path), 'class_name' : 'ResourceGroupsClient'},
                 'S3': {'module' : '{}.s3'.format(src_path), 'class_name' : 'S3Client'},
+                'EC2': {'module' : '{}.ec2'.format(src_path), 'class_name' : 'EC2Client'},
                 }
 
     def __init__(self, aws_properties):
