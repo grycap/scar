@@ -56,22 +56,22 @@ class S3(GenericClient):
 
     def set_input_bucket_notification(self):
         # First check that the function doesn't have other configurations
-        bucket_conf = self.client.get_bucket_notification_configuration(self.aws.s3.input_bucket)
+        bucket_conf = self.client.get_notification_configuration(self.aws.s3.input_bucket)
         trigger_conf = self.get_trigger_configuration()
         lambda_conf = [trigger_conf]
         if "LambdaFunctionConfigurations" in bucket_conf:
             lambda_conf = bucket_conf["LambdaFunctionConfigurations"]
             lambda_conf.append(trigger_conf)
         notification = { "LambdaFunctionConfigurations": lambda_conf }
-        self.client.put_bucket_notification_configuration(self.aws.s3.input_bucket, notification)
+        self.client.put_notification_configuration(self.aws.s3.input_bucket, notification)
 
     def delete_bucket_notification(self):
-        bucket_conf = self.client.get_bucket_notification_configuration(self.aws.s3.input_bucket)
+        bucket_conf = self.client.get_notification_configuration(self.aws.s3.input_bucket)
         if bucket_conf and "LambdaFunctionConfigurations" in bucket_conf:
             lambda_conf = bucket_conf["LambdaFunctionConfigurations"]
             filter_conf = [x for x in lambda_conf if x['LambdaFunctionArn'] != self.aws._lambda.arn]
             notification = { "LambdaFunctionConfigurations": filter_conf }
-            self.client.put_bucket_notification_configuration(self.aws.s3.input_bucket, notification)
+            self.client.put_notification_configuration(self.aws.s3.input_bucket, notification)
 
     def get_trigger_configuration(self):
         return  {"LambdaFunctionArn": self.aws._lambda.arn,
@@ -113,13 +113,10 @@ class S3(GenericClient):
             kwargs = {"Bucket" : bucket_name}
             if hasattr(self.aws.s3, "input_folder") and self.aws.s3.input_folder:
                 kwargs["Prefix"] = self.aws.s3.input_folder
-            response = self.client.list_files(**kwargs)
-            return self.parse_file_keys(response)
+            return self.client.list_files(**kwargs)
         else:
             raise excp.BucketNotFoundError(bucket_name=bucket_name)
 
-    def parse_file_keys(self, response):
-        return [info['Key'] for elem in response if 'Contents' in elem for info in elem['Contents'] if not info['Key'].endswith('/')]
 
     def get_s3_event(self, s3_file_key):
         return { "Records" : [ {"eventSource" : "aws:s3",

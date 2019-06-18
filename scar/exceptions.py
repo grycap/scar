@@ -212,13 +212,6 @@ class ApiEndpointNotFoundError(ScarError):
     fmt = "Error retrieving API ID for lambda function '{function_name}'\n"
     fmt += "Looks like he requested function does not have an associated API."
     
-class ApiCreationError(ScarError):
-    """
-    Error creating the API endpoint.
-
-    :ivar api_name: Name of the api
-    """
-    fmt = "Error creating the API '{api_name}'"
     
 class InvocationPayloadError(ScarError):
     """

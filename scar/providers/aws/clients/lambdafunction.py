@@ -11,7 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Module with the class necessary to manage the
+Lambda function and layers creation, deletion and configuration."""
 
+from typing import Dict, List
 from scar.providers.aws.clients import BotoClient
 import scar.exceptions as excp
 import scar.logger as logger
@@ -19,93 +22,69 @@ import scar.utils as utils
 
 
 class LambdaClient(BotoClient):
-    '''A low-level client representing aws LambdaClient.
-    https://boto3.readthedocs.io/en/latest/reference/services/lambda.htmll'''
+    """A low-level client representing aws LambdaClient.
+    DOC_URL: https://boto3.readthedocs.io/en/latest/reference/services/lambda.html"""
 
     # Parameter used by the parent to create the appropriate boto3 client
     _BOTO_CLIENT_NAME = 'lambda'
 
-    def create_function(self, **kwargs):
-        '''
-        Creates a new Lambda function.
-        http://boto3.readthedocs.io/en/latest/reference/services/lambda.html#Lambda.Client.create_function
-        '''
+    def create_function(self, **kwargs: Dict) -> Dict:
+        """Creates a new Lambda function."""
         logger.debug("Creating lambda function.")
         return self.client.create_function(**kwargs)
 
-    def get_function_info(self, function_name_or_arn):
-        '''
-        Returns the configuration information of the Lambda function.
-        http://boto3.readthedocs.io/en/latest/reference/services/lambda.html#Lambda.Client.get_function_configuration
-        '''
+    def get_function_info(self, function_name_or_arn: str) -> Dict:
+        """Returns the configuration information
+        of the Lambda function."""
         return self.client.get_function_configuration(FunctionName=function_name_or_arn)
 
     @excp.exception(logger)
-    def update_function_configuration(self, **kwargs):
-        '''
-        Updates the configuration parameters for the specified Lambda function by using the values provided in the request.
-        http://boto3.readthedocs.io/en/latest/reference/services/lambda.html#Lambda.Client.update_function_configuration
-        '''
+    def update_function_configuration(self, **kwargs: Dict) -> Dict:
+        """Updates the configuration parameters for the specified
+        Lambda function by using the values provided in the request."""
         # Retrieve the global variables already defined
         return self.client.update_function_configuration(**kwargs)
 
     @excp.exception(logger)
-    def list_functions(self):
-        '''
-        Returns a list of your Lambda functions.
-        http://boto3.readthedocs.io/en/latest/reference/services/lambda.html#Lambda.Client.list_functions
-        '''
+    def list_functions(self) -> List:
+        """Returns a list of your Lambda functions."""
         functions = []
-        response = self.client.list_functions();
+        response = self.client.list_functions()
         if "Functions" in response:
             functions.extend(response['Functions'])
         while ('NextMarker' in response) and (response['NextMarker']):
-            result = self.client.list_functions(Marker=response['NextMarker']);
+            result = self.client.list_functions(Marker=response['NextMarker'])
             if "Functions" in result:
                 functions.extend(result['Functions'])
         return functions
 
     @excp.exception(logger)
-    def delete_function(self, function_name):
-        '''
-        Deletes the specified Lambda function code and configuration.
-        http://boto3.readthedocs.io/en/latest/reference/services/lambda.html#Lambda.Client.delete_function
-        '''
+    def delete_function(self, function_name: str) -> Dict:
+        """Deletes the specified Lambda
+        function code and configuration."""
         # Delete the lambda function
         return self.client.delete_function(FunctionName=function_name)
 
     @excp.exception(logger)
-    def invoke_function(self, **kwargs):
-        '''
-        Invokes a specific Lambda function.
-        http://boto3.readthedocs.io/en/latest/reference/services/lambda.html#Lambda.Client.invoke
-        '''
-        response = self.client.invoke(**kwargs)
-        return response
+    def invoke_function(self, **kwargs: Dict) -> Dict:
+        """Invokes a specific Lambda function."""
+        return self.client.invoke(**kwargs)
 
     @excp.exception(logger)
-    def add_invocation_permission(self, **kwargs):
-        '''
-        Adds a permission to the resource policy associated with the specified AWS Lambda function.
-        http://boto3.readthedocs.io/en/latest/reference/services/lambda.html#Lambda.Client.add_permission
-        '''
+    def add_invocation_permission(self, **kwargs: Dict) -> Dict:
+        """Adds a permission to the resource policy associated
+        with the specified AWS Lambda function."""
         kwargs['StatementId'] = utils.get_random_uuid4_str()
         kwargs['Action'] = "lambda:InvokeFunction"
         return self.client.add_permission(**kwargs)
 
-    def list_layers(self, **kwargs):
-        '''
-        Lists function layers and shows information about the latest version of each.
-        https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/lambda.html#Lambda.Client.list_layers
-        '''
+    def list_layers(self, **kwargs: Dict) -> Dict:
+        """Lists function layers and shows information
+        about the latest version of each."""
         logger.debug("Listing lambda layers.")
         return self.client.list_layers(**kwargs)
 
-    def publish_layer_version(self, **kwargs):
-        '''
-        Creates a function layer from a ZIP archive.
-        https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/lambda.html#Lambda.Client.publish_layer_version
-        '''
+    def publish_layer_version(self, **kwargs: Dict) -> Dict:
+        """Creates a function layer from a ZIP archive."""
         logger.debug("Publishing lambda layer.")
         return self.client.publish_layer_version(**kwargs)
-
