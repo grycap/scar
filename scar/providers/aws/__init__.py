@@ -42,7 +42,7 @@ class GenericClient():
     def __init__(self, aws_properties: Dict):
         self.aws = aws_properties
 
-    def _get_client_args(self):
+    def _get_client_args(self) -> Dict:
         return {'client' : {'region_name' : self.aws.region},
                 'session' : {'profile_name' : self.aws.boto_profile}}
 

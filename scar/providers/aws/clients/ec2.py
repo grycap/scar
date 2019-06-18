@@ -14,7 +14,7 @@
 """Module with boto3 calls to manage the EC2 client."""
 
 from typing import Dict
-from scar.providers.aws.clients.boto import BotoClient
+from scar.providers.aws.clients import BotoClient
 import scar.exceptions as excp
 import scar.logger as logger
 
@@ -24,7 +24,7 @@ class EC2Client(BotoClient):
     https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html"""
 
     # Parameter used by the parent to create the appropriate boto3 client
-    boto_client_name = 'ec2'
+    _BOTO_CLIENT_NAME = 'ec2'
 
     @excp.exception(logger)
     def create_launch_template(self, name: str, data: Dict) -> Dict:

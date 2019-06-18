@@ -13,18 +13,19 @@
 # limitations under the License.
 
 from botocore.exceptions import ClientError
-from scar.providers.aws.clients.boto import BotoClient
+from scar.providers.aws.clients import BotoClient
 import scar.exceptions as excp
 import scar.logger as logger
+
 
 class CloudWatchLogsClient(BotoClient):
     '''A low-level client representing Amazon CloudWatch Logs.
     https://boto3.readthedocs.io/en/latest/reference/services/logs.html'''
-    
+
     # Parameter used by the parent to create the appropriate boto3 client
-    boto_client_name = 'logs'    
-    
-    @excp.exception(logger)    
+    _BOTO_CLIENT_NAME = 'logs'
+
+    @excp.exception(logger)
     def get_log_events(self, **kwargs):
         '''
         Lists log events from the specified log group.
@@ -38,13 +39,13 @@ class CloudWatchLogsClient(BotoClient):
             response = self.client.filter_log_events(**kwargs)
             logs.append(response)
         return logs
-            
-    @excp.exception(logger)            
+
+    @excp.exception(logger)
     def create_log_group(self, **kwargs):
         '''
         Creates a log group with the specified name.
         https://boto3.readthedocs.io/en/latest/reference/services/logs.html#CloudWatchLogs.Client.create_log_group
-        '''         
+        '''
         try:
             return self.client.create_log_group(**kwargs)
         except ClientError as ce:
@@ -52,21 +53,21 @@ class CloudWatchLogsClient(BotoClient):
                 raise excp.ExistentLogGroupWarning(logGroupName=kwargs['logGroupName'])
             else:
                 raise
-    
+
     @excp.exception(logger)
     def set_log_retention_policy(self, **kwargs):
         '''
         Sets the retention of the specified log group.
         https://boto3.readthedocs.io/en/latest/reference/services/logs.html#CloudWatchLogs.Client.put_retention_policy
-        '''         
+        '''
         return self.client.put_retention_policy(**kwargs)
-            
+
     @excp.exception(logger)
     def delete_log_group(self, **kwargs):
         '''
         Deletes the specified log group and permanently deletes all the archived log events associated with the log group.
         https://boto3.readthedocs.io/en/latest/reference/services/logs.html#CloudWatchLogs.Client.delete_log_group
-        '''         
+        '''
         try:
             return self.client.delete_log_group(**kwargs)
         except ClientError as ce:

@@ -13,19 +13,20 @@
 # limitations under the License.
 
 from botocore.exceptions import ClientError
-from scar.providers.aws.clients.boto import BotoClient
+from scar.providers.aws.clients import BotoClient
 import scar.exceptions as excp
 import scar.logger as logger
 import scar.utils as utils
 
+
 class IAMClient(BotoClient):
     '''A low-level client representing aws Identity and Access Management (IAMClient).
-    https://boto3.readthedocs.io/en/latest/reference/services/iam.html'''    
- 
+    https://boto3.readthedocs.io/en/latest/reference/services/iam.html'''
+
     # Parameter used by the parent to create the appropriate boto3 client
-    boto_client_name = 'iam'
-        
-    @excp.exception(logger)         
+    _BOTO_CLIENT_NAME = 'iam'
+
+    @excp.exception(logger)
     def get_user_info(self):
         '''
         Retrieves information about the specified IAM user, including the user's creation date, path, unique ID, and ARN.

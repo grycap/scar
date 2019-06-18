@@ -12,16 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from scar.providers.aws.clients.boto import BotoClient
+from scar.providers.aws.clients import BotoClient
 import scar.logger as logger
+
 
 class BatchClient(BotoClient):
     '''A low-level client representing aws batchClient.
-    http://boto3.readthedocs.io/en/latest/reference/services/batch.html'''    
-    
+    http://boto3.readthedocs.io/en/latest/reference/services/batch.html'''
+
     # Parameter used by the parent to create the appropriate boto3 client
-    boto_client_name = 'batch'
-                
+    _BOTO_CLIENT_NAME = 'batch'
+
     def create_compute_environment(self, **kwargs):
         '''
         Creates a new compute environment.
@@ -29,7 +30,7 @@ class BatchClient(BotoClient):
         '''
         logger.debug("Creating compute environment.")
         return self.client.create_compute_environment(**kwargs)
-    
+
     def create_job_queue(self, **kwargs):
         '''
         Creates a new job queue.
@@ -53,7 +54,7 @@ class BatchClient(BotoClient):
         '''
         logger.debug("Describing job queue.")
         return self.client.describe_job_queues(**kwargs)
-    
+
     def describe_job_definitions(self, **kwargs):
         '''
         Describes a list of job definitions.
@@ -61,14 +62,14 @@ class BatchClient(BotoClient):
         '''
         logger.debug("Describing job definition.")
         return self.client.describe_job_definitions(**kwargs)
-    
+
     def deregister_job_definition(self, **kwargs):
         '''
         Deregisters an AWS Batch job definition.
         https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/batch.html#Batch.Client.deregister_job_definition
         '''
         logger.debug("Deleting job definition.")
-        return self.client.deregister_job_definition(**kwargs)     
+        return self.client.deregister_job_definition(**kwargs)
 
     def update_job_queue(self, **kwargs):
         '''
@@ -77,7 +78,7 @@ class BatchClient(BotoClient):
         '''
         logger.debug("Updating job queue.")
         return self.client.update_job_queue(**kwargs)
-    
+
     def delete_job_queue(self, **kwargs):
         '''
         Delete a job queue.
@@ -86,7 +87,6 @@ class BatchClient(BotoClient):
         logger.debug("Deleting job queue.")
         return self.client.delete_job_queue(**kwargs)
 
-    
     def update_compute_environment(self, **kwargs):
         '''
         update a compute environment.
@@ -94,7 +94,7 @@ class BatchClient(BotoClient):
         '''
         logger.debug("Updating compute environment.")
         return self.client.update_compute_environment(**kwargs)
-    
+
     def delete_compute_environment(self, **kwargs):
         '''
         Delete a compute environmet.
@@ -102,7 +102,7 @@ class BatchClient(BotoClient):
         '''
         logger.debug("Deleting compute environment.")
         return self.client.delete_compute_environment(**kwargs)
-    
+
     def describe_jobs(self, **kwargs):
         '''
         Describe a job.
@@ -111,5 +111,3 @@ class BatchClient(BotoClient):
         logger.debug("Describing a job.")
         return self.client.describe_jobs(**kwargs)
 
-    
-    

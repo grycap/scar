@@ -12,20 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from scar.providers.aws.clients.boto import BotoClient
+from scar.providers.aws.clients import BotoClient
 import scar.exceptions as ex
 import scar.logger as logger
+
 
 class ResourceGroupsClient(BotoClient):
     '''A low-level client representing aws Resource Groups Tagging API.
     https://boto3.readthedocs.io/en/latest/reference/services/resourcegroupstaggingapi.html'''
-    
+
     # Parameter used by the parent to create the appropriate boto3 client
-    boto_client_name = 'resourcegroupstaggingapi'
-    
-    @ex.exception(logger)    
+    _BOTO_CLIENT_NAME = 'resourcegroupstaggingapi'
+
+    @ex.exception(logger)
     def get_tagged_resources(self, tag_filters, resource_type_filters):
-        '''Returns all the tagged resources that are associated with the specified tags (keys and values) located in 
+        '''Returns all the tagged resources that are associated with the specified tags (keys and values) located in
         the specified region for the AWS account.
         https://boto3.readthedocs.io/en/latest/reference/services/resourcegroupstaggingapi.html#ResourceGroupsTaggingAPI.Client.get_resources'''
         resource_list = []
@@ -37,4 +38,3 @@ class ResourceGroupsClient(BotoClient):
             response = self.client.get_resources(**kwargs)
             resource_list.append(response)
         return resource_list
-        
