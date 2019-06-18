@@ -37,7 +37,7 @@ class GenericClient():
                 'LAMBDA': LambdaClient,
                 'RESOURCEGROUPS': ResourceGroupsClient,
                 'S3': S3Client,
-                'EC2': EC2Client}
+                'LAUNCHTEMPLATES': EC2Client}
 
     def __init__(self, aws_properties: Dict):
         self.aws = aws_properties
