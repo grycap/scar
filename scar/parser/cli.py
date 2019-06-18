@@ -46,7 +46,7 @@ class CommandParser(object):
         self.function_definition_parser.add_argument("-e", "--environment", action='append', help="Pass environment variable to the container (VAR=val). Can be defined multiple times.")
         self.function_definition_parser.add_argument("-le", "--lambda-environment", action='append', help="Pass environment variable to the lambda function (VAR=val). Can be defined multiple times.")
         self.function_definition_parser.add_argument("-m", "--memory", type=int, help="Lambda function memory in megabytes. Range from 128 to 3008 in increments of 64")
-        self.function_definition_parser.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 300.")
+        self.function_definition_parser.add_argument("-t", "--time", type=int, help="Lambda function maximum execution time in seconds. Max 900.")
         self.function_definition_parser.add_argument("-tt", "--timeout-threshold", type=int, help="Extra time used to postprocess the data. This time is extracted from the total time of the lambda function.")
         self.function_definition_parser.add_argument("-ll", "--log-level", help="Set the log level of the lambda function. Accepted values are: 'CRITICAL','ERROR','WARNING','INFO','DEBUG'", default="INFO")
         self.function_definition_parser.add_argument("-l", "--layers", action='append', help="Pass layers ARNs to the lambda function. Can be defined multiple times.")

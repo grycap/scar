@@ -60,8 +60,8 @@ class AWSValidator(GenericValidator):
 
     @staticmethod
     def validate_time(lambda_time):
-        if (lambda_time <= 0) or (lambda_time > 300):
-            error_msg = 'Please, set a value between 0 and 300.'
+        if (lambda_time <= 0) or (lambda_time > 900):
+            error_msg = 'Please, set a value between 0 and 900.'
             raise ValidatorError(parameter='lambda_time', parameter_value=lambda_time, error_msg=error_msg)
     
     @staticmethod
