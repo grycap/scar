@@ -46,8 +46,18 @@ class AWSValidator(GenericValidator):
         if 'memory' in lambda_properties:
             cls.validate_memory(lambda_properties['memory'])
         if 'time' in lambda_properties:
-            cls.validate_time(lambda_properties['time']) 
-    
+            cls.validate_time(lambda_properties['time'])
+
+    @classmethod
+    def validate_batch(cls, batch_properties):
+        if 'vcpus' in batch_properties:
+            cls.validate_batch_vcpus(batch_properties['vcpus'])
+        if 'memory' in batch_properties:
+            cls.validate_batch_memory(batch_properties['memory'])
+        if 'compute_resources' in batch_properties and \
+            'comp_type' in batch_properties['compute_resources']:
+            cls.validate_batch_comp_type(batch_properties['compute_resources']['comp_type'])
+
     @staticmethod
     def validate_time(lambda_time):
         if (lambda_time <= 0) or (lambda_time > 300):
@@ -86,5 +96,22 @@ class AWSValidator(GenericValidator):
         elif async_call and file_size > MAX_POST_BODY_SIZE_ASYNC:
             filesize = '{0:.2f}KB'.format(file_size/KB)
             maxsize = '{0:.2f}KB'.format(MAX_POST_BODY_SIZE_ASYNC/KB)
-            raise InvocationPayloadError(file_size=filesize, max_size=maxsize)        
-            
+            raise InvocationPayloadError(file_size=filesize, max_size=maxsize)
+
+    @staticmethod
+    def validate_batch_vcpus(batch_vcpus):
+        if batch_vcpus < 1:
+            error_msg = 'Please, set at least one vCPU.'
+            raise ValidatorError(parameter='batch_vcpus', parameter_value=batch_vcpus, error_msg=error_msg)
+
+    @staticmethod
+    def validate_batch_memory(batch_memory):
+        if batch_memory < 4:
+            error_msg = 'Please, set a value greater than 4.'
+            raise ValidatorError(parameter='batch_memory', parameter_value=batch_memory, error_msg=error_msg)
+
+    @staticmethod
+    def validate_batch_comp_type(batch_comp_type):
+        if batch_comp_type not in ['SPOT', 'EC2']:
+            error_msg = 'Please, set a valid compute environment type ("EC2" or "SPOT")'
+            raise ValidatorError(parameter='batch_comp_type', parameter_value=batch_comp_type, error_msg=error_msg)
