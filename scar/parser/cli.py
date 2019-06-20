@@ -13,11 +13,12 @@
 # limitations under the License.
 
 import argparse
+import sys
 import scar.exceptions as excp
 import scar.logger as logger
-import scar.utils as utils
+from scar.utils import DataTypesUtils
 import scar.version as version
-import sys
+
 
 class CommandParser(object):
     
@@ -184,7 +185,7 @@ class CommandParser(object):
                 raise excp.MissingCommandError()
             scar_args = self.parse_scar_args(cmd_args)
             aws_args = self.parse_aws_args(cmd_args)
-            return utils.merge_dicts(scar_args, aws_args)
+            return DataTypesUtils.merge_dicts(scar_args, aws_args)
         except AttributeError as ae:
             logger.error("Incorrect arguments: use scar -h to see the options available",
                              "Error parsing arguments: {}".format(ae))
@@ -204,38 +205,38 @@ class CommandParser(object):
         self.set_args(aws_args, 'cloudwatch', self.parse_cloudwatchlogs_args(cmd_args))
         self.set_args(aws_args, 's3', self.parse_s3_args(cmd_args))
         self.set_args(aws_args, 'api_gateway', self.parse_api_gateway_args(cmd_args))
-        aws_args.update(utils.parse_arg_list(other_args, cmd_args))
-        return {'aws' : aws_args }
+        aws_args.update(DataTypesUtils.parse_arg_list(other_args, cmd_args))
+        return {'aws' : aws_args}
 
     def parse_scar_args(self, cmd_args):
         scar_args = ['func', 'conf_file', 'json',
                      'verbose', 'path', 'all',
                      'preheat', 'execution_mode',
                      'output_file', 'supervisor_version']
-        return {'scar' : utils.parse_arg_list(scar_args, cmd_args)}
+        return {'scar' : DataTypesUtils.parse_arg_list(scar_args, cmd_args)}
 
     def parse_lambda_args(self, cmd_args):
         lambda_args = ['name', 'asynchronous', 'init_script', 'run_script', 'c_args', 'memory', 'time',
                        'timeout_threshold', 'log_level', 'image', 'image_file', 'description', 
                        'lambda_role', 'extra_payload', ('environment', 'environment_variables'),
                        'layers', 'lambda_environment', 'list_layers']
-        return utils.parse_arg_list(lambda_args, cmd_args)
+        return DataTypesUtils.parse_arg_list(lambda_args, cmd_args)
 
     def parse_batch_args(self, cmd_args):
         batch_args = [('batch_vcpus', 'vcpus'), ('batch_memory', 'memory'), 'enable_gpu']
-        return utils.parse_arg_list(batch_args, cmd_args)
+        return DataTypesUtils.parse_arg_list(batch_args, cmd_args)
 
     def parse_iam_args(self, cmd_args):
         iam_args = [('iam_role', 'role')]
-        return utils.parse_arg_list(iam_args, cmd_args)    
+        return DataTypesUtils.parse_arg_list(iam_args, cmd_args)    
     
     def parse_cloudwatchlogs_args(self, cmd_args):
         cw_log_args = ['log_stream_name', 'request_id']
-        return utils.parse_arg_list(cw_log_args, cmd_args)
+        return DataTypesUtils.parse_arg_list(cw_log_args, cmd_args)
     
     def parse_api_gateway_args(self, cmd_args):
         api_gtw_args = [('api_gateway_name', 'name'), 'parameters', 'data_binary', 'json_data']
-        return utils.parse_arg_list(api_gtw_args, cmd_args)     
+        return DataTypesUtils.parse_arg_list(api_gtw_args, cmd_args)     
         
     def parse_s3_args(self, cmd_args):
         s3_args = ['deployment_bucket', 
@@ -243,4 +244,4 @@ class CommandParser(object):
                    'output_bucket', 
                    ('bucket', 'input_bucket'), 
                    ]
-        return utils.parse_arg_list(s3_args, cmd_args)        
+        return DataTypesUtils.parse_arg_list(s3_args, cmd_args)        

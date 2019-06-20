@@ -34,8 +34,8 @@ from typing import Dict
 from string import Template
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from scar.providers.aws.botoclientfactory import GenericClient
-import scar.utils as utils
+from scar.providers.aws import GenericClient
+from scar.utils import GitHubUtils, StrUtils
 import scar.exceptions as excp
 import scar.logger as logger
 
@@ -71,9 +71,9 @@ class LaunchTemplates(GenericClient):
 
     # Script to download 'faas-supervisor'
     _LAUNCH_TEMPLATE_SCRIPT = Template('#!/bin/bash\n'
-                              'mkdir -p /opt/faas-supervisor/bin\n'
-                              'curl $supervisor_binary_url -L -o /opt/faas-supervisor/bin/supervisor\n'
-                              'chmod +x /opt/faas-supervisor/bin/supervisor')
+                                       'mkdir -p /opt/faas-supervisor/bin\n'
+                                       'curl $supervisor_binary_url -L -o /opt/faas-supervisor/bin/supervisor\n'
+                                       'chmod +x /opt/faas-supervisor/bin/supervisor')
 
     @excp.exception(logger)
     def create_launch_template_and_tag(self, data: Dict, supervisor_version: str) -> Dict:
@@ -96,12 +96,12 @@ class LaunchTemplates(GenericClient):
     def get_supervisor_version_of_launch_template(self) -> str:
         """Returns the supervisor version linked to the 'faas-supervisor' launch template."""
         response = self.client.describe_launch_templates(self._TEMPLATE_NAME)
-        return self._get_launch_templates_supervisor_version(response)
+        return _get_launch_templates_supervisor_version(response)
 
     def _create_supervisor_user_data(self, supervisor_version: str) -> str:
         """Returns the user_data with the script required for downloading the specified
         version of faas-supervisor in mime-multipart format and encoded in base64
-        
+
         Generic mime-multipart file:
         Content-Type: multipart/mixed; boundary="===============3595946014116037730=="
         MIME-Version: 1.0
@@ -117,11 +117,11 @@ class LaunchTemplates(GenericClient):
         chmod +x /opt/faas-supervisor/bin/supervisor
         --===============3595946014116037730==--"""
         multipart = MIMEMultipart()
-        url = utils.GitHubUtils.get_asset_url(self._SUPERVISOR_GITHUB_USER,
+        url = GitHubUtils.get_asset_url(self._SUPERVISOR_GITHUB_USER,
                                         self._SUPERVISOR_GITHUB_REPO,
                                         self._SUPERVISOR_GITHUB_ASSET_NAME,
                                         supervisor_version)
         script = self._LAUNCH_TEMPLATE_SCRIPT.substitute(supervisor_binary_url=url)
         content = MIMEText(script, 'x-shellscript')
         multipart.attach(content)
-        return utils.utf8_to_base64_string(bytes(multipart))
+        return StrUtils.utf8_to_base64_string(str(multipart))

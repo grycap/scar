@@ -14,10 +14,11 @@
 
 import json
 import os
+import shutil
 import scar.exceptions as excp
 import scar.logger as logger
-import scar.utils as utils
-import shutil
+from scar.utils import FileUtils
+
 
 default_cfg = {
     "scar" : {
@@ -61,13 +62,13 @@ default_cfg = {
 
 
 class ConfigFileParser(object):
-    
+
     config_file_name = "scar.cfg"
     backup_config_file_name = "scar.cfg_old"
     config_folder_name = ".scar"
-    config_file_folder = utils.join_paths(os.path.expanduser("~"), config_folder_name)
-    config_file_path = utils.join_paths(config_file_folder, config_file_name)
-    backup_file_path = utils.join_paths(config_file_folder, backup_config_file_name)
+    config_file_folder = FileUtils.join_paths(os.path.expanduser("~"), config_folder_name)
+    config_file_path = FileUtils.join_paths(config_file_folder, config_file_name)
+    backup_file_path = FileUtils.join_paths(config_file_folder, backup_config_file_name)
 
     @excp.exception(logger)
     def __init__(self):
@@ -95,6 +96,9 @@ class ConfigFileParser(object):
 
     def get_supervisor_version(self):
         return self.cfg_data['scar']['supervisor_version']
+
+    def get_udocker_zip_url(self):
+        return self.cfg_data['scar']['udocker_info']['zip_url']
 
     def _add_missing_attributes(self):
         logger.info("Updating old scar config file '{0}'.\n".format(self.config_file_path))

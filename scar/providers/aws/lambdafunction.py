@@ -12,33 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from botocore.exceptions import ClientError
+import base64
+import json
+import random
 from multiprocessing.pool import ThreadPool
+from botocore.exceptions import ClientError
 from scar.providers.aws import GenericClient
 from scar.providers.aws.functioncode import FunctionPackager
 from scar.providers.aws.lambdalayers import LambdaLayers
 from scar.providers.aws.s3 import S3
 from scar.providers.aws.validators import AWSValidator
-import base64
-import json
-import random
 import scar.exceptions as excp
 import scar.http.request as request
 import scar.logger as logger
 import scar.providers.aws.response as response_parser
-import scar.utils as utils
+from scar.utils import DataTypesUtils, FileUtils, StrUtils
 
 MAX_CONCURRENT_INVOCATIONS = 500
 
 
 class Lambda(GenericClient):
 
-    @utils.lazy_property
+    @DataTypesUtils.lazy_property
     def layers(self):
         layers = LambdaLayers(self.client)
         return layers
 
-    @utils.lazy_property
+    @DataTypesUtils.lazy_property
     def s3(self):
         s3 = S3(self.aws)
         return s3
@@ -49,7 +49,7 @@ class Lambda(GenericClient):
 
     def _initialize_properties(self):
         self.aws._lambda.environment = {'Variables' : {}}
-        self.aws._lambda.zip_file_path = utils.join_paths(utils.get_tmp_dir(), 'function.zip')
+        self.aws._lambda.zip_file_path = FileUtils.join_paths(FileUtils.get_tmp_dir(), 'function.zip')
         self.aws._lambda.invocation_type = "RequestResponse"
         self.aws._lambda.log_type = "Tail"
         self.aws._lambda.layers = []
@@ -90,7 +90,7 @@ class Lambda(GenericClient):
         self._set_function_code()
         creation_args = self._get_creations_args()
         response = self.client.create_function(**creation_args)
-        if response and utils.is_value_in_dict("FunctionArn", response):
+        if response and DataTypesUtils.is_key_in_dict("FunctionArn", response):
             self.aws._lambda.arn = response['FunctionArn']
         return response
 
@@ -170,7 +170,7 @@ class Lambda(GenericClient):
             self._upload_to_S3()
             self.aws._lambda.code = {"S3Bucket": self.aws.s3.deployment_bucket, "S3Key" : self.aws.s3.file_key}
         else:
-            self.aws._lambda.code = {"ZipFile": utils.read_file(self.aws._lambda.zip_file_path, mode="rb")}
+            self.aws._lambda.code = {"ZipFile": FileUtils.read_file(self.aws._lambda.zip_file_path, mode="rb")}
 
     def _upload_to_S3(self):
         self.aws.s3.input_bucket = self.aws.s3.deployment_bucket
@@ -206,7 +206,7 @@ class Lambda(GenericClient):
 
     def process_asynchronous_lambda_invocations(self, s3_event_list):
         if (len(s3_event_list) > MAX_CONCURRENT_INVOCATIONS):
-            s3_file_chunk_list = utils.divide_list_in_chunks(s3_event_list, MAX_CONCURRENT_INVOCATIONS)
+            s3_file_chunk_list = DataTypesUtils.divide_list_in_chunks(s3_event_list, MAX_CONCURRENT_INVOCATIONS)
             for s3_file_chunk in s3_file_chunk_list:
                 self._launch_concurrent_lambda_invocations(s3_file_chunk)
         else:
@@ -234,10 +234,10 @@ class Lambda(GenericClient):
         if hasattr(self.aws._lambda, "run_script"):
             script_path = self.aws._lambda.run_script
             if hasattr(self.aws, "config_path"):
-                script_path = utils.join_paths(self.aws.config_path, script_path)
+                script_path = FileUtils.join_paths(self.aws.config_path, script_path)
             # We first code to base64 in bytes and then decode those bytes to allow the json lib to parse the data
             # https://stackoverflow.com/questions/37225035/serialize-in-json-a-base64-encoded-data#37239382
-            payload = { "script" : utils.utf8_to_base64_string(utils.read_file(script_path, 'rb')) }
+            payload = { "script" : StrUtils.utf8_to_base64_string(FileUtils.read_file(script_path, 'rb')) }
         # Check for defined commands
         # This overrides any other function payload
         if hasattr(self.aws._lambda, "c_args"):
@@ -341,7 +341,7 @@ class Lambda(GenericClient):
 
     def get_api_gateway_id(self):
         env_vars = self._get_function_environment_variables()
-        return env_vars['Variables']['API_GATEWAY_ID'] if utils.is_value_in_dict('API_GATEWAY_ID', env_vars['Variables']) else ''
+        return env_vars['Variables']['API_GATEWAY_ID'] if DataTypesUtils.is_key_in_dict('API_GATEWAY_ID', env_vars['Variables']) else ''
 
     def _get_api_gateway_url(self):
         api_id = self.get_api_gateway_id()
@@ -374,4 +374,3 @@ class Lambda(GenericClient):
             AWSValidator.validate_http_payload_size(data_path, self.is_asynchronous())
             with open(data_path, 'rb') as data_file:
                 return base64.b64encode(data_file.read())
-

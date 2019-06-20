@@ -19,7 +19,7 @@ from botocore.exceptions import ClientError
 from scar.providers.aws.clients import BotoClient
 from scar.exceptions import exception, GetUserInfoError
 import scar.logger as logger
-import scar.utils as utils
+from scar.utils import StrUtils
 
 
 class IAMClient(BotoClient):
@@ -40,7 +40,7 @@ class IAMClient(BotoClient):
             if cerr.response['Error']['Code'] == 'AccessDenied':
                 # If the user doesn't have access rights to IAMClient
                 # we can find the user name in the error response
-                user_name = utils.find_expression(str(cerr), self._USER_NAME_REGEX)
+                user_name = StrUtils.find_expression(str(cerr), self._USER_NAME_REGEX)
                 return {'UserName' : user_name,
                         'User' : {'UserName' : user_name,
                                   'UserId' : ''}}

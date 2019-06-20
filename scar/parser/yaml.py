@@ -11,13 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from scar.exceptions import YamlFileNotFoundError
+
 import os
-import scar.utils as utils
 import yaml
+from scar.exceptions import YamlFileNotFoundError
+from scar.utils import DataTypesUtils
+
 
 class YamlParser(object):
-    
+
     def __init__(self, scar_args):
         file_path = scar_args['conf_file']
         if os.path.isfile(file_path):
@@ -27,7 +29,7 @@ class YamlParser(object):
             raise YamlFileNotFoundError(file_path=file_path)
 
     def parse_arguments(self):
-        functions = []        
+        functions = []
         for function in self.yaml_data['functions']:
             functions.append(self.parse_aws_function(function, self.yaml_data['functions'][function]))
         return functions[0]
@@ -39,17 +41,17 @@ class YamlParser(object):
         aws_args['lambda'] = self.parse_lambda_args(function_data)
         aws_args['lambda']['name'] = function_name
         aws_services = ['iam', 'cloudwatch', 's3', 'api_gateway', 'batch']
-        aws_args.update(utils.parse_arg_list(aws_services, function_data))
+        aws_args.update(DataTypesUtils.parse_arg_list(aws_services, function_data))
         other_args = [('profile','boto_profile'),'region','execution_mode']
-        aws_args.update(utils.parse_arg_list(other_args, function_data))
-        scar_args.update(utils.parse_arg_list(['supervisor_version'], function_data))
+        aws_args.update(DataTypesUtils.parse_arg_list(other_args, function_data))
+        scar_args.update(DataTypesUtils.parse_arg_list(['supervisor_version'], function_data))
         scar = {'scar' : scar_args if scar_args else {}}
         aws = {'aws' : aws_args if aws_args else {}}
-        return utils.merge_dicts(scar, aws)
+        return DataTypesUtils.merge_dicts(scar, aws)
 
     def parse_lambda_args(self, cmd_args):
         lambda_args = ['asynchronous', 'init_script', 'run_script', 'c_args', 'memory', 'time',
                        'timeout_threshold', 'log_level', 'image', 'image_file', 'description', 
                        'lambda_role', 'extra_payload', ('environment', 'environment_variables'),
                        'layers', 'lambda_environment']
-        return utils.parse_arg_list(lambda_args, cmd_args)
+        return DataTypesUtils.parse_arg_list(lambda_args, cmd_args)

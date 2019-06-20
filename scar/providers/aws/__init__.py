@@ -14,7 +14,7 @@
 """Module with the generic classes and methods used in other aws classes"""
 
 from typing import Dict
-import scar.utils as utils
+from scar.utils import DataTypesUtils
 from scar.providers.aws.clients.apigateway import APIGatewayClient
 from scar.providers.aws.clients.batchfunction import BatchClient
 from scar.providers.aws.clients.cloudwatchlogs import CloudWatchLogsClient
@@ -46,7 +46,7 @@ class GenericClient():
         return {'client' : {'region_name' : self.aws.region},
                 'session' : {'profile_name' : self.aws.boto_profile}}
 
-    @utils.lazy_property
+    @DataTypesUtils.lazy_property
     def client(self):
         """Returns the required boto client based on the implementing class name."""
         client_name = self.__class__.__name__.upper()

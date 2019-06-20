@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from scar.providers.aws import GenericClient
 import os
+from scar.providers.aws import GenericClient
 import scar.exceptions as excp
 import scar.logger as logger
-import scar.utils as utils
+from scar.utils import FileUtils
 from scar.providers.aws.properties import S3Properties
 
 
@@ -86,7 +86,7 @@ class S3(GenericClient):
         if file_path:
             file_key = os.path.basename(file_path)
             if folder_name:
-                file_key = utils.join_paths(folder_name, file_key)
+                file_key = FileUtils.join_paths(folder_name, file_key)
         elif folder_name:
             file_key = folder_name if folder_name.endswith('/') else '{0}/'.format(folder_name)
         return file_key
@@ -97,7 +97,7 @@ class S3(GenericClient):
         kwargs['Key'] = self.get_file_key(folder_name, file_path, file_key)
         if file_path:
             try:
-                kwargs['Body'] = utils.read_file(file_path, 'rb')
+                kwargs['Body'] = FileUtils.read_file(file_path, 'rb')
             except FileNotFoundError:
                 raise excp.UploadFileNotFoundError(file_path=file_path)
         if folder_name and not file_path:
@@ -119,9 +119,9 @@ class S3(GenericClient):
 
 
     def get_s3_event(self, s3_file_key):
-        return { "Records" : [ {"eventSource" : "aws:s3",
-                 "s3" : {"bucket" : { "name" :self.aws.s3.input_bucket },
-                         "object" : { "key" : s3_file_key  } }
+        return {"Records" : [ {"eventSource" : "aws:s3",
+                 "s3" : {"bucket" : {"name" :self.aws.s3.input_bucket},
+                         "object" : {"key" : s3_file_key}}
                 }]}
 
     def get_s3_event_list(self, s3_file_keys):

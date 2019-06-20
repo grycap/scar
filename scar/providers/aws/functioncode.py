@@ -16,27 +16,28 @@ from scar.providers.aws.udocker import Udocker
 from scar.providers.aws.validators import AWSValidator
 import scar.exceptions as excp
 import scar.logger as logger
-import scar.utils as utils
+from scar.utils import FileUtils, DataTypesUtils
+
 
 class FunctionPackager():
-    
-    @utils.lazy_property
+
+    @DataTypesUtils.lazy_property
     def udocker(self):
         udocker = Udocker(self.aws, self.scar_tmp_folder_path)
         return udocker
-    
+
     def __init__(self, aws_properties):
         self.aws = aws_properties
         self._initialize_paths()
-        
+
     def _initialize_paths(self):
-        self.scar_tmp_folder =  utils.create_tmp_dir()
-        self.scar_tmp_folder_path =  self.scar_tmp_folder.name
-        self.function_handler_source = utils.join_paths(utils.get_scar_root_path(), "scar", "providers", "aws", "cloud", "function_handler.py")        
+        self.scar_tmp_folder = FileUtils.create_tmp_dir()
+        self.scar_tmp_folder_path = self.scar_tmp_folder.name
+        self.function_handler_source = FileUtils.join_paths(FileUtils.get_scar_root_path(), "scar", "providers", "aws", "cloud", "function_handler.py")        
         self.function_handler_name = "{0}.py".format(self.aws._lambda.name)
-        self.function_handler_dest = utils.join_paths(self.scar_tmp_folder_path, self.function_handler_name)
+        self.function_handler_dest = FileUtils.join_paths(self.scar_tmp_folder_path, self.function_handler_name)
         self.package_args = {}
-    
+
     @excp.exception(logger)
     def create_zip(self):
         self._clean_tmp_folders()
@@ -49,12 +50,12 @@ class FunctionPackager():
         #self._clean_tmp_folders()
 
     def _clean_tmp_folders(self):
-        utils.delete_file(self.aws._lambda.zip_file_path)
+        FileUtils.delete_file(self.aws._lambda.zip_file_path)
 
     def _add_mandatory_files(self):
         '''Copy function handler'''
-        utils.copy_file(self.function_handler_source, self.function_handler_dest)
-     
+        FileUtils.copy_file(self.function_handler_source, self.function_handler_dest)
+
     def _manage_udocker_images(self):
         if hasattr(self.aws._lambda, "image") and \
            hasattr(self.aws, "s3") and \
@@ -62,29 +63,29 @@ class FunctionPackager():
             self.udocker.download_udocker_image()
         if hasattr(self.aws._lambda, "image_file"):
             if hasattr(self.aws, "config_path"):
-                self.aws._lambda.image_file = utils.join_paths(self.aws.config_path, self.aws._lambda.image_file)
-            self.udocker.prepare_udocker_image()        
-     
+                self.aws._lambda.image_file = FileUtils.join_paths(self.aws.config_path, self.aws._lambda.image_file)
+            self.udocker.prepare_udocker_image()
+
     def _add_init_script(self):
         if hasattr(self.aws._lambda, "init_script"):
             if hasattr(self.aws, "config_path"):
-                self.aws._lambda.init_script = utils.join_paths(self.aws.config_path, self.aws._lambda.init_script)
+                self.aws._lambda.init_script = FileUtils.join_paths(self.aws.config_path, self.aws._lambda.init_script)
             init_script_name = "init_script.sh"
-            utils.copy_file(self.aws._lambda.init_script, utils.join_paths(self.scar_tmp_folder_path, init_script_name))
+            FileUtils.copy_file(self.aws._lambda.init_script, FileUtils.join_paths(self.scar_tmp_folder_path, init_script_name))
             self.aws._lambda.environment['Variables']['INIT_SCRIPT_PATH'] = "/var/task/{0}".format(init_script_name)
-     
+
     def _add_extra_payload(self):
         if hasattr(self.aws._lambda, "extra_payload"):
             logger.info("Adding extra payload from {0}".format(self.aws._lambda.extra_payload))
-            utils.copy_dir(self.aws._lambda.extra_payload, self.scar_tmp_folder_path)
+            FileUtils.copy_dir(self.aws._lambda.extra_payload, self.scar_tmp_folder_path)
             self.aws._lambda.environment['Variables']['EXTRA_PAYLOAD'] = "/var/task"
-        
+
     def _zip_scar_folder(self):
-        utils.zip_folder(self.aws._lambda.zip_file_path, self.scar_tmp_folder_path, "Creating function package")
-        
+        FileUtils.zip_folder(self.aws._lambda.zip_file_path, self.scar_tmp_folder_path, "Creating function package")
+
     def _check_code_size(self):
-        # Check if the code size fits within the AWS limits   
+        # Check if the code size fits within the AWS limits
         if hasattr(self.aws, "s3") and hasattr(self.aws.s3, "deployment_bucket"):
             AWSValidator.validate_s3_code_size(self.scar_tmp_folder_path, self.aws._lambda.max_s3_payload_size)
         else:
-            AWSValidator.validate_function_code_size(self.scar_tmp_folder_path, self.aws._lambda.max_payload_size)        
+            AWSValidator.validate_function_code_size(self.scar_tmp_folder_path, self.aws._lambda.max_payload_size)

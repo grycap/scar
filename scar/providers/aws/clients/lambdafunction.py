@@ -18,7 +18,7 @@ from typing import Dict, List
 from scar.providers.aws.clients import BotoClient
 import scar.exceptions as excp
 import scar.logger as logger
-import scar.utils as utils
+from scar.utils import StrUtils
 
 
 class LambdaClient(BotoClient):
@@ -74,7 +74,7 @@ class LambdaClient(BotoClient):
     def add_invocation_permission(self, **kwargs: Dict) -> Dict:
         """Adds a permission to the resource policy associated
         with the specified AWS Lambda function."""
-        kwargs['StatementId'] = utils.get_random_uuid4_str()
+        kwargs['StatementId'] = StrUtils.get_random_uuid4_str()
         kwargs['Action'] = "lambda:InvokeFunction"
         return self.client.add_permission(**kwargs)
 
