@@ -53,7 +53,7 @@ class Udocker():
 
     def restore_udocker_env(self):
         if self.env_udocker_dir:
-            SysUtils.set_environment_variable("UDOCKER_DIR")
+            SysUtils.set_environment_variable("UDOCKER_DIR", self.env_udocker_dir)
         else:
             SysUtils.delete_environment_variable("UDOCKER_DIR")
 

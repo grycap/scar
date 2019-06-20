@@ -62,7 +62,8 @@ class ScarCLI(Commands):
     @excp.exception(logger)
     def parse_arguments(self):
         """
-        Merge the scar.conf parameters, the cmd parameters and the yaml file parameters in a single dictionary.
+        Merge the scar.conf parameters, the cmd parameters and the yaml
+        file parameters in a single dictionary.
 
         The precedence of parameters is CMD >> YAML >> SCAR.CONF
         That is, the CMD parameter will override any other configuration,

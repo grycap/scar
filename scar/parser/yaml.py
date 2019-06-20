@@ -24,7 +24,7 @@ class YamlParser(object):
         file_path = scar_args['conf_file']
         if os.path.isfile(file_path):
             with open(file_path) as cfg_file:
-                self.__setattr__("yaml_data", yaml.safe_load(cfg_file))
+                self.yaml_data = yaml.safe_load(cfg_file)
         else:
             raise YamlFileNotFoundError(file_path=file_path)
 
