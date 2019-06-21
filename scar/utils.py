@@ -75,6 +75,10 @@ class SysUtils:
                 env_vars[key[size:]] = val
         return env_vars
 
+    @staticmethod
+    def get_user_home_path() -> str:
+        """Returns the path of the current user's home."""
+        return os.path.expanduser("~")
 
 class DataTypesUtils:
     """Common methods for data types management."""
@@ -149,6 +153,12 @@ class FileUtils:
         dir_util.copy_tree(source, dest)
 
     @staticmethod
+    def create_folder(folder_name):
+        """Creates a system folder.
+        Does nothing if the folder exists."""
+        os.makedirs(folder_name, exist_ok=True)
+
+    @staticmethod
     def get_scar_root_path() -> str:
         """Returns the root path of the project."""
         return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -197,21 +207,18 @@ class FileUtils:
         return os.stat(file_path).st_size
 
     @staticmethod
-    def create_folder(folder_name: str) -> None:
-        """Creates a system folder.
-        Does nothing if the folder exists."""
-        if not os.path.isdir(folder_name):
-            os.makedirs(folder_name, exist_ok=True)
-
-    @staticmethod
-    def create_file_with_content(path: str, content: Optional[str, bytes]) -> None:
+    def create_file_with_content(path: str,
+                                 content: Optional[Union[str, bytes]],
+                                 mode: str = 'w') -> None:
         """Creates a new file with the passed content.
         If the content is a dictionary, first is converted to a string."""
-        with open(path, 'w') as fwc:
+        with open(path, mode) as fwc:
+            if isinstance(content, dict):
+                content = json.dumps(content)
             fwc.write(content)
 
     @staticmethod
-    def read_file(file_path: str, mode: str = 'r') -> Optional[str, bytes]:
+    def read_file(file_path: str, mode: str = 'r') -> Optional[Union[str, bytes]]:
         """Reads the whole specified file and returns the content."""
         with open(file_path, mode) as content_file:
             return content_file.read()
@@ -247,7 +254,7 @@ class FileUtils:
         zip_exe = '/usr/bin/unzip'
         SysUtils.execute_command_with_msg([zip_exe, zip_path],
                                           cmd_wd=folder_where_unzip_path,
-                                          cli_msg='Creating function package')    
+                                          cli_msg='Creating function package')
 
     @staticmethod
     def zip_folder(zip_path: str, folder_to_zip_path: str, msg: str = '') -> None:
@@ -257,6 +264,10 @@ class FileUtils:
                                           cmd_wd=folder_to_zip_path,
                                           cli_msg=msg)
 
+    @staticmethod
+    def is_file(file_path):
+        """Test whether a path is a regular file."""
+        return os.path.isfile(file_path)
 
 class StrUtils:
     """Common methods for string management."""
