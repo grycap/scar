@@ -28,43 +28,30 @@ class EC2Client(BotoClient):
     _BOTO_CLIENT_NAME = 'ec2'
 
     @exception(logger)
-    def create_launch_template(self, name: str, data: Dict) -> Dict:
+    def create_launch_template(self, name: str, description: str, data: Dict) -> Dict:
         """Creates a launch template.
         A launch template contains the parameters to launch an instance."""
         kwargs = {'LaunchTemplateName': name,
-                  'LaunchTemplateData': {'UserData' : data,
-                                         'TagSpecifications': [{
-                                             'ResourceType' : 'launch-template',
-                                             'Tags': [{'Key': 'supervisor_version',
-                                                       'Value': '115'}]}]}}
+                  'VersionDescription': description,
+                  'LaunchTemplateData': data}
         return self.client.create_launch_template(**kwargs)
 
     @exception(logger)
-    def create_tag(self, resource_id: str, tag_key: str, tag_value: str) -> Dict:
-        """Adds or overwrites the specified tags for the
-        specified Amazon EC2 resource or resources."""
-        kwargs = {'Resources': [resource_id],
-                  'Tags': [{'Key': tag_key, 'Value': tag_value}]}
-        return self.client.create_tags(**kwargs)
-
-    @exception(logger)
-    def create_launch_template_version(self, name: str, data: Dict) -> Dict:
+    def create_launch_template_version(self, name: str, description: str, data: Dict) -> Dict:
         """Creates a new version for a launch template.
         You can specify an existing version of launch template
         from which to base the new version."""
         kwargs = {'LaunchTemplateName': name,
+                  'VersionDescription': description,
                   'LaunchTemplateData': data}
         return self.client.create_launch_template_version(**kwargs)
 
     @exception(logger)
-    def describe_launch_templates(self, name: str) -> Dict:
+    def describe_launch_templates(self, parameters: Dict) -> Dict:
         """Describes one or more launch templates."""
-        kwargs = {'LaunchTemplateNames': [name]}
-        return self.client.describe_launch_templates(**kwargs)
+        return self.client.describe_launch_templates(**parameters)
 
     @exception(logger)
-    def describe_launch_template_versions(self, name: str, version: str) -> Dict:
+    def describe_launch_template_versions(self, parameters: Dict) -> Dict:
         """Describes one or more versions of a specified launch template."""
-        kwargs = {'LaunchTemplateName': name,
-                  'Versions': [version]}
-        return self.client.describe_launch_template_versions(**kwargs)
+        return self.client.describe_launch_template_versions(**parameters)
