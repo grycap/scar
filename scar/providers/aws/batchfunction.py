@@ -14,17 +14,26 @@
 
 from scar.providers.aws import GenericClient
 import scar.logger as logger
+from scar.providers.aws.launchtemplates import LaunchTemplates
+from scar.utils import DataTypesUtils
 
 
 class Batch(GenericClient):
+
+    @DataTypesUtils.lazy_property
+    def launch_templates(self):
+        launch_templates = LaunchTemplates(self.aws)
+        return launch_templates
 
     def __init__(self, aws_properties):
         super().__init__(aws_properties)
         self._initialize_properties()
 
     def _initialize_properties(self):
-        self.aws.batch.instance_role = "arn:aws:iam::{0}:instance-profile/ecsInstanceRole".format(self.aws.account_id)
-        self.aws.batch.service_role = "arn:aws:iam::{0}:role/service-role/AWSBatchServiceRole".format(self.aws.account_id)
+        self.aws.batch.instance_role = "arn:aws:iam::{0}:instance-profile/ecsInstanceRole".format(
+            self.aws.account_id)
+        self.aws.batch.service_role = "arn:aws:iam::{0}:role/service-role/AWSBatchServiceRole".format(
+            self.aws.account_id)
 
     def exist_compute_environments(self, name):
         creation_args = self.get_describe_compute_env_args(name_c=name)
@@ -42,20 +51,20 @@ class Batch(GenericClient):
     def _delete_job_definitions(self, name):
         job_definitions = []
         # Get IO definitions (if any)
-        kwargs = {"jobDefinitionName" : '{0}-io'.format(name)}
+        kwargs = {"jobDefinitionName": '{0}-io'.format(name)}
         io_job_info = self.client.describe_job_definitions(**kwargs)
         job_definitions.extend(self._get_job_definitions(io_job_info))
         # Get main job definition
-        kwargs = {"jobDefinitionName" : name}
+        kwargs = {"jobDefinitionName": name}
         job_info = self.client.describe_job_definitions(**kwargs)
         job_definitions.extend(self._get_job_definitions(job_info))
         for job_def in job_definitions:
-            kwars = {"jobDefinition" : job_def}
+            kwars = {"jobDefinition": job_def}
             self.client.deregister_job_definition(**kwars)
         logger.info("Job definitions deleted")
 
     def describe_jobs(self, job_id):
-        describe_args = {'jobs' : [job_id]}
+        describe_args = {'jobs': [job_id]}
         return self.client.describe_jobs(**describe_args)
 
     def exist_job(self, job_id):
@@ -67,7 +76,7 @@ class Batch(GenericClient):
         return len(response["jobQueues"]) != 0
 
     def get_job_queue_info(self, name):
-        job_queue_info_args = {'jobQueues' : [self.get_resource_name(name)]}
+        job_queue_info_args = {'jobQueues': [self.get_resource_name(name)]}
         return self.client.describe_job_queues(**job_queue_info_args)
 
     def _delete_job_queue(self, name):
@@ -81,8 +90,8 @@ class Batch(GenericClient):
 
     def delete_valid_job_queue(self, state, name):
         if state == "ENABLED":
-            updating_args = {'jobQueue' : self.get_resource_name(name),
-                             'state':'DISABLED'}
+            updating_args = {'jobQueue': self.get_resource_name(name),
+                             'state': 'DISABLED'}
             self.client.update_job_queue(**updating_args)
         elif state == "DISABLED":
             deleting_args = {'jobQueue': self.get_resource_name(name)}
@@ -105,28 +114,28 @@ class Batch(GenericClient):
     def delete_valid_compute_environment(self, state, name):
         if state == "ENABLED":
             update_args = {'computeEnvironment': self.get_resource_name(name),
-                           'state':'DISABLED'}
+                           'state': 'DISABLED'}
             self.client.update_compute_environment(**update_args)
         elif state == "DISABLED":
-            delete_args = {'computeEnvironment' : self.get_resource_name(name)}
+            delete_args = {'computeEnvironment': self.get_resource_name(name)}
             logger.info("Compute environment deleted")
             return self.client.delete_compute_environment(**delete_args)
 
     def get_compute_env_args(self):
-        return {'computeEnvironmentName' : self.aws._lambda.name,
-                'serviceRole' : self.aws.batch.service_role,
-                'type' : self.aws.batch.type,
-                'state' :  self.aws.batch.state,
-                'computeResources':{
+        return {'computeEnvironmentName': self.aws._lambda.name,
+                'serviceRole': self.aws.batch.service_role,
+                'type': self.aws.batch.type,
+                'state':  self.aws.batch.state,
+                'computeResources': {
                     'type': self.aws.batch.comp_type,
                     'minvCpus': self.aws.batch.min_v_cpus,
                     'maxvCpus': self.aws.batch.max_v_cpus,
                     'desiredvCpus': self.aws.batch.desired_v_cpus,
                     'instanceTypes': self.aws.batch.instance_types,
-                    'subnets' : self.aws.batch.subnets,
+                    'subnets': self.aws.batch.subnets,
                     'securityGroupIds': self.aws.batch.security_group_ids,
-                    'instanceRole' : self.aws.batch.instance_role,
-                    }
+                    'instanceRole': self.aws.batch.instance_role,
+                }
                 }
 
     def get_creations_job_queue_args(self):
@@ -138,10 +147,10 @@ class Batch(GenericClient):
         }
 
     def get_resource_name(self, name=None):
-        return  name if name else self.aws._lambda.name
+        return name if name else self.aws._lambda.name
 
     def get_describe_compute_env_args(self, name_c=None):
-        return {'computeEnvironments' : [self.get_resource_name(name_c)]}
+        return {'computeEnvironments': [self.get_resource_name(name_c)]}
 
     def get_state_and_status_of_compute_env(self, name=None):
         creation_args = self.get_describe_compute_env_args(name_c=name)

@@ -42,7 +42,7 @@ class YamlParser(object):
         aws_args['lambda']['name'] = function_name
         aws_services = ['iam', 'cloudwatch', 's3', 'api_gateway', 'batch']
         aws_args.update(DataTypesUtils.parse_arg_list(aws_services, function_data))
-        other_args = [('profile','boto_profile'),'region','execution_mode']
+        other_args = [('profile', 'boto_profile'), 'region', 'execution_mode']
         aws_args.update(DataTypesUtils.parse_arg_list(other_args, function_data))
         scar_args.update(DataTypesUtils.parse_arg_list(['supervisor_version'], function_data))
         scar = {'scar' : scar_args if scar_args else {}}
@@ -51,7 +51,7 @@ class YamlParser(object):
 
     def parse_lambda_args(self, cmd_args):
         lambda_args = ['asynchronous', 'init_script', 'run_script', 'c_args', 'memory', 'time',
-                       'timeout_threshold', 'log_level', 'image', 'image_file', 'description', 
+                       'timeout_threshold', 'log_level', 'image', 'image_file', 'description',
                        'lambda_role', 'extra_payload', ('environment', 'environment_variables'),
                        'layers', 'lambda_environment']
         return DataTypesUtils.parse_arg_list(lambda_args, cmd_args)
