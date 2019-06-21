@@ -15,6 +15,7 @@
 of managing the SCAR configuration file."""
 
 import json
+from packaging import version
 from scar.exceptions import exception, ScarConfigFileError
 import scar.logger as logger
 from scar.utils import FileUtils, SysUtils
@@ -22,7 +23,8 @@ from scar.utils import FileUtils, SysUtils
 _DEFAULT_CFG = {
     "scar" : {
         # Must be a tag or "latest"
-        "supervisor_version": "latest"
+        "supervisor_version": "latest",
+        "config_version": "1.0.0"
     },
     "aws" : {
         "boto_profile" : "default",
@@ -63,12 +65,12 @@ _DEFAULT_CFG = {
 class ConfigFileParser():
     """Class to manage the SCAR configuration file creation, update and load."""
 
-    config_file_name = "scar.cfg"
-    backup_config_file_name = "scar.cfg_old"
-    config_folder_name = ".scar"
-    config_file_folder = FileUtils.join_paths(SysUtils.get_user_home_path(), config_folder_name)
-    config_file_path = FileUtils.join_paths(config_file_folder, config_file_name)
-    backup_file_path = FileUtils.join_paths(config_file_folder, backup_config_file_name)
+    _CONFIG_FOLDER_PATH = ".scar"
+    _CONFIG_FILE_PATH = "scar.cfg"
+    _CONFIG_FILE_NAME_BCK = "scar.cfg_old"
+    config_file_folder = FileUtils.join_paths(SysUtils.get_user_home_path(), _CONFIG_FOLDER_PATH)
+    config_file_path = FileUtils.join_paths(config_file_folder, _CONFIG_FILE_PATH)
+    backup_file_path = FileUtils.join_paths(config_file_folder, _CONFIG_FILE_NAME_BCK)
 
     @exception(logger)
     def __init__(self):
@@ -76,17 +78,17 @@ class ConfigFileParser():
         if FileUtils.is_file(self.config_file_path):
             with open(self.config_file_path) as cfg_file:
                 self.cfg_data = json.load(cfg_file)
-            if 'region' not in self.cfg_data['aws'] or \
-               'boto_profile' not in self.cfg_data['aws'] or \
-               'execution_mode' not in self.cfg_data['aws'] or \
-               'scar' not in self.cfg_data:
-                self._add_missing_attributes()
+            if not self._is_config_file_updated():
+                self._update_config_file()
         else:
-            # Create scar config dir
-            FileUtils.create_folder(self.config_file_folder)
-            FileUtils.create_file_with_content(self.config_file_path,
-                                               json.dumps(_DEFAULT_CFG, indent=2))
-            raise ScarConfigFileError(file_path=self.config_file_path)
+            self._create_scar_config_folder_and_file()
+
+    def _is_config_file_updated(self):
+        if 'config_version' not in self.cfg_data['scar']:
+            return False
+        user_cfg_file_ver = version.parse(self.cfg_data['scar']["config_version"])
+        def_cfg_file_ver = version.parse(_DEFAULT_CFG['scar']["config_version"])
+        return user_cfg_file_ver >= def_cfg_file_ver
 
     def get_properties(self):
         """Returns the configuration data of the configuration file."""
@@ -100,24 +102,48 @@ class ConfigFileParser():
         """Returns the url where the udocker zip is stored."""
         return self.cfg_data['scar']['udocker_info']['zip_url']
 
-    def _add_missing_attributes(self):
-        logger.info("Updating old scar config file '{0}'.\n".format(self.config_file_path))
+    def _create_scar_config_folder_and_file(self):
+        FileUtils.create_folder(self.config_file_folder)
+        self._create_new_config_file()
+        raise ScarConfigFileError(file_path=self.config_file_path)
+
+    def _create_new_config_file(self):
+        FileUtils.create_file_with_content(self.config_file_path,
+                                           json.dumps(_DEFAULT_CFG, indent=2))
+
+    def _update_config_file(self):
+        logger.info(("SCAR configuration file deprecated.\n"
+                     "Updating your SCAR configuration file."))
         FileUtils.copy_file(self.config_file_path, self.backup_file_path)
-        logger.info("Old scar config file saved in '{0}'.\n".format(self.backup_file_path))
-        self._merge_files(self.cfg_data, _DEFAULT_CFG)
-        self._delete_unused_data()
-        with open(self.config_file_path, mode='w') as cfg_file:
-            cfg_file.write(json.dumps(self.cfg_data, indent=2))
+        logger.info(f"Old configuration file saved in '{self.backup_file_path}'.")
+        self._create_new_config_file()
+        logger.info((f"New configuration file saved in '{self.config_file_path}'.\n"
+                     "Please fill your new configuration file with your account information."))
+        SysUtils.finish_scar_execution()
 
-    def _merge_files(self, cfg_data, default_data):
-        for key, val in default_data.items():
-            if key not in cfg_data:
-                cfg_data[key] = val
-            elif isinstance(cfg_data[key], dict):
-                self._merge_files(cfg_data[key], default_data[key])
+#         self._merge_files(self.cfg_data, _DEFAULT_CFG)
+#         self._delete_unused_data()
+#         with open(self.config_file_path, mode='w') as cfg_file:
+#             cfg_file.write(json.dumps(self.cfg_data, indent=2))
 
-    def _delete_unused_data(self):
-        if 'region' in self.cfg_data['aws']['lambda']:
-            region = self.cfg_data['aws']['lambda'].pop('region', None)
-            if region:
-                self.cfg_data['aws']['region'] = region
+#     def _add_missing_attributes(self):
+#         logger.info("Updating old scar config file '{0}'.\n".format(self.config_file_path))
+#         FileUtils.copy_file(self.config_file_path, self.backup_file_path)
+#         logger.info("Old scar config file saved in '{0}'.\n".format(self.backup_file_path))
+#         self._merge_files(self.cfg_data, _DEFAULT_CFG)
+#         self._delete_unused_data()
+#         with open(self.config_file_path, mode='w') as cfg_file:
+#             cfg_file.write(json.dumps(self.cfg_data, indent=2))
+#
+#     def _merge_files(self, cfg_data, default_data):
+#         for key, val in default_data.items():
+#             if key not in cfg_data:
+#                 cfg_data[key] = val
+#             elif isinstance(cfg_data[key], dict):
+#                 self._merge_files(cfg_data[key], default_data[key])
+#
+#     def _delete_unused_data(self):
+#         if 'region' in self.cfg_data['aws']['lambda']:
+#             region = self.cfg_data['aws']['lambda'].pop('region', None)
+#             if region:
+#                 self.cfg_data['aws']['region'] = region

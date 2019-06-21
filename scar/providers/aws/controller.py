@@ -120,8 +120,8 @@ class AWS(Commands):
             file_list = self.s3.get_bucket_file_list()
             for file_info in file_list:
                 print(file_info)
-        elif hasattr(self.aws_properties._lambda, "layers"):
-            self._lambda.layers.print_layers_info()
+#         elif hasattr(self.aws_properties._lambda, "layers"):
+#             self._lambda.layers.print_layers_info()
         else:
             lambda_functions = self._get_all_functions()
             response_parser.parse_ls_response(lambda_functions, 

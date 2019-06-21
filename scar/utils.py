@@ -24,8 +24,10 @@ import subprocess
 import tarfile
 import tempfile
 import uuid
+import sys
 import scar.logger as logger
 import scar.http.request as request
+from scar.exceptions import GitHubTagNotFoundError
 
 
 class SysUtils:
@@ -80,6 +82,13 @@ class SysUtils:
         """Returns the path of the current user's home."""
         return os.path.expanduser("~")
 
+    @staticmethod
+    def finish_scar_execution() -> None:
+        """Finishes the program execution."""
+        logger.end_execution_trace()
+        sys.exit(0)
+
+
 class DataTypesUtils:
     """Common methods for data types management."""
 
@@ -94,6 +103,7 @@ class DataTypesUtils:
             if not hasattr(self, attr_name):
                 setattr(self, attr_name, func(self))
             return getattr(self, attr_name)
+
         return _lazy_property
 
     @staticmethod
@@ -269,6 +279,7 @@ class FileUtils:
         """Test whether a path is a regular file."""
         return os.path.isfile(file_path)
 
+
 class StrUtils:
     """Common methods for string management."""
 
@@ -351,10 +362,28 @@ class GitHubUtils:
             if GitHubUtils.exists_release_in_repo(user, project, tag_name):
                 url = f'https://api.github.com/repos/{user}/{project}/releases/tags/{tag_name}'
             else:
-                return None
+                raise GitHubTagNotFoundError(tag=tag_name)
         response = json.loads(request.get_file(url))
         if isinstance(response, dict) and 'assets' in response:
             for asset in response['assets']:
                 if asset['name'] == asset_name:
                     return asset['browser_download_url']
         return None
+
+    @staticmethod
+    def get_source_code_url(user: str, project: str, tag_name: str = 'latest') -> str:
+        """Get the source code's url from the specified github tagged project."""
+        source_url = ""
+        repo_url = ""
+        if tag_name == 'latest':
+            repo_url = f'https://api.github.com/repos/{user}/{project}/releases/latest'
+        else:
+            if GitHubUtils.exists_release_in_repo(user, project, tag_name):
+                repo_url = f'https://api.github.com/repos/{user}/{project}/releases/tags/{tag_name}'
+            else:
+                raise GitHubTagNotFoundError(tag=tag_name)
+        if repo_url:
+            response = json.loads(request.get_file(repo_url))
+            if isinstance(response, dict):
+                source_url = response.get('zipball_url')
+        return source_url

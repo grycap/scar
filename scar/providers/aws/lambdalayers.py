@@ -11,16 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Module with methods and classes to manage the Lambda layers."""
 
 import io
-import json
-from scar.parser.cfgfile import ConfigFileParser
 import shutil
 import zipfile
+from typing import Dict, List
 from tabulate import tabulate
 import scar.http.request as request
 import scar.logger as logger
-from scar.utils import DataTypesUtils, FileUtils
+from scar.parser.cfgfile import ConfigFileParser
+from scar.utils import DataTypesUtils, FileUtils, GitHubUtils
 
 
 class Layer():
@@ -28,147 +29,127 @@ class Layer():
     def __init__(self, lambda_client):
         self.client = lambda_client
 
-    def create(self, **kwargs):
+    def create(self, **kwargs: Dict) -> Dict:
         return self.client.publish_layer_version(**kwargs)
 
-    def _find(self, layers_info, layer_name):
-        if 'Layers' in layers_info:
-            for layer in layers_info['Layers']:
-                if layer['LayerName'] == layer_name:
-                    return layer
-
-    def get_info(self, layer_name):
-        layers_info = self.client.list_layers()
-        # Look for the layer in the first batch
-        layer = self._find(layers_info, layer_name)
-        if layer:
-            return layer         
-        while 'NextMarker' in layers_info:
-            layers_info = self.client.list_layers(Marker=layers_info['NextMarker'])
-            layer = self._find(layers_info, layer_name)
-            if layer:
+    def _find(self, layers_info: Dict, layer_name: str) -> Dict:
+        """Returns the layer information that matches the layer name passed."""
+        for layer in layers_info.get('Layers', []):
+            if layer.get('LayerName', '') == layer_name:
                 return layer
+        return {}
 
-    def exists(self, layer_name):
-        return self.get_info(layer_name) != None
+    def get_info(self, layer_name: str, next_token: str = None):
+        """Searches for the layer_name information."""
+        all_layers_info = self.client.list_layers(Marker=next_token)
+        layer_info = self._find(all_layers_info, layer_name)
+        if not layer_info and 'NextMarker' in all_layers_info:
+            layer_info = self.get_info(layer_name, next_token=all_layers_info['NextMarker'])
+        return layer_info
 
-    def delete(self, **kwargs):
+    def exists(self, layer_name: str) -> bool:
+        if self.get_info(layer_name):
+            return True
+        return False
+
+    def delete(self, **kwargs: Dict) -> Dict:
         layer_args = {'LayerName' : kwargs['name']}
-        layer_args['VersionNumber'] = int(kwargs['version']) if kwargs['version'] else self.get_latest_version(kwargs['name'])
+        if kwargs['version']:
+            layer_args['VersionNumber'] = int(kwargs['version'])
+        else:
+            layer_args['VersionNumber'] = self.get_latest_version(kwargs['name'])
         return self.client.delete_layer_version(**layer_args)
 
-    def get_latest_version(self, layer_name):
-        layers = self.get_layers_info()
-        for layer in layers['Layers']:
-            if layer['LayerName'] == layer_name:
-                return layer['LatestMatchingVersion']['Version']
+    def get_latest_version(self, layer_name: str) -> str:
+        layer = self.get_info(layer_name)
+        return layer['LatestMatchingVersion']['Version'] if layer else ""
 
 
 class ScarProperties(dict):
-    def __init__(self, *args, **kwargs):
+
+    def __init__(self, *args: List, **kwargs: Dict):
         super(ScarProperties, self).__init__(*args, **kwargs)
         self.__dict__ = self
 
 
 class LambdaLayers():
 
+    _SUPERVISOR_LAYER_NAME = 'faas-supervisor'
+
     @DataTypesUtils.lazy_property
     def layer(self):
         layer = Layer(self.client)
         return layer
 
-    def __init__(self, lambda_client):
-        """
-        Default scar's configuration file structure:
-        {
-            "scar" : {
-                "layers": { "faas-supervisor" : {"version_url" : "https://api.github.com/repos/grycap/faas-supervisor/releases/latest",
-                                                 "zip_url" : "https://github.com/grycap/faas-supervisor/archive/{0}.zip",
-                                                 "default_version" : "master",
-                                                 "layer_name" : "faas-supervisor"}
-                },
-                "udocker_info" : {
-                    "zip_url" : "https://github.com/grycap/faas-supervisor/raw/master/extra/udocker.zip"
-                },
-            }, ...
-        }
-        """
+    def __init__(self, lambda_client: Dict):
         self.client = lambda_client
-        self.cfg_layer_info = ConfigFileParser().get_faas_supervisor_layer_info()
-        self.supervisor_version = self.cfg_layer_info['default_version']
-        self.supervisor_zip_url = self.cfg_layer_info['zip_url'].format(self.supervisor_version)        
-        self.layer_name = self.cfg_layer_info['layer_name']
-        self.layer_zip_path = FileUtils.join_paths(FileUtils.get_tmp_dir(), '{}.zip'.format(self.layer_name))
+        self.supervisor_version = ConfigFileParser().get_supervisor_version()
+        self.supervisor_zip_url = GitHubUtils.get_source_code_url('grycap',
+                                                                  'faas-supervisor',
+                                                                  self.supervisor_version)
+        self.layer_zip_path = FileUtils.join_paths(FileUtils.get_tmp_dir(),
+                                                   f"{self._SUPERVISOR_LAYER_NAME}.zip")
 
-    def _create_tmp_folders(self):
+    def _create_tmp_folders(self) -> None:
         self.tmp_zip_folder = FileUtils.create_tmp_dir()
         self.tmp_zip_path = self.tmp_zip_folder.name
         self.layer_code_folder = FileUtils.create_tmp_dir()
         self.layer_code_path = self.layer_code_folder.name
 
-    def _get_supervisor_version(self):
-        j = json.loads(request.call_http_endpoint(self.cfg_layer_info['version_url']).text)
-        return j['tag_name']
-
-    def _download_supervisor(self):
-#         supervisor_version = self._get_supervisor_version()
-        self.version_path = 'faas-supervisor-{0}'.format(self.supervisor_version)
+    def _download_supervisor(self) -> str:
+        """Returns the folder name to remove from the """
         supervisor_zip = request.get_file(self.supervisor_zip_url)
         with zipfile.ZipFile(io.BytesIO(supervisor_zip)) as thezip:
             for file in thezip.namelist():
-                if file.startswith('{}/extra'.format(self.version_path)) or \
-                   file.startswith('{}/faassupervisor'.format(self.version_path)):
+                # Remove the parent folder path
+                parent_folder, file_name = file.split("/", 1)
+                if file_name.startswith("extra") or file_name.startswith("faassupervisor"):
                     thezip.extract(file, self.tmp_zip_path)
+        return parent_folder
 
-    def _copy_supervisor_files(self):
-        supervisor_path = FileUtils.join_paths(self.tmp_zip_path, self.version_path, 'faassupervisor')
+    def _copy_supervisor_files(self, parent_folder: str) -> None:
+        supervisor_path = FileUtils.join_paths(self.tmp_zip_path, parent_folder, 'faassupervisor')
         shutil.move(supervisor_path, FileUtils.join_paths(self.layer_code_path, 'python', 'faassupervisor'))
 
-    def _copy_udocker_files(self):
-        FileUtils.unzip_folder(FileUtils.join_paths(self.tmp_zip_path, self.version_path, 'extra', 'udocker.zip'), self.layer_code_path)
+    def _copy_extra_files(self, parent_folder: str) -> None:
+        extra_folder_path = FileUtils.join_paths(self.tmp_zip_path, parent_folder, 'extra')
+        files = FileUtils.get_all_files_in_directory(extra_folder_path)
+        for file_path in files:
+            FileUtils.unzip_folder(file_path, self.layer_code_path)
 
-    def _create_layer_zip(self):
+    def _create_layer_zip(self) -> None:
         FileUtils.zip_folder(self.layer_zip_path, self.layer_code_path)
 
-    def _get_supervisor_layer_props(self):
-        return {'LayerName' : self.layer_name,
+    def _get_supervisor_layer_props(self) -> Dict:
+        return {'LayerName' : self._SUPERVISOR_LAYER_NAME,
                 'Description' : 'FaaS supervisor that allows to run containers in rootless environments',
                 'Content' : {'ZipFile': FileUtils.read_file(self.layer_zip_path, mode="rb")},
                 'LicenseInfo' : 'Apache 2.0'}
 
-    def is_supervisor_layer_created(self):
-        return self.layer.exists(self.layer_name)
+    def is_supervisor_layer_created(self) -> bool:
+        return self.layer.exists(self._SUPERVISOR_LAYER_NAME)
 
-    def _create_layer(self):
+    def _create_layer(self) -> None:
         self._create_tmp_folders()
-        self._download_supervisor()
-        self._copy_supervisor_files()
-        self._copy_udocker_files()
+        parent_folder = self._download_supervisor()
+        self._copy_supervisor_files(parent_folder)
+        self._copy_extra_files(parent_folder)
         self._create_layer_zip()
         supervisor_layer_props = self._get_supervisor_layer_props()
-        self.supervisor_layer_info = self.layer.create(**supervisor_layer_props)
+        self.layer.create(**supervisor_layer_props)
         FileUtils.delete_file(self.layer_zip_path)
 
-    def create_supervisor_layer(self):
+    def create_supervisor_layer(self) -> None:
         logger.info("Creating faas-supervisor layer")
         self._create_layer()
         logger.info("Faas-supervisor layer created")
 
-    def update_supervisor_layer(self):
+    def update_supervisor_layer(self) -> None:
         logger.info("Updating faas-supervisor layer")
         self._create_layer()
         logger.info("Faas-supervisor layer updated")
 
-    def get_layers_arn(self):
-        layers = []
-        if not hasattr(self, "supervisor_layer_info"):
-            self.supervisor_layer_info = self.layer.get_info(self.layer_name)
-            layers.append(self.supervisor_layer_info['LatestMatchingVersion']['LayerVersionArn'])
-        else:
-            layers.append(self.supervisor_layer_info['LayerVersionArn'])
-        return layers
-
-    def get_all_layers_info(self):
+    def get_all_layers_info(self) -> List:
         result = []
         layers_info = self.client.list_layers()
         if 'Layers' in layers_info:
@@ -176,10 +157,11 @@ class LambdaLayers():
         while 'NextMarker' in layers_info:
             layers_info = self.client.list_layers(Marker=layers_info['NextMarker'])
             if 'Layers' in layers_info:
-                result.extend(layers_info['Layers'])            
+                result.extend(layers_info['Layers'])
         return result
 
-    def print_layers_info(self):
+    def print_layers_info(self) -> None:
+        """Prints the lambda layers information."""
         layers_info = self.get_all_layers_info()
         headers = ['NAME', 'VERSION', 'ARN', 'RUNTIMES']
         table = []
@@ -190,6 +172,6 @@ class LambdaLayers():
                           layer['LatestMatchingVersion'].get('CompatibleRuntimes', '-')])
         print(tabulate(table, headers))
 
-    def get_latest_supervisor_layer_arn(self):
-        self.supervisor_layer_info = self.layer.get_info(self.layer_name)
-        return self.supervisor_layer_info['LatestMatchingVersion']['LayerVersionArn']
+    def get_latest_supervisor_layer_arn(self) -> str:
+        layer_info = self.layer.get_info(self._SUPERVISOR_LAYER_NAME)
+        return layer_info['LatestMatchingVersion']['LayerVersionArn']
