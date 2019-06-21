@@ -30,29 +30,33 @@ class Layer():
         self.client = lambda_client
 
     def create(self, **kwargs: Dict) -> Dict:
+        """Creates a new layer with the arguments passed."""
         return self.client.publish_layer_version(**kwargs)
 
-    def _find(self, layers_info: Dict, layer_name: str) -> Dict:
+    @staticmethod
+    def _find(layers_info: Dict, layer_name: str) -> Dict:
         """Returns the layer information that matches the layer name passed."""
         for layer in layers_info.get('Layers', []):
             if layer.get('LayerName', '') == layer_name:
                 return layer
         return {}
 
-    def get_info(self, layer_name: str, next_token: str = None):
+    def get_info(self, layer_name: str, next_token: str=None):
         """Searches for the layer_name information."""
         all_layers_info = self.client.list_layers(Marker=next_token)
-        layer_info = self._find(all_layers_info, layer_name)
+        layer_info = Layer._find(all_layers_info, layer_name)
         if not layer_info and 'NextMarker' in all_layers_info:
             layer_info = self.get_info(layer_name, next_token=all_layers_info['NextMarker'])
         return layer_info
 
     def exists(self, layer_name: str) -> bool:
+        """Checks layer name for existence."""
         if self.get_info(layer_name):
             return True
         return False
 
     def delete(self, **kwargs: Dict) -> Dict:
+        """Deletes a layer."""
         layer_args = {'LayerName' : kwargs['name']}
         if kwargs['version']:
             layer_args['VersionNumber'] = int(kwargs['version'])
@@ -61,15 +65,9 @@ class Layer():
         return self.client.delete_layer_version(**layer_args)
 
     def get_latest_version(self, layer_name: str) -> str:
+        """Returns the latest matching version of the layer with 'layer_name'."""
         layer = self.get_info(layer_name)
         return layer['LatestMatchingVersion']['Version'] if layer else ""
-
-
-class ScarProperties(dict):
-
-    def __init__(self, *args: List, **kwargs: Dict):
-        super(ScarProperties, self).__init__(*args, **kwargs)
-        self.__dict__ = self
 
 
 class LambdaLayers():
