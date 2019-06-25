@@ -22,11 +22,12 @@ class Batch(GenericClient):
 
     @DataTypesUtils.lazy_property
     def launch_templates(self):
-        launch_templates = LaunchTemplates(self.aws)
+        launch_templates = LaunchTemplates(self.aws, self.supervisor_version)
         return launch_templates
 
-    def __init__(self, aws_properties):
+    def __init__(self, aws_properties, supervisor_version):
         super().__init__(aws_properties)
+        self.supervisor_version = supervisor_version
         self._initialize_properties()
 
     def _initialize_properties(self):
@@ -122,28 +123,33 @@ class Batch(GenericClient):
             return self.client.delete_compute_environment(**delete_args)
 
     def get_compute_env_args(self):
-        return {'computeEnvironmentName': self.aws._lambda.name,
-                'serviceRole': self.aws.batch.service_role,
-                'type': self.aws.batch.type,
-                'state':  self.aws.batch.state,
-                'computeResources': {
-                    'type': self.aws.batch.comp_type,
-                    'minvCpus': self.aws.batch.min_v_cpus,
-                    'maxvCpus': self.aws.batch.max_v_cpus,
-                    'desiredvCpus': self.aws.batch.desired_v_cpus,
-                    'instanceTypes': self.aws.batch.instance_types,
-                    'subnets': self.aws.batch.subnets,
-                    'securityGroupIds': self.aws.batch.security_group_ids,
-                    'instanceRole': self.aws.batch.instance_role,
+        return {
+            'computeEnvironmentName': self.aws._lambda.name,
+            'serviceRole': self.aws.batch.service_role,
+            'type': self.aws.batch.compute_resources['type'],
+            'state':  self.aws.batch.compute_resources['state'],
+            'computeResources': {
+                'type': self.aws.batch.compute_resources['comp_type'],
+                'minvCpus': self.aws.batch.compute_resources['min_v_cpus'],
+                'maxvCpus': self.aws.batch.compute_resources['max_v_cpus'],
+                'desiredvCpus': self.aws.batch.compute_resources['desired_v_cpus'],
+                'instanceTypes': self.aws.batch.compute_resources['instance_types'],
+                'subnets': self.aws.batch.compute_resources['subnets'],
+                'securityGroupIds': self.aws.batch.compute_resources['security_group_ids'],
+                'instanceRole': self.aws.batch.instance_role,
+                'launchTemplate': {
+                    'launchTemplateName': 'faas-supervisor',
+                    'version': str(self.launch_templates.get_launch_template_version())
                 }
-                }
+            }
+        }
 
     def get_creations_job_queue_args(self):
         return {
             'computeEnvironmentOrder': [{'computeEnvironment': self.aws._lambda.name, 'order': 1}, ],
             'jobQueueName':  self.aws._lambda.name,
             'priority': 1,
-            'state': self.aws.batch.state,
+            'state': self.aws.batch.compute_resources['state'],
         }
 
     def get_resource_name(self, name=None):
@@ -152,12 +158,78 @@ class Batch(GenericClient):
     def get_describe_compute_env_args(self, name_c=None):
         return {'computeEnvironments': [self.get_resource_name(name_c)]}
 
+    def _get_job_definition_args(self):
+        job_def_args = {
+            'jobDefinitionName': self.aws._lambda.name,
+            'type': 'container',
+            'containerProperties': {
+                'image': self.aws._lambda.image,
+                'memory': int(self.aws.batch.memory),
+                'vcpus': int(self.aws.batch.vcpus),
+                'command': [
+                    '/bin/sh',
+                    '-c',
+                    'echo $EVENT | /opt/faas-supervisor/bin/supervisor'
+                ],
+                'volumes': [
+                    {
+                        'host': {
+                            'sourcePath': '/opt/faas-supervisor/bin'
+                        },
+                        'name': 'supervisor-bin'
+                    }
+                ],
+                'environment': self._get_job_env_vars(),
+                'mountPoints': [
+                    {
+                        'containerPath': '/opt/faas-supervisor/bin',
+                        'sourceVolume': 'supervisor-bin'
+                    }
+                ]
+            }
+        }
+        if self.aws.batch.enable_gpu:
+            job_def_args['containerProperties']['resourceRequirements'] = [
+                {
+                    'value': '1',
+                    'type': 'GPU'
+                }
+            ]
+        return job_def_args
+
+    def _parse_vars(self, env_vars):
+        env_vars = []
+        if isinstance(env_vars, dict):
+            for key, val in env_vars.items():
+                env_vars.append({
+                    'name': key,
+                    'value': val
+                })
+        else:
+            for env_var in env_vars:
+                key_val = env_var.split("=")
+                env_vars.append({
+                    'name': key_val[0],
+                    'value': key_val[1]
+                })
+        return env_vars
+
+    def _get_job_env_vars(self):
+        env_vars = []
+        if (hasattr(self.aws._lambda, 'environment_variables') and
+                self.aws._lambda.environment_variables):
+            env_vars.extend(self._parse_vars(self.aws._lambda.environment_variables))
+        if (hasattr(self.aws._lambda, 'lambda_environment') and
+                self.aws._lambda.lambda_environment):
+            env_vars.extend(self._parse_vars(self.aws._lambda.lambda_environment))
+        return env_vars
+
     def get_state_and_status_of_compute_env(self, name=None):
         creation_args = self.get_describe_compute_env_args(name_c=name)
         response = self.client.describe_compute_environments(**creation_args)
         return response["computeEnvironments"][0]["state"], response["computeEnvironments"][0]["status"]
 
-    def create_compute_environment(self):
+    def create_batch_environment(self):
         creation_args = self.get_compute_env_args()
         self.client.create_compute_environment(**creation_args)
         while True:
@@ -165,4 +237,6 @@ class Batch(GenericClient):
             if state == "ENABLED" and status == "VALID":
                 creation_args = self.get_creations_job_queue_args()
                 logger.info("Compute environment created.")
-                return self.client.create_job_queue(**creation_args)
+                self.client.create_job_queue(**creation_args)
+                creation_args = self._get_job_definition_args()
+                return self.client.register_job_definition(**creation_args)

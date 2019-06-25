@@ -83,7 +83,8 @@ def main():
     try:
         ScarCLI().parse_arguments()
         logger.end_execution_trace()
-    except:
+    except Exception as e:
+        print(e)
         logger.end_execution_trace_with_errors()
 
 if __name__ == "__main__":

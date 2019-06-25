@@ -30,7 +30,6 @@ Generic response from boto3:
               'RequestId': 'XXX',
               'RetryAttempts': 0}}"""
 
-from typing import Dict
 from string import Template
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -53,7 +52,17 @@ class LaunchTemplates(GenericClient):
         '#!/bin/bash\n'
         'mkdir -p /opt/faas-supervisor/bin\n'
         'curl $supervisor_binary_url -L -o /opt/faas-supervisor/bin/supervisor\n'
-        'chmod +x /opt/faas-supervisor/bin/supervisor')
+        'chmod +x /opt/faas-supervisor/bin/supervisor\n'
+    )
+
+    def __init__(self, aws_properties, supervisor_version):
+        super().__init__(aws_properties)
+        self.supervisor_version = supervisor_version
+        if self.supervisor_version == 'latest':
+            self.supervisor_version = GitHubUtils.get_latest_release(
+                self._SUPERVISOR_GITHUB_USER,
+                self._SUPERVISOR_GITHUB_REPO
+            )
 
     @excp.exception(logger)
     def _is_supervisor_created(self) -> bool:
@@ -63,14 +72,11 @@ class LaunchTemplates(GenericClient):
              'Values': [self._TEMPLATE_NAME]}
         ]}
         response = self.client.describe_launch_templates(params)
-        if ('LaunchTemplates' in response and
-                response['LaunchTemplates']):
-            return True
-        else:
-            return False
+        return ('LaunchTemplates' in response and
+                response['LaunchTemplates'])
 
     @excp.exception(logger)
-    def _is_supervisor_version_created(self, supervisor_version: str) -> int:
+    def _is_supervisor_version_created(self) -> int:
         """Checks if the supervisor version specified is created.
         Returns the Launch Template version or -1 if it does not exists"""
         response = self.client.describe_launch_template_versions(
@@ -85,12 +91,12 @@ class LaunchTemplates(GenericClient):
 
         for version in versions:
             if 'VersionDescription' in version:
-                if version['VersionDescription'] == supervisor_version:
+                if version['VersionDescription'] == self.supervisor_version:
                     return version['VersionNumber']
         return -1
 
     @excp.exception(logger)
-    def _create_supervisor_user_data(self, supervisor_version: str) -> str:
+    def _create_supervisor_user_data(self) -> str:
         """Returns the user_data with the script required for downloading
         the specified version of faas-supervisor in mime-multipart format
         and encoded in base64
@@ -113,7 +119,7 @@ class LaunchTemplates(GenericClient):
         url = GitHubUtils.get_asset_url(self._SUPERVISOR_GITHUB_USER,
                                         self._SUPERVISOR_GITHUB_REPO,
                                         self._SUPERVISOR_GITHUB_ASSET_NAME,
-                                        supervisor_version)
+                                        self.supervisor_version)
         script = self._LAUNCH_TEMPLATE_SCRIPT.substitute(
             supervisor_binary_url=url)
         content = MIMEText(script, 'x-shellscript')
@@ -121,24 +127,24 @@ class LaunchTemplates(GenericClient):
         return StrUtils.utf8_to_base64_string(str(multipart))
 
     @excp.exception(logger)
-    def get_launch_template_version(self, supervisor_version: str) -> int:
+    def get_launch_template_version(self) -> int:
         """Return the launch template version of the specified version of
         'faas-supervisor'. If it does not exists creates a new one."""
         if self._is_supervisor_created():
-            is_created = self._is_supervisor_version_created(supervisor_version)
+            is_created = self._is_supervisor_version_created()
             if is_created is not -1:
                 return is_created
             else:
-                user_data = self._create_supervisor_user_data(supervisor_version)
+                user_data = self._create_supervisor_user_data()
                 response = self.client.create_launch_template_version(
                     self._TEMPLATE_NAME,
-                    supervisor_version,
+                    self.supervisor_version,
                     {'UserData': user_data})
                 return response['VersionNumber']
         else:
-            user_data = self._create_supervisor_user_data(supervisor_version)
+            user_data = self._create_supervisor_user_data()
             response = self.client.create_launch_template(
                 self._TEMPLATE_NAME,
-                supervisor_version,
+                self.supervisor_version,
                 {'UserData': user_data})
             return response['LatestVersionNumber']

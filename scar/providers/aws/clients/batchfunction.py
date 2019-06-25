@@ -40,8 +40,14 @@ class BatchClient(BotoClient):
         return self.client.create_job_queue(**kwargs)
 
     @exception(logger)
+    def register_job_definition(self, **kwargs: Dict) -> Dict:
+        """Registers a new job definition."""
+        logger.debug("Registering job definition.")
+        return self.client.register_job_definition(**kwargs)
+
+    @exception(logger)
     def describe_compute_environments(self, **kwargs: Dict) -> Dict:
-        """Creates a new job queue."""
+        """Describes compute environments."""
         logger.debug("Describing Compute Environment.")
         return self.client.describe_compute_environments(**kwargs)
 

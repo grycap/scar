@@ -21,40 +21,40 @@ import scar.logger as logger
 from scar.utils import FileUtils, SysUtils
 
 _DEFAULT_CFG = {
-    "scar" : {
+    "scar": {
         # Must be a tag or "latest"
         "supervisor_version": "latest",
         "config_version": "1.0.0"
     },
-    "aws" : {
-        "boto_profile" : "default",
-        "region" : "us-east-1",
+    "aws": {
+        "boto_profile": "default",
+        "region": "us-east-1",
         "execution_mode": "lambda",
-        "iam" : {"role" : ""},
-        "lambda" : {
-            "time" : 300,
-            "memory" : 512,
-            "description" : "Automatically generated lambda function",
-            "timeout_threshold" : 10,
-            "runtime" : "python3.6",
-            "max_payload_size" : 52428800,
-            "max_s3_payload_size" : 262144000,
-            "layers": [""]
+        "iam": {"role": ""},
+        "lambda": {
+            "time": 300,
+            "memory": 512,
+            "description": "Automatically generated lambda function",
+            "timeout_threshold": 10,
+            "runtime": "python3.6",
+            "max_payload_size": 52428800,
+            "max_s3_payload_size": 262144000,
+            "layers": []
         },
-        "cloudwatch" : {"log_retention_policy_in_days" : 30},
-        "batch" : {
+        "cloudwatch": {"log_retention_policy_in_days": 30},
+        "batch": {
             "vcpus": 1,
             "memory": 1024,
             "enable_gpu": False,
             "compute_resources": {
                 "state": "ENABLED",
                 "type": "MANAGED",
-                "security_group_ids": [""],
+                "security_group_ids": [],
                 "comp_type": "EC2",
                 "desired_v_cpus": 0,
                 "min_v_cpus": 0,
                 "max_v_cpus": 2,
-                "subnets": [""],
+                "subnets": [],
                 "instance_types": ["m3.medium"]
             }
         }
@@ -93,10 +93,6 @@ class ConfigFileParser():
     def get_properties(self):
         """Returns the configuration data of the configuration file."""
         return self.cfg_data
-
-    def get_supervisor_version(self):
-        """Returns the default supervisor version."""
-        return self.cfg_data['scar']['supervisor_version']
 
     def get_udocker_zip_url(self):
         """Returns the url where the udocker zip is stored."""

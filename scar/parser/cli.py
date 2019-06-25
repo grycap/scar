@@ -81,7 +81,7 @@ class CommandParser(object):
         self.storage_parser.add_argument("-p", "--path", help="Path of the file or folder", required=True)
 
     def add_subparsers(self):
-        self.subparsers = self.parser.add_subparsers(title='Commands')    
+        self.subparsers = self.parser.add_subparsers(title='Commands')
         self.add_init_parser()
         self.add_invoke_parser()
         self.add_run_parser()
@@ -179,7 +179,7 @@ class CommandParser(object):
             if cmd_args.version:
                 print("SCAR {}".format(version.__version__))
                 sys.exit(0)                 
-            
+
             cmd_args = vars(cmd_args)
             if 'func' not in cmd_args:
                 raise excp.MissingCommandError()
@@ -217,7 +217,7 @@ class CommandParser(object):
 
     def parse_lambda_args(self, cmd_args):
         lambda_args = ['name', 'asynchronous', 'init_script', 'run_script', 'c_args', 'memory', 'time',
-                       'timeout_threshold', 'log_level', 'image', 'image_file', 'description', 
+                       'timeout_threshold', 'log_level', 'image', 'image_file', 'description',
                        'lambda_role', 'extra_payload', ('environment', 'environment_variables'),
                        'layers', 'lambda_environment', 'list_layers']
         return DataTypesUtils.parse_arg_list(lambda_args, cmd_args)

@@ -37,12 +37,12 @@ class AWS(Commands):
     def _lambda(self):
         '''It's called _lambda because 'lambda'
         it's a restricted word in python'''
-        _lambda = Lambda(self.aws_properties)
+        _lambda = Lambda(self.aws_properties, self.scar_properties.supervisor_version)
         return _lambda
 
     @DataTypesUtils.lazy_property
     def batch(self):
-        batch = Batch(self.aws_properties)
+        batch = Batch(self.aws_properties, self.scar_properties.supervisor_version)
         return batch
 
     @DataTypesUtils.lazy_property
@@ -124,13 +124,13 @@ class AWS(Commands):
 #             self._lambda.layers.print_layers_info()
         else:
             lambda_functions = self._get_all_functions()
-            response_parser.parse_ls_response(lambda_functions, 
+            response_parser.parse_ls_response(lambda_functions,
                                               self.aws_properties.output)
 
     @excp.exception(logger)    
     def rm(self):
         if hasattr(self.scar_properties, "all") and self.scar_properties.all:
-            self.delete_all_resources(self._get_all_functions())        
+            self.delete_all_resources(self._get_all_functions())
         else:
             self.delete_resources()
 
@@ -230,7 +230,7 @@ class AWS(Commands):
     def _create_batch_environment(self):
         if self.aws_properties.execution_mode == "batch" or \
         self.aws_properties.execution_mode == "lambda-batch":
-            self.batch.create_compute_environment()
+            self.batch.create_batch_environment()
 
     def _preheat_function(self):
         # If preheat is activated, the function is launched at the init step

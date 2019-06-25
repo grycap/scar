@@ -45,8 +45,8 @@ class YamlParser(object):
         other_args = [('profile', 'boto_profile'), 'region', 'execution_mode']
         aws_args.update(DataTypesUtils.parse_arg_list(other_args, function_data))
         scar_args.update(DataTypesUtils.parse_arg_list(['supervisor_version'], function_data))
-        scar = {'scar' : scar_args if scar_args else {}}
-        aws = {'aws' : aws_args if aws_args else {}}
+        scar = {'scar': scar_args if scar_args else {}}
+        aws = {'aws': aws_args if aws_args else {}}
         return DataTypesUtils.merge_dicts(scar, aws)
 
     def parse_lambda_args(self, cmd_args):

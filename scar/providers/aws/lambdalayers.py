@@ -16,7 +16,7 @@
 import io
 import shutil
 import zipfile
-from typing import Dict, List
+from typing import Dict, List, Optional
 from tabulate import tabulate
 import scar.http.request as request
 import scar.logger as logger
@@ -41,9 +41,12 @@ class Layer():
                 return layer
         return {}
 
-    def get_info(self, layer_name: str, next_token: str=None):
+    def get_info(self, layer_name: str, next_token: Optional[str] = None):
         """Searches for the layer_name information."""
-        all_layers_info = self.client.list_layers(Marker=next_token)
+        args = {}
+        if next_token:
+            args['Marker'] = next_token
+        all_layers_info = self.client.list_layers(**args)
         layer_info = Layer._find(all_layers_info, layer_name)
         if not layer_info and 'NextMarker' in all_layers_info:
             layer_info = self.get_info(layer_name, next_token=all_layers_info['NextMarker'])
@@ -79,9 +82,9 @@ class LambdaLayers():
         layer = Layer(self.client)
         return layer
 
-    def __init__(self, lambda_client: Dict):
+    def __init__(self, lambda_client: Dict, supervisor_version: str):
         self.client = lambda_client
-        self.supervisor_version = ConfigFileParser().get_supervisor_version()
+        self.supervisor_version = supervisor_version
         self.supervisor_zip_url = GitHubUtils.get_source_code_url('grycap',
                                                                   'faas-supervisor',
                                                                   self.supervisor_version)

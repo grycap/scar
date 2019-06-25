@@ -35,7 +35,7 @@ class Lambda(GenericClient):
 
     @DataTypesUtils.lazy_property
     def layers(self):
-        layers = LambdaLayers(self.client)
+        layers = LambdaLayers(self.client, self.supervisor_version)
         return layers
 
     @DataTypesUtils.lazy_property
@@ -43,8 +43,9 @@ class Lambda(GenericClient):
         s3 = S3(self.aws)
         return s3
 
-    def __init__(self, aws_properties):
+    def __init__(self, aws_properties, supervisor_version):
         super().__init__(aws_properties)
+        self.supervisor_version = supervisor_version
         self._initialize_properties()
 
     def _initialize_properties(self):
@@ -81,7 +82,7 @@ class Lambda(GenericClient):
                 'Timeout':  self.aws._lambda.time,
                 'MemorySize': self.aws._lambda.memory,
                 'Tags': self.aws.tags,
-                'Layers': self.aws._lambda.layers }
+                'Layers': self.aws._lambda.layers}
 
     @excp.exception(logger)
     def create_function(self):
@@ -99,7 +100,7 @@ class Lambda(GenericClient):
             self.layers.create_supervisor_layer()
         else:
             logger.info("Using existent 'faas-supervisor' layer")
-        self.aws._lambda.layers = self.layers.get_latest_supervisor_layer_arn()
+        self.aws._lambda.layers.append(self.layers.get_latest_supervisor_layer_arn())
 
     def _add_lambda_environment_variable(self, key, value):
         if key and value:
@@ -146,8 +147,8 @@ class Lambda(GenericClient):
 
     def _add_execution_mode(self):
         self._add_lambda_environment_variable('EXECUTION_MODE', self.aws.execution_mode)
-        if (self.aws.execution_mode == 'lambda-batch' or self.aws.execution_mode == 'batch'):
-            self._add_lambda_environment_variable('BATCH_SUPERVISOR_IMG', self.aws.batch.supervisor_image)
+        # if (self.aws.execution_mode == 'lambda-batch' or self.aws.execution_mode == 'batch'):
+        #     self._add_lambda_environment_variable('BATCH_SUPERVISOR_IMG', self.aws.batch.supervisor_image)
 
     def _add_s3_environment_vars(self):
         if hasattr(self.aws, "s3"):
