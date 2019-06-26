@@ -360,8 +360,8 @@ class AWS(Commands):
 
     def _get_storage_provider_id(self, storage_provider, env_vars):
         """Searches the storage provider id in the environment variables:
-            get_provider_id(S3, {'STORAGE_AUTH_S3_41807_USER' : 'scar'})
+            get_provider_id(S3, {'STORAGE_AUTH_S3_USER_41807' : 'scar'})
             returns -> 41807"""
         for env_key in env_vars.keys():
             if env_key.startswith('STORAGE_AUTH_{}'.format(storage_provider)):
-                return '_'.join(env_key.split('_')[3:-1])
+                return env_key.split('_', 4)[-1]
