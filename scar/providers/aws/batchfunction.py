@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import random
 from scar.providers.aws import GenericClient
 import scar.logger as logger
 from scar.providers.aws.launchtemplates import LaunchTemplates
-from scar.utils import DataTypesUtils
+from scar.utils import DataTypesUtils, FileUtils, StrUtils
 
 
 class Batch(GenericClient):
@@ -28,6 +29,7 @@ class Batch(GenericClient):
     def __init__(self, aws_properties, supervisor_version):
         super().__init__(aws_properties)
         self.supervisor_version = supervisor_version
+        self.script = self._get_user_script()
         self._initialize_properties()
 
     def _initialize_properties(self):
@@ -35,6 +37,8 @@ class Batch(GenericClient):
             self.aws.account_id)
         self.aws.batch.service_role = "arn:aws:iam::{0}:role/service-role/AWSBatchServiceRole".format(
             self.aws.account_id)
+        self.aws.batch.env_vars = []
+        self._set_required_environment_variables()
 
     def exist_compute_environments(self, name):
         creation_args = self.get_describe_compute_env_args(name_c=name)
@@ -45,6 +49,13 @@ class Batch(GenericClient):
         self._delete_job_definitions(name)
         self._delete_job_queue(name)
         self._delete_compute_env(name)
+
+    def _get_user_script(self):
+        script = ''
+        if self.aws._lambda.init_script:
+            file_content = FileUtils.read_file(self.aws._lambda.init_script)
+            script = StrUtils.utf8_to_base64_string(file_content)
+        return script
 
     def _get_job_definitions(self, jobs_info):
         return ["{0}:{1}".format(definition['jobDefinitionName'], definition['revision']) for definition in jobs_info['jobDefinitions']]
@@ -179,7 +190,7 @@ class Batch(GenericClient):
                         'name': 'supervisor-bin'
                     }
                 ],
-                'environment': self._get_job_env_vars(),
+                'environment': self.aws.batch.env_vars,
                 'mountPoints': [
                     {
                         'containerPath': '/opt/faas-supervisor/bin',
@@ -197,32 +208,56 @@ class Batch(GenericClient):
             ]
         return job_def_args
 
-    def _parse_vars(self, env_vars):
-        env_vars = []
+    def _add_custom_environment_variables(self, env_vars):
         if isinstance(env_vars, dict):
             for key, val in env_vars.items():
-                env_vars.append({
-                    'name': key,
-                    'value': val
-                })
+                self._set_batch_environment_variable(key, val)
         else:
             for env_var in env_vars:
                 key_val = env_var.split("=")
-                env_vars.append({
-                    'name': key_val[0],
-                    'value': key_val[1]
-                })
-        return env_vars
+                self._set_batch_environment_variable(key_val[0], key_val[1])
 
-    def _get_job_env_vars(self):
-        env_vars = []
+    def _set_batch_environment_variable(self, key, value):
+        self.aws.batch.env_vars.append({
+            'name': key,
+            'value': value
+        })
+
+    def _add_s3_environment_vars(self):
+        if hasattr(self.aws, "s3"):
+            provider_id = random.randint(1, 1000001)
+
+            if hasattr(self.aws.s3, "input_bucket"):
+                self._set_batch_environment_variable(
+                    f'STORAGE_PATH_INPUT_{provider_id}',
+                    self.aws.s3.storage_path_input
+                )
+            if hasattr(self.aws.s3, "output_bucket"):
+                self._set_batch_environment_variable(
+                    f'STORAGE_PATH_OUTPUT_{provider_id}',
+                    self.aws.s3.storage_path_output
+                )
+            else:
+                self._set_batch_environment_variable(
+                    f'STORAGE_PATH_OUTPUT_{provider_id}',
+                    self.aws.s3.storage_path_input
+                )
+            self._set_batch_environment_variable(
+                f'STORAGE_AUTH_S3_USER_{provider_id}',
+                'scar'
+            )
+
+    def _set_required_environment_variables(self):
+        self._set_batch_environment_variable('AWS_LAMBDA_FUNCTION_NAME', self.aws._lambda.name)
+        if self.script:
+            self._set_batch_environment_variable('SCRIPT', self.script)
         if (hasattr(self.aws._lambda, 'environment_variables') and
                 self.aws._lambda.environment_variables):
-            env_vars.extend(self._parse_vars(self.aws._lambda.environment_variables))
+            self._add_custom_environment_variables(self.aws._lambda.environment_variables)
         if (hasattr(self.aws._lambda, 'lambda_environment') and
                 self.aws._lambda.lambda_environment):
-            env_vars.extend(self._parse_vars(self.aws._lambda.lambda_environment))
-        return env_vars
+            self._add_custom_environment_variables(self.aws._lambda.lambda_environment)
+        self._add_s3_environment_vars()
 
     def get_state_and_status_of_compute_env(self, name=None):
         creation_args = self.get_describe_compute_env_args(name_c=name)

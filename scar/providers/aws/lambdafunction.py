@@ -155,13 +155,25 @@ class Lambda(GenericClient):
             provider_id = random.randint(1, 1000001)
 
             if hasattr(self.aws.s3, "input_bucket"):
-                self._add_lambda_environment_variable('STORAGE_PATH_INPUT_{}'.format(provider_id), self.aws.s3.storage_path_input)
+                self._add_lambda_environment_variable(
+                    f'STORAGE_PATH_INPUT_{provider_id}',
+                    self.aws.s3.storage_path_input
+                )
 
             if hasattr(self.aws.s3, "output_bucket"):
-                self._add_lambda_environment_variable('STORAGE_PATH_OUTPUT_{}'.format(provider_id), self.aws.s3.storage_path_output)
+                self._add_lambda_environment_variable(
+                    f'STORAGE_PATH_OUTPUT_{provider_id}',
+                    self.aws.s3.storage_path_output
+                )
             else:
-                self._add_lambda_environment_variable('STORAGE_PATH_OUTPUT_{}'.format(provider_id), self.aws.s3.storage_path_input)
-            self._add_lambda_environment_variable('STORAGE_AUTH_S3_{}_USER'.format(provider_id), "scar")
+                self._add_lambda_environment_variable(
+                    f'STORAGE_PATH_OUTPUT_{provider_id}',
+                    self.aws.s3.storage_path_input
+                )
+            self._add_lambda_environment_variable(
+                f'STORAGE_AUTH_S3_USER_{provider_id}',
+                'scar'
+            )
 
     @excp.exception(logger)
     def _set_function_code(self):
