@@ -297,8 +297,7 @@ class AWS(Commands):
         # Delete function
         self._delete_lambda_function()
         # Delete resources batch
-        if hasattr(self.aws_properties, "batch"):
-            self._delete_batch_resources()
+        self._delete_batch_resources()
 
     def _update_local_function_properties(self):
         """Update the defined properties with the AWS information."""
