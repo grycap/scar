@@ -11,42 +11,53 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Module with methods and classes to create the function deployment package."""
 
+from zipfile import ZipFile
+from io import BytesIO
 from scar.providers.aws.udocker import Udocker
 from scar.providers.aws.validators import AWSValidator
-import scar.exceptions as excp
+from scar.exceptions import exception
 import scar.logger as logger
-from scar.utils import FileUtils, DataTypesUtils
+from scar.http.request import get_file
+from scar.utils import FileUtils, lazy_property, GitHubUtils, \
+                       GITHUB_USER, GITHUB_SUPERVISOR_PROJECT
+
+
+def _download_handler_code(supervisor_version: str, scar_tmp_folder_path: str,
+                           handler_name: str) -> None:
+    function_handler_dest = FileUtils.join_paths(scar_tmp_folder_path, f"{handler_name}.py")
+    supervisor_zip_url = GitHubUtils.get_source_code_url(GITHUB_USER, GITHUB_SUPERVISOR_PROJECT,
+                                                         supervisor_version)
+    supervisor_zip = get_file(supervisor_zip_url)
+    with ZipFile(BytesIO(supervisor_zip)) as thezip:
+        for file in thezip.namelist():
+            if file.endswith("function_handler.py"):
+                thezip.extract(file, function_handler_dest)
+                break
 
 
 class FunctionPackager():
+    """Class to manage the deployment package creation."""
 
-    _HANDLER_PATH = FileUtils.join_paths("scar", "providers", "aws", "cloud",
-                                         "function_handler.py")
-
-    @DataTypesUtils.lazy_property
+    @lazy_property
     def udocker(self):
+        """Udocker client"""
         udocker = Udocker(self.aws, self.scar_tmp_folder_path)
         return udocker
 
-    def __init__(self, aws_properties):
+    def __init__(self, aws_properties, supervisor_version):
         self.aws = aws_properties
-        self._initialize_paths()
-
-    def _initialize_paths(self):
+        self.supervisor_version = supervisor_version
         self.scar_tmp_folder = FileUtils.create_tmp_dir()
         self.scar_tmp_folder_path = self.scar_tmp_folder.name
-        self.function_handler_source = FileUtils.join_paths(FileUtils.get_scar_root_path(),
-                                                            self._HANDLER_PATH)
-        self.function_handler_name = f"{self.aws._lambda.name}.py"
-        self.function_handler_dest = FileUtils.join_paths(self.scar_tmp_folder_path,
-                                                          self.function_handler_name)
         self.package_args = {}
 
-    @excp.exception(logger)
+    @exception(logger)
     def create_zip(self):
+        """Creates the lambda function deployment package."""
         self._clean_tmp_folders()
-        self._add_mandatory_files()
+        self._download_hander_file()
         self._manage_udocker_images()
         self._add_init_script()
         self._add_extra_payload()
@@ -57,9 +68,11 @@ class FunctionPackager():
     def _clean_tmp_folders(self):
         FileUtils.delete_file(self.aws._lambda.zip_file_path)
 
-    def _add_mandatory_files(self):
-        """Copy function handler."""
-        FileUtils.copy_file(self.function_handler_source, self.function_handler_dest)
+    def _download_hander_file(self):
+        """Download function handler."""
+        _download_handler_code(self.supervisor_version,
+                               self.scar_tmp_folder_path,
+                               self.aws._lambda.name)
 
     def _manage_udocker_images(self):
         if hasattr(self.aws._lambda, "image") and \
@@ -80,7 +93,8 @@ class FunctionPackager():
             init_script_name = "init_script.sh"
             FileUtils.copy_file(self.aws._lambda.init_script,
                                 FileUtils.join_paths(self.scar_tmp_folder_path, init_script_name))
-            self.aws._lambda.environment['Variables']['INIT_SCRIPT_PATH'] = f"/var/task/{init_script_name}"
+            self.aws._lambda.environment.get['Variables']['INIT_SCRIPT_PATH'] = \
+            f"/var/task/{init_script_name}"
 
     def _add_extra_payload(self):
         if hasattr(self.aws._lambda, "extra_payload"):
@@ -101,4 +115,3 @@ class FunctionPackager():
         else:
             AWSValidator.validate_function_code_size(self.scar_tmp_folder_path,
                                                      self.aws._lambda.max_payload_size)
-

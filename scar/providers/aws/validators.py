@@ -11,20 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Module with classes and methods used for parameter validation."""
 
-import os
-from scar.exceptions import ValidatorError, S3CodeSizeError, FunctionCodeSizeError, InvocationPayloadError
+from scar.exceptions import ValidatorError, S3CodeSizeError, \
+                            FunctionCodeSizeError, InvocationPayloadError
 from scar.validator import GenericValidator
 from scar.utils import FileUtils, StrUtils
 
-VALID_LAMBDA_NAME_REGEX = "(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}(-gov)?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\$LATEST|[a-zA-Z0-9-_]+))?"
+VALID_LAMBDA_NAME_REGEX = (r"(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}(-gov)?-[a-z]+-\d{1}:)?("
+                           r"\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\$LATEST|[a-zA-Z0-9-_]+))?")
 KB = 1024
-MB = KB*KB
-MAX_POST_BODY_SIZE = MB*6
-MAX_POST_BODY_SIZE_ASYNC = KB*95
+MB = KB * KB
+MAX_POST_BODY_SIZE = MB * 6
+MAX_POST_BODY_SIZE_ASYNC = KB * 95
 
 
 class AWSValidator(GenericValidator):
+    """Class with methods to validate AWS properties."""
 
     @classmethod
     def validate_kwargs(cls, **kwargs):
@@ -39,8 +42,11 @@ class AWSValidator(GenericValidator):
     @staticmethod
     def validate_iam(iam_properties):
         if ("role" not in iam_properties) or (iam_properties["role"] == ""):
-            error_msg = "Please, specify a valid iam role in the configuration file (usually located in ~/.scar/scar.cfg)."
-            raise ValidatorError(parameter='iam_role', parameter_value=iam_properties, error_msg=error_msg)
+            error_msg = ("Please, specify a valid iam role in the "
+                         "configuration file (usually located in ~/.scar/scar.cfg).")
+            raise ValidatorError(parameter='iam_role',
+                                 parameter_value=iam_properties,
+                                 error_msg=error_msg)
 
     @classmethod
     def validate_lambda(cls, lambda_properties):
@@ -65,56 +71,69 @@ class AWSValidator(GenericValidator):
     def validate_time(lambda_time):
         if (lambda_time <= 0) or (lambda_time > 900):
             error_msg = 'Please, set a value between 0 and 900.'
-            raise ValidatorError(parameter='lambda_time', parameter_value=lambda_time, error_msg=error_msg)
+            raise ValidatorError(parameter='lambda_time',
+                                 parameter_value=lambda_time,
+                                 error_msg=error_msg)
 
     @staticmethod
     def validate_memory(lambda_memory):
         if (lambda_memory < 128) or (lambda_memory > 3008):
             error_msg = 'Please, set a value between 128 and 3008.'
-            raise ValidatorError(parameter='lambda_memory', parameter_value=lambda_memory, error_msg=error_msg)
+            raise ValidatorError(parameter='lambda_memory',
+                                 parameter_value=lambda_memory,
+                                 error_msg=error_msg)
 
     @staticmethod
     def validate_function_name(function_name):
         if not StrUtils.find_expression(function_name, VALID_LAMBDA_NAME_REGEX):
-            error_msg = 'Find name restrictions in: https://docs.aws.amazon.com/lambda/latest/dg/API_CreateFunction.html#SSS-CreateFunction-request-FunctionName'
-            raise ValidatorError(parameter='function_name', parameter_value=function_name, error_msg=error_msg)
+            error_msg = ("Find name restrictions in: https://docs.aws.amazon.com/lambda/latest/"
+                         "dg/API_CreateFunction.html#SSS-CreateFunction-request-FunctionName")
+            raise ValidatorError(parameter='function_name',
+                                 parameter_value=function_name,
+                                 error_msg=error_msg)
 
     @staticmethod
-    def validate_function_code_size(code_file_path, MAX_PAYLOAD_SIZE):
-        if os.path.getsize(code_file_path) > MAX_PAYLOAD_SIZE:
+    def validate_function_code_size(scar_folder, max_payload_size):
+        if FileUtils.get_tree_size(scar_folder) > max_payload_size:
             raise FunctionCodeSizeError(code_size='50MB')
 
     @staticmethod
-    def validate_s3_code_size(scar_folder, MAX_S3_PAYLOAD_SIZE):
-        if FileUtils.get_tree_size(scar_folder) > MAX_S3_PAYLOAD_SIZE:
+    def validate_s3_code_size(scar_folder, max_s3_payload_size):
+        if FileUtils.get_tree_size(scar_folder) > max_s3_payload_size:
             raise S3CodeSizeError(code_size='250MB')
 
     @staticmethod
     def validate_http_payload_size(file_path, async_call=False):
         file_size = FileUtils.get_file_size(file_path)
         if file_size > MAX_POST_BODY_SIZE:
-            filesize = '{0:.2f}MB'.format(file_size/MB)
-            maxsize = '{0:.2f}MB'.format(MAX_POST_BODY_SIZE/MB)
-            raise InvocationPayloadError(file_size= filesize, max_size=maxsize)
-        elif async_call and file_size > MAX_POST_BODY_SIZE_ASYNC:
-            filesize = '{0:.2f}KB'.format(file_size/KB)
-            maxsize = '{0:.2f}KB'.format(MAX_POST_BODY_SIZE_ASYNC/KB)
+            filesize = '{0:.2f}MB'.format(file_size / MB)
+            maxsize = '{0:.2f}MB'.format(MAX_POST_BODY_SIZE / MB)
+            raise InvocationPayloadError(file_size=filesize, max_size=maxsize)
+        if async_call and file_size > MAX_POST_BODY_SIZE_ASYNC:
+            filesize = '{0:.2f}KB'.format(file_size / KB)
+            maxsize = '{0:.2f}KB'.format(MAX_POST_BODY_SIZE_ASYNC / KB)
             raise InvocationPayloadError(file_size=filesize, max_size=maxsize)
 
     @staticmethod
     def validate_batch_vcpus(batch_vcpus):
         if batch_vcpus < 1:
             error_msg = 'Please, set at least one vCPU.'
-            raise ValidatorError(parameter='batch_vcpus', parameter_value=batch_vcpus, error_msg=error_msg)
+            raise ValidatorError(parameter='batch_vcpus',
+                                 parameter_value=batch_vcpus,
+                                 error_msg=error_msg)
 
     @staticmethod
     def validate_batch_memory(batch_memory):
         if batch_memory < 4:
             error_msg = 'Please, set a value greater than 4.'
-            raise ValidatorError(parameter='batch_memory', parameter_value=batch_memory, error_msg=error_msg)
+            raise ValidatorError(parameter='batch_memory',
+                                 parameter_value=batch_memory,
+                                 error_msg=error_msg)
 
     @staticmethod
     def validate_batch_comp_type(batch_comp_type):
         if batch_comp_type not in ['SPOT', 'EC2']:
             error_msg = 'Please, set a valid compute environment type ("EC2" or "SPOT")'
-            raise ValidatorError(parameter='batch_comp_type', parameter_value=batch_comp_type, error_msg=error_msg)
+            raise ValidatorError(parameter='batch_comp_type',
+                                 parameter_value=batch_comp_type,
+                                 error_msg=error_msg)

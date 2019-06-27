@@ -64,7 +64,7 @@ class CommandParser(object):
     def create_exec_parser(self):
         self.exec_parser = argparse.ArgumentParser(add_help=False)
         self.exec_parser.add_argument("-a", "--asynchronous", help="Launch an asynchronous function.", action="store_true")
-        self.exec_parser.add_argument("-o", "--output-file", help="Save output as a file")  
+        self.exec_parser.add_argument("-o", "--output-file", help="Save output as a file")
 
     def create_output_parser(self):
         self.output_parser = argparse.ArgumentParser(add_help=False)
@@ -106,7 +106,7 @@ class CommandParser(object):
         parser_init.add_argument("-ph", "--preheat", help="Preheats the function running it once and downloading the necessary container", action="store_true")
         parser_init.add_argument("-ep", "--extra-payload", help="Folder containing files that are going to be added to the lambda function")
         parser_init.add_argument("-db", "--deployment-bucket", help="Bucket where the deployment package is going to be uploaded.")
-        # API Gateway conf        
+        # API Gateway conf
         parser_init.add_argument("-api", "--api-gateway-name", help="API Gateway name created to launch the lambda function")
 
     def add_invoke_parser(self):
@@ -115,7 +115,7 @@ class CommandParser(object):
         parser_invoke.set_defaults(func=self.scar_cli.invoke)
         group = parser_invoke.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name", help="Lambda function name")
-        group.add_argument("-f", "--conf-file", help="Yaml file with the function configuration") 
+        group.add_argument("-f", "--conf-file", help="Yaml file with the function configuration")
         parser_invoke.add_argument("-db", "--data-binary", help="File path of the HTTP data to POST.")
         parser_invoke.add_argument("-jd", "--json-data", help="JSON Body to Post")
         parser_invoke.add_argument("-p", "--parameters", help="In addition to passing the parameters in the URL, you can pass the parameters here (i.e. '{\"key1\": \"value1\", \"key2\": [\"value2\", \"value3\"]}').")
@@ -133,17 +133,17 @@ class CommandParser(object):
         parser_run.set_defaults(func=self.scar_cli.run)
         group = parser_run.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name", help="Lambda function name")
-        group.add_argument("-f", "--conf-file", help="Yaml file with the function configuration")        
+        group.add_argument("-f", "--conf-file", help="Yaml file with the function configuration")
         parser_run.add_argument("-s", "--run-script", help="Path to the input file passed to the function")
         parser_run.add_argument('c_args', nargs=argparse.REMAINDER, help="Arguments passed to the container.")
-    
+
     def add_rm_parser(self):
         parser_rm = self.subparsers.add_parser('rm', parents=[self.output_parser, self.profile_parser], help="Delete function")
         parser_rm.set_defaults(func=self.scar_cli.rm)
         group = parser_rm.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name", help="Lambda function name")
         group.add_argument("-a", "--all", help="Delete all lambda functions", action="store_true")
-        group.add_argument("-f", "--conf-file", help="Yaml file with the function configuration")        
+        group.add_argument("-f", "--conf-file", help="Yaml file with the function configuration")
 
     def add_log_parser(self):
         parser_log = self.subparsers.add_parser('log', parents=[self.profile_parser], help="Show the logs for the lambda function")
@@ -151,7 +151,7 @@ class CommandParser(object):
         group = parser_log.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name", help="Lambda function name")
         group.add_argument("-f", "--conf-file", help="Yaml file with the function configuration")
-        # CloudWatch args       
+        # CloudWatch args
         parser_log.add_argument("-ls", "--log-stream-name", help="Return the output for the log stream specified.")
         parser_log.add_argument("-ri", "--request-id", help="Return the output for the request id specified.")
 
@@ -177,8 +177,8 @@ class CommandParser(object):
         try:
             cmd_args = self.parser.parse_args()
             if cmd_args.version:
-                print("SCAR {}".format(version.__version__))
-                sys.exit(0)                 
+                print(f"SCAR {version.__version__}")
+                sys.exit(0)
 
             cmd_args = vars(cmd_args)
             if 'func' not in cmd_args:
@@ -186,9 +186,9 @@ class CommandParser(object):
             scar_args = self.parse_scar_args(cmd_args)
             aws_args = self.parse_aws_args(cmd_args)
             return DataTypesUtils.merge_dicts(scar_args, aws_args)
-        except AttributeError as ae:
+        except AttributeError as aerr:
             logger.error("Incorrect arguments: use scar -h to see the options available",
-                             "Error parsing arguments: {}".format(ae))
+                         f"Error parsing arguments: {aerr}")
         else:
             raise
 
@@ -198,7 +198,7 @@ class CommandParser(object):
 
     def parse_aws_args(self, cmd_args):
         aws_args = {}
-        other_args = [('profile', 'boto_profile'),'region','execution_mode']
+        other_args = [('profile', 'boto_profile'), 'region', 'execution_mode']
         self.set_args(aws_args, 'iam', self.parse_iam_args(cmd_args))
         self.set_args(aws_args, 'lambda', self.parse_lambda_args(cmd_args))
         self.set_args(aws_args, 'batch', self.parse_batch_args(cmd_args))
@@ -210,7 +210,7 @@ class CommandParser(object):
 
     def parse_scar_args(self, cmd_args):
         scar_args = ['func', 'conf_file', 'json',
-                     'verbose', 'path', 'all',
+                     'verbose', 'path',
                      'preheat', 'execution_mode',
                      'output_file', 'supervisor_version']
         return {'scar' : DataTypesUtils.parse_arg_list(scar_args, cmd_args)}
@@ -219,7 +219,7 @@ class CommandParser(object):
         lambda_args = ['name', 'asynchronous', 'init_script', 'run_script', 'c_args', 'memory', 'time',
                        'timeout_threshold', 'log_level', 'image', 'image_file', 'description',
                        'lambda_role', 'extra_payload', ('environment', 'environment_variables'),
-                       'layers', 'lambda_environment', 'list_layers']
+                       'layers', 'lambda_environment', 'list_layers', 'all']
         return DataTypesUtils.parse_arg_list(lambda_args, cmd_args)
 
     def parse_batch_args(self, cmd_args):
@@ -228,7 +228,7 @@ class CommandParser(object):
 
     def parse_iam_args(self, cmd_args):
         iam_args = [('iam_role', 'role')]
-        return DataTypesUtils.parse_arg_list(iam_args, cmd_args)    
+        return DataTypesUtils.parse_arg_list(iam_args, cmd_args)
 
     def parse_cloudwatchlogs_args(self, cmd_args):
         cw_log_args = ['log_stream_name', 'request_id']
@@ -242,6 +242,5 @@ class CommandParser(object):
         s3_args = ['deployment_bucket',
                    'input_bucket',
                    'output_bucket',
-                   ('bucket', 'input_bucket'),
-                   ]
-        return DataTypesUtils.parse_arg_list(s3_args, cmd_args)        
+                   ('bucket', 'input_bucket')]
+        return DataTypesUtils.parse_arg_list(s3_args, cmd_args)

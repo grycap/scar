@@ -46,17 +46,35 @@ class LambdaClient(BotoClient):
         return self.client.update_function_configuration(**kwargs)
 
     @excp.exception(logger)
-    def list_functions(self) -> List:
+    def list_functions(self, next_token: Optional[str]=None) -> List:
         """Returns a list of your Lambda functions."""
+        logger.debug("Listing lambda functions.")
         functions = []
-        response = self.client.list_functions()
-        if "Functions" in response:
-            functions.extend(response['Functions'])
-        while ('NextMarker' in response) and (response['NextMarker']):
-            result = self.client.list_functions(Marker=response['NextMarker'])
-            if "Functions" in result:
-                functions.extend(result['Functions'])
+        kwargs = {}
+        if next_token:
+            kwargs['Marker'] = next_token
+        functions_info = self.client.list_functions(**kwargs)
+        if 'Functions' in functions_info and functions_info['Functions']:
+            functions.extend(functions_info['Functions'])
+        if 'NextMarker' in functions:
+            functions.extend(self.list_layers(next_token=functions_info['NextMarker']))
         return functions
+
+    @excp.exception(logger)
+    def list_layers(self, next_token: Optional[str]=None) -> List:
+        """Lists function layers and shows information
+        about the latest version of each."""
+        logger.debug("Listing lambda layers.")
+        layers = []
+        kwargs = {}
+        if next_token:
+            kwargs['Marker'] = next_token
+        layers_info = self.client.list_layers(**kwargs)
+        if 'Layers' in layers_info and layers_info['Layers']:
+            layers.extend(layers_info['Layers'])
+        if 'NextMarker' in layers_info:
+            layers.extend(self.list_layers(next_token=layers_info['NextMarker']))
+        return layers
 
     @excp.exception(logger)
     def delete_function(self, function_name: str) -> Dict:
@@ -77,21 +95,6 @@ class LambdaClient(BotoClient):
         kwargs['StatementId'] = StrUtils.get_random_uuid4_str()
         kwargs['Action'] = "lambda:InvokeFunction"
         return self.client.add_permission(**kwargs)
-
-    def list_layers(self, next_token: Optional[str] = None) -> List:
-        """Lists function layers and shows information
-        about the latest version of each."""
-        logger.debug("Listing lambda layers.")
-        layers = []
-        kwargs = {}
-        if next_token:
-            kwargs['Marker'] = next_token
-        layers_info = self.client.list_layers(**kwargs)
-        if 'Layers' in layers_info and layers_info['Layers']:
-            layers.extend(layers_info['Layers'])
-        if 'NextMarker' in layers_info:
-            layers.extend(self.list_layers(next_token=layers_info['NextMarker']))
-        return layers
 
     def publish_layer_version(self, **kwargs: Dict) -> Dict:
         """Creates a function layer from a ZIP archive."""

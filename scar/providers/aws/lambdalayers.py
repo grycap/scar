@@ -17,17 +17,30 @@ import io
 import shutil
 from typing import Dict
 import zipfile
-
+from tabulate import tabulate
 import scar.http.request as request
 import scar.logger as logger
-from scar.utils import DataTypesUtils, FileUtils, GitHubUtils, StrUtils
-from tabulate import tabulate
+from scar.utils import lazy_property, FileUtils, GitHubUtils, StrUtils, \
+                       GITHUB_USER, GITHUB_SUPERVISOR_PROJECT
 
 
 def _create_tmp_folders() -> None:
     tmp_zip_folder = FileUtils.create_tmp_dir()
     layer_code_folder = FileUtils.create_tmp_dir()
     return (tmp_zip_folder.name, layer_code_folder.name)
+
+
+def _download_supervisor(supervisor_version: str, tmp_zip_path: str) -> str:
+    supervisor_zip_url = GitHubUtils.get_source_code_url(GITHUB_USER, GITHUB_SUPERVISOR_PROJECT,
+                                                         supervisor_version)
+    supervisor_zip = request.get_file(supervisor_zip_url)
+    with zipfile.ZipFile(io.BytesIO(supervisor_zip)) as thezip:
+        for file in thezip.namelist():
+            # Remove the parent folder path
+            parent_folder, file_name = file.split("/", 1)
+            if file_name.startswith("extra") or file_name.startswith("faassupervisor"):
+                thezip.extract(file, tmp_zip_path)
+    return parent_folder
 
 
 def _copy_supervisor_files(parent_folder: str, tmp_zip_path: str, layer_code_path: str) -> None:
@@ -44,20 +57,6 @@ def _copy_extra_files(parent_folder: str, tmp_zip_path: str, layer_code_path: st
 
 def _create_layer_zip(layer_zip_path: str, layer_code_path: str) -> None:
     FileUtils.zip_folder(layer_zip_path, layer_code_path)
-
-
-def _download_supervisor(supervisor_version: str, tmp_zip_path: str) -> str:
-    """Returns the folder name to remove from the """
-    supervisor_zip_url = GitHubUtils.get_source_code_url('grycap', 'faas-supervisor',
-                                                         supervisor_version)
-    supervisor_zip = request.get_file(supervisor_zip_url)
-    with zipfile.ZipFile(io.BytesIO(supervisor_zip)) as thezip:
-        for file in thezip.namelist():
-            # Remove the parent folder path
-            parent_folder, file_name = file.split("/", 1)
-            if file_name.startswith("extra") or file_name.startswith("faassupervisor"):
-                thezip.extract(file, tmp_zip_path)
-    return parent_folder
 
 
 class Layer():
@@ -104,7 +103,7 @@ class LambdaLayers():
 
     _SUPERVISOR_LAYER_NAME = 'faas-supervisor'
 
-    @DataTypesUtils.lazy_property
+    @lazy_property
     def layer(self):
         """Property used to manage the lambda layers."""
         layer = Layer(self.lambda_client)

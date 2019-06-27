@@ -16,7 +16,7 @@
 from typing import Dict
 import boto3
 import botocore
-from scar.utils import DataTypesUtils
+from scar.utils import lazy_property
 
 
 class BotoClient():
@@ -40,7 +40,7 @@ class BotoClient():
         if session:
             self.session_args = session
 
-    @DataTypesUtils.lazy_property
+    @lazy_property
     def client(self):
         """Returns a boto client based on the 'boto_client_name' property,
         the region specified on the client args and

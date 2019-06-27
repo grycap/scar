@@ -16,12 +16,12 @@ import random
 from scar.providers.aws import GenericClient
 import scar.logger as logger
 from scar.providers.aws.launchtemplates import LaunchTemplates
-from scar.utils import DataTypesUtils, FileUtils, StrUtils
+from scar.utils import lazy_property, FileUtils, StrUtils
 
 
 class Batch(GenericClient):
 
-    @DataTypesUtils.lazy_property
+    @lazy_property
     def launch_templates(self):
         launch_templates = LaunchTemplates(self.aws, self.supervisor_version)
         return launch_templates
@@ -29,14 +29,10 @@ class Batch(GenericClient):
     def __init__(self, aws_properties, supervisor_version):
         super().__init__(aws_properties)
         self.supervisor_version = supervisor_version
-        self.script = self._get_user_script()
-        self._initialize_properties()
-
-    def _initialize_properties(self):
-        self.aws.batch.instance_role = "arn:aws:iam::{0}:instance-profile/ecsInstanceRole".format(
-            self.aws.account_id)
-        self.aws.batch.service_role = "arn:aws:iam::{0}:role/service-role/AWSBatchServiceRole".format(
-            self.aws.account_id)
+        self.aws.batch.instance_role = (f"arn:aws:iam::{self.aws.account_id}:"
+                                        "instance-profile/ecsInstanceRole")
+        self.aws.batch.service_role = (f"arn:aws:iam::{self.aws.account_id}:"
+                                       "role/service-role/AWSBatchServiceRole")
         self.aws.batch.env_vars = []
         self._set_required_environment_variables()
 
@@ -52,13 +48,13 @@ class Batch(GenericClient):
 
     def _get_user_script(self):
         script = ''
-        if self.aws._lambda.init_script:
+        if hasattr(self.aws._lambda, "init_script"):
             file_content = FileUtils.read_file(self.aws._lambda.init_script)
             script = StrUtils.utf8_to_base64_string(file_content)
         return script
 
     def _get_job_definitions(self, jobs_info):
-        return ["{0}:{1}".format(definition['jobDefinitionName'], definition['revision']) for definition in jobs_info['jobDefinitions']]
+        return [f"{job_def['jobDefinitionName']}:{job_def['revision']}" for job_def in jobs_info['jobDefinitions']]
 
     def _delete_job_definitions(self, name):
         job_definitions = []
@@ -218,10 +214,8 @@ class Batch(GenericClient):
                 self._set_batch_environment_variable(key_val[0], key_val[1])
 
     def _set_batch_environment_variable(self, key, value):
-        self.aws.batch.env_vars.append({
-            'name': key,
-            'value': value
-        })
+        if key and value:
+            self.aws.batch.env_vars.append({'name': key, 'value': value})
 
     def _add_s3_environment_vars(self):
         if hasattr(self.aws, "s3"):
@@ -249,8 +243,7 @@ class Batch(GenericClient):
 
     def _set_required_environment_variables(self):
         self._set_batch_environment_variable('AWS_LAMBDA_FUNCTION_NAME', self.aws._lambda.name)
-        if self.script:
-            self._set_batch_environment_variable('SCRIPT', self.script)
+        self._set_batch_environment_variable('SCRIPT', self._get_user_script())
         if (hasattr(self.aws._lambda, 'environment_variables') and
                 self.aws._lambda.environment_variables):
             self._add_custom_environment_variables(self.aws._lambda.environment_variables)

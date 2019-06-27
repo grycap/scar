@@ -136,7 +136,8 @@ class LaunchTemplates(GenericClient):
                 logger.info('Using existent \'faas-supervisor\' launch template.')
                 return is_created
             else:
-                logger.info(f'Creating launch template version with \'faas-supervisor\' version \'{self.supervisor_version}\'.')
+                logger.info((f"Creating launch template version with 'faas-supervisor' "
+                             f"version '{self.supervisor_version}'."))
                 user_data = self._create_supervisor_user_data()
                 response = self.client.create_launch_template_version(
                     self._TEMPLATE_NAME,
@@ -144,7 +145,8 @@ class LaunchTemplates(GenericClient):
                     {'UserData': user_data})
                 return response['LaunchTemplateVersion']['VersionNumber']
         else:
-            logger.info(f'Creating launch template with \'faas-supervisor\' version \'{self.supervisor_version}\'.')
+            logger.info((f"Creating launch template with 'faas-supervisor' "
+                         f"version '{self.supervisor_version}'."))
             user_data = self._create_supervisor_user_data()
             response = self.client.create_launch_template(
                 self._TEMPLATE_NAME,

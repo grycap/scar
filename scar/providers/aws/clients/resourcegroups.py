@@ -44,7 +44,7 @@ class ResourceGroupsClient(BotoClient):
         if 'ResourceTagMappingList' in response:
             resource_list.extend(response['ResourceTagMappingList'])
         # Retrieve all the remaining resources recursively
-        if ('PaginationToken' in response) and (response['PaginationToken']):
+        if 'PaginationToken' in response and response['PaginationToken']:
             resource_list.extend(self.get_tagged_resources(tag_filters,
                                                            resource_type_filters,
                                                            kwargs['PaginationToken']))

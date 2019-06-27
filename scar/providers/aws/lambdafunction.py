@@ -26,19 +26,19 @@ import scar.exceptions as excp
 import scar.http.request as request
 import scar.logger as logger
 import scar.providers.aws.response as response_parser
-from scar.utils import DataTypesUtils, FileUtils, StrUtils
+from scar.utils import lazy_property, DataTypesUtils, FileUtils, StrUtils
 
 MAX_CONCURRENT_INVOCATIONS = 500
 
 
 class Lambda(GenericClient):
 
-    @DataTypesUtils.lazy_property
+    @lazy_property
     def layers(self):
         layers = LambdaLayers(self.client, self.supervisor_version)
         return layers
 
-    @DataTypesUtils.lazy_property
+    @lazy_property
     def s3(self):
         s3 = S3(self.aws)
         return s3
@@ -91,8 +91,8 @@ class Lambda(GenericClient):
         self._set_function_code()
         creation_args = self._get_creations_args()
         response = self.client.create_function(**creation_args)
-        if response and DataTypesUtils.is_key_in_dict("FunctionArn", response):
-            self.aws._lambda.arn = response['FunctionArn']
+        if response and "FunctionArn" in response:
+            self.aws._lambda.arn = response.get('FunctionArn', "")
         return response
 
     def _manage_supervisor_layer(self):
@@ -175,7 +175,7 @@ class Lambda(GenericClient):
     @excp.exception(logger)
     def _set_function_code(self):
         # Zip all the files and folders needed
-        FunctionPackager(self.aws).create_zip()
+        FunctionPackager(self.aws, self.supervisor_version).create_zip()
         if hasattr(self.aws, "s3") and hasattr(self.aws.s3, 'deployment_bucket'):
             self._upload_to_S3()
             self.aws._lambda.code = {"S3Bucket": self.aws.s3.deployment_bucket, "S3Key" : self.aws.s3.file_key}
@@ -351,7 +351,7 @@ class Lambda(GenericClient):
 
     def get_api_gateway_id(self):
         env_vars = self._get_function_environment_variables()
-        return env_vars['Variables']['API_GATEWAY_ID'] if DataTypesUtils.is_key_in_dict('API_GATEWAY_ID', env_vars['Variables']) else ''
+        return env_vars['Variables'].get('API_GATEWAY_ID', '')
 
     def _get_api_gateway_url(self):
         api_id = self.get_api_gateway_id()

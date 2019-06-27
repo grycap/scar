@@ -19,7 +19,7 @@ from scar.providers.aws.batchfunction import Batch
 from scar.providers.aws.cloudwatchlogs import CloudWatchLogs
 from scar.providers.aws.iam import IAM
 from scar.providers.aws.lambdafunction import Lambda
-from scar.providers.aws.properties import AwsProperties, ScarProperties,\
+from scar.providers.aws.properties import AwsProperties, ScarProperties, \
     S3Properties
 from scar.providers.aws.resourcegroups import ResourceGroups
 from scar.providers.aws.s3 import S3
@@ -28,44 +28,44 @@ from scar.providers.aws.properties import ApiGatewayProperties
 import scar.exceptions as excp
 import scar.logger as logger
 import scar.providers.aws.response as response_parser
-from scar.utils import DataTypesUtils, StrUtils, FileUtils
+from scar.utils import lazy_property, StrUtils, FileUtils
 
 
 class AWS(Commands):
 
-    @DataTypesUtils.lazy_property
+    @lazy_property
     def _lambda(self):
         '''It's called _lambda because 'lambda'
         it's a restricted word in python'''
         _lambda = Lambda(self.aws_properties, self.scar_properties.supervisor_version)
         return _lambda
 
-    @DataTypesUtils.lazy_property
+    @lazy_property
     def batch(self):
         batch = Batch(self.aws_properties, self.scar_properties.supervisor_version)
         return batch
 
-    @DataTypesUtils.lazy_property
+    @lazy_property
     def cloudwatch_logs(self):
         cloudwatch_logs = CloudWatchLogs(self.aws_properties)
         return cloudwatch_logs
 
-    @DataTypesUtils.lazy_property
+    @lazy_property
     def api_gateway(self):
         api_gateway = APIGateway(self.aws_properties)
         return api_gateway
 
-    @DataTypesUtils.lazy_property
+    @lazy_property
     def s3(self):
         s3 = S3(self.aws_properties)
         return s3
 
-    @DataTypesUtils.lazy_property
+    @lazy_property
     def resource_groups(self):
         resource_groups = ResourceGroups(self.aws_properties)
         return resource_groups
 
-    @DataTypesUtils.lazy_property
+    @lazy_property
     def iam(self):
         iam = IAM(self.aws_properties)
         return iam
@@ -84,18 +84,18 @@ class AWS(Commands):
         self._create_batch_environment()
         self._preheat_function()
 
-    @excp.exception(logger)    
+    @excp.exception(logger)
     def invoke(self):
         self._update_local_function_properties()
         response = self._lambda.call_http_endpoint()
         output_file = self.scar_properties.output_file if hasattr(self.scar_properties, "output_file") else ""
-        response_parser.parse_http_response(response, 
+        response_parser.parse_http_response(response,
                                             self.aws_properties._lambda.name,
                                             self.aws_properties._lambda.asynchronous,
                                             self.aws_properties.output,
                                             output_file)
 
-    @excp.exception(logger)    
+    @excp.exception(logger)
     def run(self):
         if hasattr(self.aws_properties, "s3") and hasattr(self.aws_properties.s3, "input_bucket"):
             self._process_input_bucket_calls()
@@ -106,11 +106,11 @@ class AWS(Commands):
 
     @excp.exception(logger)
     def update(self):
-        if hasattr( self.aws_properties._lambda, "supervisor_layer") and \
+        if hasattr(self.aws_properties._lambda, "supervisor_layer") and \
                     self.aws_properties._lambda.supervisor_layer:
             self._lambda.layers.update_supervisor_layer()
         if hasattr(self.scar_properties, "all") and self.scar_properties.all:
-            self._update_all_functions(self._get_all_functions())        
+            self._update_all_functions(self._get_all_functions())
         else:
             self._lambda.update_function_configuration()
 
@@ -127,10 +127,10 @@ class AWS(Commands):
             response_parser.parse_ls_response(lambda_functions,
                                               self.aws_properties.output)
 
-    @excp.exception(logger)    
+    @excp.exception(logger)
     def rm(self):
-        if hasattr(self.scar_properties, "all") and self.scar_properties.all:
-            self.delete_all_resources(self._get_all_functions())
+        if hasattr(self.aws_properties._lambda, "all") and self.aws_properties._lambda.all:
+            self.delete_all_resources()
         else:
             self.delete_resources()
 
@@ -141,11 +141,11 @@ class AWS(Commands):
         aws_log += batch_logs if batch_logs else ""
         print(aws_log)
 
-    @excp.exception(logger)        
+    @excp.exception(logger)
     def put(self):
         self.upload_file_or_folder_to_s3()
 
-    @excp.exception(logger)        
+    @excp.exception(logger)
     def get(self):
         self.download_file_or_folder_from_s3()
 
@@ -185,8 +185,8 @@ class AWS(Commands):
             self.aws_properties.config_path = os.path.dirname(self.scar_properties.conf_file)
 
     def _get_all_functions(self):
-        functions_arn_list = self.resource_groups.get_lambda_functions_arn_list(self.iam.get_user_name_or_id())        
-        return self._lambda.get_all_functions(functions_arn_list)        
+        arn_list = self.resource_groups.get_resource_arn_list(self.iam.get_user_name_or_id())
+        return self._lambda.get_all_functions(arn_list)
 
     def _get_batch_logs(self):
         if hasattr(self.aws_properties.cloudwatch, "request_id") and \
@@ -202,7 +202,7 @@ class AWS(Commands):
                                                                 self._lambda.client.get_access_key(),
                                                                 self.aws_properties.output)
 
-    @excp.exception(logger)        
+    @excp.exception(logger)
     def _create_log_group(self):
         response = self.cloudwatch_logs.create_log_group()
         response_parser.parse_log_group_creation_response(response,
@@ -211,7 +211,7 @@ class AWS(Commands):
 
     @excp.exception(logger)
     def _create_s3_buckets(self):
-        if hasattr(self.aws_properties, "s3"):        
+        if hasattr(self.aws_properties, "s3"):
             if hasattr(self.aws_properties.s3, "input_bucket"):
                 self.s3.create_input_bucket(create_input_folder=True)
                 self._lambda.link_function_and_input_bucket()
@@ -244,7 +244,7 @@ class AWS(Commands):
         if s3_file_list:
             s3_event = self.s3.get_s3_event(s3_file_list.pop(0))
             self._lambda.launch_request_response_event(s3_event)
-        # If the list has more elements, invoke functions asynchronously    
+        # If the list has more elements, invoke functions asynchronously
         if s3_file_list:
             s3_event_list = self.s3.get_s3_event_list(s3_file_list)
             self._lambda.process_asynchronous_lambda_invocations(s3_event_list)
@@ -256,39 +256,32 @@ class AWS(Commands):
         for file_path in files:
             self.s3.upload_file(folder_name=self.aws_properties.s3.input_folder, file_path=file_path)
 
-    def _get_download_file_path(self, file_key=None, prefix=None):
+    def _get_download_file_path(self, file_key=None):
         file_path = file_key
-#         # Parse file path
-#         if prefix:
-#             # Get folder name
-#             dir_name_to_add = os.path.basename(os.path.dirname(prefix))
-#             # Don't replace last '/'
-#             file_path = file_key.replace(prefix[:-1], dir_name_to_add)
         if hasattr(self.scar_properties, "path") and self.scar_properties.path:
             file_path = FileUtils.join_paths(self.scar_properties.path, file_path)
         return file_path
 
     def download_file_or_folder_from_s3(self):
         bucket_name = self.aws_properties.s3.input_bucket
-        file_prefix = self.aws_properties.s3.input_folder
         s3_file_list = self.s3.get_bucket_file_list()
         for s3_file in s3_file_list:
             # Avoid download s3 'folders'
             if not s3_file.endswith('/'):
-                file_path = self._get_download_file_path(file_key=s3_file, prefix=file_prefix)
+                file_path = self._get_download_file_path(file_key=s3_file)
                 print("PATH", file_path)
                 # make sure the path folders are created
-                dir_path = os.path.dirname(file_path)    
+                dir_path = os.path.dirname(file_path)
                 if dir_path and not os.path.isdir(dir_path):
-                    os.makedirs(dir_path, exist_ok=True) 
+                    os.makedirs(dir_path, exist_ok=True)
                 self.s3.download_file(bucket_name, s3_file, file_path)
 
     def _update_all_functions(self, lambda_functions):
         for function_info in lambda_functions:
             self._lambda.update_function_configuration(function_info)
 
-    def delete_all_resources(self, lambda_functions):
-        for function in lambda_functions:
+    def delete_all_resources(self):
+        for function in self._get_all_functions():
             self.aws_properties._lambda.name = function['FunctionName']
             self.delete_resources()
 
@@ -300,7 +293,7 @@ class AWS(Commands):
         # Delete associated log
         self._delete_logs()
         # Delete associated notifications
-        self._delete_bucket_notifications()        
+        self._delete_bucket_notifications()
         # Delete function
         self._delete_lambda_function()
         # Delete resources batch
@@ -308,12 +301,10 @@ class AWS(Commands):
             self._delete_batch_resources()
 
     def _update_local_function_properties(self):
-        """
-        Update the defined properties with the AWS information
-        """
+        """Update the defined properties with the AWS information."""
         info = self._lambda.get_function_info()
-        if DataTypesUtils.is_key_in_dict('API_GATEWAY_ID', info['Environment']['Variables']):
-            api_gtw_id = info['Environment']['Variables']['API_GATEWAY_ID']
+        if 'API_GATEWAY_ID' in info['Environment']['Variables']:
+            api_gtw_id = info['Environment']['Variables'].get('API_GATEWAY_ID', "")
             if hasattr(self.aws_properties, 'api_gateway'):
                 setattr(self.aws_properties.api_gateway, 'id', api_gtw_id)
             else:

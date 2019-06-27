@@ -30,6 +30,22 @@ import scar.logger as logger
 import scar.http.request as request
 from scar.exceptions import GitHubTagNotFoundError
 
+GITHUB_USER = 'grycap'
+GITHUB_SUPERVISOR_PROJECT = 'faas-supervisor'
+
+def lazy_property(func):
+# Skipped type hinting: https://github.com/python/mypy/issues/3157
+    """ A decorator that makes a property lazy-evaluated."""
+    attr_name = '_lazy_' + func.__name__
+
+    @property
+    def _lazy_property(self):
+        if not hasattr(self, attr_name):
+            setattr(self, attr_name, func(self))
+        return getattr(self, attr_name)
+
+    return _lazy_property
+
 
 class SysUtils:
     """Common methods for system management."""
@@ -37,7 +53,7 @@ class SysUtils:
     @staticmethod
     def is_variable_in_environment(variable: str) -> bool:
         """Checks if a variable is in the system environment."""
-        return DataTypesUtils.is_key_in_dict(variable, os.environ)
+        return variable in os.environ
 
     @staticmethod
     def set_environment_variable(key: str, variable: Any) -> None:
@@ -94,20 +110,6 @@ class DataTypesUtils:
     """Common methods for data types management."""
 
     @staticmethod
-    def lazy_property(func):
-    # Skipped type hinting: https://github.com/python/mypy/issues/3157
-        """ A decorator that makes a property lazy-evaluated."""
-        attr_name = '_lazy_' + func.__name__
-
-        @property
-        def _lazy_property(self):
-            if not hasattr(self, attr_name):
-                setattr(self, attr_name, func(self))
-            return getattr(self, attr_name)
-
-        return _lazy_property
-
-    @staticmethod
     def merge_dicts(dict1: Dict, dict2: Dict) -> Dict:
         """Merge 'dict1' and 'dict2' dicts into 'dict1'.
         'dict2' has precedence over 'dict1'."""
@@ -120,12 +122,6 @@ class DataTypesUtils:
                 elif isinstance(val, list):
                     dict1[key] += val
         return dict1
-
-    # is_value_in_dict
-    @staticmethod
-    def is_key_in_dict(key: str, dictionary: Dict) -> bool:
-        """Checks if a key is in the given dictionary."""
-        return key in dictionary and dictionary[key]
 
     @staticmethod
     def divide_list_in_chunks(elements: List, chunk_size: int) -> Generator[List, None, None]:
@@ -340,18 +336,17 @@ class StrUtils:
             res = 1
         return res
 
+
 class GitHubUtils:
     """Common methods for GitHub API Queries.
     https://developer.github.com/v3/repos/releases/"""
 
     @staticmethod
-    def get_latest_release(user: str, project: str) -> Optional[str]:
+    def get_latest_release(user: str, project: str) -> str:
         """Get the tag of the latest release in a repository."""
         url = f'https://api.github.com/repos/{user}/{project}/releases/latest'
         response = json.loads(request.get_file(url))
-        if DataTypesUtils.is_key_in_dict('tag_name', response):
-            return response['tag_name']
-        return None
+        return response.get('tag_name', '')
 
     @staticmethod
     def exists_release_in_repo(user: str, project: str, tag_name: str) -> bool:
