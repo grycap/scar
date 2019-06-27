@@ -23,6 +23,28 @@ import scar.logger as logger
 from scar.utils import DataTypesUtils, FileUtils, GitHubUtils, StrUtils
 
 
+def _create_tmp_folders() -> None:
+    tmp_zip_folder = FileUtils.create_tmp_dir()
+    layer_code_folder = FileUtils.create_tmp_dir()
+    return (tmp_zip_folder.name, layer_code_folder.name)
+
+
+def _copy_supervisor_files(parent_folder: str, tmp_zip_path: str, layer_code_path: str) -> None:
+    supervisor_path = FileUtils.join_paths(tmp_zip_path, parent_folder, 'faassupervisor')
+    shutil.move(supervisor_path, FileUtils.join_paths(layer_code_path, 'python', 'faassupervisor'))
+
+
+def _copy_extra_files(parent_folder: str, tmp_zip_path: str, layer_code_path: str) -> None:
+    extra_folder_path = FileUtils.join_paths(tmp_zip_path, parent_folder, 'extra')
+    files = FileUtils.get_all_files_in_directory(extra_folder_path)
+    for file_path in files:
+        FileUtils.unzip_folder(file_path, layer_code_path)
+
+
+def _create_layer_zip(layer_zip_path: str, layer_code_path: str) -> None:
+    FileUtils.zip_folder(layer_zip_path, layer_code_path)
+
+
 class Layer():
 
     def __init__(self, lambda_client) -> None:
@@ -76,13 +98,6 @@ class LambdaLayers():
         self.supervisor_zip_url = GitHubUtils.get_source_code_url('grycap',
                                                                   'faas-supervisor',
                                                                   self.supervisor_version)
-        self.layer_zip_path = FileUtils.join_paths(FileUtils.get_tmp_dir(),
-                                                   f"{self._SUPERVISOR_LAYER_NAME}.zip")
-
-    def _create_tmp_folders(self) -> None:
-        tmp_zip_folder = FileUtils.create_tmp_dir()
-        layer_code_folder = FileUtils.create_tmp_dir()
-        return (tmp_zip_folder.name, layer_code_folder.name)
 
     def _download_supervisor(self, tmp_zip_path: str) -> str:
         """Returns the folder name to remove from the """
@@ -95,40 +110,25 @@ class LambdaLayers():
                     thezip.extract(file, tmp_zip_path)
         return parent_folder
 
-    def _copy_supervisor_files(self, parent_folder: str,
-                               tmp_zip_path: str, layer_code_path: str) -> None:
-        supervisor_path = FileUtils.join_paths(tmp_zip_path, parent_folder, 'faassupervisor')
-        shutil.move(supervisor_path, FileUtils.join_paths(layer_code_path,
-                                                          'python',
-                                                          'faassupervisor'))
-
-    def _copy_extra_files(self, parent_folder: str,
-                          tmp_zip_path: str, layer_code_path: str) -> None:
-        extra_folder_path = FileUtils.join_paths(tmp_zip_path, parent_folder, 'extra')
-        files = FileUtils.get_all_files_in_directory(extra_folder_path)
-        for file_path in files:
-            FileUtils.unzip_folder(file_path, layer_code_path)
-
-    def _create_layer_zip(self, layer_code_path: str) -> None:
-        FileUtils.zip_folder(self.layer_zip_path, layer_code_path)
-
-    def _get_supervisor_layer_props(self) -> Dict:
+    def _get_supervisor_layer_props(self, layer_zip_path: str) -> Dict:
         return {'LayerName' : self._SUPERVISOR_LAYER_NAME,
                 'Description' : self.supervisor_version,
-                'Content' : {'ZipFile': FileUtils.read_file(self.layer_zip_path, mode="rb")},
+                'Content' : {'ZipFile': FileUtils.read_file(layer_zip_path, mode="rb")},
                 'LicenseInfo' : 'Apache 2.0'}
 
     def is_supervisor_layer_created(self) -> bool:
         return self.layer.exists(self._SUPERVISOR_LAYER_NAME)
 
     def _create_layer(self) -> None:
-        tmp_zip_path, layer_code_path = self._create_tmp_folders()
+        tmp_zip_path, layer_code_path = _create_tmp_folders()
+        layer_zip_path = FileUtils.join_paths(FileUtils.get_tmp_dir(),
+                                              f"{self._SUPERVISOR_LAYER_NAME}.zip")
         parent_folder = self._download_supervisor(tmp_zip_path)
-        self._copy_supervisor_files(parent_folder, tmp_zip_path, layer_code_path)
-        self._copy_extra_files(parent_folder, tmp_zip_path, layer_code_path)
-        self._create_layer_zip(layer_code_path)
-        self.layer.create(**self._get_supervisor_layer_props())
-        FileUtils.delete_file(self.layer_zip_path)
+        _copy_supervisor_files(parent_folder, tmp_zip_path, layer_code_path)
+        _copy_extra_files(parent_folder, tmp_zip_path, layer_code_path)
+        _create_layer_zip(layer_zip_path, layer_code_path)
+        self.layer.create(**self._get_supervisor_layer_props(layer_zip_path))
+        FileUtils.delete_file(layer_zip_path)
 
     def get_supervisor_layer_version(self):
         """Returns the faas-supervisor version linked
