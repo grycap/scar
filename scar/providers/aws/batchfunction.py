@@ -52,7 +52,8 @@ class Batch(GenericClient):
 
     def _get_user_script(self):
         script = ''
-        if self.aws._lambda.init_script:
+        if ('init_script' in self.aws._lambda and 
+            self.aws._lambda.init_script):
             file_content = FileUtils.read_file(self.aws._lambda.init_script)
             script = StrUtils.utf8_to_base64_string(file_content)
         return script
