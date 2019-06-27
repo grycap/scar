@@ -271,7 +271,9 @@ class Batch(GenericClient):
             state, status = self.get_state_and_status_of_compute_env()
             if state == "ENABLED" and status == "VALID":
                 creation_args = self.get_creations_job_queue_args()
-                logger.info("Compute environment created.")
+                logger.info("Compute environment successfully created.")
                 self.client.create_job_queue(**creation_args)
+                logger.info('Job queue successfully created.')
                 creation_args = self._get_job_definition_args()
+                logger.info(f'Registering \'{self.aws._lambda.name}\' job definition.')
                 return self.client.register_job_definition(**creation_args)

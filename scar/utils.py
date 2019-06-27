@@ -346,7 +346,7 @@ class GitHubUtils:
         """Check if a tagged release exists in a repository."""
         url = f'https://api.github.com/repos/{user}/{project}/releases'
         response = json.loads(request.get_file(url))
-        if response and response is list:
+        if response and isinstance(response, list):
             for release in response:
                 if release['tag_name'] == tag_name:
                     return True
