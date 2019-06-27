@@ -33,6 +33,8 @@ class AWSValidator(GenericValidator):
             cls.validate_iam(prov_args['iam'])
         if 'lambda' in prov_args:
             cls.validate_lambda(prov_args['lambda'])
+        if 'batch' in prov_args:
+            cls.validate_batch(prov_args['batch'])
 
     @staticmethod
     def validate_iam(iam_properties):

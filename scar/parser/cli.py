@@ -105,7 +105,7 @@ class CommandParser(object):
         parser_init.add_argument("-s", "--init-script", help="Path to the input file passed to the function")
         parser_init.add_argument("-ph", "--preheat", help="Preheats the function running it once and downloading the necessary container", action="store_true")
         parser_init.add_argument("-ep", "--extra-payload", help="Folder containing files that are going to be added to the lambda function")
-        parser_init.add_argument("-db", "--deployment-bucket", help="Bucket where the deployment package is going to be uploaded.")    
+        parser_init.add_argument("-db", "--deployment-bucket", help="Bucket where the deployment package is going to be uploaded.")
         # API Gateway conf        
         parser_init.add_argument("-api", "--api-gateway-name", help="API Gateway name created to launch the lambda function")
 
@@ -135,7 +135,7 @@ class CommandParser(object):
         group.add_argument("-n", "--name", help="Lambda function name")
         group.add_argument("-f", "--conf-file", help="Yaml file with the function configuration")        
         parser_run.add_argument("-s", "--run-script", help="Path to the input file passed to the function")
-        parser_run.add_argument('c_args', nargs=argparse.REMAINDER, help="Arguments passed to the container.")     
+        parser_run.add_argument('c_args', nargs=argparse.REMAINDER, help="Arguments passed to the container.")
     
     def add_rm_parser(self):
         parser_rm = self.subparsers.add_parser('rm', parents=[self.output_parser, self.profile_parser], help="Delete function")
@@ -161,7 +161,7 @@ class CommandParser(object):
         # S3 args
         parser_ls.add_argument("-b", "--bucket", help="Show bucket files")
         # Layer args
-        parser_ls.add_argument("-l", "--list-layers", help="Show lambda layers information", action="store_true")             
+        parser_ls.add_argument("-l", "--list-layers", help="Show lambda layers information", action="store_true")
 
     def add_put_parser(self):
         parser_put = self.subparsers.add_parser('put', parents=[self.storage_parser, self.profile_parser], help="Upload file(s) to bucket")
@@ -236,7 +236,7 @@ class CommandParser(object):
 
     def parse_api_gateway_args(self, cmd_args):
         api_gtw_args = [('api_gateway_name', 'name'), 'parameters', 'data_binary', 'json_data']
-        return DataTypesUtils.parse_arg_list(api_gtw_args, cmd_args)     
+        return DataTypesUtils.parse_arg_list(api_gtw_args, cmd_args)
 
     def parse_s3_args(self, cmd_args):
         s3_args = ['deployment_bucket',

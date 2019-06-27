@@ -112,7 +112,7 @@ class DataTypesUtils:
         """Merge 'dict1' and 'dict2' dicts into 'dict1'.
         'dict2' has precedence over 'dict1'."""
         for key, val in dict2.items():
-            if val:
+            if val is not None:
                 if key not in dict1:
                     dict1[key] = val
                 elif isinstance(val, dict):
