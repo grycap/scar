@@ -15,10 +15,9 @@
 of managing the SCAR configuration file."""
 
 import json
-from packaging import version
 from scar.exceptions import exception, ScarConfigFileError
 import scar.logger as logger
-from scar.utils import FileUtils, SysUtils
+from scar.utils import FileUtils, SysUtils, StrUtils
 
 _DEFAULT_CFG = {
     "scar": {
@@ -86,9 +85,8 @@ class ConfigFileParser():
     def _is_config_file_updated(self):
         if 'config_version' not in self.cfg_data['scar']:
             return False
-        user_cfg_file_ver = version.parse(self.cfg_data['scar']["config_version"])
-        def_cfg_file_ver = version.parse(_DEFAULT_CFG['scar']["config_version"])
-        return user_cfg_file_ver >= def_cfg_file_ver
+        return StrUtils.compare_versions(self.cfg_data.get('scar', {}).get("config_version", ""),
+                                         _DEFAULT_CFG['scar']["config_version"]) <= 0
 
     def get_properties(self):
         """Returns the configuration data of the configuration file."""

@@ -13,8 +13,6 @@
 # limitations under the License.
 """Module with methods shared by all the classes."""
 
-from typing import Optional, Dict, List, Generator, Union, Any
-from distutils import dir_util
 import base64
 import json
 import os
@@ -25,6 +23,9 @@ import tarfile
 import tempfile
 import uuid
 import sys
+from typing import Optional, Dict, List, Generator, Union, Any
+from distutils import dir_util
+from packaging import version
 import scar.logger as logger
 import scar.http.request as request
 from scar.exceptions import GitHubTagNotFoundError
@@ -259,12 +260,12 @@ class FileUtils:
             tar.extractall(path=destination_path)
 
     @staticmethod
-    def unzip_folder(zip_path: str, folder_where_unzip_path: str) -> None:
+    def unzip_folder(zip_path: str, folder_where_unzip_path: str, msg: str = '') -> None:
         """Must use the unzip binary to preserve the file properties and the symlinks."""
         zip_exe = '/usr/bin/unzip'
         SysUtils.execute_command_with_msg([zip_exe, zip_path],
                                           cmd_wd=folder_where_unzip_path,
-                                          cli_msg='Creating function package')
+                                          cli_msg=msg)
 
     @staticmethod
     def zip_folder(zip_path: str, folder_to_zip_path: str, msg: str = '') -> None:
@@ -327,6 +328,17 @@ class StrUtils:
         """Returns a random generated uuid4 string."""
         return str(uuid.uuid4())
 
+    @staticmethod
+    def compare_versions(ver1: str, ver2: str) -> int:
+        """Returns value < 0 to indicate that ver1 is less than ver2.
+        Returns value > 0 to indicate that ver1 is greater than ver2.
+        Returns value == 0 to indicate that ver1 is equal to ver2."""
+        res = 0
+        if version.parse(ver1) < version.parse(ver2):
+            res = -1
+        elif version.parse(ver1) > version.parse(ver2):
+            res = 1
+        return res
 
 class GitHubUtils:
     """Common methods for GitHub API Queries.
@@ -344,13 +356,11 @@ class GitHubUtils:
     @staticmethod
     def exists_release_in_repo(user: str, project: str, tag_name: str) -> bool:
         """Check if a tagged release exists in a repository."""
-        url = f'https://api.github.com/repos/{user}/{project}/releases'
+        url = f'https://api.github.com/repos/{user}/{project}/releases/tags/{tag_name}'
         response = json.loads(request.get_file(url))
-        if response and response is list:
-            for release in response:
-                if release['tag_name'] == tag_name:
-                    return True
-        return False
+        if 'message' in response and response['message'] == 'Not Found':
+            return False
+        return True
 
     @staticmethod
     def get_asset_url(user: str, project: str, asset_name: str,

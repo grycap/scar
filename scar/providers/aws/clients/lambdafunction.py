@@ -14,7 +14,7 @@
 """Module with the class necessary to manage the
 Lambda function and layers creation, deletion and configuration."""
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 from scar.providers.aws.clients import BotoClient
 import scar.exceptions as excp
 import scar.logger as logger
@@ -78,11 +78,20 @@ class LambdaClient(BotoClient):
         kwargs['Action'] = "lambda:InvokeFunction"
         return self.client.add_permission(**kwargs)
 
-    def list_layers(self, **kwargs: Dict) -> Dict:
+    def list_layers(self, next_token: Optional[str] = None) -> List:
         """Lists function layers and shows information
         about the latest version of each."""
         logger.debug("Listing lambda layers.")
-        return self.client.list_layers(**kwargs)
+        layers = []
+        kwargs = {}
+        if next_token:
+            kwargs['Marker'] = next_token
+        layers_info = self.client.list_layers(**kwargs)
+        if 'Layers' in layers_info and layers_info['Layers']:
+            layers.extend(layers_info['Layers'])
+        if 'NextMarker' in layers_info:
+            layers.extend(self.list_layers(next_token=layers_info['NextMarker']))
+        return layers
 
     def publish_layer_version(self, **kwargs: Dict) -> Dict:
         """Creates a function layer from a ZIP archive."""

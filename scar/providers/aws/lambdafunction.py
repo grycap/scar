@@ -96,10 +96,7 @@ class Lambda(GenericClient):
         return response
 
     def _manage_supervisor_layer(self):
-        if not self.layers.is_supervisor_layer_created():
-            self.layers.create_supervisor_layer()
-        else:
-            logger.info("Using existent 'faas-supervisor' layer")
+        self.layers.check_faas_supervisor_layer()
         self.aws._lambda.layers.append(self.layers.get_latest_supervisor_layer_arn())
 
     def _add_lambda_environment_variable(self, key, value):
