@@ -58,31 +58,31 @@ class Udocker():
             SysUtils.delete_environment_variable("UDOCKER_DIR")
 
     def _set_udocker_local_registry(self):
-        self.aws._lambda.environment['Variables']['UDOCKER_REPOS'] = '/var/task/udocker/repos/'
-        self.aws._lambda.environment['Variables']['UDOCKER_LAYERS'] = '/var/task/udocker/layers/'
+        self.aws.lambdaf.environment['Variables']['UDOCKER_REPOS'] = '/var/task/udocker/repos/'
+        self.aws.lambdaf.environment['Variables']['UDOCKER_LAYERS'] = '/var/task/udocker/layers/'
 
     def _create_udocker_container(self):
         """
         Check if the container fits in the limits of the deployment.
         """
         if hasattr(self.aws, "s3") and hasattr(self.aws.s3, "deployment_bucket"):
-            self._validate_container_size(self.aws._lambda.max_s3_payload_size)
+            self._validate_container_size(self.aws.lambdaf.max_s3_payload_size)
         else:
-            self._validate_container_size(self.aws._lambda.max_payload_size)
+            self._validate_container_size(self.aws.lambdaf.max_payload_size)
 
     def _validate_container_size(self, max_payload_size):
         if(FileUtils.get_tree_size(self.udocker_install_dir) < max_payload_size/2):
             SysUtils.execute_command_with_msg(self.udocker_exec + ["create", "--name=lambda_cont",
-                                                                self.aws._lambda.image],
+                                                                self.aws.lambdaf.image],
                                            cli_msg="Creating container structure")
         if(FileUtils.get_tree_size(self.udocker_install_dir) > max_payload_size):
             FileUtils.delete_folder(FileUtils.join_paths(self.udocker_install_dir, "containers"))
         else:
-            self.aws._lambda.environment['Variables']['UDOCKER_LAYERS'] = '/var/task/udocker/containers/'
+            self.aws.lambdaf.environment['Variables']['UDOCKER_LAYERS'] = '/var/task/udocker/containers/'
 
     def download_udocker_image(self):
         self.save_tmp_udocker_env()
-        SysUtils.execute_command_with_msg(self.udocker_exec + ["pull", self.aws._lambda.image],
+        SysUtils.execute_command_with_msg(self.udocker_exec + ["pull", self.aws.lambdaf.image],
                                        cli_msg="Downloading container image")
         self._create_udocker_container()
         self._set_udocker_local_registry()
@@ -91,11 +91,11 @@ class Udocker():
     def prepare_udocker_image(self):
         self.save_tmp_udocker_env()
         image_path = FileUtils.join_paths(FileUtils.get_tmp_dir(), "udocker_image.tar.gz")
-        FileUtils.copy_file(self.aws._lambda.image_file, image_path)
+        FileUtils.copy_file(self.aws.lambdaf.image_file, image_path)
         cmd_out = SysUtils.execute_command_with_msg(self.udocker_exec + ["load", "-i", image_path], cli_msg="Loading image file")
         # Get the image name from the command output
-        self.aws._lambda.image = cmd_out.split('\n')[1]
+        self.aws.lambdaf.image = cmd_out.split('\n')[1]
         self._create_udocker_container()
-        self.aws._lambda.environment['Variables']['IMAGE_ID'] = self.aws._lambda.image
+        self.aws.lambdaf.environment['Variables']['IMAGE_ID'] = self.aws.lambdaf.image
         self._set_udocker_local_registry()
         self.restore_udocker_env()

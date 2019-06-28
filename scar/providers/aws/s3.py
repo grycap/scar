@@ -31,8 +31,8 @@ class S3(GenericClient):
     def _initialize_properties(self):
         if not hasattr(self.aws.s3, "input_folder"):
             self.aws.s3.input_folder = ''
-            if hasattr(self.aws._lambda, "name"):
-                self.aws.s3.input_folder = "{0}/input/".format(self.aws._lambda.name)
+            if hasattr(self.aws.lambdaf, "name"):
+                self.aws.s3.input_folder = "{0}/input/".format(self.aws.lambdaf.name)
         elif not self.aws.s3.input_folder.endswith("/"):
             self.aws.s3.input_folder = "{0}/".format(self.aws.s3.input_folder)
 
@@ -69,12 +69,12 @@ class S3(GenericClient):
         bucket_conf = self.client.get_notification_configuration(self.aws.s3.input_bucket)
         if bucket_conf and "LambdaFunctionConfigurations" in bucket_conf:
             lambda_conf = bucket_conf["LambdaFunctionConfigurations"]
-            filter_conf = [x for x in lambda_conf if x['LambdaFunctionArn'] != self.aws._lambda.arn]
+            filter_conf = [x for x in lambda_conf if x['LambdaFunctionArn'] != self.aws.lambdaf.arn]
             notification = { "LambdaFunctionConfigurations": filter_conf }
             self.client.put_notification_configuration(self.aws.s3.input_bucket, notification)
 
     def get_trigger_configuration(self):
-        return  {"LambdaFunctionArn": self.aws._lambda.arn,
+        return  {"LambdaFunctionArn": self.aws.lambdaf.arn,
                  "Events": [ "s3:ObjectCreated:*" ],
                  "Filter": { "Key": { "FilterRules": [{ "Name": "prefix", "Value": self.aws.s3.input_folder }]}}
                  }
@@ -117,7 +117,6 @@ class S3(GenericClient):
         else:
             raise excp.BucketNotFoundError(bucket_name=bucket_name)
 
-
     def get_s3_event(self, s3_file_key):
         return {"Records" : [ {"eventSource" : "aws:s3",
                  "s3" : {"bucket" : {"name" :self.aws.s3.input_bucket},
@@ -125,9 +124,7 @@ class S3(GenericClient):
                 }]}
 
     def get_s3_event_list(self, s3_file_keys):
-        s3_events = []
-        for s3_key in s3_file_keys:
-            s3_events.append(self.get_s3_event(s3_key))
+        return [self.get_s3_event(s3_key) for s3_key in s3_file_keys]
 
     def download_file(self, bucket_name, file_key, file_path):
         kwargs = {'Bucket' : bucket_name, 'Key' : file_key}

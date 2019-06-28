@@ -11,9 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Module with classes and methods to manage the different
+properties needed by SCAR and the boto clients."""
 
 
 class ScarProperties(dict):
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__dict__ = self
@@ -30,7 +33,7 @@ class AwsProperties(dict):
          'config_path': 'cowsay',
          'execution_mode': 'lambda',
          'iam': see_iam_props_class,
-         'lambda': see_lambda_props_class,
+         'lambda': see_lambdaf_props_class,
          'output': <OutputType.PLAIN_TEXT: 1>,
          'region': 'us-east-1',
          's3': see_s3_props_class,
@@ -50,13 +53,14 @@ class AwsProperties(dict):
         if hasattr(self, "iam"):
             self.iam = IamProperties(self.iam)
         if hasattr(self, "lambda"):
-            self._lambda = LambdaProperties(self.__dict__['lambda'])
+            self.lambdaf = LambdaProperties(self.__dict__['lambda'])
             self.__dict__.pop('lambda', None)
         if hasattr(self, "s3"):
             self.s3 = S3Properties(self.s3)
 
 
 class ApiGatewayProperties(dict):
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__dict__ = self
@@ -136,16 +140,16 @@ class IamProperties(dict):
 
 class S3Properties(dict):
     """
-    Example of dictionary used to initialize the class properties:    
+    Example of dictionary used to initialize the class properties:
     {'input_bucket': 'test1'}
     """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__dict__ = self
-        self.process_storagePaths()
+        self.process_storage_paths()
 
-    def process_storagePaths(self):
+    def process_storage_paths(self):
         if hasattr(self, "input_bucket"):
             self.storage_path_input = self.input_bucket
             input_path = self.input_bucket.split("/")

@@ -49,19 +49,19 @@ class Lambda(GenericClient):
         self._initialize_properties()
 
     def _initialize_properties(self):
-        self.aws._lambda.environment = {'Variables' : {}}
-        self.aws._lambda.zip_file_path = FileUtils.join_paths(FileUtils.get_tmp_dir(), 'function.zip')
-        self.aws._lambda.invocation_type = "RequestResponse"
-        self.aws._lambda.log_type = "Tail"
-        self.aws._lambda.layers = []
-        if hasattr(self.aws._lambda, "name"):
-            self.aws._lambda.handler = "{0}.lambda_handler".format(self.aws._lambda.name)
-        if not hasattr(self.aws._lambda, "asynchronous"):
-            self.aws._lambda.asynchronous = False
+        self.aws.lambdaf.environment = {'Variables' : {}}
+        self.aws.lambdaf.zip_file_path = FileUtils.join_paths(FileUtils.get_tmp_dir(), 'function.zip')
+        self.aws.lambdaf.invocation_type = "RequestResponse"
+        self.aws.lambdaf.log_type = "Tail"
+        self.aws.lambdaf.layers = []
+        if hasattr(self.aws.lambdaf, "name"):
+            self.aws.lambdaf.handler = "{0}.lambda_handler".format(self.aws.lambdaf.name)
+        if not hasattr(self.aws.lambdaf, "asynchronous"):
+            self.aws.lambdaf.asynchronous = False
         self._set_default_call_parameters()
 
     def is_asynchronous(self):
-        return self.aws._lambda.asynchronous
+        return self.aws.lambdaf.asynchronous
 
     def _set_default_call_parameters(self):
         self.asynchronous_call_parameters = {"invocation_type" : "Event",
@@ -72,17 +72,17 @@ class Lambda(GenericClient):
                                                  "asynchronous" : "False"}
 
     def _get_creations_args(self):
-        return {'FunctionName' : self.aws._lambda.name,
-                'Runtime' : self.aws._lambda.runtime,
+        return {'FunctionName' : self.aws.lambdaf.name,
+                'Runtime' : self.aws.lambdaf.runtime,
                 'Role' : self.aws.iam.role,
-                'Handler' :  self.aws._lambda.handler,
-                'Code' : self.aws._lambda.code,
-                'Environment' : self.aws._lambda.environment,
-                'Description': self.aws._lambda.description,
-                'Timeout':  self.aws._lambda.time,
-                'MemorySize': self.aws._lambda.memory,
+                'Handler' :  self.aws.lambdaf.handler,
+                'Code' : self.aws.lambdaf.code,
+                'Environment' : self.aws.lambdaf.environment,
+                'Description': self.aws.lambdaf.description,
+                'Timeout':  self.aws.lambdaf.time,
+                'MemorySize': self.aws.lambdaf.memory,
                 'Tags': self.aws.tags,
-                'Layers': self.aws._lambda.layers}
+                'Layers': self.aws.lambdaf.layers}
 
     @excp.exception(logger)
     def create_function(self):
@@ -92,16 +92,16 @@ class Lambda(GenericClient):
         creation_args = self._get_creations_args()
         response = self.client.create_function(**creation_args)
         if response and "FunctionArn" in response:
-            self.aws._lambda.arn = response.get('FunctionArn', "")
+            self.aws.lambdaf.arn = response.get('FunctionArn', "")
         return response
 
     def _manage_supervisor_layer(self):
         self.layers.check_faas_supervisor_layer()
-        self.aws._lambda.layers.append(self.layers.get_latest_supervisor_layer_arn())
+        self.aws.lambdaf.layers.append(self.layers.get_latest_supervisor_layer_arn())
 
     def _add_lambda_environment_variable(self, key, value):
         if key and value:
-            self.aws._lambda.environment['Variables'][key] = value
+            self.aws.lambdaf.environment['Variables'][key] = value
 
     def _add_custom_environment_variables(self, env_vars, prefix=''):
             if type(env_vars) is dict:
@@ -118,21 +118,21 @@ class Lambda(GenericClient):
         # Add required variables
         self._set_required_environment_variables()
         # Add explicitly user defined variables
-        if hasattr(self.aws._lambda, "environment_variables"):
-            self._add_custom_environment_variables(self.aws._lambda.environment_variables, prefix='CONT_VAR_')
+        if hasattr(self.aws.lambdaf, "environment_variables"):
+            self._add_custom_environment_variables(self.aws.lambdaf.environment_variables, prefix='CONT_VAR_')
         # Add explicitly user defined variables
-        if hasattr(self.aws._lambda, "lambda_environment"):
-            self._add_custom_environment_variables(self.aws._lambda.lambda_environment)
+        if hasattr(self.aws.lambdaf, "lambda_environment"):
+            self._add_custom_environment_variables(self.aws.lambdaf.lambda_environment)
 
     def _set_required_environment_variables(self):
         self._add_lambda_environment_variable('SUPERVISOR_TYPE', 'LAMBDA')
-        self._add_lambda_environment_variable('TIMEOUT_THRESHOLD', str(self.aws._lambda.timeout_threshold))
-        self._add_lambda_environment_variable('LOG_LEVEL', self.aws._lambda.log_level)
+        self._add_lambda_environment_variable('TIMEOUT_THRESHOLD', str(self.aws.lambdaf.timeout_threshold))
+        self._add_lambda_environment_variable('LOG_LEVEL', self.aws.lambdaf.log_level)
         self._add_udocker_variables()
         self._add_execution_mode()
         self._add_s3_environment_vars()
-        if hasattr(self.aws._lambda, "image"):
-            self._add_lambda_environment_variable('IMAGE_ID', self.aws._lambda.image)
+        if hasattr(self.aws.lambdaf, "image"):
+            self._add_lambda_environment_variable('IMAGE_ID', self.aws.lambdaf.image)
         if hasattr(self.aws, "api_gateway"):
             self._add_lambda_environment_variable('API_GATEWAY_ID', self.aws.api_gateway.id)
 
@@ -178,20 +178,20 @@ class Lambda(GenericClient):
         FunctionPackager(self.aws, self.supervisor_version).create_zip()
         if hasattr(self.aws, "s3") and hasattr(self.aws.s3, 'deployment_bucket'):
             self._upload_to_S3()
-            self.aws._lambda.code = {"S3Bucket": self.aws.s3.deployment_bucket, "S3Key" : self.aws.s3.file_key}
+            self.aws.lambdaf.code = {"S3Bucket": self.aws.s3.deployment_bucket, "S3Key" : self.aws.s3.file_key}
         else:
-            self.aws._lambda.code = {"ZipFile": FileUtils.read_file(self.aws._lambda.zip_file_path, mode="rb")}
+            self.aws.lambdaf.code = {"ZipFile": FileUtils.read_file(self.aws.lambdaf.zip_file_path, mode="rb")}
 
     def _upload_to_S3(self):
         self.aws.s3.input_bucket = self.aws.s3.deployment_bucket
-        self.aws.s3.file_key = 'lambda/{0}.zip'.format(self.aws._lambda.name)
-        self.s3.upload_file(file_path=self.aws._lambda.zip_file_path, file_key=self.aws.s3.file_key)
+        self.aws.s3.file_key = 'lambda/{0}.zip'.format(self.aws.lambdaf.name)
+        self.s3.upload_file(file_path=self.aws.lambdaf.zip_file_path, file_key=self.aws.s3.file_key)
 
     def delete_function(self):
-        return self.client.delete_function(self.aws._lambda.name)
+        return self.client.delete_function(self.aws.lambdaf.name)
 
     def link_function_and_input_bucket(self):
-        kwargs = {'FunctionName' : self.aws._lambda.name,
+        kwargs = {'FunctionName' : self.aws.lambdaf.name,
                   'Principal' : "s3.amazonaws.com",
                   'SourceArn' : 'arn:aws:s3:::{0}'.format(self.aws.s3.input_bucket)}
         self.client.add_invocation_permission(**kwargs)
@@ -210,7 +210,7 @@ class Lambda(GenericClient):
         return self._launch_s3_event(s3_event)
 
     def _launch_s3_event(self, s3_event):
-        self.aws._lambda.payload = s3_event
+        self.aws.lambdaf.payload = s3_event
         logger.info("Sending event for file '{0}'".format(s3_event['Records'][0]['s3']['object']['key']))
         return self.launch_lambda_instance()
 
@@ -230,9 +230,9 @@ class Lambda(GenericClient):
     def launch_lambda_instance(self):
         response = self._invoke_lambda_function()
         response_args = {'Response' : response,
-                         'FunctionName' : self.aws._lambda.name,
+                         'FunctionName' : self.aws.lambdaf.name,
                          'OutputType' : self.aws.output,
-                         'IsAsynchronous' : self.aws._lambda.asynchronous}
+                         'IsAsynchronous' : self.aws.lambdaf.asynchronous}
         if hasattr(self.aws, "output_file"):
             response_args['OutputFile'] = self.aws.output_file
         response_parser.parse_invocation_response(**response_args)
@@ -241,8 +241,8 @@ class Lambda(GenericClient):
         # Default payload empty
         payload = {}
         # Check for defined run script
-        if hasattr(self.aws._lambda, "run_script"):
-            script_path = self.aws._lambda.run_script
+        if hasattr(self.aws.lambdaf, "run_script"):
+            script_path = self.aws.lambdaf.run_script
             if hasattr(self.aws, "config_path"):
                 script_path = FileUtils.join_paths(self.aws.config_path, script_path)
             # We first code to base64 in bytes and then decode those bytes to allow the json lib to parse the data
@@ -250,41 +250,41 @@ class Lambda(GenericClient):
             payload = { "script" : StrUtils.utf8_to_base64_string(FileUtils.read_file(script_path, 'rb')) }
         # Check for defined commands
         # This overrides any other function payload
-        if hasattr(self.aws._lambda, "c_args"):
-            payload = { "cmd_args" : json.dumps(self.aws._lambda.c_args) }
+        if hasattr(self.aws.lambdaf, "c_args"):
+            payload = { "cmd_args" : json.dumps(self.aws.lambdaf.c_args) }
         return json.dumps(payload)
 
     def _invoke_lambda_function(self):
-        invoke_args = {'FunctionName' :  self.aws._lambda.name,
-                       'InvocationType' :  self.aws._lambda.invocation_type,
-                       'LogType' :  self.aws._lambda.log_type,
+        invoke_args = {'FunctionName' :  self.aws.lambdaf.name,
+                       'InvocationType' :  self.aws.lambdaf.invocation_type,
+                       'LogType' :  self.aws.lambdaf.log_type,
                        'Payload' : self._get_invocation_payload() }
         return self.client.invoke_function(**invoke_args)
 
     def set_asynchronous_call_parameters(self):
-        self.aws._lambda.update_properties(self.asynchronous_call_parameters)
+        self.aws.lambdaf.update_properties(self.asynchronous_call_parameters)
 
     def _set_request_response_call_parameters(self):
-        self.aws._lambda.update_properties(self.request_response_call_parameters)
+        self.aws.lambdaf.update_properties(self.request_response_call_parameters)
 
     def _update_environment_variables(self, function_info, update_args):
         # To update the environment variables we need to retrieve the
         # variables defined in lambda and update them with the new values
-        env_vars = self.aws._lambda.environment
-        if hasattr(self.aws._lambda, "environment_variables"):
-            for env_var in self.aws._lambda.environment_variables:
+        env_vars = self.aws.lambdaf.environment
+        if hasattr(self.aws.lambdaf, "environment_variables"):
+            for env_var in self.aws.lambdaf.environment_variables:
                 key_val = env_var.split("=")
                 # Add an specific prefix to be able to find the variables defined by the user
                 env_vars['Variables']['CONT_VAR_{0}'.format(key_val[0])] = key_val[1]
-        if hasattr(self.aws._lambda, "timeout_threshold"):
-            env_vars['Variables']['TIMEOUT_THRESHOLD'] = str(self.aws._lambda.timeout_threshold)
-        if hasattr(self.aws._lambda, "log_level"):
-            env_vars['Variables']['LOG_LEVEL'] = self.aws._lambda.log_level
+        if hasattr(self.aws.lambdaf, "timeout_threshold"):
+            env_vars['Variables']['TIMEOUT_THRESHOLD'] = str(self.aws.lambdaf.timeout_threshold)
+        if hasattr(self.aws.lambdaf, "log_level"):
+            env_vars['Variables']['LOG_LEVEL'] = self.aws.lambdaf.log_level
         function_info['Environment']['Variables'].update(env_vars['Variables'])
         update_args['Environment'] = function_info['Environment']
 
     def _update_supervisor_layer(self, function_info, update_args):
-        if hasattr(self.aws._lambda, "supervisor_layer"):
+        if hasattr(self.aws.lambdaf, "supervisor_layer"):
             # Set supervisor layer Arn
             function_layers = [self.layers.get_latest_supervisor_layer_arn()]
             # Add the rest of layers (if exist)
@@ -296,12 +296,12 @@ class Lambda(GenericClient):
         if not function_info:
             function_info = self.get_function_info()
         update_args = {'FunctionName' : function_info['FunctionName'] }
-#         if hasattr(self.aws._lambda, "memory"):
-#             update_args['MemorySize'] = self.aws._lambda.memory
+#         if hasattr(self.aws.lambdaf, "memory"):
+#             update_args['MemorySize'] = self.aws.lambdaf.memory
 #         else:
 #             update_args['MemorySize'] = function_info['MemorySize']
-#         if hasattr(self.aws._lambda, "time"):
-#             update_args['Timeout'] = self.aws._lambda.time
+#         if hasattr(self.aws.lambdaf, "time"):
+#             update_args['Timeout'] = self.aws.lambdaf.time
 #         else:
 #             update_args['Timeout'] = function_info['Timeout']
         self._update_environment_variables(function_info, update_args)
@@ -319,13 +319,13 @@ class Lambda(GenericClient):
             print ("Error getting function info by arn: {}".format(ce))
 
     def get_function_info(self):
-        return self.client.get_function_info(self.aws._lambda.name)
+        return self.client.get_function_info(self.aws.lambdaf.name)
 
     @excp.exception(logger)
     def find_function(self, function_name_or_arn=None):
         try:
             # If this call works the function exists
-            name_arn = function_name_or_arn if function_name_or_arn else self.aws._lambda.name
+            name_arn = function_name_or_arn if function_name_or_arn else self.aws.lambdaf.name
             self.client.get_function_info(name_arn)
             return True
         except ClientError as ce:
@@ -336,7 +336,7 @@ class Lambda(GenericClient):
                 raise
 
     def add_invocation_permission_from_api_gateway(self):
-        kwargs = {'FunctionName' : self.aws._lambda.name,
+        kwargs = {'FunctionName' : self.aws.lambdaf.name,
                   'Principal' : 'apigateway.amazonaws.com',
                   'SourceArn' : 'arn:aws:execute-api:{0}:{1}:{2}/*'.format(self.aws.region,
                                                                            self.aws.account_id,
@@ -356,8 +356,8 @@ class Lambda(GenericClient):
     def _get_api_gateway_url(self):
         api_id = self.get_api_gateway_id()
         if not api_id:
-            raise excp.ApiEndpointNotFoundError(self.aws._lambda.name)
-        return 'https://{0}.execute-api.{1}.amazonaws.com/scar/launch'.format(api_id, self.aws.region)
+            raise excp.ApiEndpointNotFoundError(self.aws.lambdaf.name)
+        return f'https://{api_id}.execute-api.{self.aws.region}.amazonaws.com/scar/launch'
 
     def call_http_endpoint(self):
         invoke_args = {'headers' : {'X-Amz-Invocation-Type':'Event'} if self.is_asynchronous() else {}}
