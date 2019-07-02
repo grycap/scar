@@ -40,6 +40,7 @@ setup(name='scar',
                         'configparser',
                         'requests',
                         'pyyaml',
+                        'packaging',
       ],
       platforms=["any"],
       entry_points={
