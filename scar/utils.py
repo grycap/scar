@@ -303,6 +303,12 @@ class StrUtils:
         """Encode a 'utf-8' string using Base64 and return
         the encoded value as a string."""
         return StrUtils.encode_base64(bytes(value, 'utf-8')).decode('utf-8')
+    
+    @staticmethod
+    def bytes_to_base64str(value, encoding='utf-8') -> str:
+        """Encode a 'utf-8' string using Base64 and return
+        the encoded value as a string."""
+        return StrUtils.encode_base64(value).decode(encoding)    
 
     @staticmethod
     def dict_to_base64_string(value: Dict) -> str:

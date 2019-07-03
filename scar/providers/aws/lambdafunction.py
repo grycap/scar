@@ -247,7 +247,7 @@ class Lambda(GenericClient):
                 script_path = FileUtils.join_paths(self.aws.config_path, script_path)
             # We first code to base64 in bytes and then decode those bytes to allow the json lib to parse the data
             # https://stackoverflow.com/questions/37225035/serialize-in-json-a-base64-encoded-data#37239382
-            payload = { "script" : StrUtils.utf8_to_base64_string(FileUtils.read_file(script_path, 'rb')) }
+            payload = { "script" : StrUtils.bytes_to_base64str(FileUtils.read_file(script_path, 'rb')) }
         # Check for defined commands
         # This overrides any other function payload
         if hasattr(self.aws.lambdaf, "c_args"):
