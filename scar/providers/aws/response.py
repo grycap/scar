@@ -128,13 +128,13 @@ def _parse_lambda_function_info(function_info):
     if api_gateway != '-':
         region = function_info['FunctionArn'].split(':')[3]
         api_gateway = f"https://{api_gateway}.execute-api.{region}.amazonaws.com/scar/launch"
-    super_layer_arn = function_info.get('SupervisorVersion', '-')
+    super_version = function_info.get('SupervisorVersion', '-')
     return {'Name' : name,
             'Memory' : memory,
             'Timeout' : timeout,
             'Image_id': image_id,
             'Api_gateway': api_gateway,
-            'Sup_layer_arn': super_layer_arn}
+            'Sup_version': super_version}
 
 
 def _get_table(functions_info):
@@ -146,7 +146,7 @@ def _get_table(functions_info):
                       function['Timeout'],
                       function['Image_id'],
                       function['Api_gateway'],
-                      function['Sup_layer_arn']])
+                      function['Sup_version']])
     return tabulate(table, headers)
 
 
