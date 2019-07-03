@@ -28,15 +28,35 @@ class LambdaClient(BotoClient):
     # Parameter used by the parent to create the appropriate boto3 client
     _BOTO_CLIENT_NAME = 'lambda'
 
+    @excp.exception(logger)
     def create_function(self, **kwargs: Dict) -> Dict:
         """Creates a new Lambda function."""
         logger.debug("Creating lambda function.")
         return self.client.create_function(**kwargs)
 
+    @excp.exception(logger)
     def get_function_info(self, function_name_or_arn: str) -> Dict:
         """Returns the configuration information
         of the Lambda function."""
-        return self.client.get_function_configuration(FunctionName=function_name_or_arn)
+        function_info = self.client.get_function_configuration(FunctionName=function_name_or_arn)
+        # Add supervisor version
+        function_info['SupervisorVersion'] = self.get_supervisor_version(function_info)
+        return function_info
+
+    @excp.exception(logger)
+    def get_supervisor_version(self, function_info):
+        version = '-'
+        # Add supervisor version
+        layers = function_info.get('Layers', [])
+        for layer in layers:
+            layer_arn = layer.get('Arn', '')
+            # {'Arn': 'arn:aws:lambda:us-east-1:974349055189:layer:faas-supervisor:1'}
+            arn_fields = layer_arn.split(":")
+            if arn_fields[-2] == 'faas-supervisor':
+                layer_info = self.client.get_layer_version(LayerName='faas-supervisor',
+                                                           VersionNumber=int(arn_fields[-1]))
+                version = layer_info.get('Description', '-')
+        return version
 
     @excp.exception(logger)
     def update_function_configuration(self, **kwargs: Dict) -> Dict:

@@ -125,9 +125,6 @@ class AWS(Commands):
 
     @excp.exception(logger)
     def update(self):
-#         if hasattr(self.aws_properties.lambdaf, "supervisor_layer") and \
-#                     self.aws_properties.lambdaf.supervisor_layer:
-#             self.aws_lambda.layers._update_supervisor_layer()
         if hasattr(self.aws_properties.lambdaf, "all") and self.aws_properties.lambdaf.all:
             self._update_all_functions(self._get_all_functions())
         else:
@@ -139,8 +136,6 @@ class AWS(Commands):
             file_list = self.aws_s3.get_bucket_file_list()
             for file_info in file_list:
                 print(file_info)
-#         elif hasattr(self.aws_properties.lambdaf, "layers"):
-#             self.aws_lambda.layers.print_layers_info()
         else:
             lambda_functions = self._get_all_functions()
             response_parser.parse_ls_response(lambda_functions,
