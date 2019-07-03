@@ -47,7 +47,7 @@ class APIGateway(GenericClient):
                              'acc_id': self.aws.account_id,
                              'lambdaf_name': self.aws.lambdaf.name}
         uri_kwargs = {'region': self.aws.region,
-                      'lambda_uri': self.lambda_uri.format(lambda_uri_kwargs)}
+                      'lambda_uri': self.lambda_uri.format(**lambda_uri_kwargs)}
         return self.uri.format(**uri_kwargs)
 
     def _get_common_args(self, resource_info: Dict) -> Dict:

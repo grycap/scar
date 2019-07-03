@@ -64,25 +64,25 @@ scar invoke -f scar-darknet-api-s3.yaml -db dog.jpg -a
 When the execution of the function finishes, the script used produces two output files and SCAR copies them to the S3 bucket used. To check if the files are created and copied correctly you can use the command:
 
 ```sh
-scar ls -b scar-darknet-bucket -bf scar-darknet-s3/output
+scar ls -b scar-darknet/scar-darknet-api/output
 ```
 
 Which outputs:
 ```
-darknet/output/68f5c9d5-5826-44gr-basc-8f8b23f44cdf/image-result.png
-darknet/output/68f5c9d5-5826-44gr-basc-8f8b23f44cdf/result.out
+scar-darknet-api/output/68f5c9d5-5826-44gr-basc-8f8b23f44cdf/image-result.png
+scar-darknet-api/output/68f5c9d5-5826-44gr-basc-8f8b23f44cdf/result.out
 ```
 
-The files are created in the output folder following the `s3://scar-darknet-bucket/scar-darknet-s3/output/$REQUEST_ID/*.*` structure.
+The files are created in the output folder following the `s3://$BUCKET_NAME/$FUNCTION_NAME/output/$REQUEST_ID/*.*` structure.
 
 
 To download the created files you can also use SCAR. Download a folder with:
 
 ```sh
-scar get -b scar-darknet-bucket -bf scar-darknet-s3/output -p /tmp/lambda/
+scar get -b scar-darknet/scar-darknet-api/output -p /tmp/lambda/
 ```
 
-This command creates and `ouput` folder and all the subfolders in the `/tmp/lambda/` folder
+This command creates the `scar-darknet-api/ouput` folder and all the required subfolders in the `/tmp/lambda/` folder
 
 In our case the two output files are result.out:
 
@@ -99,7 +99,7 @@ and image-result.png:
 Don't forget to delete the function when you finish your testing:
 
 ```sh
-scar rm -f scar-darknet-api.yaml
+scar rm -f scar-darknet-api-s3.yaml
 ```
 
 Have in mind that the bucket and the folders and files created are not deleted when the function is deleted.
