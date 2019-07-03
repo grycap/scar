@@ -20,10 +20,8 @@ from scar.providers.aws import GenericClient
 import scar.logger as logger
 
 
-def _parse_events_in_message(response: List) -> str:
-    data = [(event.get('message', ''), event('timestamp', ''))
-            for elem in response
-            for event in elem.get('events', {})]
+def _parse_events_in_message(log_events: List) -> str:
+    data = [(event.get('message', ''), event.get('timestamp', '')) for event in log_events]
     sorted_data = sorted(data, key=lambda time: time[1])
     return "".join([sdata[0] for sdata in sorted_data])
 

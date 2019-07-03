@@ -14,8 +14,7 @@
 """Module with the class necessary to manage the
 Cloudwatch Logs creation, deletion and configuration."""
 
-
-from typing import Dict, List
+from typing import Dict, List, Optional
 from botocore.exceptions import ClientError
 from scar.providers.aws.clients import BotoClient
 from scar.exceptions import exception, ExistentLogGroupWarning, NotExistentLogGroupWarning
@@ -32,14 +31,22 @@ class CloudWatchLogsClient(BotoClient):
     @exception(logger)
     def get_log_events(self, **kwargs: Dict) -> List:
         """Lists log events from the specified log group."""
-        logs = []
-        response = self.client.filter_log_events(**kwargs)
-        logs.append(response)
-        while ('nextToken' in response) and (response['nextToken']):
-            kwargs['nextToken'] = response['nextToken']
-            response = self.client.filter_log_events(**kwargs)
-            logs.append(response)
-        return logs
+#         logs = []
+#         kwargs = {}
+#         response = self.client.filter_log_events(**kwargs)
+#         logs.append(response)
+#         while 'nextToken' in response and (response['nextToken']):
+#             kwargs['nextToken'] = response['nextToken']
+#             response = self.client.filter_log_events(**kwargs)
+#             logs.append(response)
+#         return logs
+        log_events = []
+        logs_info = self.client.filter_log_events(**kwargs)
+        log_events.extend(logs_info.get('events', []))
+        if 'nextToken' in logs_info:
+            kwargs['nextToken'] = logs_info['nextToken']
+            log_events.extend(self.get_log_events(**kwargs))
+        return log_events
 
     @exception(logger)
     def create_log_group(self, **kwargs: Dict) -> Dict:
