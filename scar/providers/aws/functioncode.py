@@ -14,7 +14,6 @@
 """Module with methods and classes to create the function deployment package."""
 
 from zipfile import ZipFile
-from io import BytesIO
 from scar.providers.aws.udocker import Udocker
 from scar.providers.aws.validators import AWSValidator
 from scar.exceptions import exception
@@ -23,15 +22,18 @@ from scar.http.request import get_file
 from scar.utils import FileUtils, lazy_property, GitHubUtils, \
                        GITHUB_USER, GITHUB_SUPERVISOR_PROJECT
 
+_SUPERVISOR_ZIP_PATH = FileUtils.join_paths(FileUtils.get_tmp_dir(), 'faas.zip')
 
-def _download_handler_code(supervisor_version: str, scar_tmp_folder_path: str,
-                           handler_name: str) -> None:
-    function_handler_dest = FileUtils.join_paths(scar_tmp_folder_path, f"{handler_name}.py")
+def _download_faas_supervisor_zip(supervisor_version: str) -> None:
     supervisor_zip_url = GitHubUtils.get_source_code_url(GITHUB_USER, GITHUB_SUPERVISOR_PROJECT,
                                                          supervisor_version)
-    supervisor_zip = get_file(supervisor_zip_url)
+    with open(_SUPERVISOR_ZIP_PATH, "wb") as thezip:
+        thezip.write(get_file(supervisor_zip_url))
+
+def _extract_handler_code(scar_tmp_folder_path: str, handler_name: str) -> None:
+    function_handler_dest = FileUtils.join_paths(scar_tmp_folder_path, f"{handler_name}.py")
     file_path = ""
-    with ZipFile(BytesIO(supervisor_zip)) as thezip:
+    with ZipFile(_SUPERVISOR_ZIP_PATH) as thezip:
         for file in thezip.namelist():
             if file.endswith("function_handler.py"):
                 file_path = FileUtils.join_paths(FileUtils.get_tmp_dir(), file)
@@ -46,7 +48,7 @@ class FunctionPackager():
     @lazy_property
     def udocker(self):
         """Udocker client"""
-        udocker = Udocker(self.aws, self.scar_tmp_folder_path)
+        udocker = Udocker(self.aws, self.scar_tmp_folder_path, _SUPERVISOR_ZIP_PATH)
         return udocker
 
     def __init__(self, aws_properties, supervisor_version):
@@ -54,13 +56,16 @@ class FunctionPackager():
         self.supervisor_version = supervisor_version
         self.scar_tmp_folder = FileUtils.create_tmp_dir()
         self.scar_tmp_folder_path = self.scar_tmp_folder.name
+        
         self.package_args = {}
 
     @exception(logger)
     def create_zip(self):
         """Creates the lambda function deployment package."""
         self._clean_tmp_folders()
-        self._download_hander_file()
+        _download_faas_supervisor_zip(self.supervisor_version)
+        _extract_handler_code(self.scar_tmp_folder_path,
+                              self.aws.lambdaf.name)
         self._manage_udocker_images()
         self._add_init_script()
         self._add_extra_payload()
@@ -69,13 +74,8 @@ class FunctionPackager():
         # self._clean_tmp_folders()
 
     def _clean_tmp_folders(self):
+        FileUtils.delete_file(_SUPERVISOR_ZIP_PATH)
         FileUtils.delete_file(self.aws.lambdaf.zip_file_path)
-
-    def _download_hander_file(self):
-        """Download function handler."""
-        _download_handler_code(self.supervisor_version,
-                               self.scar_tmp_folder_path,
-                               self.aws.lambdaf.name)
 
     def _manage_udocker_images(self):
         if hasattr(self.aws.lambdaf, "image") and \

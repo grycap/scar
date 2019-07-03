@@ -34,7 +34,6 @@ class LambdaClient(BotoClient):
         logger.debug("Creating lambda function.")
         return self.client.create_function(**kwargs)
 
-    @excp.exception(logger)
     def get_function_info(self, function_name_or_arn: str) -> Dict:
         """Returns the configuration information
         of the Lambda function."""
