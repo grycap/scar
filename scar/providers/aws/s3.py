@@ -24,9 +24,10 @@ class S3(GenericClient):
 
     def __init__(self, aws_properties):
         super().__init__(aws_properties)
-        if type(self.aws.s3) is dict:
-            self.aws.s3 = S3Properties(self.aws.s3)
-        self._initialize_properties()
+        if hasattr(self.aws, 's3'):
+            if type(self.aws.s3) is dict:
+                self.aws.s3 = S3Properties(self.aws.s3)
+            self._initialize_properties()
 
     def _initialize_properties(self):
         if not hasattr(self.aws.s3, "input_folder"):
@@ -65,13 +66,13 @@ class S3(GenericClient):
         notification = { "LambdaFunctionConfigurations": lambda_conf }
         self.client.put_notification_configuration(self.aws.s3.input_bucket, notification)
 
-    def delete_bucket_notification(self):
-        bucket_conf = self.client.get_notification_configuration(self.aws.s3.input_bucket)
+    def delete_bucket_notification(self, bucket_name, function_arn):
+        bucket_conf = self.client.get_notification_configuration(bucket_name)
         if bucket_conf and "LambdaFunctionConfigurations" in bucket_conf:
             lambda_conf = bucket_conf["LambdaFunctionConfigurations"]
-            filter_conf = [x for x in lambda_conf if x['LambdaFunctionArn'] != self.aws.lambdaf.arn]
+            filter_conf = [x for x in lambda_conf if x['LambdaFunctionArn'] != function_arn]
             notification = { "LambdaFunctionConfigurations": filter_conf }
-            self.client.put_notification_configuration(self.aws.s3.input_bucket, notification)
+            self.client.put_notification_configuration(bucket_name, notification)
 
     def get_trigger_configuration(self):
         return  {"LambdaFunctionArn": self.aws.lambdaf.arn,

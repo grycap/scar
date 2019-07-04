@@ -42,7 +42,6 @@ class Batch(GenericClient):
         self.aws.batch.service_role = (f"arn:aws:iam::{self.aws.account_id}:"
                                        "role/service-role/AWSBatchServiceRole")
         self.aws.batch.env_vars = []
-        self._set_required_environment_variables()
 
     def _set_required_environment_variables(self):
         self._set_batch_environment_variable('AWS_LAMBDA_FUNCTION_NAME', self.aws.lambdaf.name)
@@ -232,6 +231,7 @@ class Batch(GenericClient):
                 response["computeEnvironments"][0]["status"])
 
     def create_batch_environment(self):
+        self._set_required_environment_variables()
         creation_args = self._get_compute_env_args()
         self.client.create_compute_environment(**creation_args)
         while True:

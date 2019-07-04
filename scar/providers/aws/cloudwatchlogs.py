@@ -29,13 +29,36 @@ def _parse_events_in_message(log_events: List) -> str:
 class CloudWatchLogs(GenericClient):
     """Manages the AWS CloudWatch Logs functionality"""
 
-    def get_log_group_name(self):
+    def get_log_group_name(self, function_name=None):
         """Returns the log group matching the
         current lambda function being parsed."""
+        if function_name:
+            return f'/aws/lambda/{function_name}'
         return f'/aws/lambda/{self.aws.lambdaf.name}'
 
-    def _get_log_group_name_arg(self):
-        return {'logGroupName' : self.get_log_group_name()}
+    def _get_log_group_name_arg(self, function_name=None):
+        return {'logGroupName' : self.get_log_group_name(function_name)}
+
+    def _is_end_line(self, line):
+        return line.startswith('REPORT') and self.aws.cloudwatch.request_id in line
+
+    def _is_start_line(self, line):
+        return line.startswith('START') and self.aws.cloudwatch.request_id in line
+
+    def _parse_logs_with_requestid(self, function_logs):
+        parsed_msg = ""
+        if function_logs:
+            in_req_id_logs = False
+            for line in function_logs.split('\n'):
+                if self._is_start_line(line):
+                    parsed_msg += f'{line}\n'
+                    in_req_id_logs = True
+                elif self._is_end_line(line):
+                    parsed_msg += line
+                    break
+                elif in_req_id_logs:
+                    parsed_msg += f'{line}\n'
+        return parsed_msg
 
     def create_log_group(self):
         """Creates a CloudWatch Log Group."""
@@ -48,9 +71,9 @@ class CloudWatchLogs(GenericClient):
         self.client.set_log_retention_policy(**retention_args)
         return response
 
-    def delete_log_group(self):
+    def delete_log_group(self, log_group_name):
         """Deletes a CloudWatch Log Group."""
-        return self.client.delete_log_group(**self._get_log_group_name_arg())
+        return self.client.delete_log_group(log_group_name)
 
     def get_aws_log(self):
         """Returns Lambda logs for an specific lambda function."""
@@ -81,24 +104,3 @@ class CloudWatchLogs(GenericClient):
                         for event in response.get("events", {})]
                 batch_logs += '\n'.join(msgs)
         return batch_logs
-
-    def _is_end_line(self, line):
-        return line.startswith('REPORT') and self.aws.cloudwatch.request_id in line
-
-    def _is_start_line(self, line):
-        return line.startswith('START') and self.aws.cloudwatch.request_id in line
-
-    def _parse_logs_with_requestid(self, function_logs):
-        parsed_msg = ""
-        if function_logs:
-            in_req_id_logs = False
-            for line in function_logs.split('\n'):
-                if self._is_start_line(line):
-                    parsed_msg += f'{line}\n'
-                    in_req_id_logs = True
-                elif self._is_end_line(line):
-                    parsed_msg += line
-                    break
-                elif in_req_id_logs:
-                    parsed_msg += f'{line}\n'
-        return parsed_msg

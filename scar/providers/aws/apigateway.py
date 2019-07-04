@@ -99,6 +99,6 @@ class APIGateway(GenericClient):
         self.client.create_deployment(self.aws.api_gateway.id, _DEFAULT_STAGE_NAME)
         logger.info(f'API Gateway endpoint: {self._get_endpoint()}')
 
-    def delete_api_gateway(self) -> None:
+    def delete_api_gateway(self, api_gateway_id: str) -> None:
         """Deletes an Api Gateway endpoint."""
-        return self.client.delete_rest_api(self.aws.api_gateway.id)
+        return self.client.delete_rest_api(api_gateway_id)

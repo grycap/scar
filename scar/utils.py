@@ -34,7 +34,7 @@ GITHUB_USER = 'grycap'
 GITHUB_SUPERVISOR_PROJECT = 'faas-supervisor'
 
 def lazy_property(func):
-# Skipped type hinting: https://github.com/python/mypy/issues/3157
+    # Skipped type hinting: https://github.com/python/mypy/issues/3157
     """ A decorator that makes a property lazy-evaluated."""
     attr_name = '_lazy_' + func.__name__
 

@@ -14,7 +14,7 @@
 """Module with the class necessary to manage the
 Cloudwatch Logs creation, deletion and configuration."""
 
-from typing import Dict, List, Optional
+from typing import Dict, List
 from botocore.exceptions import ClientError
 from scar.providers.aws.clients import BotoClient
 from scar.exceptions import exception, ExistentLogGroupWarning, NotExistentLogGroupWarning
@@ -64,12 +64,12 @@ class CloudWatchLogsClient(BotoClient):
         return self.client.put_retention_policy(**kwargs)
 
     @exception(logger)
-    def delete_log_group(self, **kwargs: Dict) -> Dict:
+    def delete_log_group(self, log_group_name: str) -> Dict:
         """Deletes the specified log group and permanently deletes
         all the archived log events associated with the log group."""
         try:
-            return self.client.delete_log_group(**kwargs)
+            return self.client.delete_log_group(logGroupName=log_group_name)
         except ClientError as cerr:
             if cerr.response['Error']['Code'] == 'ResourceNotFoundException':
-                raise NotExistentLogGroupWarning(**kwargs)
+                raise NotExistentLogGroupWarning(logGroupName=log_group_name)
             raise cerr

@@ -146,6 +146,7 @@ class AWS(Commands):
         if hasattr(self.aws_properties.lambdaf, "all") and self.aws_properties.lambdaf.all:
             self._delete_all_resources()
         else:
+            self.aws_lambda.get_function_info(self.aws_properties.lambdaf.name)
             self._delete_resources()
 
     @excp.exception(logger)
@@ -166,6 +167,7 @@ class AWS(Commands):
     @AWSValidator.validate()
     @excp.exception(logger)
     def parse_arguments(self, **kwargs):
+        self.raw_kwargs = kwargs
         self.aws_properties = AwsProperties(kwargs.get('aws', {}))
         self.scar_properties = ScarProperties(kwargs.get('scar', {}))
         self.add_extra_aws_properties()
@@ -300,71 +302,70 @@ class AWS(Commands):
         for function_info in lambda_functions:
             self.aws_lambda.update_function_configuration(function_info)
 
-    def _delete_all_resources(self):
-        for function in self._get_all_functions():
-            self.aws_properties.lambdaf.name = function['FunctionName']
-            self._delete_resources()
-
-    def _delete_resources(self):
-        if not self.aws_lambda.find_function():
-            raise excp.FunctionNotFoundError(function_name=self.aws_properties.lambdaf.name)
-        # Delete associated api
-        self._delete_api_gateway()
-        # Delete associated log
-        self._delete_logs()
-        # Delete associated notifications
-        self._delete_bucket_notifications()
-        # Delete function
-        self._delete_lambda_function()
-        # Delete resources batch
-        self._delete_batch_resources()
-
-    def _update_local_function_properties(self):
+    def _update_local_function_properties(self, function_info):
+        self._reset_aws_properties()
         """Update the defined properties with the AWS information."""
-        info = self.aws_lambda.get_function_info()
-        if 'API_GATEWAY_ID' in info['Environment']['Variables']:
-            api_gtw_id = info['Environment']['Variables'].get('API_GATEWAY_ID', "")
+        if function_info:
+            self.aws_properties.lambdaf.update_properties(**function_info)
+        if 'API_GATEWAY_ID' in self.aws_properties.lambdaf.environment['Variables']:
+            api_gtw_id = self.aws_properties.lambdaf.environment['Variables'].get('API_GATEWAY_ID',
+                                                                                  "")
             if hasattr(self.aws_properties, 'api_gateway'):
                 self.aws_properties.api_gateway.id = api_gtw_id
             else:
                 self.aws_properties.api_gateway = ApiGatewayProperties({'id' : api_gtw_id})
 
-    def _delete_api_gateway(self):
-        self._update_local_function_properties()
-        if hasattr(self.aws_properties, 'api_gateway') and \
-           hasattr(self.aws_properties.api_gateway, 'id') and \
-           self.aws_properties.api_gateway.id:
-            response = self.api_gateway.delete_api_gateway()
-            response_parser.parse_delete_api_response(response,
-                                                      self.aws_properties.api_gateway.id,
+#############################################################################
+###                   Methods to delete AWS resources                     ###
+#############################################################################
+
+    def _delete_all_resources(self):
+        for function_info in self._get_all_functions():
+            self._delete_resources(function_info)
+
+    def _delete_resources(self, function_info):
+        function_name = function_info['FunctionName']
+        if not self.aws_lambda.find_function(function_name):
+            raise excp.FunctionNotFoundError(function_name=function_name)
+        # Delete associated api
+        self._delete_api_gateway(function_info['Environment']['Variables'])
+        # Delete associated log
+        self._delete_logs(function_name)
+        # Delete associated notifications
+        self._delete_bucket_notifications(function_info['FunctionArn'],
+                                          function_info['Environment']['Variables'])
+        # Delete function
+        self._delete_lambda_function(function_name)
+        # Delete resources batch
+        self._delete_batch_resources(function_name)
+
+    def _delete_api_gateway(self, function_env_vars):
+        api_gateway_id = function_env_vars.get('API_GATEWAY_ID')
+        if api_gateway_id:
+            response = self.api_gateway.delete_api_gateway(api_gateway_id)
+            response_parser.parse_delete_api_response(response, api_gateway_id,
                                                       self.aws_properties.output)
 
-    def _delete_logs(self):
-        response = self.cloudwatch_logs.delete_log_group()
+    def _delete_logs(self, function_name):
+        log_group_name = self.cloudwatch_logs.get_log_group_name(function_name)
+        response = self.cloudwatch_logs.delete_log_group(log_group_name)
         response_parser.parse_delete_log_response(response,
-                                                  self.cloudwatch_logs.get_log_group_name(),
+                                                  log_group_name,
                                                   self.aws_properties.output)
 
-    def _delete_bucket_notifications(self):
-        func_info = self.aws_lambda.get_function_info()
-        self.aws_properties.lambdaf.arn = func_info['FunctionArn']
-        self.aws_properties.lambdaf.environment = {'Variables' :
-                                                   func_info['Environment']['Variables']}
-        lambda_vars = self.aws_properties.lambdaf.environment['Variables']
-        s3_provider_id = _get_storage_provider_id('S3', lambda_vars)
+    def _delete_bucket_notifications(self, function_arn, function_env_vars):
+        s3_provider_id = _get_storage_provider_id('S3', function_env_vars)
         input_bucket_id = f'STORAGE_PATH_INPUT_{s3_provider_id}' if s3_provider_id else ''
-        if input_bucket_id in lambda_vars:
-            input_bucket_name = lambda_vars[input_bucket_id]
-            setattr(self.aws_properties, 's3', S3Properties({'input_bucket': input_bucket_name}))
-            self.aws_s3.delete_bucket_notification()
+        if input_bucket_id in function_env_vars:
+            input_bucket_name = function_env_vars[input_bucket_id]
+            self.aws_s3.delete_bucket_notification(input_bucket_name, function_arn)
             logger.info("Successfully delete bucket notifications")
 
-    def _delete_lambda_function(self):
-        response = self.aws_lambda.delete_function()
-        response_parser.parse_delete_function_response(response,
-                                                       self.aws_properties.lambdaf.name,
+    def _delete_lambda_function(self, function_name):
+        response = self.aws_lambda.delete_function(function_name)
+        response_parser.parse_delete_function_response(response, function_name,
                                                        self.aws_properties.output)
 
-    def _delete_batch_resources(self):
-        if self.batch.exist_compute_environments(self.aws_properties.lambdaf.name):
-            self.batch.delete_compute_environment(self.aws_properties.lambdaf.name)
+    def _delete_batch_resources(self, function_name):
+        if self.batch.exist_compute_environments(function_name):
+            self.batch.delete_compute_environment(function_name)

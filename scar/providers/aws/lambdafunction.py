@@ -46,9 +46,9 @@ class Lambda(GenericClient):
     def __init__(self, aws_properties, supervisor_version):
         super().__init__(aws_properties)
         self.supervisor_version = supervisor_version
-        self._initialize_properties()
+        self._initialize_properties(aws_properties)
 
-    def _initialize_properties(self):
+    def _initialize_properties(self, aws_properties):
         self.aws.lambdaf.environment = {'Variables' : {}}
         self.aws.lambdaf.zip_file_path = FileUtils.join_paths(FileUtils.get_tmp_dir(), 'function.zip')
         self.aws.lambdaf.invocation_type = "RequestResponse"
@@ -59,9 +59,6 @@ class Lambda(GenericClient):
         if not hasattr(self.aws.lambdaf, "asynchronous"):
             self.aws.lambdaf.asynchronous = False
         self._set_default_call_parameters()
-
-    def is_asynchronous(self):
-        return self.aws.lambdaf.asynchronous
 
     def _set_default_call_parameters(self):
         self.asynchronous_call_parameters = {"invocation_type" : "Event",
@@ -83,6 +80,9 @@ class Lambda(GenericClient):
                 'MemorySize': self.aws.lambdaf.memory,
                 'Tags': self.aws.tags,
                 'Layers': self.aws.lambdaf.layers}
+
+    def is_asynchronous(self):
+        return self.aws.lambdaf.asynchronous
 
     @excp.exception(logger)
     def create_function(self):
@@ -187,8 +187,8 @@ class Lambda(GenericClient):
         self.aws.s3.file_key = 'lambda/{0}.zip'.format(self.aws.lambdaf.name)
         self.s3.upload_file(file_path=self.aws.lambdaf.zip_file_path, file_key=self.aws.s3.file_key)
 
-    def delete_function(self):
-        return self.client.delete_function(self.aws.lambdaf.name)
+    def delete_function(self, function_name):
+        return self.client.delete_function(function_name)
 
     def link_function_and_input_bucket(self):
         kwargs = {'FunctionName' : self.aws.lambdaf.name,
@@ -314,19 +314,20 @@ class Lambda(GenericClient):
 
     def get_all_functions(self, arn_list):
         try:
-            return [self.client.get_function_info(function_arn) for function_arn in arn_list]
-        except ClientError as ce:
-            print ("Error getting function info by arn: {}".format(ce))
+            return [self.get_function_info(function_arn) for function_arn in arn_list]
+        except ClientError as cerr:
+            print (f"Error getting function info by arn: {cerr}")
 
-    def get_function_info(self):
-        return self.client.get_function_info(self.aws.lambdaf.name)
+    def get_function_info(self, function_name_or_arn=None):
+        name_arn = function_name_or_arn if function_name_or_arn else self.aws.lambdaf.name
+        return self.client.get_function_info(name_arn)
 
     @excp.exception(logger)
     def find_function(self, function_name_or_arn=None):
         try:
             # If this call works the function exists
             name_arn = function_name_or_arn if function_name_or_arn else self.aws.lambdaf.name
-            self.client.get_function_info(name_arn)
+            self.get_function_info(name_arn)
             return True
         except ClientError as ce:
             # Function not found

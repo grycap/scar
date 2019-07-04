@@ -18,7 +18,7 @@ import time
 from typing import Dict
 from botocore.exceptions import ClientError
 from scar.providers.aws.clients import BotoClient
-from scar.exceptions import exception
+from scar.exceptions import exception, NotExistentApiGatewayWarning
 import scar.logger as logger
 
 
@@ -92,4 +92,6 @@ class APIGatewayClient(BotoClient):
                 and (self._MAX_NUMBER_OF_RETRIES > 0):
                 time.sleep(self._WAIT_BETWEEN_RETIRES)
                 return self.delete_rest_api(api_id, count - 1)
+            elif cerr.response['Error']['Code'] == 'NotFoundException':
+                raise NotExistentApiGatewayWarning(restApiId=api_id)
             raise cerr

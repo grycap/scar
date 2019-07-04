@@ -124,7 +124,20 @@ class LambdaProperties(dict):
         self.__dict__ = self
 
     def update_properties(self, **kwargs):
-        self.__dict__.update(**kwargs)
+        if 'ResponseMetadata' in kwargs:
+            # Parsing RAW function info
+            self.description = kwargs['Description']
+            self.environment = kwargs['Environment']
+            self.arn = kwargs['FunctionArn']
+            self.name = kwargs['FunctionName']
+            self.handler = kwargs['Handler']
+            self.layers = [layer['Arn'] for layer in kwargs['Layers']]
+            self.memory = kwargs['MemorySize']
+            self.time = kwargs['Timeout']
+            self.role = kwargs['Role']
+            self.runtime = kwargs['Runtime']
+        else:
+            self.__dict__.update(**kwargs)
 
 
 class IamProperties(dict):

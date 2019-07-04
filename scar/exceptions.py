@@ -253,6 +253,13 @@ class InvocationPayloadError(ScarError):
            "Check AWS Lambda invocation limits in : "
            "https://docs.aws.amazon.com/lambda/latest/dg/limits.html")
 
+class NotExistentApiGatewayWarning(ScarError):
+    """
+    The API with the id 'restApiId' was not found.
+
+    :ivar bucket_name: Name of the bucket
+    """
+    fmt = "The requested API '{restApiId}' does not exist."
 
 ################################################
 # #               IAM EXCEPTIONS               ##
