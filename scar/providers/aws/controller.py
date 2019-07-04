@@ -291,7 +291,6 @@ class AWS(Commands):
             # Avoid download s3 'folders'
             if not s3_file.endswith('/'):
                 file_path = self._get_download_file_path(file_key=s3_file)
-                print("PATH", file_path)
                 # make sure the path folders are created
                 dir_path = os.path.dirname(file_path)
                 if dir_path and not os.path.isdir(dir_path):
