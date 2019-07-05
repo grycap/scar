@@ -355,7 +355,8 @@ class AWS(Commands):
         s3_provider_id = _get_storage_provider_id('S3', function_env_vars)
         input_bucket_id = f'STORAGE_PATH_INPUT_{s3_provider_id}' if s3_provider_id else ''
         if input_bucket_id in function_env_vars:
-            input_bucket_name = function_env_vars[input_bucket_id]
+            input_path = function_env_vars[input_bucket_id]
+            input_bucket_name = input_path.split("/", 1)[0]
             self.aws_s3.delete_bucket_notification(input_bucket_name, function_arn)
 
     def _delete_lambda_function(self, function_name):

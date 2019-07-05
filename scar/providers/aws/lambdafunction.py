@@ -239,7 +239,7 @@ class Lambda(GenericClient):
 
     def _get_invocation_payload(self):
         # Default payload
-        payload = self.aws.lambdaf.payload if self.aws.lambdaf.payload else {}
+        payload = self.aws.lambdaf.payload if hasattr(self.aws.lambdaf, 'payload') else {}
         if not payload:            
             # Check for defined run script
             if hasattr(self.aws.lambdaf, "run_script"):
