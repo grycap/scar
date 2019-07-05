@@ -21,8 +21,7 @@ from scar.providers.aws.batchfunction import Batch
 from scar.providers.aws.cloudwatchlogs import CloudWatchLogs
 from scar.providers.aws.iam import IAM
 from scar.providers.aws.lambdafunction import Lambda
-from scar.providers.aws.properties import AwsProperties, ScarProperties, \
-    S3Properties
+from scar.providers.aws.properties import AwsProperties, ScarProperties
 from scar.providers.aws.resourcegroups import ResourceGroups
 from scar.providers.aws.s3 import S3
 from scar.providers.aws.validators import AWSValidator
@@ -146,8 +145,8 @@ class AWS(Commands):
         if hasattr(self.aws_properties.lambdaf, "all") and self.aws_properties.lambdaf.all:
             self._delete_all_resources()
         else:
-            self.aws_lambda.get_function_info(self.aws_properties.lambdaf.name)
-            self._delete_resources()
+            function_info = self.aws_lambda.get_function_info(self.aws_properties.lambdaf.name)
+            self._delete_resources(function_info)
 
     @excp.exception(logger)
     def log(self):
@@ -258,7 +257,7 @@ class AWS(Commands):
 
     def _process_input_bucket_calls(self):
         s3_file_list = self.aws_s3.get_bucket_file_list()
-        logger.info("Files found: '{0}'".format(s3_file_list))
+        logger.info(f"Files found: '{s3_file_list}'")
         # First do a request response invocation to prepare the lambda environment
         if s3_file_list:
             s3_event = self.aws_s3.get_s3_event(s3_file_list.pop(0))
@@ -358,7 +357,6 @@ class AWS(Commands):
         if input_bucket_id in function_env_vars:
             input_bucket_name = function_env_vars[input_bucket_id]
             self.aws_s3.delete_bucket_notification(input_bucket_name, function_arn)
-            logger.info("Successfully delete bucket notifications")
 
     def _delete_lambda_function(self, function_name):
         response = self.aws_lambda.delete_function(function_name)

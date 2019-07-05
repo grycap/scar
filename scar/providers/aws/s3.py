@@ -73,6 +73,7 @@ class S3(GenericClient):
             filter_conf = [x for x in lambda_conf if x['LambdaFunctionArn'] != function_arn]
             notification = { "LambdaFunctionConfigurations": filter_conf }
             self.client.put_notification_configuration(bucket_name, notification)
+            logger.info("Bucket notifications successfully deleted")
 
     def get_trigger_configuration(self):
         return  {"LambdaFunctionArn": self.aws.lambdaf.arn,
@@ -119,10 +120,10 @@ class S3(GenericClient):
             raise excp.BucketNotFoundError(bucket_name=bucket_name)
 
     def get_s3_event(self, s3_file_key):
-        return {"Records" : [ {"eventSource" : "aws:s3",
-                 "s3" : {"bucket" : {"name" :self.aws.s3.input_bucket},
-                         "object" : {"key" : s3_file_key}}
-                }]}
+        return {"Records": [{"eventSource": "aws:s3",
+                             "s3" : {"bucket" : {"name": self.aws.s3.input_bucket,
+                                                 "arn": f'arn:aws:s3:::{self.aws.s3.input_bucket}'},
+                                     "object" : {"key": s3_file_key}}}]}
 
     def get_s3_event_list(self, s3_file_keys):
         return [self.get_s3_event(s3_key) for s3_key in s3_file_keys]
