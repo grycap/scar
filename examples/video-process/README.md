@@ -24,7 +24,7 @@ scar init -f scar-lambda-darknet.yaml
 In order to launch an execution you have to upload a file to the defined input bucket of the Lambda function that creates the AWS Batch job. In this case, the following command will start the execution:
 
 ```sh
-scar put -b scar-ffmpeg -bf scar-batch-ffmpeg-split/input -p ../ffmpeg/seq1.avi
+scar put -b scar-ffmpeg/scar-batch-ffmpeg-split/input -p ../ffmpeg/seq1.avi
 ```
 
 ## Process the output
@@ -32,7 +32,7 @@ scar put -b scar-ffmpeg -bf scar-batch-ffmpeg-split/input -p ../ffmpeg/seq1.avi
 When the execution of the function finishes, the script used produces two output files for each Lambda invocation. SCAR copies them to the S3 bucket specified as output. To check if the files are created and copied correctly you can use the command:
 
 ```sh
-scar ls -b scar-ffmpeg -bf scar-ffmpeg-split/image-output
+scar ls -b scar-ffmpeg/scar-batch-ffmpeg-split/image-output
 ```
 
 Which lists the following outputs:
