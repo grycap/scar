@@ -34,7 +34,7 @@ scar init -f scar-ffmpeg.yaml
 
 Upload a video to the S3 bucket. For these examples we are using sample videos from the [ICPR 2010 Contest on Semantic Descriptio if Human Activities (SDAH 2010)](http://cvrc.ece.utexas.edu/SDHA2010/Human_Interaction.html).
 ```sh
-scar put -b scar-test -bf scar-ffmpeg/input -p seq1.avi
+scar put -b scar-test/scar-ffmpeg/input -p seq1.avi
 ```
 
 To check the progress of the function invocation you can call the `log` command:

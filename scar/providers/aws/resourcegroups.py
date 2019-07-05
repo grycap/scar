@@ -11,26 +11,28 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Module with methods and classes to manage AWS Resource Groups"""
 
+from typing import List
 from botocore.exceptions import ClientError
-from scar.providers.aws.botoclientfactory import GenericClient
+from scar.providers.aws import GenericClient
 import scar.logger as logger
 
-class ResourceGroups(GenericClient):
-    
-    def __init__(self, aws_properties):
-        super().__init__(aws_properties)
 
-    def get_lambda_functions_arn_list(self, iam_user_id):
+class ResourceGroups(GenericClient):
+    """Class to manage AWS Resource Groups"""
+
+    def get_resource_arn_list(self, iam_user_id: str, resource_type: str = 'lambda') -> List:
+        """Returns a list of ARNs filtered by the resource_type
+        passed and the tags created by scar."""
         try:
             # Creation of a function_info filter by tags
-            tag_filters = [ { 'Key': 'owner', 'Values': [ iam_user_id ] },
-                            { 'Key': 'createdby', 'Values': ['scar'] } ]
-            resource_type_filters = ['lambda']
+            tag_filters = [{'Key': 'owner', 'Values': [iam_user_id]},
+                           {'Key': 'createdby', 'Values': ['scar']}]
+            resource_type_filters = [resource_type]
             tagged_resources = self.client.get_tagged_resources(tag_filters, resource_type_filters)
-            return [function_info['ResourceARN'] for element in tagged_resources \
-                    for function_info in element['ResourceTagMappingList']]
-        except ClientError as ce:
+            return [function_info['ResourceARN'] for function_info in tagged_resources]
+        except ClientError as cerr:
             logger.error("Error getting function_info arn by tag",
-                         "Error getting function_info arn by tag: {}".format(ce))
-    
+                         f"Error getting function_info arn by tag: {cerr}")
+            raise cerr

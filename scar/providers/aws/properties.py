@@ -11,16 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Module with classes and methods to manage the different
+properties needed by SCAR and the boto clients."""
+
 
 class ScarProperties(dict):
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__dict__ = self
 
+
 class AwsProperties(dict):
-    
+
     def __init__(self, *args, **kwargs):
-        '''
+        """
         {'account_id': '914332',
          'batch': see_batch_props_class,
          'boto_profile': 'default',
@@ -28,16 +33,16 @@ class AwsProperties(dict):
          'config_path': 'cowsay',
          'execution_mode': 'lambda',
          'iam': see_iam_props_class,
-         'lambda': see_lambda_props_class,
+         'lambda': see_lambdaf_props_class,
          'output': <OutputType.PLAIN_TEXT: 1>,
          'region': 'us-east-1',
          's3': see_s3_props_class,
-         'tags': {'createdby': 'scar', 'owner': 'alpegon'}}        
-        '''        
+         'tags': {'createdby': 'scar', 'owner': 'alpegon'}}
+        """
         super().__init__(*args, **kwargs)
         self.__dict__ = self
         self._initialize_properties()
-        
+
     def _initialize_properties(self):
         if hasattr(self, "api_gateway"):
             self.api_gateway = ApiGatewayProperties(self.api_gateway)
@@ -46,20 +51,23 @@ class AwsProperties(dict):
         if hasattr(self, "cloudwatch"):
             self.cloudwatch = CloudWatchProperties(self.cloudwatch)
         if hasattr(self, "iam"):
-            self.iam = IamProperties(self.iam)        
+            self.iam = IamProperties(self.iam)
         if hasattr(self, "lambda"):
-            self._lambda = LambdaProperties(self.__dict__['lambda'])
+            self.lambdaf = LambdaProperties(self.__dict__['lambda'])
             self.__dict__.pop('lambda', None)
         if hasattr(self, "s3"):
-            self.s3 = S3Properties(self.s3)                        
+            self.s3 = S3Properties(self.s3)
+
 
 class ApiGatewayProperties(dict):
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.__dict__ = self    
+        self.__dict__ = self
+
 
 class BatchProperties(dict):
-    '''
+    """
     Example of dictionary used to initialize the class properties:
     {'comp_type': 'EC2',
     'desired_v_cpus': 0,
@@ -74,14 +82,15 @@ class BatchProperties(dict):
                 'subnet-571',
                 'subnet-572'],
     'type': 'MANAGED'}
-    '''    
-    
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__dict__ = self
 
+
 class LambdaProperties(dict):
-    '''
+    """
     Example of dictionary used to initialize the class properties:
     {'asynchronous': False,
     'description': 'Automatically generated lambda function',
@@ -108,55 +117,75 @@ class LambdaProperties(dict):
     'time': 300,
     'timeout_threshold': 10,
     'zip_file_path': '/tmp/function.zip'}
-    '''
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__dict__ = self
-    
+
     def update_properties(self, **kwargs):
-        self.__dict__.update(**kwargs)
-        
+        if 'ResponseMetadata' in kwargs:
+            # Parsing RAW function info
+            self.description = kwargs['Description']
+            self.environment = kwargs['Environment']
+            self.arn = kwargs['FunctionArn']
+            self.name = kwargs['FunctionName']
+            self.handler = kwargs['Handler']
+            self.layers = [layer['Arn'] for layer in kwargs['Layers']]
+            self.memory = kwargs['MemorySize']
+            self.time = kwargs['Timeout']
+            self.role = kwargs['Role']
+            self.runtime = kwargs['Runtime']
+        else:
+            self.__dict__.update(**kwargs)
+
+
 class IamProperties(dict):
-    '''
+    """
     Example of dictionary used to initialize the class properties:
     {'role': 'arn:aws:iam::914332:role/invented-role'}
-    '''    
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__dict__ = self
-        
+
+
 class S3Properties(dict):
-    '''
-    Example of dictionary used to initialize the class properties:    
+    """
+    Example of dictionary used to initialize the class properties:
     {'input_bucket': 'test1'}
-    '''
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__dict__ = self
-        self.process_storagePaths()
-        
-    def process_storagePaths(self):
+        self.process_storage_paths()
+
+    def process_storage_paths(self):
         if hasattr(self, "input_bucket"):
             self.storage_path_input = self.input_bucket
-            input_path = self.input_bucket.split("/")
+            input_path = self.input_bucket.split("/", 1)
             if len(input_path) > 1:
                 # There are folders defined
                 self.input_bucket = input_path[0]
-                self.input_folder = "/".join(input_path[1:])
-            
+                self.input_folder = input_path[1]
+
         if hasattr(self, "output_bucket"):
             self.storage_path_output = self.output_bucket
-            output_path = self.output_bucket.split("/")
+            output_path = self.output_bucket.split("/", 1)
             if len(output_path) > 1:
                 # There are folders defined
                 self.output_bucket = output_path[0]
-                self.output_folder = "/".join(output_path[1:])
-        
+                self.output_folder = output_path[1]
+
+
 class CloudWatchProperties(dict):
-    '''
+    """
     Example of dictionary used to initialize the class properties:
     {'log_retention_policy_in_days': 30}
-    '''
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.__dict__ = self        
+        self.__dict__ = self
