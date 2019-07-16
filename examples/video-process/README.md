@@ -52,7 +52,7 @@ The files are created in the output folder following the `s3://scar-ffmpeg/scar-
 To download the created files you can also use SCAR with the following command:
 
 ```sh
-scar get -b scar-ffmpeg -bf scar-batch-ffmpeg-split/image-output -p /tmp/lambda/
+scar get -b scar-ffmpeg/scar-batch-ffmpeg-split/image-output -p /tmp/lambda/
 ```
 
 This command creates and `image-output` folder and all the subfolders in the `/tmp/lambda/` folder
