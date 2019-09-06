@@ -49,11 +49,13 @@ class Lambda(GenericClient):
         self._initialize_properties(aws_properties)
 
     def _initialize_properties(self, aws_properties):
-        self.aws.lambdaf.environment = {'Variables' : {}}
-        self.aws.lambdaf.zip_file_path = FileUtils.join_paths(FileUtils.get_tmp_dir(), 'function.zip')
+        self.aws.lambdaf.environment = {'Variables': {}}
         self.aws.lambdaf.invocation_type = "RequestResponse"
         self.aws.lambdaf.log_type = "Tail"
         self.aws.lambdaf.layers = []
+        self.aws.lambdaf.tmp_folder = FileUtils.create_tmp_dir()
+        self.aws.lambdaf.tmp_folder_path = self.aws.lambdaf.tmp_folder.name
+        self.aws.lambdaf.zip_file_path = FileUtils.join_paths(self.aws.lambdaf.tmp_folder_path, 'function.zip')
         if hasattr(self.aws.lambdaf, "name"):
             self.aws.lambdaf.handler = "{0}.lambda_handler".format(self.aws.lambdaf.name)
         if not hasattr(self.aws.lambdaf, "asynchronous"):
@@ -61,20 +63,20 @@ class Lambda(GenericClient):
         self._set_default_call_parameters()
 
     def _set_default_call_parameters(self):
-        self.asynchronous_call_parameters = {"invocation_type" : "Event",
-                                             "log_type" : "None",
-                                             "asynchronous" : "True"}
-        self.request_response_call_parameters = {"invocation_type" : "RequestResponse",
-                                                 "log_type" : "Tail",
-                                                 "asynchronous" : "False"}
+        self.asynchronous_call_parameters = {"invocation_type": "Event",
+                                             "log_type": "None",
+                                             "asynchronous": "True"}
+        self.request_response_call_parameters = {"invocation_type": "RequestResponse",
+                                                 "log_type": "Tail",
+                                                 "asynchronous": "False"}
 
     def _get_creations_args(self):
-        return {'FunctionName' : self.aws.lambdaf.name,
-                'Runtime' : self.aws.lambdaf.runtime,
-                'Role' : self.aws.iam.role,
-                'Handler' :  self.aws.lambdaf.handler,
-                'Code' : self.aws.lambdaf.code,
-                'Environment' : self.aws.lambdaf.environment,
+        return {'FunctionName': self.aws.lambdaf.name,
+                'Runtime': self.aws.lambdaf.runtime,
+                'Role': self.aws.iam.role,
+                'Handler':  self.aws.lambdaf.handler,
+                'Code': self.aws.lambdaf.code,
+                'Environment': self.aws.lambdaf.environment,
                 'Description': self.aws.lambdaf.description,
                 'Timeout':  self.aws.lambdaf.time,
                 'MemorySize': self.aws.lambdaf.memory,
@@ -178,7 +180,7 @@ class Lambda(GenericClient):
         FunctionPackager(self.aws, self.supervisor_version).create_zip()
         if hasattr(self.aws, "s3") and hasattr(self.aws.s3, 'deployment_bucket'):
             self._upload_to_S3()
-            self.aws.lambdaf.code = {"S3Bucket": self.aws.s3.deployment_bucket, "S3Key" : self.aws.s3.file_key}
+            self.aws.lambdaf.code = {"S3Bucket": self.aws.s3.deployment_bucket, "S3Key": self.aws.s3.file_key}
         else:
             self.aws.lambdaf.code = {"ZipFile": FileUtils.read_file(self.aws.lambdaf.zip_file_path, mode="rb")}
 
@@ -252,7 +254,7 @@ class Lambda(GenericClient):
             # Check for defined commands
             # This overrides any other function payload
             if hasattr(self.aws.lambdaf, "c_args"):
-                payload = { "cmd_args" : json.dumps(self.aws.lambdaf.c_args) }
+                payload = {"cmd_args" : json.dumps(self.aws.lambdaf.c_args)}
         return json.dumps(payload)
 
     def _invoke_lambda_function(self):
