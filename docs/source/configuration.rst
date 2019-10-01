@@ -16,7 +16,30 @@ IAM Role
 
 The Lambda functions require an `IAM Role <http://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html>`_ in order to acquire the required permissions to access the different AWS services during its execution.
 
-There is a sample policy in the `lambda-execute-role.json <https://github.com/grycap/scar/blob/master/docs/aws/lambda-execute-role.json>`_ file. This IAM Role should be created beforehand. There is further documentation on this topic in the `'Creating IAM roles' <http://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create.html>`_ section of the AWS documentation.
+The following policy can be used in the IAM Role::
+
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "logs:*"
+        ],
+        "Resource": "arn:aws:logs:*:*:*"
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "s3:GetObject",
+          "s3:PutObject"
+        ],
+        "Resource": "arn:aws:s3:::*"
+      }
+    ]
+  }
+
+This IAM Role should be created beforehand. There is further documentation on this topic in the `'Creating IAM roles' <http://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create.html>`_ section of the AWS documentation.
 
 Configuration file
 ^^^^^^^^^^^^^^^^^^
