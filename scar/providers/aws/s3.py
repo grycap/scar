@@ -23,7 +23,8 @@ from scar.providers.aws.properties import S3Properties
 class S3(GenericClient):
 
     def __init__(self, aws_properties):
-        super().__init__(aws_properties)
+        super().__init__(aws_properties.get('lambda'))
+        
         if hasattr(self.aws, 's3'):
             if type(self.aws.s3) is dict:
                 self.aws.s3 = S3Properties(self.aws.s3)

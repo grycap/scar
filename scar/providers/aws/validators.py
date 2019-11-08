@@ -31,13 +31,14 @@ class AWSValidator(GenericValidator):
 
     @classmethod
     def validate_kwargs(cls, **kwargs):
-        prov_args = kwargs['aws']
-        if 'iam' in prov_args:
-            cls.validate_iam(prov_args['iam'])
-        if 'lambda' in prov_args:
-            cls.validate_lambda(prov_args['lambda'])
-        if 'batch' in prov_args:
-            cls.validate_batch(prov_args['batch'])
+        aws_functions = kwargs.get('functions', {}).get('aws', {})
+        for function in aws_functions:
+            if 'iam' in function:
+                cls.validate_iam(function['iam'])
+            if 'lambda' in function:
+                cls.validate_lambda(function['lambda'])
+            if 'batch' in function:
+                cls.validate_batch(function['batch'])
 
     @staticmethod
     def validate_iam(iam_properties):

@@ -16,12 +16,13 @@
 import io
 import shutil
 from typing import Dict
+
 import zipfile
-from tabulate import tabulate
 import scar.http.request as request
 import scar.logger as logger
 from scar.utils import lazy_property, FileUtils, GitHubUtils, StrUtils, \
                        GITHUB_USER, GITHUB_SUPERVISOR_PROJECT
+from scar.providers.aws.clients.lambdafunction import LambdaClient
 
 
 def _create_tmp_folders() -> None:
@@ -31,7 +32,8 @@ def _create_tmp_folders() -> None:
 
 
 def _download_supervisor(supervisor_version: str, tmp_zip_path: str) -> str:
-    supervisor_zip_url = GitHubUtils.get_source_code_url(GITHUB_USER, GITHUB_SUPERVISOR_PROJECT,
+    supervisor_zip_url = GitHubUtils.get_source_code_url(GITHUB_USER,
+                                                         GITHUB_SUPERVISOR_PROJECT,
                                                          supervisor_version)
     supervisor_zip = request.get_file(supervisor_zip_url)
     with zipfile.ZipFile(io.BytesIO(supervisor_zip)) as thezip:
@@ -92,7 +94,7 @@ class Layer():
             layer_args['VersionNumber'] = version_info.get('Version', -1)
         return self.lambda_client.delete_layer_version(**layer_args)
 
-    def get_latest_layer_info(self, layer_name: str) -> str:
+    def get_latest_layer_info(self, layer_name: str) -> Dict:
         """Returns the latest matching version of the layer with 'layer_name'."""
         layer = self._find(layer_name)
         return layer['LatestMatchingVersion'] if layer else {}
@@ -101,29 +103,28 @@ class Layer():
 class LambdaLayers():
     """"Class used to manage the lambda supervisor layer."""
 
-    _SUPERVISOR_LAYER_NAME = 'faas-supervisor'
-
     @lazy_property
     def layer(self):
         """Property used to manage the lambda layers."""
         layer = Layer(self.lambda_client)
         return layer
 
-    def __init__(self, lambda_client, supervisor_version: str) -> None:
+    def __init__(self, function: Dict, lambda_client: LambdaClient) -> None:
+        self.function = function
         self.lambda_client = lambda_client
-        self.supervisor_version = supervisor_version
+        self.layer_name = self.function.get('supervisor').get('layer_name')
 
     def _get_supervisor_layer_props(self, layer_zip_path: str) -> Dict:
-        return {'LayerName' : self._SUPERVISOR_LAYER_NAME,
-                'Description' : self.supervisor_version,
+        return {'LayerName' : self.layer_name,
+                'Description' : self.function.get('supervisor').get('version'),
                 'Content' : {'ZipFile': FileUtils.read_file(layer_zip_path, mode="rb")},
-                'LicenseInfo' : 'Apache 2.0'}
+                'LicenseInfo' : self.function.get('supervisor').get('license_info')}
 
     def _create_layer(self) -> None:
         tmp_zip_path, layer_code_path = _create_tmp_folders()
-        layer_zip_path = FileUtils.join_paths(FileUtils.get_tmp_dir(),
-                                              f"{self._SUPERVISOR_LAYER_NAME}.zip")
-        parent_folder = _download_supervisor(self.supervisor_version, tmp_zip_path)
+        layer_zip_path = FileUtils.join_paths(FileUtils.get_tmp_dir(), f"{self.layer_name}.zip")
+        parent_folder = _download_supervisor(self.function.get('supervisor').get('version'),
+                                             tmp_zip_path)
         _copy_supervisor_files(parent_folder, tmp_zip_path, layer_code_path)
         _copy_extra_files(parent_folder, tmp_zip_path, layer_code_path)
         _create_layer_zip(layer_zip_path, layer_code_path)
@@ -131,37 +132,25 @@ class LambdaLayers():
         FileUtils.delete_file(layer_zip_path)
 
     def _create_supervisor_layer(self) -> None:
-        logger.info("Creating faas-supervisor layer.")
+        logger.info(f"Creating '{self.layer_name}' layer.")
         self._create_layer()
-        logger.info("Faas-supervisor layer created.")
+        logger.info(f"'{self.layer_name}' layer created.")
 
     def _update_supervisor_layer(self) -> None:
-        logger.info("Updating faas-supervisor layer.")
+        logger.info(f"Updating '{self.layer_name}' layer.")
         self._create_layer()
-        logger.info("Faas-supervisor layer updated.")
-
-    def print_layers_info(self) -> None:
-        """Prints the lambda layers information."""
-        layers_info = self.lambda_client.list_layers()
-        headers = ['NAME', 'VERSION', 'ARN', 'RUNTIMES']
-        table = []
-        for layer in layers_info:
-            table.append([layer.get('LayerName', ""),
-                          layer.get('LatestMatchingVersion', {}).get('Version', -1),
-                          layer.get('LayerArn', ""),
-                          layer.get('LatestMatchingVersion', {}).get('CompatibleRuntimes', '-')])
-        print(tabulate(table, headers))
+        logger.info(f"'{self.layer_name}' layer updated.")
 
     def get_latest_supervisor_layer_arn(self) -> str:
         """Returns the ARN of the latest supervisor layer."""
-        layer_info = self.layer.get_latest_layer_info(self._SUPERVISOR_LAYER_NAME)
+        layer_info = self.layer.get_latest_layer_info(self.layer_name)
         return layer_info.get('LayerVersionArn', "")
 
     def check_faas_supervisor_layer(self):
         """Checks if the supervisor layer exists, if not, creates the layer.
         If the layer exists and it's not updated, updates the layer."""
         # Get the layer information
-        layer_info = self.layer.get_latest_layer_info(self._SUPERVISOR_LAYER_NAME)
+        layer_info = self.layer.get_latest_layer_info(self.layer_name)
         # Compare supervisor versions
         if layer_info and 'Description' in layer_info:
             # If the supervisor layer version is lower than the passed version,
@@ -170,7 +159,7 @@ class LambdaLayers():
                                          self.supervisor_version) < 0:
                 self._update_supervisor_layer()
             else:
-                logger.info("Using existent 'faas-supervisor' layer")
+                logger.info(f"Using existent '{self.layer_name}' layer")
         else:
             # Layer not found, we have to create it
             self._create_supervisor_layer()

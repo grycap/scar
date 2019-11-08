@@ -21,7 +21,7 @@ from scar.providers.aws.batchfunction import Batch
 from scar.providers.aws.cloudwatchlogs import CloudWatchLogs
 from scar.providers.aws.iam import IAM
 from scar.providers.aws.lambdafunction import Lambda
-from scar.providers.aws.properties import AwsProperties, ScarProperties
+# from scar.providers.aws.properties import AwsProperties, ScarProperties
 from scar.providers.aws.resourcegroups import ResourceGroups
 from scar.providers.aws.s3 import S3
 from scar.providers.aws.validators import AWSValidator
@@ -46,22 +46,94 @@ def _get_storage_provider_id(storage_provider: str, env_vars: Dict) -> str:
     return res
 
 
+def _get_owner(function):
+    return _get_iam_client(function).get_user_name_or_id()
+
+############################################
+###              BOTO CLIENTS            ###
+############################################
+
+
+def _get_iam_client(aws_properties: Dict):
+    return IAM(aws_properties)
+
+
+def _get_lambda_client(aws_properties: Dict, supervisor_version: Dict):
+    return Lambda(aws_properties, supervisor_version)
+
+
+def _get_api_gateway_client(aws_properties: Dict):
+    return APIGateway(aws_properties)
+
+
+def _get_s3_client(aws_properties: Dict):
+    return S3(aws_properties)
+
+############################################
+###          ADD EXTRA PROPERTIES        ###
+############################################
+
+
+def _add_extra_aws_properties(scar: Dict, aws_functions: Dict) -> None:
+    for function in aws_functions:
+        _add_tags(function)
+        _add_handler(function)
+        _add_account_id(function)
+        _add_output(scar, function)
+        _add_config_file_path(scar, function)
+
+
+def _add_tags(function):
+    function['lambda']['tags'] = {"createdby": "scar",
+                                  "owner": _get_owner(function)}
+
+
+def _add_account_id(function):
+    function['iam']['account_id'] = StrUtils.find_expression(function['iam']['role'],
+                                                              _ACCOUNT_ID_REGEX)
+
+
+def _add_handler(function):
+    function['lambda']['handler'] = f"{function.get('lambda', {}).get('name', '')}.lambda_handler"
+
+
+def _add_output(scar_properties, function):
+    function['lambda']['output'] = response_parser.OutputType.PLAIN_TEXT
+    if scar_properties.get("json", False):
+        function['lambda']['output'] = response_parser.OutputType.JSON
+    # Override json ouput if both of them are defined
+    if scar_properties.get("verbose", False):
+        function['lambda']['output'] = response_parser.OutputType.VERBOSE
+    if scar_properties.get("output_file", False):
+        function['lambda']['output'] = response_parser.OutputType.BINARY
+        function['lambda']['output_file'] = scar_properties.get("output_file")
+
+
+def _add_config_file_path(scar_properties, function):
+    if scar_properties.get("conf_file", False):
+        function['lambda']['config_path'] = os.path.dirname(scar_properties.get("conf_file"))
+
+############################################
+###             AWS CONTROLLER           ###
+############################################
+
+
 class AWS(Commands):
     """AWS controller.
     Used to manage all the AWS calls and functionalities."""
 
-    @lazy_property
-    def aws_lambda(self):
-        """It's called 'aws_lambda' because 'lambda'
-        it's a restricted word in python."""
-        aws_lambda = Lambda(self.aws_properties,
-                            self.scar_properties.supervisor_version)
-        return aws_lambda
+#     @lazy_property
+#     def aws_lambda(self):
+#         """It's called 'aws_lambda' because 'lambda'
+#         it's a restricted word in python."""
+#         aws_lambda = Lambda(self.aws_properties,
+#                             self.scar.supervisor_version)
+#         return aws_lambda
 
     @lazy_property
     def batch(self):
         batch = Batch(self.aws_properties,
-                      self.scar_properties.supervisor_version)
+                      self.scar.supervisor_version)
         return batch
 
     @lazy_property
@@ -75,33 +147,30 @@ class AWS(Commands):
         return api_gateway
 
     @lazy_property
-    def aws_s3(self):
-        aws_s3 = S3(self.aws_properties)
-        return aws_s3
-
-    @lazy_property
     def resource_groups(self):
         resource_groups = ResourceGroups(self.aws_properties)
         return resource_groups
 
-    @lazy_property
-    def iam(self):
-        iam = IAM(self.aws_properties)
-        return iam
+############################################
+###              AWS COMMANDS            ###
+############################################
 
     @excp.exception(logger)
-    def init(self):
-        if self.aws_lambda.find_function():
-            raise excp.FunctionExistsError(function_name=self.aws_properties.lambdaf.name)
-        # We have to create the gateway before creating the function
-        self._create_api_gateway()
-        self._create_lambda_function()
-        self._create_log_group()
-        self._create_s3_buckets()
-        # The api_gateway permissions are added after the function is created
-        self._add_api_gateway_permissions()
-        self._create_batch_environment()
-        self._preheat_function()
+    def init(self) -> None:
+        supervisor_version = self.scar.get('supervisor_version', 'latest')
+        for function in self.aws_functions:
+            lambda_client = _get_lambda_client(function, supervisor_version)
+            if lambda_client.find_function():
+                raise excp.FunctionExistsError(function_name=function.get('lambda', {}).get('name', ''))
+            # We have to create the gateway before creating the function
+            self._create_api_gateway(function)
+            self._create_lambda_function(function, lambda_client)
+            self._create_log_group()
+            self._create_s3_buckets()
+            # The api_gateway permissions are added after the function is created
+            self._add_api_gateway_permissions()
+            self._create_batch_environment()
+            self._preheat_function()
 
     @excp.exception(logger)
     def invoke(self):
@@ -111,7 +180,7 @@ class AWS(Commands):
                                             self.aws_properties.lambdaf.name,
                                             self.aws_properties.lambdaf.asynchronous,
                                             self.aws_properties.output,
-                                            getattr(self.scar_properties, "output_file", ""))
+                                            getattr(self.scar, "output_file", ""))
 
     @excp.exception(logger)
     def run(self):
@@ -131,8 +200,8 @@ class AWS(Commands):
 
     @excp.exception(logger)
     def ls(self):
-        if hasattr(self.aws_properties, "s3"):
-            file_list = self.aws_s3.get_bucket_file_list()
+        if self.storages:
+            file_list = _get_s3_client(self.aws_functions).get_bucket_file_list()
             for file_info in file_list:
                 print(file_info)
         else:
@@ -165,39 +234,12 @@ class AWS(Commands):
 
     @AWSValidator.validate()
     @excp.exception(logger)
-    def parse_arguments(self, **kwargs):
-        self.raw_kwargs = kwargs
-        self.aws_properties = AwsProperties(kwargs.get('aws', {}))
-        self.scar_properties = ScarProperties(kwargs.get('scar', {}))
-        self.add_extra_aws_properties()
-
-    def add_extra_aws_properties(self):
-        self._add_tags()
-        self._add_output()
-        self._add_account_id()
-        self._add_config_file_path()
-
-    def _add_tags(self):
-        self.aws_properties.tags = {"createdby": "scar", "owner": self.iam.get_user_name_or_id()}
-
-    def _add_output(self):
-        self.aws_properties.output = response_parser.OutputType.PLAIN_TEXT
-        if hasattr(self.scar_properties, "json") and self.scar_properties.json:
-            self.aws_properties.output = response_parser.OutputType.JSON
-        # Override json ouput if both of them are defined
-        if hasattr(self.scar_properties, "verbose") and self.scar_properties.verbose:
-            self.aws_properties.output = response_parser.OutputType.VERBOSE
-        if hasattr(self.scar_properties, "output_file") and self.scar_properties.output_file:
-            self.aws_properties.output = response_parser.OutputType.BINARY
-            self.aws_properties.output_file = self.scar_properties.output_file
-
-    def _add_account_id(self):
-        self.aws_properties.account_id = StrUtils.find_expression(self.aws_properties.iam.role,
-                                                                  _ACCOUNT_ID_REGEX)
-
-    def _add_config_file_path(self):
-        if hasattr(self.scar_properties, "conf_file") and self.scar_properties.conf_file:
-            self.aws_properties.config_path = os.path.dirname(self.scar_properties.conf_file)
+    def parse_arguments(self, merged_args: Dict) -> None:
+        self.raw_args = merged_args
+        self.aws_functions = merged_args.get('functions', {}).get('aws', {})
+        self.storages = merged_args.get('storages', {})
+        self.scar = merged_args.get('scar', {})
+        _add_extra_aws_properties(self.scar, self.aws_functions)
 
     def _get_all_functions(self):
         arn_list = self.resource_groups.get_resource_arn_list(self.iam.get_user_name_or_id())
@@ -211,14 +253,6 @@ class AWS(Commands):
             logs = self.cloudwatch_logs.get_batch_job_log(batch_jobs["jobs"])
         return logs
 
-    @excp.exception(logger)
-    def _create_lambda_function(self):
-        response = self.aws_lambda.create_function()
-        acc_key = self.aws_lambda.client.get_access_key()
-        response_parser.parse_lambda_function_creation_response(response,
-                                                                self.aws_properties.lambdaf.name,
-                                                                acc_key,
-                                                                self.aws_properties.output)
 
     @excp.exception(logger)
     def _create_log_group(self):
@@ -237,10 +271,6 @@ class AWS(Commands):
             if hasattr(self.aws_properties.s3, "output_bucket"):
                 self.aws_s3.create_output_bucket()
 
-    def _create_api_gateway(self):
-        if hasattr(self.aws_properties, "api_gateway"):
-            self.api_gateway.create_api_gateway()
-
     def _add_api_gateway_permissions(self):
         if hasattr(self.aws_properties, "api_gateway"):
             self.aws_lambda.add_invocation_permission_from_api_gateway()
@@ -252,7 +282,7 @@ class AWS(Commands):
 
     def _preheat_function(self):
         # If preheat is activated, the function is launched at the init step
-        if hasattr(self.scar_properties, "preheat"):
+        if hasattr(self.scar, "preheat"):
             self.aws_lambda.preheat_function()
 
     def _process_input_bucket_calls(self):
@@ -268,7 +298,7 @@ class AWS(Commands):
             self.aws_lambda.process_asynchronous_lambda_invocations(s3_event_list)
 
     def upload_file_or_folder_to_s3(self):
-        path_to_upload = self.scar_properties.path
+        path_to_upload = self.scar.path
         self.aws_s3.create_input_bucket()
         files = [path_to_upload]
         if os.path.isdir(path_to_upload):
@@ -279,8 +309,8 @@ class AWS(Commands):
 
     def _get_download_file_path(self, file_key=None):
         file_path = file_key
-        if hasattr(self.scar_properties, "path") and self.scar_properties.path:
-            file_path = FileUtils.join_paths(self.scar_properties.path, file_path)
+        if hasattr(self.scar, "path") and self.scar.path:
+            file_path = FileUtils.join_paths(self.scar.path, file_path)
         return file_path
 
     def download_file_or_folder_from_s3(self):
@@ -312,6 +342,21 @@ class AWS(Commands):
                 self.aws_properties.api_gateway.id = api_gtw_id
             else:
                 self.aws_properties.api_gateway = ApiGatewayProperties({'id' : api_gtw_id})
+
+#############################################################################
+###                   Methods to create AWS resources                     ###
+#############################################################################
+
+    def _create_api_gateway(self, function: Dict):
+        if function.get("api_gateway", {}).get('name', False):
+            _get_api_gateway_client(function).create_api_gateway()
+            
+    @excp.exception(logger)
+    def _create_lambda_function(self, function: Dict, lambda_client: Lambda) -> None:
+        response = lambda_client.create_function(function)
+        response_parser.parse_lambda_function_creation_response(response,
+                                                                function,
+                                                                lambda_client.get_access_key())            
 
 #############################################################################
 ###                   Methods to delete AWS resources                     ###

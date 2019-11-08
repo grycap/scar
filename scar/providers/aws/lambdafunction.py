@@ -14,180 +14,95 @@
 
 import base64
 import json
-import random
 from multiprocessing.pool import ThreadPool
 from botocore.exceptions import ClientError
 from scar.providers.aws import GenericClient
 from scar.providers.aws.functioncode import FunctionPackager
 from scar.providers.aws.lambdalayers import LambdaLayers
+from scar.providers.aws.clients.lambdafunction import LambdaClient
 from scar.providers.aws.s3 import S3
 from scar.providers.aws.validators import AWSValidator
 import scar.exceptions as excp
 import scar.http.request as request
 import scar.logger as logger
 import scar.providers.aws.response as response_parser
-from scar.utils import lazy_property, DataTypesUtils, FileUtils, StrUtils
+from scar.utils import DataTypesUtils, FileUtils, StrUtils
+from typing import Dict
 
 MAX_CONCURRENT_INVOCATIONS = 500
+ASYNCHRONOUS_CALL = {"invocation_type": "Event",
+                     "log_type": "None",
+                     "asynchronous": "True"}
+REQUEST_RESPONSE_CALL = {"invocation_type": "RequestResponse",
+                         "log_type": "Tail",
+                         "asynchronous": "False"}
+
+
+def _get_layers_client(client: LambdaClient, supervisor_version: str) -> LambdaLayers:
+    return LambdaLayers(client, supervisor_version)
+
+
+def _get_s3_client(aws_properties: Dict) -> S3:
+    return S3(aws_properties)
 
 
 class Lambda(GenericClient):
 
-    @lazy_property
-    def layers(self):
-        layers = LambdaLayers(self.client, self.supervisor_version)
-        return layers
-
-    @lazy_property
-    def s3(self):
-        s3 = S3(self.aws)
-        return s3
-
-    def __init__(self, aws_properties, supervisor_version):
-        super().__init__(aws_properties)
-        self.supervisor_version = supervisor_version
-        self._initialize_properties(aws_properties)
-
-    def _initialize_properties(self, aws_properties):
-        self.aws.lambdaf.environment = {'Variables': {}}
-        self.aws.lambdaf.invocation_type = "RequestResponse"
-        self.aws.lambdaf.log_type = "Tail"
-        self.aws.lambdaf.layers = []
-        self.aws.lambdaf.tmp_folder = FileUtils.create_tmp_dir()
-        self.aws.lambdaf.tmp_folder_path = self.aws.lambdaf.tmp_folder.name
-        self.aws.lambdaf.zip_file_path = FileUtils.join_paths(self.aws.lambdaf.tmp_folder_path, 'function.zip')
-        if hasattr(self.aws.lambdaf, "name"):
-            self.aws.lambdaf.handler = "{0}.lambda_handler".format(self.aws.lambdaf.name)
-        if not hasattr(self.aws.lambdaf, "asynchronous"):
-            self.aws.lambdaf.asynchronous = False
-        self._set_default_call_parameters()
-
-    def _set_default_call_parameters(self):
-        self.asynchronous_call_parameters = {"invocation_type": "Event",
-                                             "log_type": "None",
-                                             "asynchronous": "True"}
-        self.request_response_call_parameters = {"invocation_type": "RequestResponse",
-                                                 "log_type": "Tail",
-                                                 "asynchronous": "False"}
+    def __init__(self, aws_properties: Dict) -> None:
+        super().__init__(aws_properties.get('lambda'))
+        self.aws = aws_properties
+        self.function = aws_properties.get('lambda', {})
+        self.tmp_folder = FileUtils.create_tmp_dir()
+        self.zip_file_path = FileUtils.join_paths(self.tmp_folder.name, 'function.zip')
 
     def _get_creations_args(self):
-        return {'FunctionName': self.aws.lambdaf.name,
-                'Runtime': self.aws.lambdaf.runtime,
-                'Role': self.aws.iam.role,
-                'Handler':  self.aws.lambdaf.handler,
-                'Code': self.aws.lambdaf.code,
-                'Environment': self.aws.lambdaf.environment,
-                'Description': self.aws.lambdaf.description,
-                'Timeout':  self.aws.lambdaf.time,
-                'MemorySize': self.aws.lambdaf.memory,
-                'Tags': self.aws.tags,
-                'Layers': self.aws.lambdaf.layers}
+        return {'FunctionName': self.function.get('name'),
+                'Runtime': self.function.get('runtime'),
+                'Role': self.aws.get('iam').get('role'),
+                'Handler': self.function.get('handler'),
+                'Code': self._get_function_code(),
+                'Environment': self.function.get('environment'),
+                'Description': self.function.get('description'),
+                'Timeout':  self.function.get('time'),
+                'MemorySize': self.function.get('memory'),
+                'Tags': self.function.get('tags'),
+                'Layers': self.function.get('layers')}
 
     def is_asynchronous(self):
-        return self.aws.lambdaf.asynchronous
+        return self.function.get('asynchronous', False)
+
+    def get_access_key(self) -> str:
+        """Returns the access key belonging to the boto_profile used."""
+        return self.client.get_access_key()
 
     @excp.exception(logger)
     def create_function(self):
         self._manage_supervisor_layer()
-        self._set_environment_variables()
-        self._set_function_code()
         creation_args = self._get_creations_args()
         response = self.client.create_function(**creation_args)
         if response and "FunctionArn" in response:
-            self.aws.lambdaf.arn = response.get('FunctionArn', "")
+            self.function['arn'] = response.get('FunctionArn', "")
         return response
 
     def _manage_supervisor_layer(self):
-        self.layers.check_faas_supervisor_layer()
-        self.aws.lambdaf.layers.append(self.layers.get_latest_supervisor_layer_arn())
-
-    def _add_lambda_environment_variable(self, key, value):
-        if key and value:
-            self.aws.lambdaf.environment['Variables'][key] = value
-
-    def _add_custom_environment_variables(self, env_vars, prefix=''):
-            if type(env_vars) is dict:
-                for key, val in env_vars.items():
-                    # Add an specific prefix to be able to find the variables defined by the user
-                    self._add_lambda_environment_variable('{0}{1}'.format(prefix, key), val)
-            else:
-                for env_var in env_vars:
-                    key_val = env_var.split("=")
-                    # Add an specific prefix to be able to find the variables defined by the user
-                    self._add_lambda_environment_variable('{0}{1}'.format(prefix, key_val[0]), key_val[1])
-
-    def _set_environment_variables(self):
-        # Add required variables
-        self._set_required_environment_variables()
-        # Add explicitly user defined variables
-        if hasattr(self.aws.lambdaf, "environment_variables"):
-            self._add_custom_environment_variables(self.aws.lambdaf.environment_variables, prefix='CONT_VAR_')
-        # Add explicitly user defined variables
-        if hasattr(self.aws.lambdaf, "lambda_environment"):
-            self._add_custom_environment_variables(self.aws.lambdaf.lambda_environment)
-
-    def _set_required_environment_variables(self):
-        self._add_lambda_environment_variable('SUPERVISOR_TYPE', 'LAMBDA')
-        self._add_lambda_environment_variable('TIMEOUT_THRESHOLD', str(self.aws.lambdaf.timeout_threshold))
-        self._add_lambda_environment_variable('LOG_LEVEL', self.aws.lambdaf.log_level)
-        self._add_udocker_variables()
-        self._add_execution_mode()
-        self._add_s3_environment_vars()
-        if hasattr(self.aws.lambdaf, "image"):
-            self._add_lambda_environment_variable('IMAGE_ID', self.aws.lambdaf.image)
-        if hasattr(self.aws, "api_gateway"):
-            self._add_lambda_environment_variable('API_GATEWAY_ID', self.aws.api_gateway.id)
-
-    def _add_udocker_variables(self):
-        self._add_lambda_environment_variable('UDOCKER_EXEC', "/opt/udocker/udocker.py")
-        self._add_lambda_environment_variable('UDOCKER_DIR', "/tmp/shared/udocker")
-        self._add_lambda_environment_variable('UDOCKER_LIB', "/opt/udocker/lib/")
-        self._add_lambda_environment_variable('UDOCKER_BIN', "/opt/udocker/bin/")
-
-    def _add_execution_mode(self):
-        self._add_lambda_environment_variable('EXECUTION_MODE', self.aws.execution_mode)
-        # if (self.aws.execution_mode == 'lambda-batch' or self.aws.execution_mode == 'batch'):
-        #     self._add_lambda_environment_variable('BATCH_SUPERVISOR_IMG', self.aws.batch.supervisor_image)
-
-    def _add_s3_environment_vars(self):
-        if hasattr(self.aws, "s3"):
-            provider_id = random.randint(1, 1000001)
-
-            if hasattr(self.aws.s3, "input_bucket"):
-                self._add_lambda_environment_variable(
-                    f'STORAGE_PATH_INPUT_{provider_id}',
-                    self.aws.s3.storage_path_input
-                )
-
-            if hasattr(self.aws.s3, "output_bucket"):
-                self._add_lambda_environment_variable(
-                    f'STORAGE_PATH_OUTPUT_{provider_id}',
-                    self.aws.s3.storage_path_output
-                )
-            else:
-                self._add_lambda_environment_variable(
-                    f'STORAGE_PATH_OUTPUT_{provider_id}',
-                    self.aws.s3.storage_path_input
-                )
-            self._add_lambda_environment_variable(
-                f'STORAGE_AUTH_S3_USER_{provider_id}',
-                'scar'
-            )
+        layers_client = LambdaLayers(self.function, self.client)
+        layers_client.check_faas_supervisor_layer()
+        self.function.get('layers', []).append(layers_client.get_latest_supervisor_layer_arn())
 
     @excp.exception(logger)
-    def _set_function_code(self):
+    def _get_function_code(self):
         # Zip all the files and folders needed
-        FunctionPackager(self.aws, self.supervisor_version).create_zip()
-        if hasattr(self.aws, "s3") and hasattr(self.aws.s3, 'deployment_bucket'):
-            self._upload_to_S3()
-            self.aws.lambdaf.code = {"S3Bucket": self.aws.s3.deployment_bucket, "S3Key": self.aws.s3.file_key}
+        code = {}
+        FunctionPackager(self.aws).create_zip(self.tmp_folder.name)
+        if self.function.get('deployment_bucket', False):
+            file_key = f"lambda/{self.function.get('name')}.zip"
+            self._get_s3_client().upload_file(file_path=self.zip_file_path,
+                                              file_key=file_key)
+            code = {"S3Bucket": self.function.get('deployment_bucket'),
+                    "S3Key": file_key}
         else:
-            self.aws.lambdaf.code = {"ZipFile": FileUtils.read_file(self.aws.lambdaf.zip_file_path, mode="rb")}
-
-    def _upload_to_S3(self):
-        self.aws.s3.input_bucket = self.aws.s3.deployment_bucket
-        self.aws.s3.file_key = 'lambda/{0}.zip'.format(self.aws.lambdaf.name)
-        self.s3.upload_file(file_path=self.aws.lambdaf.zip_file_path, file_key=self.aws.s3.file_key)
+            code = {"ZipFile": FileUtils.read_file(self.zip_file_path, mode="rb")}
+        return code
 
     def delete_function(self, function_name):
         return self.client.delete_function(function_name)
@@ -242,7 +157,7 @@ class Lambda(GenericClient):
     def _get_invocation_payload(self):
         # Default payload
         payload = self.aws.lambdaf.payload if hasattr(self.aws.lambdaf, 'payload') else {}
-        if not payload:            
+        if not payload:
             # Check for defined run script
             if hasattr(self.aws.lambdaf, "run_script"):
                 script_path = self.aws.lambdaf.run_script
@@ -329,7 +244,7 @@ class Lambda(GenericClient):
     def find_function(self, function_name_or_arn=None):
         try:
             # If this call works the function exists
-            name_arn = function_name_or_arn if function_name_or_arn else self.aws.lambdaf.name
+            name_arn = function_name_or_arn if function_name_or_arn else self.function.get('name', '')
             self.get_function_info(name_arn)
             return True
         except ClientError as ce:

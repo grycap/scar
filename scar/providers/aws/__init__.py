@@ -39,16 +39,18 @@ class GenericClient():
                 'S3': S3Client,
                 'LAUNCHTEMPLATES': EC2Client}
 
-    def __init__(self, aws_properties: Dict):
-        self.aws = aws_properties
-
-    def _get_client_args(self) -> Dict:
-        return {'client': {'region_name': self.aws.region},
-                'session': {'profile_name': self.aws.boto_profile}}
+    def __init__(self, client_properties: Dict):
+        self.properties = {}
+        region = client_properties.get('region')
+        if region:
+            self.properties['client'] = {'region_name': region}
+        session = client_properties.get('boto_profile')
+        if session:
+            self.properties['session'] = {'profile_name': session}        
 
     @lazy_property
     def client(self):
         """Returns the required boto client based on the implementing class name."""
         client_name = self.__class__.__name__.upper()
-        client = self._CLIENTS[client_name](**self._get_client_args())
+        client = self._CLIENTS[client_name](self.properties)
         return client

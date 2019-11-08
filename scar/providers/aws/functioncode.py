@@ -35,42 +35,43 @@ class FunctionPackager():
         udocker = Udocker(self.aws, self.scar_tmp_function_folder_path, self._supervisor_zip_path)
         return udocker
 
-    def __init__(self, aws_properties, supervisor_version):
+    def __init__(self, aws_properties):
         self.aws = aws_properties
-        self.supervisor_version = supervisor_version
-        self.scar_tmp_function_folder = FileUtils.create_tmp_dir()
-        self.scar_tmp_function_folder_path = self.scar_tmp_function_folder.name
-        self._supervisor_zip_path = FileUtils.join_paths(self.aws.lambdaf.tmp_folder_path, 'faas.zip')
-
+#         self.scar_tmp_function_folder = FileUtils.create_tmp_dir()
+#         self.scar_tmp_function_folder_path = self.scar_tmp_function_folder.name
+#         self._supervisor_zip_path = FileUtils.join_paths(self.aws.lambdaf.tmp_folder_path, 'faas.zip')
         self.package_args = {}
 
     @exception(logger)
-    def create_zip(self):
+    def create_zip(self, tmp_folder):
         """Creates the lambda function deployment package."""
-        self._download_faas_supervisor_zip()
-        self._extract_handler_code()
+        zip_path = FileUtils.join_paths(tmp_folder, 'faas.zip')
+        self._download_faas_supervisor_zip(zip_path)
+        self._extract_handler_code(tmp_folder, zip_path)
         self._manage_udocker_images()
         self._add_init_script()
         self._add_extra_payload()
         self._zip_scar_folder()
         self._check_code_size()
+        return zip_path
 
-    def _download_faas_supervisor_zip(self) -> None:
+    def _download_faas_supervisor_zip(self, zip_path) -> None:
         supervisor_zip_url = GitHubUtils.get_source_code_url(
             GITHUB_USER,
             GITHUB_SUPERVISOR_PROJECT,
-            self.supervisor_version)
-        with open(self._supervisor_zip_path, "wb") as thezip:
+            self.aws.get('lambda').get('supervisor').get('version'))
+        with open(zip_path, "wb") as thezip:
             thezip.write(get_file(supervisor_zip_url))
 
-    def _extract_handler_code(self) -> None:
-        function_handler_dest = FileUtils.join_paths(self.scar_tmp_function_folder_path, f"{self.aws.lambdaf.name}.py")
+    def _extract_handler_code(self, tmp_folder, zip_path) -> None:
+        function_handler_dest = FileUtils.join_paths(tmp_folder,
+                                                     f"{self.aws.get('lambda').get('name')}.py")
         file_path = ""
-        with ZipFile(self._supervisor_zip_path) as thezip:
+        with ZipFile(zip_path) as thezip:
             for file in thezip.namelist():
                 if file.endswith("function_handler.py"):
-                    file_path = FileUtils.join_paths(self.aws.lambdaf.tmp_folder_path, file)
-                    thezip.extract(file, self.aws.lambdaf.tmp_folder_path)
+                    file_path = FileUtils.join_paths(tmp_folder, file)
+                    thezip.extract(file, tmp_folder)
                     break
         FileUtils.copy_file(file_path, function_handler_dest)
 

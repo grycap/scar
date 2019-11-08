@@ -23,15 +23,17 @@ import tarfile
 import tempfile
 import uuid
 import sys
+import yaml
 from typing import Optional, Dict, List, Generator, Union, Any
 from distutils import dir_util
 from packaging import version
 import scar.logger as logger
 import scar.http.request as request
-from scar.exceptions import GitHubTagNotFoundError
+from scar.exceptions import GitHubTagNotFoundError, YamlFileNotFoundError
 
 GITHUB_USER = 'grycap'
 GITHUB_SUPERVISOR_PROJECT = 'faas-supervisor'
+
 
 def lazy_property(func):
     # Skipped type hinting: https://github.com/python/mypy/issues/3157
@@ -74,8 +76,8 @@ class SysUtils:
             del os.environ[variable]
 
     @staticmethod
-    def execute_command_with_msg(command: List[str], cmd_wd: Optional[str] = None,
-                                 cli_msg: str = '') -> str:
+    def execute_command_with_msg(command: List[str], cmd_wd: Optional[str]=None,
+                                 cli_msg: str='') -> str:
         """Execute the specified command and return the result."""
         cmd_out = subprocess.check_output(command, cwd=cmd_wd).decode('utf-8')
         logger.debug(cmd_out)
@@ -115,13 +117,28 @@ class DataTypesUtils:
         'dict2' has precedence over 'dict1'."""
         for key, val in dict2.items():
             if val is not None:
-                if key not in dict1:
-                    dict1[key] = val
-                elif isinstance(val, dict):
+                if isinstance(val, dict) and key in dict1:
                     dict1[key] = DataTypesUtils.merge_dicts(dict1[key], val)
-                elif isinstance(val, list):
+                elif isinstance(val, list) and key in dict1:
                     dict1[key] += val
+                else:
+                    dict1[key] = val
         return dict1
+
+    @staticmethod
+    def merge_dicts_with_copy(dict1: Dict, dict2: Dict) -> Dict:
+        """Merge 'dict1' and 'dict2' dicts into a new Dict.
+        'dict2' has precedence over 'dict1'."""
+        result = dict1.copy()
+        for key, val in dict2.items():
+            if val is not None:
+                if isinstance(val, dict) and key in result:
+                    result[key] = DataTypesUtils.merge_dicts_with_copy(result[key], val)
+                elif isinstance(val, list) and key in result:
+                    result[key] += val
+                else:
+                    result[key] = val
+        return result
 
     @staticmethod
     def divide_list_in_chunks(elements: List, chunk_size: int) -> Generator[List, None, None]:
@@ -216,7 +233,7 @@ class FileUtils:
     @staticmethod
     def create_file_with_content(path: str,
                                  content: Optional[Union[str, bytes]],
-                                 mode: str = 'w') -> None:
+                                 mode: str='w') -> None:
         """Creates a new file with the passed content.
         If the content is a dictionary, first is converted to a string."""
         with open(path, mode) as fwc:
@@ -225,7 +242,7 @@ class FileUtils:
             fwc.write(content)
 
     @staticmethod
-    def read_file(file_path: str, mode: str = 'r') -> Optional[Union[str, bytes]]:
+    def read_file(file_path: str, mode: str='r') -> Optional[Union[str, bytes]]:
         """Reads the whole specified file and returns the content."""
         with open(file_path, mode) as content_file:
             return content_file.read()
@@ -256,7 +273,7 @@ class FileUtils:
             tar.extractall(path=destination_path)
 
     @staticmethod
-    def unzip_folder(zip_path: str, folder_where_unzip_path: str, msg: str = '') -> None:
+    def unzip_folder(zip_path: str, folder_where_unzip_path: str, msg: str='') -> None:
         """Must use the unzip binary to preserve the file properties and the symlinks."""
         zip_exe = '/usr/bin/unzip'
         SysUtils.execute_command_with_msg([zip_exe, zip_path],
@@ -264,7 +281,7 @@ class FileUtils:
                                           cli_msg=msg)
 
     @staticmethod
-    def zip_folder(zip_path: str, folder_to_zip_path: str, msg: str = '') -> None:
+    def zip_folder(zip_path: str, folder_to_zip_path: str, msg: str='') -> None:
         """Must use the zip binary to preserve the file properties and the symlinks."""
         zip_exe = '/usr/bin/zip'
         SysUtils.execute_command_with_msg([zip_exe, '-r9y', zip_path, '.'],
@@ -272,9 +289,18 @@ class FileUtils:
                                           cli_msg=msg)
 
     @staticmethod
-    def is_file(file_path):
+    def is_file(file_path: str):
         """Test whether a path is a regular file."""
         return os.path.isfile(file_path)
+
+    @staticmethod
+    def load_yaml(file_path: str) -> Dict:
+        """Returns the content of a YAML file as a Dict."""
+        if os.path.isfile(file_path):
+            with open(file_path) as cfg_file:
+                return yaml.safe_load(cfg_file)
+        else:
+            raise YamlFileNotFoundError(file_path=file_path)
 
 
 class StrUtils:
@@ -303,12 +329,12 @@ class StrUtils:
         """Encode a 'utf-8' string using Base64 and return
         the encoded value as a string."""
         return StrUtils.encode_base64(bytes(value, 'utf-8')).decode('utf-8')
-    
+
     @staticmethod
     def bytes_to_base64str(value, encoding='utf-8') -> str:
         """Encode a 'utf-8' string using Base64 and return
         the encoded value as a string."""
-        return StrUtils.encode_base64(value).decode(encoding)    
+        return StrUtils.encode_base64(value).decode(encoding)
 
     @staticmethod
     def dict_to_base64_string(value: Dict) -> str:
@@ -365,7 +391,7 @@ class GitHubUtils:
 
     @staticmethod
     def get_asset_url(user: str, project: str, asset_name: str,
-                      tag_name: str = 'latest') -> Optional[str]:
+                      tag_name: str='latest') -> Optional[str]:
         """Get the download asset url from the specified github tagged project."""
         if tag_name == 'latest':
             url = f'https://api.github.com/repos/{user}/{project}/releases/latest'
@@ -382,7 +408,7 @@ class GitHubUtils:
         return None
 
     @staticmethod
-    def get_source_code_url(user: str, project: str, tag_name: str = 'latest') -> str:
+    def get_source_code_url(user: str, project: str, tag_name: str='latest') -> str:
         """Get the source code's url from the specified github tagged project."""
         source_url = ""
         repo_url = ""

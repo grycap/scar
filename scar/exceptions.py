@@ -103,6 +103,15 @@ class YamlFileNotFoundError(ScarError):
     fmt = "Unable to find the yaml file '{file_path}'"
 
 
+class FdlFileNotFoundError(ScarError):
+    """
+    The configuration file does not exist
+
+    :ivar file_path: Path of the file
+    """
+    fmt = "Unable to find the configuration file '{file_path}'"
+
+
 class ValidatorError(ScarError):
     """
     An error occurred when validating a parameter
@@ -155,6 +164,23 @@ class GitHubTagNotFoundError(ScarError):
 
     fmt = "The tag '{tag}' was not found in the GitHub repository."
 
+
+class StorageProviderNotSupportedError(ScarError):
+    """
+    The storage provider parsed is not supported
+
+    :ivar provider: Provider specified
+    """
+    fmt = "The storage provider '{provider}' is not supported."
+
+
+class AuthenticationVariableNotSupportedError(ScarError):
+    """
+    The authentication variable parsed is not supported
+
+    :ivar auth_var: Authentication variable specified
+    """
+    fmt = "The authentication variable '{auth_var}' is not supported."
 
 ################################################
 # #             LAMBDA EXCEPTIONS              ##
@@ -253,6 +279,7 @@ class InvocationPayloadError(ScarError):
            "Check AWS Lambda invocation limits in : "
            "https://docs.aws.amazon.com/lambda/latest/dg/limits.html")
 
+
 class NotExistentApiGatewayWarning(ScarError):
     """
     The API with the id 'restApiId' was not found.
@@ -260,6 +287,7 @@ class NotExistentApiGatewayWarning(ScarError):
     :ivar bucket_name: Name of the bucket
     """
     fmt = "The requested API '{restApiId}' does not exist."
+
 
 ################################################
 # #               IAM EXCEPTIONS               ##

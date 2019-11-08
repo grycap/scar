@@ -26,19 +26,9 @@ class BotoClient():
     _READ_TIMEOUT = 360
     _BOTO_CLIENT_NAME = ''
 
-    def __init__(self, client: Dict = None, session: Dict = None):
-        """
-        Default client args:
-            'client' : {'region_name' : self.aws.region}
-        Default session args:
-            'session' : {'profile_name' : self.aws.boto_profile}
-        """
-        self.client_args = {}
-        if client:
-            self.client_args = client
-        self.session_args = {}
-        if session:
-            self.session_args = session
+    def __init__(self, client_args: Dict):
+        self.client_args = client_args.get('client', {})
+        self.session_args = client_args.get('session', {})
 
     @lazy_property
     def client(self):

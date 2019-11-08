@@ -20,11 +20,11 @@ sys.path.append('.')
 from scar.cmdtemplate import Commands
 from scar.parser.cfgfile import ConfigFileParser
 from scar.parser.cli import CommandParser
-from scar.parser.yaml import YamlParser
 from scar.providers.aws.controller import AWS
+from scar.utils import FileUtils
+import scar.parser.fdl as fdl
 import scar.exceptions as excp
 import scar.logger as logger
-from scar.utils import DataTypesUtils
 
 
 class ScarCLI(Commands):
@@ -69,14 +69,22 @@ class ScarCLI(Commands):
         That is, the CMD parameter will override any other configuration,
         and the YAML parameters will override the SCAR.CONF settings
         """
-        merged_args = ConfigFileParser().get_properties()
+        config_args = ConfigFileParser().get_properties()
         cmd_args = CommandParser(self).parse_arguments()
         if 'conf_file' in cmd_args['scar'] and cmd_args['scar']['conf_file']:
-            yaml_args = YamlParser(cmd_args['scar']).parse_arguments()
-            merged_args = DataTypesUtils.merge_dicts(yaml_args, merged_args)
-        merged_args = DataTypesUtils.merge_dicts(cmd_args, merged_args)
-        self.cloud_provider.parse_arguments(**merged_args)
-        merged_args['scar']['func']()
+            yaml_args = FileUtils.load_yaml(cmd_args['scar']['conf_file'])
+            # YAML >> SCAR.CONF
+            merged_args = fdl.merge_conf(config_args, yaml_args)
+            merged_args = fdl.merge_cmd_yaml(cmd_args, merged_args)
+        else:
+            # CMD >> SCAR.CONF
+            merged_args = fdl.merge_conf(config_args, cmd_args)
+        import pprint
+        pprint.pprint(merged_args)
+        self.cloud_provider.parse_arguments(merged_args)
+        #merged_args.get('scar').get('func')()
+        pprint.pprint(merged_args)
+
 
 def main():
     logger.init_execution_trace()
@@ -87,6 +95,7 @@ def main():
         print(excp)
         logger.exception(excp)
         logger.end_execution_trace_with_errors()
+
 
 if __name__ == "__main__":
     main()

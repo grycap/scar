@@ -69,15 +69,19 @@ def _print_generic_response(response, output_type, aws_output, text_message=None
         logger.info_json(output)
 
 
-def parse_lambda_function_creation_response(response, function_name, access_key, output_type):
+def parse_lambda_function_creation_response(response, function, access_key):
     if response:
+        function_name = function.get('lambda', {}).get('name', '')
+        output_type = function.get('lambda', {}).get('output', '')
         aws_output = 'LambdaOutput'
         text_message = f"Function '{function_name}' successfully created."
-        json_message = {aws_output : {'AccessKey' : access_key,
-                                      'FunctionArn' : response['FunctionArn'],
-                                      'Timeout' : response['Timeout'],
-                                      'MemorySize' : response['MemorySize'],
-                                      'FunctionName' : response['FunctionName']}}
+        json_message = {aws_output : {
+                            'AccessKey' : access_key,
+                            'FunctionArn' : response['FunctionArn'],
+                            'Timeout' : response['Timeout'],
+                            'MemorySize' : response['MemorySize'],
+                            'FunctionName' : response['FunctionName']}
+                        }
         _print_generic_response(response, output_type, aws_output, text_message, json_output=json_message)
 
 
