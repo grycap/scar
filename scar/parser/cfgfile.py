@@ -21,7 +21,7 @@ from scar.utils import FileUtils, SysUtils, StrUtils
 
 _DEFAULT_CFG = {
     "scar": {
-        "config_version": "1.0.5"
+        "config_version": "1.0.6"
     },
     "aws": {
         "iam": {"boto_profile": "default",
@@ -82,7 +82,11 @@ _DEFAULT_CFG = {
                                        "method.request.header.X-Amz-Invocation-Type"}            
             },
             'path_part': "{proxy+}",
-            'stage_name': "scar"            
+            'stage_name': "scar",
+            # Used to add invocation permissions to lambda
+            'service_id': 'apigateway.amazonaws.com',
+            'source_arn_testing': 'arn:aws:execute-api:{api_region}:{account_id}:{api_id}/*',
+            'source_arn_invocation': 'arn:aws:execute-api:{api_region}:{account_id}:{api_id}/{stage_name}/ANY'
         },
         "cloudwatch": {
             "boto_profile": "default",

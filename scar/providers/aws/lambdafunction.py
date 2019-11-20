@@ -50,7 +50,7 @@ class Lambda(GenericClient):
 
     def __init__(self, aws_properties: Dict) -> None:
         super().__init__(aws_properties.get('lambda', {}))
-        self._aws = aws_properties
+        self.aws = aws_properties
         self.function = aws_properties.get('lambda', {})
         self.tmp_folder = FileUtils.create_tmp_dir()
         self.zip_payload_path = FileUtils.join_paths(self.tmp_folder.name, 'function.zip')
@@ -58,7 +58,7 @@ class Lambda(GenericClient):
     def _get_creations_args(self):
         return {'FunctionName': self.function.get('name'),
                 'Runtime': self.function.get('runtime'),
-                'Role': self._aws.get('iam').get('role'),
+                'Role': self.aws.get('iam').get('role'),
                 'Handler': self.function.get('handler'),
                 'Code': self._get_function_code(),
                 'Environment': self.function.get('environment'),
@@ -93,7 +93,7 @@ class Lambda(GenericClient):
     def _get_function_code(self):
         # Zip all the files and folders needed
         code = {}
-        FunctionPackager(self._aws).create_zip(self.zip_payload_path)
+        FunctionPackager(self.aws).create_zip(self.zip_payload_path)
         if self.function.get('deployment').get('bucket', False):
             file_key = f"lambda/{self.function.get('name')}.zip"
             self._get_s3_client().upload_file(file_path=self.zip_payload_path,
@@ -108,9 +108,9 @@ class Lambda(GenericClient):
         return self.client.delete_function(function_name)
 
     def link_function_and_input_bucket(self):
-        kwargs = {'FunctionName' : self._aws.lambdaf.name,
+        kwargs = {'FunctionName' : self.aws.lambdaf.name,
                   'Principal' : "s3.amazonaws.com",
-                  'SourceArn' : 'arn:_aws:s3:::{0}'.format(self._aws.s3.input_bucket)}
+                  'SourceArn' : 'arn:aws:s3:::{0}'.format(self.aws.s3.input_bucket)}
         self.client.add_invocation_permission(**kwargs)
 
     def preheat_function(self):
@@ -127,7 +127,7 @@ class Lambda(GenericClient):
         return self._launch_s3_event(s3_event)
 
     def _launch_s3_event(self, s3_event):
-        self._aws.lambdaf.payload = s3_event
+        self.aws.lambdaf.payload = s3_event
         logger.info(f"Sending event for file '{s3_event['Records'][0]['s3']['object']['key']}'")
         return self.launch_lambda_instance()
 
@@ -147,11 +147,11 @@ class Lambda(GenericClient):
     def launch_lambda_instance(self):
         response = self._invoke_lambda_function()
         response_args = {'Response' : response,
-                         'FunctionName' : self._aws.lambdaf.name,
-                         'OutputType' : self._aws.output,
-                         'IsAsynchronous' : self._aws.lambdaf.asynchronous}
-        if hasattr(self._aws, "output_file"):
-            response_args['OutputFile'] = self._aws.output_file
+                         'FunctionName' : self.aws.lambdaf.name,
+                         'OutputType' : self.aws.output,
+                         'IsAsynchronous' : self.aws.lambdaf.asynchronous}
+        if hasattr(self.aws, "output_file"):
+            response_args['OutputFile'] = self.aws.output_file
         response_parser.parse_invocation_response(**response_args)
 
     def _get_invocation_payload(self):
@@ -186,21 +186,21 @@ class Lambda(GenericClient):
     def _update_environment_variables(self, function_info, update_args):
         # To update the environment variables we need to retrieve the
         # variables defined in lambda and update them with the new values
-        env_vars = self._aws.lambdaf.environment
-        if hasattr(self._aws.lambdaf, "environment_variables"):
-            for env_var in self._aws.lambdaf.environment_variables:
+        env_vars = self.aws.lambdaf.environment
+        if hasattr(self.aws.lambdaf, "environment_variables"):
+            for env_var in self.aws.lambdaf.environment_variables:
                 key_val = env_var.split("=")
                 # Add an specific prefix to be able to find the variables defined by the user
                 env_vars['Variables']['CONT_VAR_{0}'.format(key_val[0])] = key_val[1]
-        if hasattr(self._aws.lambdaf, "timeout_threshold"):
-            env_vars['Variables']['TIMEOUT_THRESHOLD'] = str(self._aws.lambdaf.timeout_threshold)
-        if hasattr(self._aws.lambdaf, "log_level"):
-            env_vars['Variables']['LOG_LEVEL'] = self._aws.lambdaf.log_level
+        if hasattr(self.aws.lambdaf, "timeout_threshold"):
+            env_vars['Variables']['TIMEOUT_THRESHOLD'] = str(self.aws.lambdaf.timeout_threshold)
+        if hasattr(self.aws.lambdaf, "log_level"):
+            env_vars['Variables']['LOG_LEVEL'] = self.aws.lambdaf.log_level
         function_info['Environment']['Variables'].update(env_vars['Variables'])
         update_args['Environment'] = function_info['Environment']
 
     def _update_supervisor_layer(self, function_info, update_args):
-        if hasattr(self._aws.lambdaf, "supervisor_layer"):
+        if hasattr(self.aws.lambdaf, "supervisor_layer"):
             # Set supervisor layer Arn
             function_layers = [self.layers.get_latest_supervisor_layer_arn()]
             # Add the rest of layers (if exist)
@@ -212,12 +212,12 @@ class Lambda(GenericClient):
         if not function_info:
             function_info = self.get_function_info()
         update_args = {'FunctionName' : function_info['FunctionName'] }
-#         if hasattr(self._aws.lambdaf, "memory"):
-#             update_args['MemorySize'] = self._aws.lambdaf.memory
+#         if hasattr(self.aws.lambdaf, "memory"):
+#             update_args['MemorySize'] = self.aws.lambdaf.memory
 #         else:
 #             update_args['MemorySize'] = function_info['MemorySize']
-#         if hasattr(self._aws.lambdaf, "time"):
-#             update_args['Timeout'] = self._aws.lambdaf.time
+#         if hasattr(self.aws.lambdaf, "time"):
+#             update_args['Timeout'] = self.aws.lambdaf.time
 #         else:
 #             update_args['Timeout'] = function_info['Timeout']
         self._update_environment_variables(function_info, update_args)
@@ -235,7 +235,7 @@ class Lambda(GenericClient):
             print (f"Error getting function info by arn: {cerr}")
 
     def get_function_info(self, function_name_or_arn=None):
-        name_arn = function_name_or_arn if function_name_or_arn else self._aws.lambdaf.name
+        name_arn = function_name_or_arn if function_name_or_arn else self.function.get('name')
         return self.client.get_function_info(name_arn)
 
     @excp.exception(logger)
@@ -253,17 +253,19 @@ class Lambda(GenericClient):
                 raise
 
     def add_invocation_permission_from_api_gateway(self):
-        kwargs = {'FunctionName' : self._aws.lambdaf.name,
-                  'Principal' : 'apigateway.amazonaws.com',
-                  'SourceArn' : 'arn:_aws:execute-api:{0}:{1}:{2}/*'.format(self._aws.region,
-                                                                           self._aws.account_id,
-                                                                           self._aws.api_gateway.id)}
+        api = self.aws.get('api_gateway')
         # Add Testing permission
+        kwargs = {'FunctionName': self.function.get('name'),
+                  'Principal': api.get('service_id'),
+                  'SourceArn': api.get('source_arn_testing').format(api_region=api.get('region'),
+                                                                    account_id=self.aws.get('iam').get('account_id'),
+                                                                    api_id=api.get('id'))}
         self.client.add_invocation_permission(**kwargs)
         # Add Invocation permission
-        kwargs['SourceArn'] = 'arn:_aws:execute-api:{0}:{1}:{2}/scar/ANY'.format(self._aws.region,
-                                                                                self._aws.account_id,
-                                                                                self._aws.api_gateway.id)
+        kwargs['SourceArn'] =  api.get('source_arn_invocation').format(api_region=api.get('region'),
+                                                                       account_id=self.aws.get('iam').get('account_id'),
+                                                                       api_id=api.get('id'),
+                                                                       stage_name=api.get('stage_name'))
         self.client.add_invocation_permission(**kwargs)
 
     def get_api_gateway_id(self):
@@ -273,23 +275,23 @@ class Lambda(GenericClient):
     def _get_api_gateway_url(self):
         api_id = self.get_api_gateway_id()
         if not api_id:
-            raise excp.ApiEndpointNotFoundError(self._aws.lambdaf.name)
-        return f'https://{api_id}.execute-api.{self._aws.region}.amazonaws.com/scar/launch'
+            raise excp.ApiEndpointNotFoundError(self.aws.lambdaf.name)
+        return f'https://{api_id}.execute-api.{self.aws.region}.amazonaws.com/scar/launch'
 
     def call_http_endpoint(self):
         invoke_args = {'headers' : {'X-Amz-Invocation-Type':'Event'} if self.is_asynchronous() else {}}
-        if hasattr(self._aws, "api_gateway"):
+        if hasattr(self.aws, "api_gateway"):
             self._set_invoke_args(invoke_args)
         return request.call_http_endpoint(self._get_api_gateway_url(), **invoke_args)
 
     def _set_invoke_args(self, invoke_args):
-        if hasattr(self._aws.api_gateway, "data_binary"):
-            invoke_args['data'] = self._get_b64encoded_binary_data(self._aws.api_gateway.data_binary)
+        if hasattr(self.aws.api_gateway, "data_binary"):
+            invoke_args['data'] = self._get_b64encoded_binary_data(self.aws.api_gateway.data_binary)
             invoke_args['headers'] = {'Content-Type': 'application/octet-stream'}
-        if hasattr(self._aws.api_gateway, "parameters"):
-            invoke_args['params'] = self._parse_http_parameters(self._aws.api_gateway.parameters)
-        if hasattr(self._aws.api_gateway, "json_data"):
-            invoke_args['data'] = self._parse_http_parameters(self._aws.api_gateway.json_data)
+        if hasattr(self.aws.api_gateway, "parameters"):
+            invoke_args['params'] = self._parse_http_parameters(self.aws.api_gateway.parameters)
+        if hasattr(self.aws.api_gateway, "json_data"):
+            invoke_args['data'] = self._parse_http_parameters(self.aws.api_gateway.json_data)
             invoke_args['headers'] = {'Content-Type': 'application/json'}
 
     def _parse_http_parameters(self, parameters):

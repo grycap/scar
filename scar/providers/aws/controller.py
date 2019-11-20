@@ -34,16 +34,16 @@ from scar.utils import lazy_property, StrUtils, FileUtils
 _ACCOUNT_ID_REGEX = r'\d{12}'
 
 
-def _get_storage_provider_id(storage_provider: str, env_vars: Dict) -> str:
-    """Searches the storage provider id in the environment variables:
-        get_provider_id(S3, {'STORAGE_AUTH_S3_USER_41807' : 'scar'})
-        returns -> 41807"""
-    res = ""
-    for env_key in env_vars.keys():
-        if env_key.startswith(f'STORAGE_AUTH_{storage_provider}'):
-            res = env_key.split('_', 4)[-1]
-            break
-    return res
+# def _get_storage_provider_id(storage_provider: str, env_vars: Dict) -> str:
+#     """Searches the storage provider id in the environment variables:
+#         get_provider_id(S3, {'STORAGE_AUTH_S3_USER_41807' : 'scar'})
+#         returns -> 41807"""
+#     res = ""
+#     for env_key in env_vars.keys():
+#         if env_key.startswith(f'STORAGE_AUTH_{storage_provider}'):
+#             res = env_key.split('_', 4)[-1]
+#             break
+#     return res
 
 
 def _get_owner(function):
@@ -93,35 +93,35 @@ def _add_extra_aws_properties(scar: Dict, aws_functions: Dict) -> None:
         _add_config_file_path(scar, function)
 
 
-def _add_tags(function):
+def _add_tags(function: Dict):
     function['lambda']['tags'] = {"createdby": "scar",
                                   "owner": _get_owner(function)}
 
 
-def _add_account_id(function):
+def _add_account_id(function: Dict):
     function['iam']['account_id'] = StrUtils.find_expression(function['iam']['role'],
                                                               _ACCOUNT_ID_REGEX)
 
 
-def _add_handler(function):
+def _add_handler(function: Dict):
     function['lambda']['handler'] = f"{function.get('lambda', {}).get('name', '')}.lambda_handler"
 
 
-def _add_output(scar_properties, function):
+def _add_output(scar_props: Dict, function: Dict):
     function['lambda']['output'] = response_parser.OutputType.PLAIN_TEXT.value
-    if scar_properties.get("json", False):
+    if scar_props.get("json", False):
         function['lambda']['output'] = response_parser.OutputType.JSON.value
     # Override json ouput if both of them are defined
-    if scar_properties.get("verbose", False):
+    if scar_props.get("verbose", False):
         function['lambda']['output'] = response_parser.OutputType.VERBOSE.value
-    if scar_properties.get("output_file", False):
+    if scar_props.get("output_file", False):
         function['lambda']['output'] = response_parser.OutputType.BINARY.value
-        function['lambda']['output_file'] = scar_properties.get("output_file")
+        function['lambda']['output_file'] = scar_props.get("output_file")
 
 
-def _add_config_file_path(scar_properties, function):
-    if scar_properties.get("conf_file", False):
-        function['lambda']['config_path'] = os.path.dirname(scar_properties.get("conf_file"))
+def _add_config_file_path(scar_props: Dict, function: Dict):
+    if scar_props.get("conf_file", False):
+        function['lambda']['config_path'] = os.path.dirname(scar_props.get("conf_file"))
         # Update the path of the files based on the path of the yaml (if any)
         if function['lambda'].get('init_script', False):
             function['lambda']['init_script'] = FileUtils.join_paths(function['lambda']['config_path'],
@@ -175,12 +175,12 @@ class AWS(Commands):
             if lambda_client.find_function():
                 raise excp.FunctionExistsError(function_name=function.get('lambda', {}).get('name', ''))
             # We have to create the gateway before creating the function
-            # self._create_api_gateway(function)
+            self._create_api_gateway(function)
             self._create_lambda_function(function, lambda_client)
             self._create_log_group(function)
             # self._create_s3_buckets()
             # The api_gateway permissions are added after the function is created
-            # self._add_api_gateway_permissions()
+            self._add_api_gateway_permissions(function)
             # self._create_batch_environment()
             # self._preheat_function()
 
@@ -197,13 +197,11 @@ class AWS(Commands):
 
     @excp.exception(logger)
     def run(self):
-        if len(self.aws_functions) > 1:
-            logger.info("Not allowed yet")
-        else:
-            lambda_client = _get_lambda_client(self.aws_functions[0])
-            if lambda_client.is_asynchronous():
-                lambda_client.set_asynchronous_call_parameters()
-            lambda_client.launch_lambda_instance()        
+        function = self.aws_functions[0]
+        lambda_client = _get_lambda_client(function)
+        if lambda_client.is_asynchronous():
+            lambda_client.set_asynchronous_call_parameters()
+        lambda_client.launch_lambda_instance()        
         'TODO FINISH'
 #         if hasattr(self.aws_properties, "s3") and hasattr(self.aws_properties.s3, "input_bucket"):
 #             self._process_input_bucket_calls()
@@ -314,9 +312,9 @@ class AWS(Commands):
             if hasattr(self.aws_properties.s3, "output_bucket"):
                 self.aws_s3.create_output_bucket()
 
-    def _add_api_gateway_permissions(self):
-        if hasattr(self.aws_properties, "api_gateway"):
-            self.aws_lambda.add_invocation_permission_from_api_gateway()
+    def _add_api_gateway_permissions(self, function: Dict):
+        if function.get("api_gateway", {}).get('name', False):
+            _get_lambda_client(function).add_invocation_permission_from_api_gateway()
 
     def _create_batch_environment(self):
         if self.aws_properties.execution_mode == "batch" or \
@@ -418,9 +416,8 @@ class AWS(Commands):
 
     def _delete_resources(self, function: Dict) -> None:
 #         function_name = function_info['FunctionName']
-
-#         # Delete associated api
-#         self._delete_api_gateway(function_info['Environment']['Variables'])
+        # Delete associated api
+        self._delete_api_gateway(function)
         # Delete associated log
         self._delete_logs(function)
 #         # Delete associated notifications
@@ -431,12 +428,14 @@ class AWS(Commands):
 #         # Delete resources batch
 #         self._delete_batch_resources(function_name)
 
-    def _delete_api_gateway(self, function_env_vars):
-        api_gateway_id = function_env_vars.get('API_GATEWAY_ID')
+    def _delete_api_gateway(self, function):
+        lambda_client = _get_lambda_client(function)
+        api_gateway_id = lambda_client.get_function_info().get('Environment').get('Variables').get('API_GATEWAY_ID')
         if api_gateway_id:
-            response = self.api_gateway.delete_api_gateway(api_gateway_id)
-            response_parser.parse_delete_api_response(response, api_gateway_id,
-                                                      self.aws_properties.output)
+            response = _get_api_gateway_client(function).delete_api_gateway(api_gateway_id)
+            response_parser.parse_delete_api_response(response,
+                                                      api_gateway_id,
+                                                      function.get('lambda').get('output'))
 
     def _delete_logs(self, function: Dict):
         cloudwatch_logs = _get_cloudwatch_logs_client(function)
@@ -447,7 +446,7 @@ class AWS(Commands):
                                                   function.get('lambda').get('output'))
 
     def _delete_bucket_notifications(self, function_arn, function_env_vars):
-        s3_provider_id = _get_storage_provider_id('S3', function_env_vars)
+        s3_provider_id = ""#_get_storage_provider_id('S3', function_env_vars)
         input_bucket_id = f'STORAGE_PATH_INPUT_{s3_provider_id}' if s3_provider_id else ''
         if input_bucket_id in function_env_vars:
             input_path = function_env_vars[input_bucket_id]
