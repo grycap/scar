@@ -22,7 +22,7 @@ class APIGateway(GenericClient):
 
     def __init__(self, aws_properties: Dict):
         super().__init__(aws_properties.get('api_gateway', {}))
-        self.aws = aws_properties
+        self._aws = aws_properties
         self.api = self.aws_properties.get('api_gateway', {})
 
     def _get_common_args(self) -> Dict:
@@ -36,9 +36,9 @@ class APIGateway(GenericClient):
     def _get_integration_args(self) -> Dict:
         integration_args = self.api.get('integration', {})
         uri_args = {'api_region': self.api.get('region', ''),
-                    'lambda_region': self.aws.get('lambda', {}).get('region', ''),
-                    'account_id': self.aws.get('iam', {}).get('account_id', ''),
-                    'function_name': self.aws.get('lambda', {}).get('name', '')}
+                    'lambda_region': self._aws.get('lambda', {}).get('region', ''),
+                    'account_id': self._aws.get('iam', {}).get('account_id', ''),
+                    'function_name': self._aws.get('lambda', {}).get('name', '')}
         integration_args['uri'] = integration_args['uri'].format(**uri_args)
         return self._get_common_args().update(integration_args)
 
@@ -53,6 +53,9 @@ class APIGateway(GenericClient):
 
     def _set_api_gateway_id(self, api_info: Dict) -> None:
         self.api['id'] = api_info.get('id', '')
+        # We store the parameter in the lambda configuration that
+        # is going to be uploaded to the Lambda service
+        self._aws['lambda']['api_gateway_id'] = api_info.get('id', '') 
         
     def _set_resource_info_id(self, resource_info: Dict) -> None:
         self.api['resource_id'] = resource_info.get('id', '')        

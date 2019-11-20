@@ -19,7 +19,8 @@ import sys
 from typing import Dict, List
 from scar.parser.cli.subparsers import Subparsers
 from scar.parser.cli.parents import *
-from scar.utils import DataTypesUtils, StrUtils
+from scar.utils import DataTypesUtils, StrUtils, FileUtils
+from scar.cmdtemplate import CallType
 import scar.exceptions as excp
 import scar.logger as logger
 import scar.version as version
@@ -47,10 +48,10 @@ def _set_args(args: Dict, key: str, val: str) -> None:
 
 
 def _parse_scar_args(cmd_args: Dict) -> Dict:
-    scar_args = ['func', 'conf_file', 'json',
+    scar_args = ['conf_file', 'json',
                  'verbose', 'path',
                  'preheat', 'execution_mode',
-                 'output_file', 'supervisor_version']
+                 'output_file', 'supervisor_version', 'all']
     return {'scar' : DataTypesUtils.parse_arg_list(scar_args, cmd_args)}
 
 
@@ -63,7 +64,7 @@ def _parse_lambda_args(cmd_args: Dict) -> Dict:
     lambda_arg_list = ['name', 'asynchronous', 'init_script', 'run_script', 'c_args', 'memory',
                        'timeout', 'timeout_threshold', 'image', 'image_file', 'description',
                        'lambda_role', 'extra_payload', ('environment', 'environment_variables'),
-                       'layers', 'lambda_environment', 'list_layers', 'all', 'log_level']
+                       'layers', 'lambda_environment', 'list_layers', 'log_level']
     lambda_args = DataTypesUtils.parse_arg_list(lambda_arg_list, cmd_args)
     # Standardize log level if defined
     if "log_level" in lambda_args:
@@ -74,10 +75,10 @@ def _parse_lambda_args(cmd_args: Dict) -> Dict:
 
 
 def _get_lambda_environment_variables(lambda_args: Dict) -> None:
-    lambda_env_vars = {}
+    lambda_env_vars = {"environment": {"Variables": {}},
+                       "container": {'environment_variables' : {}}}
     if "environment_variables" in lambda_args:
         # These variables define the udocker container environment variables
-        lambda_env_vars['container'] = {'environment_variables' : {}}
         for env_var in lambda_args["environment_variables"]:
             key_val = env_var.split("=")
             # Add an specific prefix to be able to find the container variables defined by the user
@@ -86,14 +87,13 @@ def _get_lambda_environment_variables(lambda_args: Dict) -> None:
     if "extra_payload" in lambda_args:
         lambda_env_vars['container']['extra_payload'] = f"/var/task"
     if "init_script" in lambda_args:
-        lambda_env_vars['container']['init_script'] = f"/var/task/init_script.sh"
+        lambda_env_vars['container']['init_script'] = f"/var/task/{FileUtils.get_file_name(lambda_args['init_script'])}"
     if "image" in lambda_args:
         lambda_env_vars['container']['image'] = lambda_args.get('image')
         del(lambda_args['image'])
 
     if "lambda_environment" in lambda_args:
         # These variables define the lambda environment variables
-        lambda_env_vars['environment'] = {'Variables' : {}}
         for env_var in lambda_args["lambda_environment"]:
             key_val = env_var.split("=")
             lambda_env_vars['environment']['Variables'][f'{key_val[0]}'] = key_val[1]
@@ -122,7 +122,7 @@ def _parse_s3_args(aws_args: Dict, cmd_args: Dict) -> Dict:
     if s3_args:
         s3_id = StrUtils.get_random_uuid4_str()
         if 'deployment_bucket' in s3_args:
-            aws_args['lambda']['deployment_bucket'] = s3_args['deployment_bucket']
+            aws_args['lambda']['deployment'] = {'bucket': s3_args['deployment_bucket']}
         if 'input_bucket' in s3_args:
             aws_args['lambda']['input'] = [{'storage_name' : s3_id, 'path':  s3_args['input_bucket']}]
         if 'output_bucket' in s3_args:
@@ -163,23 +163,16 @@ def _create_parent_parsers() -> Dict:
 class CommandParser():
     """Class to manage the SCAR CLI commands."""
 
-    def __init__(self, scar_cli):
-        self.scar_cli = scar_cli
+    def __init__(self):
         self.parser = _create_main_parser()
         self.parent_parsers = _create_parent_parsers()
         self._add_subparsers()
 
     def _add_subparsers(self) -> None:
         subparsers = Subparsers(self.parser.add_subparsers(title='Commands'), self.parent_parsers)
-        subparsers.add_subparser('init', self.scar_cli.init)
-        subparsers.add_subparser('invoke', self.scar_cli.invoke)
-        subparsers.add_subparser('run', self.scar_cli.run)
-        subparsers.add_subparser('update', self.scar_cli.update)
-        subparsers.add_subparser('rm', self.scar_cli.rm)
-        subparsers.add_subparser('ls', self.scar_cli.ls)
-        subparsers.add_subparser('log', self.scar_cli.log)
-        subparsers.add_subparser('put', self.scar_cli.put)
-        subparsers.add_subparser('get', self.scar_cli.get)
+        # We need to define a subparser for each command defined in the CallType class
+        for cmd in CallType:
+            subparsers.add_subparser(cmd.value)
 
     @excp.exception(logger)
     def parse_arguments(self) -> Dict:
@@ -189,20 +182,12 @@ class CommandParser():
             if cmd_args.version:
                 print(f"SCAR {version.__version__}")
                 sys.exit(0)
-
             cmd_args = vars(cmd_args)
             if 'func' not in cmd_args:
                 raise excp.MissingCommandError()
             scar_args = _parse_scar_args(cmd_args)
             aws_args = _parse_aws_args(cmd_args)
-            import pprint
-            print("--------------------------------------------SCAR---------------------------------------")
-            pprint.pprint(scar_args)
-            print("--------------------------------------------AWS---------------------------------------")
-            pprint.pprint(aws_args)
-            print("-----------------------------------------------------------------------------------------")
-
-            return DataTypesUtils.merge_dicts_with_copy(scar_args, aws_args)
+            return cmd_args['func'], DataTypesUtils.merge_dicts_with_copy(scar_args, aws_args)
         except AttributeError as aerr:
             logger.error("Incorrect arguments: use scar -h to see the options available",
                          f"Error parsing arguments: {aerr}")

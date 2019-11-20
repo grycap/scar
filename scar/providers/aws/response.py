@@ -28,7 +28,7 @@ class OutputType(Enum):
 
 def parse_http_response(response, function_name, asynch, output_type, output_file):
     if response.ok:
-        if output_type == OutputType.BINARY:
+        if output_type == OutputType.BINARY.value:
             with open(output_file, "wb") as out:
                 out.write(StrUtils.decode_base64(response.text))
             text_message = f"Output saved in file '{output_file}'"
@@ -53,18 +53,18 @@ def parse_http_response(response, function_name, asynch, output_type, output_fil
 
 
 def _print_generic_response(response, output_type, aws_output, text_message=None, json_output=None, verbose_output=None, output_file=None):
-    if output_type == OutputType.BINARY:
+    if output_type == OutputType.BINARY.value:
         with open(output_file, "wb") as out:
             out.write(StrUtils.decode_base64(response['Payload']['body']))
-    elif output_type == OutputType.PLAIN_TEXT:
+    elif output_type == OutputType.PLAIN_TEXT.value:
         output = text_message
         logger.info(output)
     else:
-        if output_type == OutputType.JSON:
+        if output_type == OutputType.JSON.value:
             output = json_output if json_output else {aws_output :
                                                       {'RequestId' : response['ResponseMetadata']['RequestId'],
                                                        'HTTPStatusCode' : response['ResponseMetadata']['HTTPStatusCode']}}
-        elif output_type == OutputType.VERBOSE:
+        elif output_type == OutputType.VERBOSE.value:
             output = verbose_output if verbose_output else {aws_output : response}
         logger.info_json(output)
 
@@ -113,7 +113,7 @@ def parse_ls_response(lambda_functions, output_type):
     aws_output = 'Functions'
     result = []
     text_message = ""
-    if output_type == OutputType.VERBOSE:
+    if output_type == OutputType.VERBOSE.value:
         result = lambda_functions
     else:
         for lambdaf in lambda_functions:

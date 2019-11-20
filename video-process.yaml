@@ -7,10 +7,10 @@ functions:
       execution_mode: batch
       log_level: debug
       input:
-      - storage_name: s3-bucket
+      - storage_provider: s3
         path: scar-ffmpeg
       output:
-      - storage_name: s3-bucket
+      - storage_provider: s3
         path: scar-ffmpeg/scar-batch-ffmpeg-split/video-output
   - lambda:          
       name: scar-lambda-darknet
@@ -19,13 +19,13 @@ functions:
       log_level: debug
       init_script: yolo-sample-object-detection.sh
       input:
-      - storage_name: s3-bucket
+      - storage_provider: s3
         path: scar-ffmpeg/scar-batch-ffmpeg-split/video-output
       output:
-      - storage_name: s3-bucket
+      - storage_provider: s3
         path: scar-ffmpeg/scar-batch-ffmpeg-split/image-output
 
-storages:
+storage_providers:
   s3:
   - name: s3-bucket
   minio:

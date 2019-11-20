@@ -36,15 +36,15 @@ class Subparsers():
     def _get_parents(self, parent_sublist):
         return [self.parent_parsers.get(parent, "") for parent in parent_sublist]
 
-    def add_subparser(self, name, scar_func):
-        getattr(self, f'_add_{name}_parser')(scar_func)
+    def add_subparser(self, name):
+        getattr(self, f'_add_{name}_parser')()
 
-    def _add_init_parser(self, scar_func):
+    def _add_init_parser(self):
         init = self.subparser.add_parser('init',
                                          parents=self._get_parents(INIT_UPDATE_PARENTS),
                                          help="Create lambda function")
         # Set default function
-        init.set_defaults(func=scar_func)
+        init.set_defaults(func="init")
         # Lambda conf
         group = init.add_mutually_exclusive_group(required=True)
         group.add_argument("-i", "--image",
@@ -69,12 +69,12 @@ class Subparsers():
         init.add_argument("-api", "--api-gateway-name",
                           help="API Gateway name created to launch the lambda function")
 
-    def _add_invoke_parser(self, scar_func):
+    def _add_invoke_parser(self):
         invoke = self.subparser.add_parser('invoke',
                                            parents=self._get_parents(INVOKE_PARENTS),
                                            help="Call a lambda function using an HTTP request")
         # Set default function
-        invoke.set_defaults(func=scar_func)
+        invoke.set_defaults(func='invoke')        
         group = invoke.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name",
                            help="Lambda function name")
@@ -89,21 +89,23 @@ class Subparsers():
                                   "you can pass the parameters here (i.e. '{\"key1\": "
                                   "\"value1\", \"key2\": [\"value2\", \"value3\"]}')."))
 
-    def _add_update_parser(self, scar_func):
+    def _add_update_parser(self):
         update = self.subparser.add_parser('update',
                                            parents=self._get_parents(INIT_UPDATE_PARENTS),
                                            help="Update function properties")
-        update.set_defaults(func=scar_func)
+        # Set default function
+        update.set_defaults(func='update')        
         group = update.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name", help="Lambda function name")
         group.add_argument("-a", "--all", help="Update all lambda functions", action="store_true")
         group.add_argument("-f", "--conf-file", help="Yaml file with the function configuration")
 
-    def _add_run_parser(self, scar_func):
+    def _add_run_parser(self):
         run = self.subparser.add_parser('run',
                                         parents=self._get_parents(RUN_PARENTS),
                                         help="Deploy function")
-        run.set_defaults(func=scar_func)
+        # Set default function
+        run.set_defaults(func='run')        
         group = run.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name", help="Lambda function name")
         group.add_argument("-f", "--conf-file", help="Yaml file with the function configuration")
@@ -112,11 +114,12 @@ class Subparsers():
                          nargs=argparse.REMAINDER,
                          help="Arguments passed to the container.")
 
-    def _add_rm_parser(self, scar_func):
+    def _add_rm_parser(self):
         rm = self.subparser.add_parser('rm',
                                        parents=self._get_parents(RM_LS_PARENTS),
                                        help="Delete function")
-        rm.set_defaults(func=scar_func)
+        # Set default function
+        rm.set_defaults(func='rm')        
         group = rm.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name",
                            help="Lambda function name")
@@ -126,11 +129,12 @@ class Subparsers():
         group.add_argument("-f", "--conf-file",
                            help="Yaml file with the function configuration")
 
-    def _add_log_parser(self, scar_func):
+    def _add_log_parser(self):
         log = self.subparser.add_parser('log',
                                         parents=self._get_parents(LOG_PARENTS),
                                         help="Show the logs for the lambda function")
-        log.set_defaults(func=scar_func)
+        # Set default function
+        log.set_defaults(func='log')        
         group = log.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name",
                            help="Lambda function name")
@@ -142,11 +146,12 @@ class Subparsers():
         log.add_argument("-ri", "--request-id",
                          help="Return the output for the request id specified.")
 
-    def _add_ls_parser(self, scar_func):
+    def _add_ls_parser(self):
         ls = self.subparser.add_parser('ls',
                                        parents=self._get_parents(RM_LS_PARENTS),
                                        help="List lambda functions")
-        ls.set_defaults(func=scar_func)
+        # Set default function
+        ls.set_defaults(func='ls')
         # S3 args
         ls.add_argument("-b", "--bucket", help="Show bucket files")
         # Layer args
@@ -154,14 +159,17 @@ class Subparsers():
                         help="Show lambda layers information",
                         action="store_true")
 
-    def _add_put_parser(self, scar_func):
+    def _add_put_parser(self):
         put = self.subparser.add_parser('put',
                                         parents=self._get_parents(PUT_GET_PARENTS),
                                         help="Upload file(s) to bucket")
-        put.set_defaults(func=scar_func)
+        # Set default function
+        put.set_defaults(func='put')        
 
-    def _add_get_parser(self, scar_func):
+    def _add_get_parser(self):
         get = self.subparser.add_parser('get',
                                         parents=self._get_parents(PUT_GET_PARENTS),
                                         help="Download file(s) from bucket")
-        get.set_defaults(func=scar_func)
+        # Set default function
+        get.set_defaults(func='get')
+        

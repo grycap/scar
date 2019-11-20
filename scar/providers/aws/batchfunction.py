@@ -31,28 +31,28 @@ class Batch(GenericClient):
 
     @lazy_property
     def launch_templates(self):
-        launch_templates = LaunchTemplates(self.aws, self.supervisor_version)
+        launch_templates = LaunchTemplates(self._aws, self.supervisor_version)
         return launch_templates
 
     def __init__(self, aws_properties, supervisor_version):
         super().__init__(aws_properties)
         self.supervisor_version = supervisor_version
-        self.aws.batch.instance_role = (f"arn:aws:iam::{self.aws.account_id}:"
+        self._aws.batch.instance_role = (f"arn:_aws:iam::{self._aws.account_id}:"
                                         "instance-profile/ecsInstanceRole")
-        self.aws.batch.service_role = (f"arn:aws:iam::{self.aws.account_id}:"
+        self._aws.batch.service_role = (f"arn:_aws:iam::{self._aws.account_id}:"
                                        "role/service-role/AWSBatchServiceRole")
-        self.aws.batch.env_vars = []
+        self._aws.batch.env_vars = []
 
     def _set_required_environment_variables(self):
-        self._set_batch_environment_variable('AWS_LAMBDA_FUNCTION_NAME', self.aws.lambdaf.name)
+        self._set_batch_environment_variable('AWS_LAMBDA_FUNCTION_NAME', self._aws.lambdaf.name)
         self._set_batch_environment_variable('SCRIPT', self._get_user_script())
-        if (hasattr(self.aws.lambdaf, 'environment_variables') and
-                self.aws.lambdaf.environment_variables):
-            self._add_custom_environment_variables(self.aws.lambdaf.environment_variables)
-        if (hasattr(self.aws.lambdaf, 'lambda_environment') and
-                self.aws.lambdaf.lambda_environment):
-            self._add_custom_environment_variables(self.aws.lambdaf.lambda_environment)
-        if hasattr(self.aws, "s3"):
+        if (hasattr(self._aws.lambdaf, 'environment_variables') and
+                self._aws.lambdaf.environment_variables):
+            self._add_custom_environment_variables(self._aws.lambdaf.environment_variables)
+        if (hasattr(self._aws.lambdaf, 'lambda_environment') and
+                self._aws.lambdaf.lambda_environment):
+            self._add_custom_environment_variables(self._aws.lambdaf.lambda_environment)
+        if hasattr(self._aws, "s3"):
             self._add_s3_environment_vars()
 
     def _add_custom_environment_variables(self, env_vars):
@@ -65,25 +65,25 @@ class Batch(GenericClient):
 
     def _set_batch_environment_variable(self, key, value):
         if key and value is not None:
-            self.aws.batch.env_vars.append({'name': key, 'value': value})
+            self._aws.batch.env_vars.append({'name': key, 'value': value})
 
     def _add_s3_environment_vars(self):
         provider_id = random.randint(1, 1000001)
-        if hasattr(self.aws.s3, "input_bucket"):
+        if hasattr(self._aws.s3, "input_bucket"):
             self._set_batch_environment_variable(f'STORAGE_PATH_INPUT_{provider_id}',
-                                                 self.aws.s3.storage_path_input)
-        if hasattr(self.aws.s3, "output_bucket"):
+                                                 self._aws.s3.storage_path_input)
+        if hasattr(self._aws.s3, "output_bucket"):
             self._set_batch_environment_variable(f'STORAGE_PATH_OUTPUT_{provider_id}',
-                                                 self.aws.s3.storage_path_output)
+                                                 self._aws.s3.storage_path_output)
         else:
             self._set_batch_environment_variable(f'STORAGE_PATH_OUTPUT_{provider_id}',
-                                                 self.aws.s3.storage_path_input)
+                                                 self._aws.s3.storage_path_input)
         self._set_batch_environment_variable(f'STORAGE_AUTH_S3_USER_{provider_id}', 'scar')
 
     def _get_user_script(self):
         script = ''
-        if hasattr(self.aws.lambdaf, "init_script"):
-            file_content = FileUtils.read_file(self.aws.lambdaf.init_script)
+        if hasattr(self._aws.lambdaf, "init_script"):
+            file_content = FileUtils.read_file(self._aws.lambdaf.init_script)
             script = StrUtils.utf8_to_base64_string(file_content)
         return script
 
@@ -150,19 +150,19 @@ class Batch(GenericClient):
 
     def _get_compute_env_args(self):
         return {
-            'computeEnvironmentName': self.aws.lambdaf.name,
-            'serviceRole': self.aws.batch.service_role,
-            'type': self.aws.batch.compute_resources['type'],
-            'state':  self.aws.batch.compute_resources['state'],
+            'computeEnvironmentName': self._aws.lambdaf.name,
+            'serviceRole': self._aws.batch.service_role,
+            'type': self._aws.batch.compute_resources['type'],
+            'state':  self._aws.batch.compute_resources['state'],
             'computeResources': {
-                'type': self.aws.batch.compute_resources['comp_type'],
-                'minvCpus': self.aws.batch.compute_resources['min_v_cpus'],
-                'maxvCpus': self.aws.batch.compute_resources['max_v_cpus'],
-                'desiredvCpus': self.aws.batch.compute_resources['desired_v_cpus'],
-                'instanceTypes': self.aws.batch.compute_resources['instance_types'],
-                'subnets': self.aws.batch.compute_resources['subnets'],
-                'securityGroupIds': self.aws.batch.compute_resources['security_group_ids'],
-                'instanceRole': self.aws.batch.instance_role,
+                'type': self._aws.batch.compute_resources['comp_type'],
+                'minvCpus': self._aws.batch.compute_resources['min_v_cpus'],
+                'maxvCpus': self._aws.batch.compute_resources['max_v_cpus'],
+                'desiredvCpus': self._aws.batch.compute_resources['desired_v_cpus'],
+                'instanceTypes': self._aws.batch.compute_resources['instance_types'],
+                'subnets': self._aws.batch.compute_resources['subnets'],
+                'securityGroupIds': self._aws.batch.compute_resources['security_group_ids'],
+                'instanceRole': self._aws.batch.instance_role,
                 'launchTemplate': {
                     'launchTemplateName': _LAUNCH_TEMPLATE_NAME,
                     'version': str(self.launch_templates.get_launch_template_version())
@@ -172,27 +172,27 @@ class Batch(GenericClient):
 
     def _get_creations_job_queue_args(self):
         return {
-            'computeEnvironmentOrder': [{'computeEnvironment': self.aws.lambdaf.name,
+            'computeEnvironmentOrder': [{'computeEnvironment': self._aws.lambdaf.name,
                                          'order': 1}, ],
-            'jobQueueName':  self.aws.lambdaf.name,
+            'jobQueueName':  self._aws.lambdaf.name,
             'priority': 1,
-            'state': self.aws.batch.compute_resources['state'],
+            'state': self._aws.batch.compute_resources['state'],
         }
 
     def _get_resource_name(self, name=None):
-        return name if name else self.aws.lambdaf.name
+        return name if name else self._aws.lambdaf.name
 
     def _get_describe_compute_env_args(self, name_c=None):
         return {'computeEnvironments': [self._get_resource_name(name_c)]}
 
     def _get_job_definition_args(self):
         job_def_args = {
-            'jobDefinitionName': self.aws.lambdaf.name,
+            'jobDefinitionName': self._aws.lambdaf.name,
             'type': 'container',
             'containerProperties': {
-                'image': self.aws.lambdaf.image,
-                'memory': int(self.aws.batch.memory),
-                'vcpus': int(self.aws.batch.vcpus),
+                'image': self._aws.lambdaf.image,
+                'memory': int(self._aws.batch.memory),
+                'vcpus': int(self._aws.batch.vcpus),
                 'command': [
                     '/bin/sh',
                     '-c',
@@ -206,7 +206,7 @@ class Batch(GenericClient):
                         'name': 'supervisor-bin'
                     }
                 ],
-                'environment': self.aws.batch.env_vars,
+                'environment': self._aws.batch.env_vars,
                 'mountPoints': [
                     {
                         'containerPath': '/opt/faas-supervisor/bin',
@@ -215,7 +215,7 @@ class Batch(GenericClient):
                 ]
             }
         }
-        if self.aws.batch.enable_gpu:
+        if self._aws.batch.enable_gpu:
             job_def_args['containerProperties']['resourceRequirements'] = [
                 {
                     'value': '1',
@@ -242,7 +242,7 @@ class Batch(GenericClient):
                 self.client.create_job_queue(**creation_args)
                 logger.info('Job queue successfully created.')
                 creation_args = self._get_job_definition_args()
-                logger.info(f"Registering '{self.aws.lambdaf.name}' job definition.")
+                logger.info(f"Registering '{self._aws.lambdaf.name}' job definition.")
                 return self.client.register_job_definition(**creation_args)
 
     def delete_compute_environment(self, name):

@@ -33,7 +33,7 @@ from scar.exceptions import GitHubTagNotFoundError, YamlFileNotFoundError
 
 GITHUB_USER = 'grycap'
 GITHUB_SUPERVISOR_PROJECT = 'faas-supervisor'
-
+COMMANDS = ['scar-config']
 
 def lazy_property(func):
     # Skipped type hinting: https://github.com/python/mypy/issues/3157
@@ -301,7 +301,25 @@ class FileUtils:
                 return yaml.safe_load(cfg_file)
         else:
             raise YamlFileNotFoundError(file_path=file_path)
+        
+    @staticmethod        
+    def write_yaml(file_path: str, content: Dict) -> None:
+        with open(file_path, 'w') as cfg_file:
+            yaml.safe_dump(content, cfg_file)
 
+    @staticmethod
+    def create_config_file(cfg_args):
+        cfg_path = FileUtils.join_paths(SysUtils.get_user_home_path(), ".scar", "scar_tmp.yaml")
+        os.environ['SCAR_TMP_CFG'] = cfg_path
+        FileUtils.write_yaml(cfg_path, cfg_args)
+        
+    @staticmethod
+    def load_config_file():
+        return FileUtils.load_yaml(os.environ['SCAR_TMP_CFG'])
+    
+    @staticmethod    
+    def get_file_name(file_path: str) -> str:
+        return os.path.basename(file_path)
 
 class StrUtils:
     """Common methods for string management."""

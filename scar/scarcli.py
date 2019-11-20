@@ -17,7 +17,6 @@
 import sys
 sys.path.append('.')
 
-from scar.cmdtemplate import Commands
 from scar.parser.cfgfile import ConfigFileParser
 from scar.parser.cli import CommandParser
 from scar.providers.aws.controller import AWS
@@ -27,69 +26,37 @@ import scar.exceptions as excp
 import scar.logger as logger
 
 
-class ScarCLI(Commands):
+@excp.exception(logger)
+def parse_arguments():
+    """
+    Merge the scar.conf parameters, the cmd parameters and the yaml
+    file parameters in a single dictionary.
 
-    def __init__(self):
-        self.cloud_provider = AWS()
-
-    def init(self):
-        self.cloud_provider.init()
-
-    def invoke(self):
-        self.cloud_provider.invoke()
-
-    def run(self):
-        self.cloud_provider.run()
-
-    def update(self):
-        self.cloud_provider.update()
-
-    def ls(self):
-        self.cloud_provider.ls()
-
-    def rm(self):
-        self.cloud_provider.rm()
-
-    def log(self):
-        self.cloud_provider.log()
-
-    def put(self):
-        self.cloud_provider.put()
-
-    def get(self):
-        self.cloud_provider.get()
-
-    @excp.exception(logger)
-    def parse_arguments(self):
-        """
-        Merge the scar.conf parameters, the cmd parameters and the yaml
-        file parameters in a single dictionary.
-
-        The precedence of parameters is CMD >> YAML >> SCAR.CONF
-        That is, the CMD parameter will override any other configuration,
-        and the YAML parameters will override the SCAR.CONF settings
-        """
-        config_args = ConfigFileParser().get_properties()
-        cmd_args = CommandParser(self).parse_arguments()
-        if 'conf_file' in cmd_args['scar'] and cmd_args['scar']['conf_file']:
-            yaml_args = FileUtils.load_yaml(cmd_args['scar']['conf_file'])
-            # YAML >> SCAR.CONF
-            merged_args = fdl.merge_conf(config_args, yaml_args)
-            merged_args = fdl.merge_cmd_yaml(cmd_args, merged_args)
-        else:
-            # CMD >> SCAR.CONF
-            merged_args = fdl.merge_conf(config_args, cmd_args)
-        import pprint
-        pprint.pprint(merged_args)
-        self.cloud_provider.parse_arguments(merged_args)
-        #merged_args.get('scar').get('func')()
-        pprint.pprint(merged_args)
-
+    The precedence of parameters is CMD >> YAML >> SCAR.CONF
+    That is, the CMD parameter will override any other configuration,
+    and the YAML parameters will override the SCAR.CONF settings
+    """
+    config_args = ConfigFileParser().get_properties()
+    func_call, cmd_args = CommandParser().parse_arguments()
+    if 'conf_file' in cmd_args['scar'] and cmd_args['scar']['conf_file']:
+        yaml_args = FileUtils.load_yaml(cmd_args['scar']['conf_file'])
+        # YAML >> SCAR.CONF
+        merged_args = fdl.merge_conf(config_args, yaml_args)
+        merged_args = fdl.merge_cmd_yaml(cmd_args, merged_args)
+    else:
+        # CMD >> SCAR.CONF
+        merged_args = fdl.merge_conf(config_args, cmd_args)
+    #self.cloud_provider.parse_arguments(merged_args)
+    FileUtils.create_config_file(merged_args)
+    return func_call
 
 def main():
     logger.init_execution_trace()
     try:
-        ScarCLI().parse_arguments()
+        func_call = parse_arguments()
+        # Default provider
+        # If more providers, analyze the arguments and build the required one
+        AWS(func_call)
         logger.end_execution_trace()
     except Exception as excp:
         print(excp)

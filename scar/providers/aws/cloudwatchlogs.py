@@ -33,17 +33,17 @@ class CloudWatchLogs(GenericClient):
         """Returns the log group matching the
         current lambda function being parsed."""
         if function_name:
-            return f'/aws/lambda/{function_name}'
-        return f'/aws/lambda/{self.aws.lambdaf.name}'
+            return f'/_aws/lambda/{function_name}'
+        return f'/_aws/lambda/{self._aws.lambdaf.name}'
 
     def _get_log_group_name_arg(self, function_name=None):
         return {'logGroupName' : self.get_log_group_name(function_name)}
 
     def _is_end_line(self, line):
-        return line.startswith('REPORT') and self.aws.cloudwatch.request_id in line
+        return line.startswith('REPORT') and self._aws.cloudwatch.request_id in line
 
     def _is_start_line(self, line):
-        return line.startswith('START') and self.aws.cloudwatch.request_id in line
+        return line.startswith('START') and self._aws.cloudwatch.request_id in line
 
     def _parse_logs_with_requestid(self, function_logs):
         parsed_msg = ""
@@ -63,11 +63,11 @@ class CloudWatchLogs(GenericClient):
     def create_log_group(self):
         """Creates a CloudWatch Log Group."""
         creation_args = self._get_log_group_name_arg()
-        creation_args['tags'] = self.aws.tags
+        creation_args['tags'] = self._aws.tags
         response = self.client.create_log_group(**creation_args)
         # Set retention policy into the log group
         retention_args = self._get_log_group_name_arg()
-        retention_args['retentionInDays'] = self.aws.cloudwatch.log_retention_policy_in_days
+        retention_args['retentionInDays'] = self._aws.cloudwatch.log_retention_policy_in_days
         self.client.set_log_retention_policy(**retention_args)
         return response
 
@@ -80,10 +80,10 @@ class CloudWatchLogs(GenericClient):
         function_logs = ""
         try:
             kwargs = self._get_log_group_name_arg()
-            if hasattr(self.aws.cloudwatch, "log_stream_name"):
-                kwargs["logStreamNames"] = [self.aws.cloudwatch.log_stream_name]
+            if hasattr(self._aws.cloudwatch, "log_stream_name"):
+                kwargs["logStreamNames"] = [self._aws.cloudwatch.log_stream_name]
             function_logs = _parse_events_in_message(self.client.get_log_events(**kwargs))
-            if hasattr(self.aws.cloudwatch, "request_id") and self.aws.cloudwatch.request_id:
+            if hasattr(self._aws.cloudwatch, "request_id") and self._aws.cloudwatch.request_id:
                 function_logs = self._parse_logs_with_requestid(function_logs)
         except ClientError as cerr:
             logger.warning("Error getting the function logs: %s" % cerr)
@@ -95,7 +95,7 @@ class CloudWatchLogs(GenericClient):
         if jobs_info:
             job = jobs_info[0]
             batch_logs += f"Batch job status: {job.get('status', '')}\n"
-            kwargs = {'logGroupName': "/aws/batch/job"}
+            kwargs = {'logGroupName': "/_aws/batch/job"}
             if job.get("status", "") == "SUCCEEDED":
                 kwargs['logStreamNames'] = [job.get("container", {}).get("logStreamName", "")]
                 batch_events = self.client.get_log_events(**kwargs)

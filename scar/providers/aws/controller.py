@@ -58,8 +58,10 @@ def _get_iam_client(aws_properties: Dict):
     return IAM(aws_properties)
 
 
-def _get_lambda_client(aws_properties: Dict, supervisor_version: Dict):
-    return Lambda(aws_properties, supervisor_version)
+def _get_lambda_client(aws_properties: Dict = None):
+    if not aws_properties:
+        aws_properties = {}
+    return Lambda(aws_properties)
 
 
 def _get_api_gateway_client(aws_properties: Dict):
@@ -68,6 +70,9 @@ def _get_api_gateway_client(aws_properties: Dict):
 
 def _get_s3_client(aws_properties: Dict):
     return S3(aws_properties)
+
+def _get_resource_groups_client(aws_properties: Dict):
+    return ResourceGroups(aws_properties)
 
 ############################################
 ###          ADD EXTRA PROPERTIES        ###
@@ -98,20 +103,27 @@ def _add_handler(function):
 
 
 def _add_output(scar_properties, function):
-    function['lambda']['output'] = response_parser.OutputType.PLAIN_TEXT
+    function['lambda']['output'] = response_parser.OutputType.PLAIN_TEXT.value
     if scar_properties.get("json", False):
-        function['lambda']['output'] = response_parser.OutputType.JSON
+        function['lambda']['output'] = response_parser.OutputType.JSON.value
     # Override json ouput if both of them are defined
     if scar_properties.get("verbose", False):
-        function['lambda']['output'] = response_parser.OutputType.VERBOSE
+        function['lambda']['output'] = response_parser.OutputType.VERBOSE.value
     if scar_properties.get("output_file", False):
-        function['lambda']['output'] = response_parser.OutputType.BINARY
+        function['lambda']['output'] = response_parser.OutputType.BINARY.value
         function['lambda']['output_file'] = scar_properties.get("output_file")
 
 
 def _add_config_file_path(scar_properties, function):
     if scar_properties.get("conf_file", False):
         function['lambda']['config_path'] = os.path.dirname(scar_properties.get("conf_file"))
+        # Update the path of the files based on the path of the yaml (if any)
+        if function['lambda'].get('init_script', False):
+            function['lambda']['init_script'] = FileUtils.join_paths(function['lambda']['config_path'],
+                                                                    function['lambda']['init_script'])
+        if function['lambda'].get('image_file', False):
+            function['lambda']['image_file'] = FileUtils.join_paths(function['lambda']['config_path'],
+                                                                    function['lambda']['image_file'])
 
 ############################################
 ###             AWS CONTROLLER           ###
@@ -151,26 +163,41 @@ class AWS(Commands):
         resource_groups = ResourceGroups(self.aws_properties)
         return resource_groups
 
+    def __init__(self, func_call):
+        self.raw_args = FileUtils.load_config_file()
+        self.validate_arguments(self.raw_args)
+        self.aws_functions = self.raw_args.get('functions', {}).get('aws', {})
+        self.storages = self.raw_args.get('storages', {})
+        self.scar = self.raw_args.get('scar', {})
+        _add_extra_aws_properties(self.scar, self.aws_functions)
+        # Call the user's command
+        getattr(self, func_call)()
+
+    @AWSValidator.validate()
+    @excp.exception(logger)        
+    def validate_arguments(self, merged_args: Dict) -> None:
+        pass
+
 ############################################
 ###              AWS COMMANDS            ###
 ############################################
 
     @excp.exception(logger)
     def init(self) -> None:
-        supervisor_version = self.scar.get('supervisor_version', 'latest')
+        # supervisor_version = self.scar.get('supervisor_version', 'latest')
         for function in self.aws_functions:
-            lambda_client = _get_lambda_client(function, supervisor_version)
+            lambda_client = _get_lambda_client(function)
             if lambda_client.find_function():
                 raise excp.FunctionExistsError(function_name=function.get('lambda', {}).get('name', ''))
             # We have to create the gateway before creating the function
-            self._create_api_gateway(function)
+            #self._create_api_gateway(function)
             self._create_lambda_function(function, lambda_client)
-            self._create_log_group()
-            self._create_s3_buckets()
+            #self._create_log_group()
+            #self._create_s3_buckets()
             # The api_gateway permissions are added after the function is created
-            self._add_api_gateway_permissions()
-            self._create_batch_environment()
-            self._preheat_function()
+            #self._add_api_gateway_permissions()
+            #self._create_batch_environment()
+            #self._preheat_function()
 
     @excp.exception(logger)
     def invoke(self):
@@ -211,11 +238,27 @@ class AWS(Commands):
 
     @excp.exception(logger)
     def rm(self):
-        if hasattr(self.aws_properties.lambdaf, "all") and self.aws_properties.lambdaf.all:
-            self._delete_all_resources()
+#         function_info = _get_lambda_client(self.aws_functions[0]).get_function_info(self.aws_functions[0]['lambda']['name'])
+#         self._delete_resources(function_info)
+        if self.scar.get('all', False):
+            "Delete all functions"
+        elif len(self.aws_functions) > 1:
+            "Please select the function to delete with -n"
         else:
-            function_info = self.aws_lambda.get_function_info(self.aws_properties.lambdaf.name)
-            self._delete_resources(function_info)
+            "Delete selected function"
+#             function_info = _get_lambda_client(self.aws_functions[0]).get_function_info(self.aws_properties.lambdaf.name)
+#             self._delete_resources(function_info)            
+            
+        
+        function = self.aws_functions[0]
+        lambda_client = _get_lambda_client(function)
+        if not lambda_client.find_function(function['lambda']['name']):
+            raise excp.FunctionNotFoundError(function_name=function['lambda']['name'])
+        #self._delete_resources(function_info)
+#         if hasattr(self.aws_properties.lambdaf, "all") and self.aws_properties.lambdaf.all:
+#             self._delete_all_resources()
+#         else:
+
 
     @excp.exception(logger)
     def log(self):
@@ -232,18 +275,19 @@ class AWS(Commands):
     def get(self):
         self.download_file_or_folder_from_s3()
 
-    @AWSValidator.validate()
-    @excp.exception(logger)
-    def parse_arguments(self, merged_args: Dict) -> None:
-        self.raw_args = merged_args
-        self.aws_functions = merged_args.get('functions', {}).get('aws', {})
-        self.storages = merged_args.get('storages', {})
-        self.scar = merged_args.get('scar', {})
-        _add_extra_aws_properties(self.scar, self.aws_functions)
+
+############################################
+###              ------------            ###
+############################################
 
     def _get_all_functions(self):
-        arn_list = self.resource_groups.get_resource_arn_list(self.iam.get_user_name_or_id())
-        return self.aws_lambda.get_all_functions(arn_list)
+        # There can be several functions defined
+        # We check all and merge their arns to list them
+        functions_arn = set()
+        for function in self.aws_functions:
+            iam_info = _get_iam_client(function).get_user_name_or_id()
+            functions_arn.union(set(_get_resource_groups_client(function).get_resource_arn_list(iam_info)))
+        return _get_lambda_client().get_all_functions(functions_arn)
 
     def _get_batch_logs(self) -> str:
         logs = ""
@@ -252,7 +296,6 @@ class AWS(Commands):
             batch_jobs = self.batch.describe_jobs(self.aws_properties.cloudwatch.request_id)
             logs = self.cloudwatch_logs.get_batch_job_log(batch_jobs["jobs"])
         return logs
-
 
     @excp.exception(logger)
     def _create_log_group(self):
@@ -353,7 +396,7 @@ class AWS(Commands):
             
     @excp.exception(logger)
     def _create_lambda_function(self, function: Dict, lambda_client: Lambda) -> None:
-        response = lambda_client.create_function(function)
+        response = lambda_client.create_function()
         response_parser.parse_lambda_function_creation_response(response,
                                                                 function,
                                                                 lambda_client.get_access_key())            
@@ -368,19 +411,19 @@ class AWS(Commands):
 
     def _delete_resources(self, function_info):
         function_name = function_info['FunctionName']
-        if not self.aws_lambda.find_function(function_name):
-            raise excp.FunctionNotFoundError(function_name=function_name)
-        # Delete associated api
-        self._delete_api_gateway(function_info['Environment']['Variables'])
-        # Delete associated log
-        self._delete_logs(function_name)
-        # Delete associated notifications
-        self._delete_bucket_notifications(function_info['FunctionArn'],
-                                          function_info['Environment']['Variables'])
+#         if not self.aws_lambda.find_function(function_name):
+#             raise excp.FunctionNotFoundError(function_name=function_name)
+#         # Delete associated api
+#         self._delete_api_gateway(function_info['Environment']['Variables'])
+#         # Delete associated log
+#         self._delete_logs(function_name)
+#         # Delete associated notifications
+#         self._delete_bucket_notifications(function_info['FunctionArn'],
+#                                           function_info['Environment']['Variables'])
         # Delete function
         self._delete_lambda_function(function_name)
-        # Delete resources batch
-        self._delete_batch_resources(function_name)
+#         # Delete resources batch
+#         self._delete_batch_resources(function_name)
 
     def _delete_api_gateway(self, function_env_vars):
         api_gateway_id = function_env_vars.get('API_GATEWAY_ID')

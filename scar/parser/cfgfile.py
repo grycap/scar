@@ -39,19 +39,19 @@ _DEFAULT_CFG = {
             "asynchronous": False,
             "log_type": "Tail",
             "log_level": "INFO",
-            "environment": {"Variables": {}},
+            "environment": {
+                "Variables": {
+                    "UDOCKER_BIN" : "/opt/udocker/bin/",
+                    "UDOCKER_LIB" : "/opt/udocker/lib/",
+                    "UDOCKER_DIR" : "/tmp/shared/udocker",
+                    "UDOCKER_EXEC": "/opt/udocker/udocker.py"}},
             "deployment": {
                 "max_payload_size": 52428800,
                 "max_s3_payload_size": 262144000           
             },
             "container": {
                 "environment_variables": {},
-                "timeout_threshold": 10,
-                "udocker": {
-                    "bin": "/opt/udocker/bin/",
-                    "dir": "/tmp/shared/udocker",
-                    "exec": "/opt/udocker/udocker.py",
-                    "lib": "/opt/udocker/lib/"}
+                "timeout_threshold": 10
             },
             # Must be a Github tag or "latest"
             "supervisor": {

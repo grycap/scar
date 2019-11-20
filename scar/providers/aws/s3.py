@@ -25,18 +25,18 @@ class S3(GenericClient):
     def __init__(self, aws_properties):
         super().__init__(aws_properties.get('lambda'))
         
-        if hasattr(self.aws, 's3'):
-            if type(self.aws.s3) is dict:
-                self.aws.s3 = S3Properties(self.aws.s3)
+        if hasattr(self._aws, 's3'):
+            if type(self._aws.s3) is dict:
+                self._aws.s3 = S3Properties(self._aws.s3)
             self._initialize_properties()
 
     def _initialize_properties(self):
-        if not hasattr(self.aws.s3, "input_folder"):
-            self.aws.s3.input_folder = ''
-            if hasattr(self.aws.lambdaf, "name"):
-                self.aws.s3.input_folder = "{0}/input/".format(self.aws.lambdaf.name)
-        elif not self.aws.s3.input_folder.endswith("/"):
-            self.aws.s3.input_folder = "{0}/".format(self.aws.s3.input_folder)
+        if not hasattr(self._aws.s3, "input_folder"):
+            self._aws.s3.input_folder = ''
+            if hasattr(self._aws.lambdaf, "name"):
+                self._aws.s3.input_folder = "{0}/input/".format(self._aws.lambdaf.name)
+        elif not self._aws.s3.input_folder.endswith("/"):
+            self._aws.s3.input_folder = "{0}/".format(self._aws.s3.input_folder)
 
     @excp.exception(logger)
     def create_bucket(self, bucket_name):
@@ -44,28 +44,28 @@ class S3(GenericClient):
             self.client.create_bucket(bucket_name)
 
     def create_output_bucket(self):
-        self.create_bucket(self.aws.s3.output_bucket)
+        self.create_bucket(self._aws.s3.output_bucket)
 
     @excp.exception(logger)
     def add_bucket_folder(self):
-        if self.aws.s3.input_folder:
-            self.upload_file(folder_name=self.aws.s3.input_folder)
+        if self._aws.s3.input_folder:
+            self.upload_file(folder_name=self._aws.s3.input_folder)
 
     def create_input_bucket(self, create_input_folder=False):
-        self.create_bucket(self.aws.s3.input_bucket)
+        self.create_bucket(self._aws.s3.input_bucket)
         if create_input_folder:
             self.add_bucket_folder()
 
     def set_input_bucket_notification(self):
         # First check that the function doesn't have other configurations
-        bucket_conf = self.client.get_notification_configuration(self.aws.s3.input_bucket)
+        bucket_conf = self.client.get_notification_configuration(self._aws.s3.input_bucket)
         trigger_conf = self.get_trigger_configuration()
         lambda_conf = [trigger_conf]
         if "LambdaFunctionConfigurations" in bucket_conf:
             lambda_conf = bucket_conf["LambdaFunctionConfigurations"]
             lambda_conf.append(trigger_conf)
         notification = { "LambdaFunctionConfigurations": lambda_conf }
-        self.client.put_notification_configuration(self.aws.s3.input_bucket, notification)
+        self.client.put_notification_configuration(self._aws.s3.input_bucket, notification)
 
     def delete_bucket_notification(self, bucket_name, function_arn):
         bucket_conf = self.client.get_notification_configuration(bucket_name)
@@ -77,9 +77,9 @@ class S3(GenericClient):
             logger.info("Bucket notifications successfully deleted")
 
     def get_trigger_configuration(self):
-        return  {"LambdaFunctionArn": self.aws.lambdaf.arn,
+        return  {"LambdaFunctionArn": self._aws.lambdaf.arn,
                  "Events": [ "s3:ObjectCreated:*" ],
-                 "Filter": { "Key": { "FilterRules": [{ "Name": "prefix", "Value": self.aws.s3.input_folder }]}}
+                 "Filter": { "Key": { "FilterRules": [{ "Name": "prefix", "Value": self._aws.s3.input_folder }]}}
                  }
 
     def get_file_key(self, folder_name=None, file_path=None, file_key=None):
@@ -96,7 +96,7 @@ class S3(GenericClient):
 
     @excp.exception(logger)
     def upload_file(self, folder_name=None, file_path=None, file_key=None):
-        kwargs = {'Bucket' : self.aws.s3.input_bucket}
+        kwargs = {'Bucket' : self._aws.s3.input_bucket}
         kwargs['Key'] = self.get_file_key(folder_name, file_path, file_key)
         if file_path:
             try:
@@ -111,19 +111,19 @@ class S3(GenericClient):
 
     @excp.exception(logger)
     def get_bucket_file_list(self):
-        bucket_name = self.aws.s3.input_bucket
+        bucket_name = self._aws.s3.input_bucket
         if self.client.find_bucket(bucket_name):
             kwargs = {"Bucket" : bucket_name}
-            if hasattr(self.aws.s3, "input_folder") and self.aws.s3.input_folder:
-                kwargs["Prefix"] = self.aws.s3.input_folder
+            if hasattr(self._aws.s3, "input_folder") and self._aws.s3.input_folder:
+                kwargs["Prefix"] = self._aws.s3.input_folder
             return self.client.list_files(**kwargs)
         else:
             raise excp.BucketNotFoundError(bucket_name=bucket_name)
 
     def get_s3_event(self, s3_file_key):
-        return {"Records": [{"eventSource": "aws:s3",
-                             "s3" : {"bucket" : {"name": self.aws.s3.input_bucket,
-                                                 "arn": f'arn:aws:s3:::{self.aws.s3.input_bucket}'},
+        return {"Records": [{"eventSource": "_aws:s3",
+                             "s3" : {"bucket" : {"name": self._aws.s3.input_bucket,
+                                                 "arn": f'arn:_aws:s3:::{self._aws.s3.input_bucket}'},
                                      "object" : {"key": s3_file_key}}}]}
 
     def get_s3_event_list(self, s3_file_keys):
