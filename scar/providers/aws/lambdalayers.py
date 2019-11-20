@@ -152,8 +152,6 @@ class LambdaLayers():
         If the layer exists and it's not updated, updates the layer."""
         # Get the layer information
         layer_info = self.layer.get_latest_layer_info(self.layer_name)
-        import pprint
-        pprint.pprint(layer_info)
         # Compare supervisor versions
         if layer_info and 'Description' in layer_info:
             # If the supervisor layer version is lower than the passed version,
