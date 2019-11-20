@@ -156,34 +156,32 @@ class Lambda(GenericClient):
 
     def _get_invocation_payload(self):
         # Default payload
-        payload = self._aws.lambdaf.payload if hasattr(self._aws.lambdaf, 'payload') else {}
+        payload = self.function.get('payload', {})
         if not payload:
             # Check for defined run script
-            if hasattr(self._aws.lambdaf, "run_script"):
-                script_path = self._aws.lambdaf.run_script
-                if hasattr(self._aws, "config_path"):
-                    script_path = FileUtils.join_paths(self._aws.config_path, script_path)
+            if self.function.get("run_script", False):
+                script_path = self.function.get("run_script")
                 # We first code to base64 in bytes and then decode those bytes to allow the json lib to parse the data
                 # https://stackoverflow.com/questions/37225035/serialize-in-json-a-base64-encoded-data#37239382
                 payload = { "script" : StrUtils.bytes_to_base64str(FileUtils.read_file(script_path, 'rb')) }
             # Check for defined commands
             # This overrides any other function payload
-            if hasattr(self._aws.lambdaf, "c_args"):
-                payload = {"cmd_args" : json.dumps(self._aws.lambdaf.c_args)}
+            if self.function.get("c_args", False):
+                payload = {"cmd_args" : json.dumps(self.function.get("c_args"))}
         return json.dumps(payload)
 
     def _invoke_lambda_function(self):
-        invoke_args = {'FunctionName' :  self._aws.lambdaf.name,
-                       'InvocationType' :  self._aws.lambdaf.invocation_type,
-                       'LogType' :  self._aws.lambdaf.log_type,
+        invoke_args = {'FunctionName' :  self.function.get('name'),
+                       'InvocationType' :  self.function.get('invocation_type'),
+                       'LogType' :  self.function.get('log_type'),
                        'Payload' : self._get_invocation_payload()}
         return self.client.invoke_function(**invoke_args)
 
     def set_asynchronous_call_parameters(self):
-        self._aws.lambdaf.update_properties(**self.asynchronous_call_parameters)
+        self.function.update(ASYNCHRONOUS_CALL)
 
     def _set_request_response_call_parameters(self):
-        self._aws.lambdaf.update_properties(**self.request_response_call_parameters)
+        self.function.update(REQUEST_RESPONSE_CALL)
 
     def _update_environment_variables(self, function_info, update_args):
         # To update the environment variables we need to retrieve the

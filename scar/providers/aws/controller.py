@@ -124,6 +124,9 @@ def _add_config_file_path(scar_properties, function):
         if function['lambda'].get('image_file', False):
             function['lambda']['image_file'] = FileUtils.join_paths(function['lambda']['config_path'],
                                                                     function['lambda']['image_file'])
+        if function['lambda'].get('run_script', False):
+            function['lambda']['run_script'] = FileUtils.join_paths(function['lambda']['config_path'],
+                                                                    function['lambda']['run_script'])            
 
 ############################################
 ###             AWS CONTROLLER           ###
@@ -201,43 +204,58 @@ class AWS(Commands):
 
     @excp.exception(logger)
     def invoke(self):
-        self._update_local_function_properties()
-        response = self.aws_lambda.call_http_endpoint()
-        response_parser.parse_http_response(response,
-                                            self.aws_properties.lambdaf.name,
-                                            self.aws_properties.lambdaf.asynchronous,
-                                            self.aws_properties.output,
-                                            getattr(self.scar, "output_file", ""))
+        'TODO'
+#         self._update_local_function_properties()
+#         response = self.aws_lambda.call_http_endpoint()
+#         response_parser.parse_http_response(response,
+#                                             self.aws_properties.lambdaf.name,
+#                                             self.aws_properties.lambdaf.asynchronous,
+#                                             self.aws_properties.output,
+#                                             getattr(self.scar, "output_file", ""))
 
     @excp.exception(logger)
     def run(self):
-        if hasattr(self.aws_properties, "s3") and hasattr(self.aws_properties.s3, "input_bucket"):
-            self._process_input_bucket_calls()
+        if len(self.aws_functions) > 1:
+            logger.info("Not allowed yet")
         else:
-            if self.aws_lambda.is_asynchronous():
-                self.aws_lambda.set_asynchronous_call_parameters()
-            self.aws_lambda.launch_lambda_instance()
+            lambda_client = _get_lambda_client(self.aws_functions[0])
+            if lambda_client.is_asynchronous():
+                lambda_client.set_asynchronous_call_parameters()
+            lambda_client.launch_lambda_instance()        
+        'TODO FINISH'
+#         if hasattr(self.aws_properties, "s3") and hasattr(self.aws_properties.s3, "input_bucket"):
+#             self._process_input_bucket_calls()
+#         else:
+#             if self.aws_lambda.is_asynchronous():
+#                 self.aws_lambda.set_asynchronous_call_parameters()
+#             self.aws_lambda.launch_lambda_instance()
 
     @excp.exception(logger)
     def update(self):
-        if hasattr(self.aws_properties.lambdaf, "all") and self.aws_properties.lambdaf.all:
-            self._update_all_functions(self._get_all_functions())
-        else:
-            self.aws_lambda.update_function_configuration()
+        'TODO'
+#         if hasattr(self.aws_properties.lambdaf, "all") and self.aws_properties.lambdaf.all:
+#             self._update_all_functions(self._get_all_functions())
+#         else:
+#             self.aws_lambda.update_function_configuration()
 
     @excp.exception(logger)
     def ls(self):
-        if self.storages:
-            file_list = _get_s3_client(self.aws_functions).get_bucket_file_list()
-            for file_info in file_list:
-                print(file_info)
-        else:
-            lambda_functions = self._get_all_functions()
-            response_parser.parse_ls_response(lambda_functions,
-                                              self.aws_properties.output)
+        lambda_functions = self._get_all_functions()
+        response_parser.parse_ls_response(lambda_functions,
+                                          self.aws_functions[0].get('lambda').get('output'))        
+        'TODO FINISH'
+#         if self.storages:
+#             file_list = _get_s3_client(self.aws_functions).get_bucket_file_list()
+#             for file_info in file_list:
+#                 print(file_info)
+#         else:
+#             lambda_functions = self._get_all_functions()
+#             response_parser.parse_ls_response(lambda_functions,
+#                                               self.aws_properties.output)
 
     @excp.exception(logger)
     def rm(self):
+        'TODO FINISH'
 #         function_info = _get_lambda_client(self.aws_functions[0]).get_function_info(self.aws_functions[0]['lambda']['name'])
 #         self._delete_resources(function_info)
         if self.scar.get('all', False):
@@ -263,18 +281,21 @@ class AWS(Commands):
 
     @excp.exception(logger)
     def log(self):
-        aws_log = self.cloudwatch_logs.get_aws_log()
-        batch_logs = self._get_batch_logs()
-        aws_log += batch_logs if batch_logs else ""
-        print(aws_log)
+        'TODO'
+#         aws_log = self.cloudwatch_logs.get_aws_log()
+#         batch_logs = self._get_batch_logs()
+#         aws_log += batch_logs if batch_logs else ""
+#         print(aws_log)
 
     @excp.exception(logger)
     def put(self):
-        self.upload_file_or_folder_to_s3()
+        'TODO'        
+#         self.upload_file_or_folder_to_s3()
 
     @excp.exception(logger)
     def get(self):
-        self.download_file_or_folder_from_s3()
+        'TODO'        
+#         self.download_file_or_folder_from_s3()
 
 
 ############################################
@@ -284,11 +305,16 @@ class AWS(Commands):
     def _get_all_functions(self):
         # There can be several functions defined
         # We check all and merge their arns to list them
-        functions_arn = set()
-        for function in self.aws_functions:
-            iam_info = _get_iam_client(function).get_user_name_or_id()
-            functions_arn.union(set(_get_resource_groups_client(function).get_resource_arn_list(iam_info)))
-        return _get_lambda_client().get_all_functions(functions_arn)
+        
+#         for function in self.aws_functions:
+#             iam_info = _get_iam_client(function).get_user_name_or_id()
+#             functions_arn.union(set(_get_resource_groups_client(function).get_resource_arn_list(iam_info)))
+#         return _get_lambda_client(self.aws_functions[0]).get_all_functions(functions_arn)
+        function = self.aws_functions[0]
+        arn_list = _get_resource_groups_client(function).get_resource_arn_list(_get_iam_client(function).get_user_name_or_id())
+        return _get_lambda_client(function).get_all_functions(arn_list)
+    
+    
 
     def _get_batch_logs(self) -> str:
         logs = ""
