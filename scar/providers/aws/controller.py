@@ -54,24 +54,24 @@ def _get_owner(function):
 ############################################
 
 
-def _get_iam_client(aws_properties: Dict):
+def _get_iam_client(aws_properties: Dict) -> IAM:
     return IAM(aws_properties)
 
 
-def _get_lambda_client(aws_properties: Dict = None):
+def _get_lambda_client(aws_properties: Dict = None) -> Lambda:
     if not aws_properties:
         aws_properties = {}
     return Lambda(aws_properties)
 
 
-def _get_api_gateway_client(aws_properties: Dict):
+def _get_api_gateway_client(aws_properties: Dict) -> APIGateway:
     return APIGateway(aws_properties)
 
 
-def _get_s3_client(aws_properties: Dict):
+def _get_s3_client(aws_properties: Dict) -> S3:
     return S3(aws_properties)
 
-def _get_resource_groups_client(aws_properties: Dict):
+def _get_resource_groups_client(aws_properties: Dict) -> ResourceGroups:
     return ResourceGroups(aws_properties)
 
 ############################################
@@ -243,17 +243,18 @@ class AWS(Commands):
         if self.scar.get('all', False):
             "Delete all functions"
         elif len(self.aws_functions) > 1:
-            "Please select the function to delete with -n"
+            "Please select the function to delete"
         else:
             "Delete selected function"
-#             function_info = _get_lambda_client(self.aws_functions[0]).get_function_info(self.aws_properties.lambdaf.name)
-#             self._delete_resources(function_info)            
-            
+            function = self.aws_functions[0]
+            lambda_client = _get_lambda_client(function)
+            function_info = lambda_client.get_function_info(function.get('lambda').get('name'))
+            self._delete_resources(lambda_client, function_info)            
         
-        function = self.aws_functions[0]
-        lambda_client = _get_lambda_client(function)
-        if not lambda_client.find_function(function['lambda']['name']):
-            raise excp.FunctionNotFoundError(function_name=function['lambda']['name'])
+#         function = self.aws_functions[0]
+#         lambda_client = _get_lambda_client(function)
+#         if not lambda_client.find_function(function['lambda']['name']):
+#             raise excp.FunctionNotFoundError(function_name=function['lambda']['name'])
         #self._delete_resources(function_info)
 #         if hasattr(self.aws_properties.lambdaf, "all") and self.aws_properties.lambdaf.all:
 #             self._delete_all_resources()
@@ -409,10 +410,10 @@ class AWS(Commands):
         for function_info in self._get_all_functions():
             self._delete_resources(function_info)
 
-    def _delete_resources(self, function_info):
+    def _delete_resources(self, lambda_client: Lambda, function_info: Dict) -> None:
         function_name = function_info['FunctionName']
-#         if not self.aws_lambda.find_function(function_name):
-#             raise excp.FunctionNotFoundError(function_name=function_name)
+        if not lambda_client.find_function(function_name):
+            raise excp.FunctionNotFoundError(function_name=function_name)
 #         # Delete associated api
 #         self._delete_api_gateway(function_info['Environment']['Variables'])
 #         # Delete associated log
@@ -421,7 +422,7 @@ class AWS(Commands):
 #         self._delete_bucket_notifications(function_info['FunctionArn'],
 #                                           function_info['Environment']['Variables'])
         # Delete function
-        self._delete_lambda_function(function_name)
+        self._delete_lambda_function(lambda_client, function_name)
 #         # Delete resources batch
 #         self._delete_batch_resources(function_name)
 
@@ -447,10 +448,10 @@ class AWS(Commands):
             input_bucket_name = input_path.split("/", 1)[0]
             self.aws_s3.delete_bucket_notification(input_bucket_name, function_arn)
 
-    def _delete_lambda_function(self, function_name):
-        response = self.aws_lambda.delete_function(function_name)
+    def _delete_lambda_function(self, lambda_client: Lambda, function_name: str):
+        response = lambda_client.delete_function(function_name)
         response_parser.parse_delete_function_response(response, function_name,
-                                                       self.aws_properties.output)
+                                                       lambda_client.function.get('output'))
 
     def _delete_batch_resources(self, function_name):
         if self.batch.exist_compute_environments(function_name):
