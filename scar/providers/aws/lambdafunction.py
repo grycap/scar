@@ -42,25 +42,19 @@ def _get_layers_client(client: LambdaClient, supervisor_version: str) -> LambdaL
     return LambdaLayers(client, supervisor_version)
 
 
-def _get_s3_client(aws_properties: Dict) -> S3:
-    return S3(aws_properties)
-
-
 class Lambda(GenericClient):
 
     def __init__(self, aws_properties: Dict) -> None:
         super().__init__(aws_properties.get('lambda', {}))
         self.aws = aws_properties
         self.function = aws_properties.get('lambda', {})
-        self.tmp_folder = FileUtils.create_tmp_dir()
-        self.zip_payload_path = FileUtils.join_paths(self.tmp_folder.name, 'function.zip')
 
-    def _get_creations_args(self):
+    def _get_creations_args(self, zip_payload_path: str) -> Dict:
         return {'FunctionName': self.function.get('name'),
                 'Runtime': self.function.get('runtime'),
                 'Role': self.aws.get('iam').get('role'),
                 'Handler': self.function.get('handler'),
-                'Code': self._get_function_code(),
+                'Code': self._get_function_code(zip_payload_path),
                 'Environment': self.function.get('environment'),
                 'Description': self.function.get('description'),
                 'Timeout':  self.function.get('timeout'),
@@ -77,8 +71,10 @@ class Lambda(GenericClient):
 
     @excp.exception(logger)
     def create_function(self):
+        tmp_folder = FileUtils.create_tmp_dir()
+        zip_payload_path = FileUtils.join_paths(tmp_folder.name, 'function.zip')
         self._manage_supervisor_layer()
-        creation_args = self._get_creations_args()
+        creation_args = self._get_creations_args(zip_payload_path)
         response = self.client.create_function(**creation_args)
         if response and "FunctionArn" in response:
             self.function['arn'] = response.get('FunctionArn', "")
@@ -90,27 +86,28 @@ class Lambda(GenericClient):
         self.function.get('layers', []).append(layers_client.get_latest_supervisor_layer_arn())
 
     @excp.exception(logger)
-    def _get_function_code(self):
-        # Zip all the files and folders needed
+    def _get_function_code(self, zip_payload_path: str) -> Dict:
+        '''Zip all the files and folders needed.'''
         code = {}
-        FunctionPackager(self.aws).create_zip(self.zip_payload_path)
+        FunctionPackager(self.aws).create_zip(zip_payload_path)
         if self.function.get('deployment').get('bucket', False):
             file_key = f"lambda/{self.function.get('name')}.zip"
-            self._get_s3_client().upload_file(file_path=self.zip_payload_path,
-                                              file_key=file_key)
+            S3(self.aws).upload_file(bucket=self.function.get('deployment').get('bucket'),
+                             file_path=zip_payload_path,
+                             file_key=file_key)
             code = {"S3Bucket": self.function.get('deployment_bucket'),
                     "S3Key": file_key}
         else:
-            code = {"ZipFile": FileUtils.read_file(self.zip_payload_path, mode="rb")}
+            code = {"ZipFile": FileUtils.read_file(zip_payload_path, mode="rb")}
         return code
 
     def delete_function(self, function_name):
         return self.client.delete_function(function_name)
 
-    def link_function_and_input_bucket(self):
-        kwargs = {'FunctionName' : self.aws.lambdaf.name,
+    def link_function_and_bucket(self, bucket_name: str) -> None:
+        kwargs = {'FunctionName' : self.function.get('name'),
                   'Principal' : "s3.amazonaws.com",
-                  'SourceArn' : 'arn:aws:s3:::{0}'.format(self.aws.s3.input_bucket)}
+                  'SourceArn' : f'arn:aws:s3:::{bucket_name}'}
         self.client.add_invocation_permission(**kwargs)
 
     def preheat_function(self):
@@ -262,7 +259,7 @@ class Lambda(GenericClient):
                                                                     api_id=api.get('id'))}
         self.client.add_invocation_permission(**kwargs)
         # Add Invocation permission
-        kwargs['SourceArn'] =  api.get('source_arn_invocation').format(api_region=api.get('region'),
+        kwargs['SourceArn'] = api.get('source_arn_invocation').format(api_region=api.get('region'),
                                                                        account_id=self.aws.get('iam').get('account_id'),
                                                                        api_id=api.get('id'),
                                                                        stage_name=api.get('stage_name'))

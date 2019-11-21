@@ -39,14 +39,15 @@ class GenericClient():
                 'S3': S3Client,
                 'LAUNCHTEMPLATES': EC2Client}
 
-    def __init__(self, client_properties: Dict):
+    def __init__(self, client_properties: Dict =None):
         self.properties = {}
-        region = client_properties.get('region')
-        if region:
-            self.properties['client'] = {'region_name': region}
-        session = client_properties.get('boto_profile')
-        if session:
-            self.properties['session'] = {'profile_name': session}        
+        if client_properties:
+            region = client_properties.get('region')
+            if region:
+                self.properties['client'] = {'region_name': region}
+            session = client_properties.get('boto_profile')
+            if session:
+                self.properties['session'] = {'profile_name': session}        
 
     @lazy_property
     def client(self):

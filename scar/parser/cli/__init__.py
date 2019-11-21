@@ -120,14 +120,13 @@ def _parse_s3_args(aws_args: Dict, cmd_args: Dict) -> Dict:
     s3_args = DataTypesUtils.parse_arg_list(s3_arg_list, cmd_args)
     storage = {}
     if s3_args:
-        s3_id = StrUtils.get_random_uuid4_str()
         if 'deployment_bucket' in s3_args:
             aws_args['lambda']['deployment'] = {'bucket': s3_args['deployment_bucket']}
         if 'input_bucket' in s3_args:
-            aws_args['lambda']['input'] = [{'storage_name' : s3_id, 'path':  s3_args['input_bucket']}]
+            aws_args['lambda']['input'] = [{'storage_provider' : 's3', 'path':  s3_args['input_bucket']}]
         if 'output_bucket' in s3_args:
-            aws_args['lambda']['output'] = [{'storage_name' : s3_id, 'path':  s3_args['output_bucket']}]
-        storage['storages'] = {'s3': [{'name': s3_id}]}
+            aws_args['lambda']['output'] = [{'storage_provider' : 's3', 'path':  s3_args['output_bucket']}]
+        storage['storages'] = {'s3': []}
     return storage
 
 

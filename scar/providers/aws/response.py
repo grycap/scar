@@ -72,7 +72,7 @@ def _print_generic_response(response, output_type, aws_output, text_message=None
 def parse_lambda_function_creation_response(response, function, access_key):
     if response:
         function_name = function.get('lambda', {}).get('name', '')
-        output_type = function.get('lambda', {}).get('output', '')
+        output_type = function.get('lambda', {}).get('cli_output', '')
         aws_output = 'LambdaOutput'
         text_message = f"Function '{function_name}' successfully created."
         json_message = {aws_output : {

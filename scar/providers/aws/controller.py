@@ -25,7 +25,6 @@ from scar.providers.aws.lambdafunction import Lambda
 from scar.providers.aws.resourcegroups import ResourceGroups
 from scar.providers.aws.s3 import S3
 from scar.providers.aws.validators import AWSValidator
-from scar.providers.aws.properties import ApiGatewayProperties
 import scar.exceptions as excp
 import scar.logger as logger
 import scar.providers.aws.response as response_parser
@@ -54,30 +53,30 @@ def _get_owner(function):
 ############################################
 
 
-def _get_iam_client(aws_properties: Dict) -> IAM:
-    return IAM(aws_properties)
+def _get_iam_client(function_info: Dict) -> IAM:
+    return IAM(function_info)
 
 
-def _get_lambda_client(aws_properties: Dict=None) -> Lambda:
-    if not aws_properties:
-        aws_properties = {}
-    return Lambda(aws_properties)
+def _get_lambda_client(function_info: Dict=None) -> Lambda:
+    if not function_info:
+        function_info = {}
+    return Lambda(function_info)
 
 
-def _get_api_gateway_client(aws_properties: Dict) -> APIGateway:
-    return APIGateway(aws_properties)
+def _get_api_gateway_client(function_info: Dict) -> APIGateway:
+    return APIGateway(function_info)
 
 
-def _get_s3_client(aws_properties: Dict) -> S3:
-    return S3(aws_properties)
+def _get_s3_client(function_info: Dict) -> S3:
+    return S3(function_info)
 
 
-def _get_resource_groups_client(aws_properties: Dict) -> ResourceGroups:
-    return ResourceGroups(aws_properties)
+def _get_resource_groups_client(function_info: Dict) -> ResourceGroups:
+    return ResourceGroups(function_info)
 
 
-def _get_cloudwatch_logs_client(aws_properties: Dict) -> CloudWatchLogs:
-    return CloudWatchLogs(aws_properties)
+def _get_cloudwatch_logs_client(function_info: Dict) -> CloudWatchLogs:
+    return CloudWatchLogs(function_info)
 
 ############################################
 ###          ADD EXTRA PROPERTIES        ###
@@ -108,14 +107,14 @@ def _add_handler(function: Dict):
 
 
 def _add_output(scar_props: Dict, function: Dict):
-    function['lambda']['output'] = response_parser.OutputType.PLAIN_TEXT.value
+    function['lambda']['cli_output'] = response_parser.OutputType.PLAIN_TEXT.value
     if scar_props.get("json", False):
-        function['lambda']['output'] = response_parser.OutputType.JSON.value
+        function['lambda']['cli_output'] = response_parser.OutputType.JSON.value
     # Override json ouput if both of them are defined
     if scar_props.get("verbose", False):
-        function['lambda']['output'] = response_parser.OutputType.VERBOSE.value
+        function['lambda']['cli_output'] = response_parser.OutputType.VERBOSE.value
     if scar_props.get("output_file", False):
-        function['lambda']['output'] = response_parser.OutputType.BINARY.value
+        function['lambda']['cli_output'] = response_parser.OutputType.BINARY.value
         function['lambda']['output_file'] = scar_props.get("output_file")
 
 
@@ -178,7 +177,7 @@ class AWS(Commands):
             self._create_api_gateway(function)
             self._create_lambda_function(function, lambda_client)
             self._create_log_group(function)
-            # self._create_s3_buckets()
+            self._create_s3_buckets(function)
             # The api_gateway permissions are added after the function is created
             self._add_api_gateway_permissions(function)
             # self._create_batch_environment()
@@ -222,7 +221,7 @@ class AWS(Commands):
     def ls(self):
         lambda_functions = self._get_all_functions()
         response_parser.parse_ls_response(lambda_functions,
-                                          self.aws_functions[0].get('lambda').get('output'))        
+                                          self.aws_functions[0].get('lambda').get('cli_output'))        
         'TODO FINISH'
 #         if self.storages:
 #             file_list = _get_s3_client(self.aws_functions).get_bucket_file_list()
@@ -302,16 +301,6 @@ class AWS(Commands):
             logs = self.cloudwatch_logs.get_batch_job_log(batch_jobs["jobs"])
         return logs
 
-    @excp.exception(logger)
-    def _create_s3_buckets(self):
-        if hasattr(self.aws_properties, "s3"):
-            if hasattr(self.aws_properties.s3, "input_bucket"):
-                self.aws_s3.create_input_bucket(create_input_folder=True)
-                self.aws_lambda.link_function_and_input_bucket()
-                self.aws_s3.set_input_bucket_notification()
-            if hasattr(self.aws_properties.s3, "output_bucket"):
-                self.aws_s3.create_output_bucket()
-
     def _add_api_gateway_permissions(self, function: Dict):
         if function.get("api_gateway", {}).get('name', False):
             _get_lambda_client(function).add_invocation_permission_from_api_gateway()
@@ -373,16 +362,16 @@ class AWS(Commands):
 
     def _update_local_function_properties(self, function_info):
         self._reset_aws_properties()
-        """Update the defined properties with the AWS information."""
-        if function_info:
-            self.aws_properties.lambdaf.update_properties(**function_info)
-        if 'API_GATEWAY_ID' in self.aws_properties.lambdaf.environment['Variables']:
-            api_gtw_id = self.aws_properties.lambdaf.environment['Variables'].get('API_GATEWAY_ID',
-                                                                                  "")
-            if hasattr(self.aws_properties, 'api_gateway'):
-                self.aws_properties.api_gateway.id = api_gtw_id
-            else:
-                self.aws_properties.api_gateway = ApiGatewayProperties({'id' : api_gtw_id})
+#         """Update the defined properties with the AWS information."""
+#         if function_info:
+#             self.aws_properties.lambdaf.update_properties(**function_info)
+#         if 'API_GATEWAY_ID' in self.aws_properties.lambdaf.environment['Variables']:
+#             api_gtw_id = self.aws_properties.lambdaf.environment['Variables'].get('API_GATEWAY_ID',
+#                                                                                   "")
+#             if hasattr(self.aws_properties, 'api_gateway'):
+#                 self.aws_properties.api_gateway.id = api_gtw_id
+#             else:
+#                 self.aws_properties.api_gateway = ApiGatewayProperties({'id' : api_gtw_id})
 
 #############################################################################
 ###                   Methods to create AWS resources                     ###
@@ -405,7 +394,24 @@ class AWS(Commands):
         response = cloudwatch_logs.create_log_group()
         response_parser.parse_log_group_creation_response(response,
                                                           cloudwatch_logs.get_log_group_name(),
-                                                          function.get('lambda').get('output'))
+                                                          function.get('lambda').get('cli_output'))
+        
+    @excp.exception(logger)
+    def _create_s3_buckets(self, function: Dict):
+        if function.get('lambda').get('input', False):
+            s3 = _get_s3_client(function)
+            for bucket in function.get('lambda').get('input'):
+                if bucket.get('storage_provider') == 's3':
+                    bucket_name = s3.create_bucket_and_folders(bucket.get('path'))
+                    _get_lambda_client(function).link_function_and_bucket(bucket_name)
+                    s3.set_input_bucket_notification(bucket_name)                    
+                    
+        if function.get('lambda').get('output', False):
+            s3 = _get_s3_client(function)
+            for bucket in function.get('lambda').get('output'):
+                if bucket.get('storage_provider') == 's3':
+                    s3.create_bucket_and_folders(bucket.get('path'))
+        
 #############################################################################
 ###                   Methods to delete AWS resources                     ###
 #############################################################################
@@ -435,7 +441,7 @@ class AWS(Commands):
             response = _get_api_gateway_client(function).delete_api_gateway(api_gateway_id)
             response_parser.parse_delete_api_response(response,
                                                       api_gateway_id,
-                                                      function.get('lambda').get('output'))
+                                                      function.get('lambda').get('cli_output'))
 
     def _delete_logs(self, function: Dict):
         cloudwatch_logs = _get_cloudwatch_logs_client(function)
@@ -443,7 +449,7 @@ class AWS(Commands):
         response = cloudwatch_logs.delete_log_group(log_group_name)
         response_parser.parse_delete_log_response(response,
                                                   log_group_name,
-                                                  function.get('lambda').get('output'))
+                                                  function.get('lambda').get('cli_output'))
 
     def _delete_bucket_notifications(self, function_arn, function_env_vars):
         s3_provider_id = ""#_get_storage_provider_id('S3', function_env_vars)
@@ -457,7 +463,7 @@ class AWS(Commands):
         response = _get_lambda_client(function).delete_function(function.get('lambda').get('name'))
         response_parser.parse_delete_function_response(response,
                                                        function.get('lambda').get('name'),
-                                                       function.get('lambda').get('output'))
+                                                       function.get('lambda').get('cli_output'))
 
     def _delete_batch_resources(self, function_name):
         if self.batch.exist_compute_environments(function_name):
