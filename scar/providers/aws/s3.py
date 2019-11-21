@@ -33,9 +33,9 @@ def _get_bucket_and_folders(storage_path: str) -> Tuple:
 
 class S3(GenericClient):
 
-    def __init__(self, function_info):
+    def __init__(self, resources_info):
         super().__init__()
-        self.aws = function_info
+        self.function_info = resources_info
 
     @excp.exception(logger)
     def create_bucket(self, bucket_name) -> None:
@@ -64,17 +64,17 @@ class S3(GenericClient):
         notification = {"LambdaFunctionConfigurations": lambda_conf}
         self.client.put_notification_configuration(bucket_name, notification)
 
-    def delete_bucket_notification(self, bucket_name, function_arn):
+    def delete_bucket_notification(self, bucket_name):
         bucket_conf = self.client.get_notification_configuration(bucket_name)
         if bucket_conf and "LambdaFunctionConfigurations" in bucket_conf:
             lambda_conf = bucket_conf["LambdaFunctionConfigurations"]
-            filter_conf = [x for x in lambda_conf if x['LambdaFunctionArn'] != function_arn]
+            filter_conf = [x for x in lambda_conf if x['LambdaFunctionArn'] != self.function_info.get('lambda').get('arn')]
             notification = { "LambdaFunctionConfigurations": filter_conf }
             self.client.put_notification_configuration(bucket_name, notification)
             logger.info("Bucket notifications successfully deleted")
 
     def get_trigger_configuration(self, bucket_name: str) -> Dict:
-        return  {"LambdaFunctionArn": self.aws.get('lambda').get('arn'),
+        return  {"LambdaFunctionArn": self.function_info.get('lambda').get('arn'),
                  "Events": [ "s3:ObjectCreated:*" ],
                  "Filter": { "Key": { "FilterRules": [{ "Name": "prefix", "Value": bucket_name }]}}
                  }
@@ -108,19 +108,19 @@ class S3(GenericClient):
 
     @excp.exception(logger)
     def get_bucket_file_list(self):
-        bucket_name = self.aws.s3.input_bucket
+        bucket_name = self.function_info.s3.input_bucket
         if self.client.find_bucket(bucket_name):
             kwargs = {"Bucket" : bucket_name}
-            if hasattr(self.aws.s3, "input_folder") and self.aws.s3.input_folder:
-                kwargs["Prefix"] = self.aws.s3.input_folder
+            if hasattr(self.function_info.s3, "input_folder") and self.function_info.s3.input_folder:
+                kwargs["Prefix"] = self.function_info.s3.input_folder
             return self.client.list_files(**kwargs)
         else:
             raise excp.BucketNotFoundError(bucket_name=bucket_name)
 
     def get_s3_event(self, s3_file_key):
         return {"Records": [{"eventSource": "aws:s3",
-                             "s3" : {"bucket" : {"name": self.aws.s3.input_bucket,
-                                                 "arn": f'arn:aws:s3:::{self.aws.s3.input_bucket}'},
+                             "s3" : {"bucket" : {"name": self.function_info.s3.input_bucket,
+                                                 "arn": f'arn:aws:s3:::{self.function_info.s3.input_bucket}'},
                                      "object" : {"key": s3_file_key}}}]}
 
     def get_s3_event_list(self, s3_file_keys):

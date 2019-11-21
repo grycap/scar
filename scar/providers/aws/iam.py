@@ -17,8 +17,8 @@ from scar.providers.aws import GenericClient
 
 class IAM(GenericClient):
 
-    def __init__(self, aws_properties) -> None:
-        super().__init__(aws_properties.get('iam'))
+    def __init__(self, resources_info) -> None:
+        super().__init__(resources_info.get('iam'))
 
     def get_user_name_or_id(self):
         user = self.client.get_user_info()

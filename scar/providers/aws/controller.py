@@ -28,10 +28,9 @@ from scar.providers.aws.validators import AWSValidator
 import scar.exceptions as excp
 import scar.logger as logger
 import scar.providers.aws.response as response_parser
-from scar.utils import lazy_property, StrUtils, FileUtils
+from scar.utils import StrUtils, FileUtils
 
 _ACCOUNT_ID_REGEX = r'\d{12}'
-
 
 # def _get_storage_provider_id(storage_provider: str, env_vars: Dict) -> str:
 #     """Searches the storage provider id in the environment variables:
@@ -45,38 +44,16 @@ _ACCOUNT_ID_REGEX = r'\d{12}'
 #     return res
 
 
-def _get_owner(function):
-    return _get_iam_client(function).get_user_name_or_id()
+def _get_owner(resources_info: Dict):
+    return IAM(resources_info).get_user_name_or_id()
 
-############################################
-###              BOTO CLIENTS            ###
-############################################
+def _check_function_defined(resources_info: Dict):
+    if Lambda(resources_info).find_function():
+        raise excp.FunctionExistsError(function_name=resources_info.get('lambda', {}).get('name', ''))
 
-
-def _get_iam_client(function_info: Dict) -> IAM:
-    return IAM(function_info)
-
-
-def _get_lambda_client(function_info: Dict=None) -> Lambda:
-    if not function_info:
-        function_info = {}
-    return Lambda(function_info)
-
-
-def _get_api_gateway_client(function_info: Dict) -> APIGateway:
-    return APIGateway(function_info)
-
-
-def _get_s3_client(function_info: Dict) -> S3:
-    return S3(function_info)
-
-
-def _get_resource_groups_client(function_info: Dict) -> ResourceGroups:
-    return ResourceGroups(function_info)
-
-
-def _get_cloudwatch_logs_client(function_info: Dict) -> CloudWatchLogs:
-    return CloudWatchLogs(function_info)
+def _check_function_not_defined(resources_info: Dict):
+    if not Lambda(resources_info).find_function():
+        raise excp.FunctionNotFoundError(function_name=resources_info.get('lambda', {}).get('name', ''))
 
 ############################################
 ###          ADD EXTRA PROPERTIES        ###
@@ -132,6 +109,115 @@ def _add_config_file_path(scar_props: Dict, function: Dict):
             function['lambda']['run_script'] = FileUtils.join_paths(function['lambda']['config_path'],
                                                                     function['lambda']['run_script'])            
 
+#############################################################################
+###                   Methods to create AWS resources                     ###
+#############################################################################
+
+@excp.exception(logger)
+def _create_api_gateway(resources_info: Dict):
+    if resources_info.get("api_gateway", {}).get('name', False):
+        APIGateway(resources_info).create_api_gateway()
+        
+@excp.exception(logger)
+def _create_lambda_function(resources_info: Dict) -> None:
+    lambda_client = Lambda(resources_info)
+    response = lambda_client.create_function()
+    response_parser.parse_lambda_function_creation_response(response,
+                                                            resources_info,
+                                                            lambda_client.get_access_key())            
+
+@excp.exception(logger)
+def _create_log_group(resources_info: Dict) -> None:
+    cloudwatch_logs = CloudWatchLogs(resources_info)
+    response = cloudwatch_logs.create_log_group()
+    response_parser.parse_log_group_creation_response(response,
+                                                      cloudwatch_logs.get_log_group_name(),
+                                                      resources_info.get('lambda').get('cli_output'))
+    
+@excp.exception(logger)
+def _create_s3_buckets(resources_info: Dict) -> None:
+    if resources_info.get('lambda').get('input', False):
+        s3 = S3(resources_info)
+        for bucket in resources_info.get('lambda').get('input'):
+            if bucket.get('storage_provider') == 's3':
+                bucket_name = s3.create_bucket_and_folders(bucket.get('path'))
+                Lambda(resources_info).link_function_and_bucket(bucket_name)
+                s3.set_input_bucket_notification(bucket_name)                    
+                
+    if resources_info.get('lambda').get('output', False):
+        s3 = Lambda(resources_info)
+        for bucket in resources_info.get('lambda').get('output'):
+            if bucket.get('storage_provider') == 's3':
+                s3.create_bucket_and_folders(bucket.get('path'))
+
+@excp.exception(logger)
+def _add_api_gateway_permissions(resources_info: Dict):
+    if resources_info.get("api_gateway").get('name', False):
+        Lambda(resources_info).add_invocation_permission_from_api_gateway()
+
+@excp.exception(logger)
+def _create_batch_environment(resources_info: Dict) -> None:
+    mode = resources_info.get('lambda').get('execution_mode')
+    if mode == "batch" or mode == "lambda-batch":
+        Batch(resources_info).create_batch_environment()
+
+#############################################################################
+###                   Methods to delete AWS resources                     ###
+#############################################################################
+
+def _delete_all_resources():
+    'TODO'
+#         for function_info in self._get_all_functions():
+#             self._delete_resources(function_info)
+
+def _delete_resources(resources_info: Dict) -> None:
+    # Delete associated api
+    _delete_api_gateway(resources_info)
+    # Delete associated log
+    _delete_logs(resources_info)
+    # Delete associated notifications
+    _delete_bucket_notifications(resources_info)
+    # Delete function
+    _delete_lambda_function(resources_info)
+    # Delete resources batch
+    _delete_batch_resources(resources_info)
+
+def _delete_api_gateway(resources_info: Dict) -> None:
+    api_gateway_id = Lambda(resources_info).get_function_info().get('Environment').get('Variables').get('API_GATEWAY_ID')
+    if api_gateway_id:
+        resources_info['lambda']['environment']['Variables']['API_GATEWAY_ID'] = api_gateway_id
+        response = APIGateway(resources_info).delete_api_gateway()
+        response_parser.parse_delete_api_response(response,
+                                                  api_gateway_id,
+                                                  resources_info.get('lambda').get('cli_output'))
+
+def _delete_logs(resources_info: Dict):
+    cloudwatch_logs = CloudWatchLogs(resources_info)
+    log_group_name = cloudwatch_logs.get_log_group_name(resources_info.get('lambda').get('name'))
+    response = cloudwatch_logs.delete_log_group(log_group_name)
+    response_parser.parse_delete_log_response(response,
+                                              log_group_name,
+                                              resources_info.get('lambda').get('cli_output'))
+
+def _delete_bucket_notifications(resources_info: Dict) -> None:
+    if resources_info.get('lambda').get('input', False):
+        for input_storage in resources_info.get('lambda').get('input'):
+            if input_storage.get('storage_provider') == 's3':
+                bucket_name = input_storage.get('path').split("/", 1)[0]
+                S3(resources_info).delete_bucket_notification(bucket_name)
+
+def _delete_lambda_function(resources_info: Dict) -> None:
+    response = Lambda(resources_info).delete_function()
+    response_parser.parse_delete_function_response(response,
+                                                   resources_info.get('lambda').get('name'),
+                                                   resources_info.get('lambda').get('cli_output'))
+
+def _delete_batch_resources(resources_info: Dict) -> None:
+    batch = Batch(resources_info)
+    if batch.exist_compute_environments():
+        batch.delete_compute_environment()
+
+
 ############################################
 ###             AWS CONTROLLER           ###
 ############################################
@@ -140,12 +226,6 @@ def _add_config_file_path(scar_props: Dict, function: Dict):
 class AWS(Commands):
     """AWS controller.
     Used to manage all the AWS calls and functionalities."""
-
-    @lazy_property
-    def batch(self):
-        batch = Batch(self.aws_properties,
-                      self.scar.supervisor_version)
-        return batch
 
     def __init__(self, func_call):
         self.raw_args = FileUtils.load_config_file()
@@ -169,18 +249,16 @@ class AWS(Commands):
     @excp.exception(logger)
     def init(self) -> None:
         # supervisor_version = self.scar.get('supervisor_version', 'latest')
-        for function in self.aws_functions:
-            lambda_client = _get_lambda_client(function)
-            if lambda_client.find_function():
-                raise excp.FunctionExistsError(function_name=function.get('lambda', {}).get('name', ''))
+        for resources_info in self.aws_functions:
+            _check_function_defined(resources_info)
             # We have to create the gateway before creating the function
-            self._create_api_gateway(function)
-            self._create_lambda_function(function, lambda_client)
-            self._create_log_group(function)
-            self._create_s3_buckets(function)
+            _create_api_gateway(resources_info)
+            _create_lambda_function(resources_info)
+            _create_log_group(resources_info)
+            _create_s3_buckets(resources_info)
             # The api_gateway permissions are added after the function is created
-            self._add_api_gateway_permissions(function)
-            # self._create_batch_environment()
+            _add_api_gateway_permissions(resources_info)
+            _create_batch_environment()
             # self._preheat_function()
 
     @excp.exception(logger)
@@ -196,8 +274,8 @@ class AWS(Commands):
 
     @excp.exception(logger)
     def run(self):
-        function = self.aws_functions[0]
-        lambda_client = _get_lambda_client(function)
+        resources_info = self.aws_functions[0]
+        lambda_client = Lambda(resources_info)
         if lambda_client.is_asynchronous():
             lambda_client.set_asynchronous_call_parameters()
         lambda_client.launch_lambda_instance()        
@@ -243,12 +321,9 @@ class AWS(Commands):
             "Please select the function to delete"
         else:
             "Delete selected function"
-            function = self.aws_functions[0]
-            lambda_client = _get_lambda_client(function)
-#             function_info = lambda_client.get_function_info(function.get('lambda').get('name'))
-            if not lambda_client.find_function(function.get('lambda').get('name')):
-                raise excp.FunctionNotFoundError(function_name=function.get('lambda').get('name'))
-            self._delete_resources(function)            
+            resources_info = self.aws_functions[0]
+            _check_function_not_defined(resources_info)
+            self._delete_resources(resources_info)            
         
 #         function = self.aws_functions[0]
 #         lambda_client = _get_lambda_client(function)
@@ -289,9 +364,9 @@ class AWS(Commands):
 #             iam_info = _get_iam_client(function).get_user_name_or_id()
 #             functions_arn.union(set(_get_resource_groups_client(function).get_resource_arn_list(iam_info)))
 #         return _get_lambda_client(self.aws_functions[0]).get_all_functions(functions_arn)
-        function = self.aws_functions[0]
-        arn_list = _get_resource_groups_client(function).get_resource_arn_list(_get_iam_client(function).get_user_name_or_id())
-        return _get_lambda_client(function).get_all_functions(arn_list)
+        resources_info = self.aws_functions[0]
+        arn_list = ResourceGroups(resources_info).get_resource_arn_list(IAM(resources_info).get_user_name_or_id())
+        return Lambda(resources_info).get_all_functions(arn_list)
 
     def _get_batch_logs(self) -> str:
         logs = ""
@@ -300,15 +375,6 @@ class AWS(Commands):
             batch_jobs = self.batch.describe_jobs(self.aws_properties.cloudwatch.request_id)
             logs = self.cloudwatch_logs.get_batch_job_log(batch_jobs["jobs"])
         return logs
-
-    def _add_api_gateway_permissions(self, function: Dict):
-        if function.get("api_gateway", {}).get('name', False):
-            _get_lambda_client(function).add_invocation_permission_from_api_gateway()
-
-    def _create_batch_environment(self):
-        if self.aws_properties.execution_mode == "batch" or \
-        self.aws_properties.execution_mode == "lambda-batch":
-            self.batch.create_batch_environment()
 
     def _preheat_function(self):
         # If preheat is activated, the function is launched at the init step
@@ -373,98 +439,3 @@ class AWS(Commands):
 #             else:
 #                 self.aws_properties.api_gateway = ApiGatewayProperties({'id' : api_gtw_id})
 
-#############################################################################
-###                   Methods to create AWS resources                     ###
-#############################################################################
-
-    def _create_api_gateway(self, function: Dict):
-        if function.get("api_gateway", {}).get('name', False):
-            _get_api_gateway_client(function).create_api_gateway()
-            
-    @excp.exception(logger)
-    def _create_lambda_function(self, function: Dict, lambda_client: Lambda) -> None:
-        response = lambda_client.create_function()
-        response_parser.parse_lambda_function_creation_response(response,
-                                                                function,
-                                                                lambda_client.get_access_key())            
-
-    @excp.exception(logger)
-    def _create_log_group(self, function: Dict):
-        cloudwatch_logs = _get_cloudwatch_logs_client(function)
-        response = cloudwatch_logs.create_log_group()
-        response_parser.parse_log_group_creation_response(response,
-                                                          cloudwatch_logs.get_log_group_name(),
-                                                          function.get('lambda').get('cli_output'))
-        
-    @excp.exception(logger)
-    def _create_s3_buckets(self, function: Dict):
-        if function.get('lambda').get('input', False):
-            s3 = _get_s3_client(function)
-            for bucket in function.get('lambda').get('input'):
-                if bucket.get('storage_provider') == 's3':
-                    bucket_name = s3.create_bucket_and_folders(bucket.get('path'))
-                    _get_lambda_client(function).link_function_and_bucket(bucket_name)
-                    s3.set_input_bucket_notification(bucket_name)                    
-                    
-        if function.get('lambda').get('output', False):
-            s3 = _get_s3_client(function)
-            for bucket in function.get('lambda').get('output'):
-                if bucket.get('storage_provider') == 's3':
-                    s3.create_bucket_and_folders(bucket.get('path'))
-        
-#############################################################################
-###                   Methods to delete AWS resources                     ###
-#############################################################################
-
-    def _delete_all_resources(self):
-        for function_info in self._get_all_functions():
-            self._delete_resources(function_info)
-
-    def _delete_resources(self, function: Dict) -> None:
-#         function_name = function_info['FunctionName']
-        # Delete associated api
-        self._delete_api_gateway(function)
-        # Delete associated log
-        self._delete_logs(function)
-#         # Delete associated notifications
-#         self._delete_bucket_notifications(function_info['FunctionArn'],
-#                                           function_info['Environment']['Variables'])
-        # Delete function
-        self._delete_lambda_function(function)
-#         # Delete resources batch
-#         self._delete_batch_resources(function_name)
-
-    def _delete_api_gateway(self, function):
-        lambda_client = _get_lambda_client(function)
-        api_gateway_id = lambda_client.get_function_info().get('Environment').get('Variables').get('API_GATEWAY_ID')
-        if api_gateway_id:
-            response = _get_api_gateway_client(function).delete_api_gateway(api_gateway_id)
-            response_parser.parse_delete_api_response(response,
-                                                      api_gateway_id,
-                                                      function.get('lambda').get('cli_output'))
-
-    def _delete_logs(self, function: Dict):
-        cloudwatch_logs = _get_cloudwatch_logs_client(function)
-        log_group_name = cloudwatch_logs.get_log_group_name(function.get('lambda').get('name'))
-        response = cloudwatch_logs.delete_log_group(log_group_name)
-        response_parser.parse_delete_log_response(response,
-                                                  log_group_name,
-                                                  function.get('lambda').get('cli_output'))
-
-    def _delete_bucket_notifications(self, function_arn, function_env_vars):
-        s3_provider_id = ""#_get_storage_provider_id('S3', function_env_vars)
-        input_bucket_id = f'STORAGE_PATH_INPUT_{s3_provider_id}' if s3_provider_id else ''
-        if input_bucket_id in function_env_vars:
-            input_path = function_env_vars[input_bucket_id]
-            input_bucket_name = input_path.split("/", 1)[0]
-            self.aws_s3.delete_bucket_notification(input_bucket_name, function_arn)
-
-    def _delete_lambda_function(self, function: Dict):
-        response = _get_lambda_client(function).delete_function(function.get('lambda').get('name'))
-        response_parser.parse_delete_function_response(response,
-                                                       function.get('lambda').get('name'),
-                                                       function.get('lambda').get('cli_output'))
-
-    def _delete_batch_resources(self, function_name):
-        if self.batch.exist_compute_environments(function_name):
-            self.batch.delete_compute_environment(function_name)

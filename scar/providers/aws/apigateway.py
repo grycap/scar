@@ -21,10 +21,10 @@ import scar.logger as logger
 class APIGateway(GenericClient):
     """Manage the calls to the ApiGateway client."""
 
-    def __init__(self, aws_properties: Dict):
-        super().__init__(aws_properties.get('api_gateway', {}))
-        self.aws = aws_properties
-        self.api = self.aws.get('api_gateway', {})
+    def __init__(self, resources_info: Dict):
+        super().__init__(resources_info.get('api_gateway', {}))
+        self.resources_info = resources_info
+        self.api = self.resources_info.get('api_gateway', {})
 
     def _get_common_args(self) -> Dict:
         return {'restApiId' : self.api.get('id', ''),
@@ -39,9 +39,9 @@ class APIGateway(GenericClient):
     def _get_integration_args(self) -> Dict:
         integration_args = self.api.get('integration', {})
         uri_args = {'api_region': self.api.get('region', ''),
-                    'lambda_region': self.aws.get('lambda', {}).get('region', ''),
-                    'account_id': self.aws.get('iam', {}).get('account_id', ''),
-                    'function_name': self.aws.get('lambda', {}).get('name', '')}
+                    'lambda_region': self.resources_info.get('lambda', {}).get('region', ''),
+                    'account_id': self.resources_info.get('iam', {}).get('account_id', ''),
+                    'function_name': self.resources_info.get('lambda', {}).get('name', '')}
         integration_args['uri'] = integration_args['uri'].format(**uri_args)
         args = self._get_common_args()
         args.update(integration_args)
@@ -60,7 +60,7 @@ class APIGateway(GenericClient):
         self.api['id'] = api_info.get('id', '')
         # We store the parameter in the lambda configuration that
         # is going to be uploaded to the Lambda service
-        self.aws['lambda']['environment']['Variables']['API_GATEWAY_ID'] = api_info.get('id', '')
+        self.resources_info['lambda']['environment']['Variables']['API_GATEWAY_ID'] = api_info.get('id', '')
 
     def _set_resource_info_id(self, resource_info: Dict) -> None:
         self.api['resource_id'] = resource_info.get('id', '')
@@ -82,6 +82,6 @@ class APIGateway(GenericClient):
         self.client.create_deployment(self.api.get('id', ''), self.api.get('stage_name', ''))
         logger.info(f'API Gateway endpoint: {self._get_endpoint()}')
 
-    def delete_api_gateway(self, api_gateway_id: str) -> None:
+    def delete_api_gateway(self) -> None:
         """Deletes an Api Gateway endpoint."""
-        return self.client.delete_rest_api(api_gateway_id)
+        return self.client.delete_rest_api(self.resources_info['lambda']['environment']['Variables']['API_GATEWAY_ID'])

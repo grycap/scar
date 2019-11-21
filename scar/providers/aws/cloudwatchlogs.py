@@ -29,17 +29,17 @@ def _parse_events_in_message(log_events: List) -> str:
 class CloudWatchLogs(GenericClient):
     """Manages the AWS CloudWatch Logs functionality"""
     
-    def __init__(self, aws_properties: Dict):
-        super().__init__(aws_properties.get('cloudwatch'))
-        self._aws = aws_properties
-        self.cloudwatch = aws_properties.get('cloudwatch')
+    def __init__(self, resources_info: Dict):
+        super().__init__(resources_info.get('cloudwatch'))
+        self.resources_info = resources_info
+        self.cloudwatch = resources_info.get('cloudwatch')
 
     def get_log_group_name(self, function_name: str=None) -> str:
         """Returns the log group matching the
         current lambda function being parsed."""
         if function_name:
             return f'/aws/lambda/{function_name}'
-        return f'/aws/lambda/{self._aws.get("lambda").get("name")}'
+        return f'/aws/lambda/{self.resources_info.get("lambda").get("name")}'
 
     def _get_log_group_name_arg(self, function_name: str=None) -> Dict:
         return {'logGroupName' : self.get_log_group_name(function_name)}
@@ -68,7 +68,7 @@ class CloudWatchLogs(GenericClient):
     def create_log_group(self) -> Dict:
         """Creates a CloudWatch Log Group."""
         creation_args = self._get_log_group_name_arg()
-        creation_args['tags'] = self._aws.get('lambda').get('tags')
+        creation_args['tags'] = self.resources_info.get('lambda').get('tags')
         response = self.client.create_log_group(**creation_args)
         # Set retention policy into the log group
         retention_args = self._get_log_group_name_arg()
@@ -80,7 +80,7 @@ class CloudWatchLogs(GenericClient):
         """Deletes a CloudWatch Log Group."""
         return self.client.delete_log_group(log_group_name)
 
-    def get_aws_log(self) -> str:
+    def getaws_log(self) -> str:
         """Returns Lambda logs for an specific lambda function."""
         function_logs = ""
         try:
@@ -100,7 +100,7 @@ class CloudWatchLogs(GenericClient):
         if jobs_info:
             job = jobs_info[0]
             batch_logs += f"Batch job status: {job.get('status', '')}\n"
-            kwargs = {'logGroupName': "/_aws/batch/job"}
+            kwargs = {'logGroupName': "/aws/batch/job"}
             if job.get("status", "") == "SUCCEEDED":
                 kwargs['logStreamNames'] = [job.get("container", {}).get("logStreamName", "")]
                 batch_events = self.client.get_log_events(**kwargs)

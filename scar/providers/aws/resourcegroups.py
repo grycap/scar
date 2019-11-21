@@ -22,8 +22,8 @@ import scar.logger as logger
 class ResourceGroups(GenericClient):
     """Class to manage AWS Resource Groups"""
 
-    def __init__(self, aws_properties) -> None:
-        super().__init__(aws_properties.get('lambda'))
+    def __init__(self, resources_info) -> None:
+        super().__init__(resources_info.get('lambda'))
 
     def get_resource_arn_list(self, iam_user_id: str, resource_type: str = 'lambda') -> List:
         """Returns a list of ARNs filtered by the resource_type

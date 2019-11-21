@@ -23,14 +23,11 @@ from scar.http.request import get_file
 from scar.utils import FileUtils, GitHubUtils, \
                        GITHUB_USER, GITHUB_SUPERVISOR_PROJECT
 
-def _get_udocker_client(aws: Dict, tmp_payload_folder_path: str, supervisor_zip_path: str) -> Udocker:
-    return Udocker(aws, tmp_payload_folder_path, supervisor_zip_path)
-
 class FunctionPackager():
     """Class to manage the deployment package creation."""
 
-    def __init__(self, aws_properties: Dict):
-        self._aws = aws_properties
+    def __init__(self, resources_info: Dict):
+        self.resources_info = resources_info
         # Temporal folder to store the supervisor and udocker files
         self._tmp_payload_folder = FileUtils.create_tmp_dir()
         # Path where the supervisor is downloaded
@@ -52,12 +49,12 @@ class FunctionPackager():
         supervisor_zip_url = GitHubUtils.get_source_code_url(
             GITHUB_USER,
             GITHUB_SUPERVISOR_PROJECT,
-            self._aws.get('lambda').get('supervisor').get('version'))
+            self.resources_info.get('lambda').get('supervisor').get('version'))
         with open(self._supervisor_zip_path, "wb") as thezip:
             thezip.write(get_file(supervisor_zip_url))
 
     def _extract_handler_code(self) -> None:
-        function_handler_dest = FileUtils.join_paths(self._tmp_payload_folder.name, f"{self._aws.get('lambda').get('name')}.py")
+        function_handler_dest = FileUtils.join_paths(self._tmp_payload_folder.name, f"{self.resources_info.get('lambda').get('name')}.py")
         file_path = ""
         with ZipFile(self._supervisor_zip_path) as thezip:
             for file in thezip.namelist():
@@ -74,37 +71,37 @@ class FunctionPackager():
         cfg_file_path = FileUtils.join_paths(self._tmp_payload_folder.name, "function_config.yaml")
         raw_cfg_file = FileUtils.load_config_file()
         function_cfg = {"storages" : raw_cfg_file.get('storages', {})}
-        function_cfg.update(self._aws['lambda'])
+        function_cfg.update(self.resources_info['lambda'])
         FileUtils.write_yaml(cfg_file_path, function_cfg)
 
     def _manage_udocker_images(self):
-        if self._aws.get('lambda').get('deployment').get('bucket', False) and \
-           self._aws.get('lambda').get('container').get('image', False):
-            _get_udocker_client(self._aws, self._tmp_payload_folder.name, self._supervisor_zip_path).download_udocker_image()
-        if self._aws.get('lambda').get('image_file'):
-            _get_udocker_client(self._aws, self._tmp_payload_folder.name, self._supervisor_zip_path).prepare_udocker_image()
-            del(self._aws['lambda']['image_file'])
+        if self.resources_info.get('lambda').get('deployment').get('bucket', False) and \
+           self.resources_info.get('lambda').get('container').get('image', False):
+            Udocker(self.resources_info, self._tmp_payload_folder.name, self._supervisor_zip_path).download_udocker_image()
+        if self.resources_info.get('lambda').get('image_file'):
+            Udocker(self.resources_info, self._tmp_payload_folder.name, self._supervisor_zip_path).prepare_udocker_image()
+            del(self.resources_info['lambda']['image_file'])
 
     def _add_init_script(self) -> None:
         """Copy the init script defined by the user to the payload folder."""
-        if self._aws.get('lambda').get('init_script', False):
-            init_script_path = self._aws.get('lambda').get('init_script')
+        if self.resources_info.get('lambda').get('init_script', False):
+            init_script_path = self.resources_info.get('lambda').get('init_script')
             FileUtils.copy_file(init_script_path,
                                 FileUtils.join_paths(self._tmp_payload_folder.name,
                                                      FileUtils.get_file_name(init_script_path)))
-            del(self._aws['lambda']['init_script'])
+            del(self.resources_info['lambda']['init_script'])
 
     def _add_extra_payload(self) -> None:
-        if self._aws.get('lambda').get('extra_payload', False):
-            payload_path = self._aws.get('lambda').get('extra_payload')
+        if self.resources_info.get('lambda').get('extra_payload', False):
+            payload_path = self.resources_info.get('lambda').get('extra_payload')
             logger.info(f"Adding extra payload '{payload_path}'")
             if FileUtils.is_file(payload_path):
-                FileUtils.copy_file(self._aws.get('lambda').get('extra_payload'),
+                FileUtils.copy_file(self.resources_info.get('lambda').get('extra_payload'),
                                     self._tmp_payload_folder.name)
             else:
-                FileUtils.copy_dir(self._aws.get('lambda').get('extra_payload'),
+                FileUtils.copy_dir(self.resources_info.get('lambda').get('extra_payload'),
                                    self._tmp_payload_folder.name)
-            del(self._aws['lambda']['extra_payload'])
+            del(self.resources_info['lambda']['extra_payload'])
 
     def _zip_scar_folder(self, lambda_payload_path: str) -> None:
         """Zips the tmp folder with all the function's files and
@@ -115,9 +112,9 @@ class FunctionPackager():
 
     def _check_code_size(self):
         # Check if the code size fits within the AWS limits
-        if self._aws.get('lambda').get('deployment').get('bucket', False):
+        if self.resources_info.get('lambda').get('deployment').get('bucket', False):
             AWSValidator.validate_s3_code_size(self._tmp_payload_folder.name,
-                                               self._aws.get('lambda').get('deployment').get('max_s3_payload_size'))
+                                               self.resources_info.get('lambda').get('deployment').get('max_s3_payload_size'))
         else:
             AWSValidator.validate_function_code_size(self._tmp_payload_folder.name,
-                                                     self._aws.get('lambda').get('deployment').get('max_payload_size'))
+                                                     self.resources_info.get('lambda').get('deployment').get('max_payload_size'))

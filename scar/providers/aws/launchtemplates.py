@@ -30,6 +30,7 @@ Generic response from boto3:
               'RequestId': 'XXX',
               'RetryAttempts': 0}}"""
 
+from typing import Dict
 from string import Template
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -42,7 +43,6 @@ import scar.logger as logger
 class LaunchTemplates(GenericClient):
     """Class to manage the creation and update of launch templates."""
 
-    _TEMPLATE_NAME = 'faas-supervisor'
     _SUPERVISOR_GITHUB_REPO = 'faas-supervisor'
     _SUPERVISOR_GITHUB_USER = 'grycap'
     _SUPERVISOR_GITHUB_ASSET_NAME = 'supervisor'
@@ -55,9 +55,10 @@ class LaunchTemplates(GenericClient):
         'chmod +x /opt/faas-supervisor/bin/supervisor\n'
     )
 
-    def __init__(self, aws_properties, supervisor_version):
-        super().__init__(aws_properties)
-        self.supervisor_version = supervisor_version
+    def __init__(self, resources_info: Dict):
+        super().__init__(resources_info.get('batch'))
+        self.supervisor_version = resources_info.get('lambda').get('supervisor').get('version')
+        self.template_name = resources_info.get('batch').get('compute_resources').get('launch_template_name')
         if self.supervisor_version == 'latest':
             self.supervisor_version = GitHubUtils.get_latest_release(
                 self._SUPERVISOR_GITHUB_USER,
@@ -69,7 +70,7 @@ class LaunchTemplates(GenericClient):
         """Checks if 'faas-supervisor' launch template is created"""
         params = {'Filters': [
             {'Name': 'launch-template-name',
-             'Values': [self._TEMPLATE_NAME]}
+             'Values': [self.template_name]}
         ]}
         response = self.client.describe_launch_templates(params)
         return ('LaunchTemplates' in response and
@@ -80,12 +81,12 @@ class LaunchTemplates(GenericClient):
         """Checks if the supervisor version specified is created.
         Returns the Launch Template version or -1 if it does not exists"""
         response = self.client.describe_launch_template_versions(
-            {'LaunchTemplateName': self._TEMPLATE_NAME})
+            {'LaunchTemplateName': self.template_name})
         versions = response['LaunchTemplateVersions']
         # Get ALL versions
         while ('NextToken' in response and response['NextToken']):
             response = self.client.describe_launch_template_versions(
-                {'LaunchTemplateName': self._TEMPLATE_NAME,
+                {'LaunchTemplateName': self.template_name,
                  'NextToken': response['NextToken']})
             versions.extend(response['LaunchTemplateVersions'])
 
@@ -133,14 +134,14 @@ class LaunchTemplates(GenericClient):
         if self._is_supervisor_created():
             is_created = self._is_supervisor_version_created()
             if is_created is not -1:
-                logger.info('Using existent \'faas-supervisor\' launch template.')
+                logger.info(f"Using existent '{self.template_name}' launch template.")
                 return is_created
             else:
                 logger.info((f"Creating launch template version with 'faas-supervisor' "
                              f"version '{self.supervisor_version}'."))
                 user_data = self._create_supervisor_user_data()
                 response = self.client.create_launch_template_version(
-                    self._TEMPLATE_NAME,
+                    self.template_name,
                     self.supervisor_version,
                     {'UserData': user_data})
                 return response['LaunchTemplateVersion']['VersionNumber']
@@ -149,7 +150,7 @@ class LaunchTemplates(GenericClient):
                          f"version '{self.supervisor_version}'."))
             user_data = self._create_supervisor_user_data()
             response = self.client.create_launch_template(
-                self._TEMPLATE_NAME,
+                self.template_name,
                 self.supervisor_version,
                 {'UserData': user_data})
             return response['LaunchTemplate']['LatestVersionNumber']

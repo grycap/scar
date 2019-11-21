@@ -21,7 +21,7 @@ from scar.utils import FileUtils, SysUtils, StrUtils
 
 _DEFAULT_CFG = {
     "scar": {
-        "config_version": "1.0.6"
+        "config_version": "1.0.8"
     },
     "aws": {
         "iam": {"boto_profile": "default",
@@ -50,7 +50,8 @@ _DEFAULT_CFG = {
                 "max_s3_payload_size": 262144000           
             },
             "container": {
-                "environment_variables": {},
+                "environment" : {
+                    "Variables" : {}},
                 "timeout_threshold": 10
             },
             # Must be a Github tag or "latest"
@@ -99,17 +100,22 @@ _DEFAULT_CFG = {
             "vcpus": 1,
             "memory": 1024,
             "enable_gpu": False,
+            "state": "ENABLED",
+            "type": "MANAGED",
+            "environment" : {
+                "Variables" : {}},
             "compute_resources": {
-                "state": "ENABLED",
-                "type": "MANAGED",
                 "security_group_ids": [],
-                "comp_type": "EC2",
+                "type": "EC2",
                 "desired_v_cpus": 0,
                 "min_v_cpus": 0,
                 "max_v_cpus": 2,
                 "subnets": [],
-                "instance_types": ["m3.medium"]
-            }
+                "instance_types": ["m3.medium"],
+                "launch_template_name": "faas-supervisor",
+                "instance_role": "arn:aws:iam::{account_id}:instance-profile/ecsInstanceRole"
+            },
+            "service_role": "arn:aws:iam::{account_id}:role/service-role/AWSBatchServiceRole"            
         }
     }
 }

@@ -20,7 +20,7 @@ from typing import Dict
 import zipfile
 import scar.http.request as request
 import scar.logger as logger
-from scar.utils import lazy_property, FileUtils, GitHubUtils, StrUtils, \
+from scar.utils import FileUtils, GitHubUtils, StrUtils, \
                        GITHUB_USER, GITHUB_SUPERVISOR_PROJECT
 from scar.providers.aws.clients.lambdafunction import LambdaClient
 
@@ -64,7 +64,7 @@ def _create_layer_zip(layer_zip_path: str, layer_code_path: str) -> None:
 class Layer():
     """Class used for layer management."""
 
-    def __init__(self, lambda_client) -> None:
+    def __init__(self, lambda_client: LambdaClient) -> None:
         self.lambda_client = lambda_client
 
     def _find(self, layer_name: str) -> Dict:
@@ -103,29 +103,23 @@ class Layer():
 class LambdaLayers():
     """"Class used to manage the lambda supervisor layer."""
 
-    @lazy_property
-    def layer(self):
-        """Property used to manage the lambda layers."""
-        layer = Layer(self.lambda_client)
-        return layer
-
-    def __init__(self, function: Dict, lambda_client: LambdaClient) -> None:
-        self.function = function
-        self.lambda_client = lambda_client
-        self.layer_name = self.function.get('supervisor').get('layer_name')
-        self.supervisor_version = self.function.get('supervisor').get('version')
+    # To avoid circular inheritance we need to receive the LambdaClient
+    def __init__(self, resources_info: Dict, lambda_client: LambdaClient):
+        self.resources_info = resources_info
+        self.layer_name = self.resources_info.get('supervisor').get('layer_name')
+        self.supervisor_version = self.resources_info.get('supervisor').get('version')
+        self.layer = Layer(self.resources_info, lambda_client)
 
     def _get_supervisor_layer_props(self, layer_zip_path: str) -> Dict:
         return {'LayerName' : self.layer_name,
-                'Description' : self.function.get('supervisor').get('version'),
+                'Description' : self.supervisor_version,
                 'Content' : {'ZipFile': FileUtils.read_file(layer_zip_path, mode="rb")},
-                'LicenseInfo' : self.function.get('supervisor').get('license_info')}
+                'LicenseInfo' : self.resources_info.get('supervisor').get('license_info')}
 
     def _create_layer(self) -> None:
         tmp_zip_path, layer_code_path = _create_tmp_folders()
         layer_zip_path = FileUtils.join_paths(FileUtils.get_tmp_dir(), f"{self.layer_name}.zip")
-        parent_folder = _download_supervisor(self.function.get('supervisor').get('version'),
-                                             tmp_zip_path)
+        parent_folder = _download_supervisor(self.supervisor_version, tmp_zip_path)
         _copy_supervisor_files(parent_folder, tmp_zip_path, layer_code_path)
         _copy_extra_files(parent_folder, tmp_zip_path, layer_code_path)
         _create_layer_zip(layer_zip_path, layer_code_path)
