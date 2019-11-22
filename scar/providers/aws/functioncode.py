@@ -69,8 +69,7 @@ class FunctionPackager():
 
     def _copy_function_configuration(self):
         cfg_file_path = FileUtils.join_paths(self._tmp_payload_folder.name, "function_config.yaml")
-        raw_cfg_file = FileUtils.load_config_file()
-        function_cfg = {"storages" : raw_cfg_file.get('storages', {})}
+        function_cfg = {"storages" : FileUtils.load_tmp_config_file().get('storages', {})}
         function_cfg.update(self.resources_info['lambda'])
         FileUtils.write_yaml(cfg_file_path, function_cfg)
 

@@ -106,9 +106,9 @@ class LambdaLayers():
     # To avoid circular inheritance we need to receive the LambdaClient
     def __init__(self, resources_info: Dict, lambda_client: LambdaClient):
         self.resources_info = resources_info
-        self.layer_name = self.resources_info.get('supervisor').get('layer_name')
-        self.supervisor_version = self.resources_info.get('supervisor').get('version')
-        self.layer = Layer(self.resources_info, lambda_client)
+        self.layer_name = resources_info.get('lambda').get('supervisor').get('layer_name')
+        self.supervisor_version = resources_info.get('lambda').get('supervisor').get('version')
+        self.layer = Layer(lambda_client)
 
     def _get_supervisor_layer_props(self, layer_zip_path: str) -> Dict:
         return {'LayerName' : self.layer_name,

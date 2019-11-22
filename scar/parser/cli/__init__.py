@@ -76,13 +76,13 @@ def _parse_lambda_args(cmd_args: Dict) -> Dict:
 
 def _get_lambda_environment_variables(lambda_args: Dict) -> None:
     lambda_env_vars = {"environment": {"Variables": {}},
-                       "container": {'environment_variables' : {}}}
+                       "container": {'environment' : {"Variables": {}}}}
     if "environment_variables" in lambda_args:
         # These variables define the udocker container environment variables
         for env_var in lambda_args["environment_variables"]:
             key_val = env_var.split("=")
             # Add an specific prefix to be able to find the container variables defined by the user
-            lambda_env_vars['container']['environment_variables'][f'{key_val[0]}'] = key_val[1]
+            lambda_env_vars['container']['environment']['Variables'][f'{key_val[0]}'] = key_val[1]
         del(lambda_args['environment_variables'])
     if "extra_payload" in lambda_args:
         lambda_env_vars['container']['extra_payload'] = f"/var/task"

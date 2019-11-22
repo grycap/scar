@@ -20,7 +20,7 @@ import scar.logger as logger
 from scar.utils import FileUtils
 
 
-def _get_bucket_and_folders(storage_path: str) -> Tuple:
+def get_bucket_and_folders(storage_path: str) -> Tuple:
     output_bucket = storage_path
     output_folders = ""
     output_path = storage_path.split("/", 1)
@@ -35,7 +35,7 @@ class S3(GenericClient):
 
     def __init__(self, resources_info):
         super().__init__()
-        self.function_info = resources_info
+        self.resources_info = resources_info
 
     @excp.exception(logger)
     def create_bucket(self, bucket_name) -> None:
@@ -43,15 +43,15 @@ class S3(GenericClient):
             self.client.create_bucket(bucket_name)
 
     @excp.exception(logger)
-    def add_bucket_folder(self, folders: str) -> None:
-        self.upload_file(folder_name=folders)
+    def add_bucket_folder(self, bucket: str, folders: str) -> None:
+        self.upload_file(bucket, folder_name=folders)
 
-    def create_bucket_and_folders(self, storage_path: str) -> str:
-        bucket, folders = _get_bucket_and_folders(storage_path)
+    def create_bucket_and_folders(self, storage_path: str) -> Tuple:
+        bucket, folders = get_bucket_and_folders(storage_path)
         self.create_bucket(bucket)
         if folders:
-            self.add_bucket_folder(folders)
-        return bucket
+            self.add_bucket_folder(bucket, folders)
+        return bucket, folders
 
     def set_input_bucket_notification(self, bucket_name: str) -> None:
         # First check that the function doesn't have other configurations
@@ -68,13 +68,13 @@ class S3(GenericClient):
         bucket_conf = self.client.get_notification_configuration(bucket_name)
         if bucket_conf and "LambdaFunctionConfigurations" in bucket_conf:
             lambda_conf = bucket_conf["LambdaFunctionConfigurations"]
-            filter_conf = [x for x in lambda_conf if x['LambdaFunctionArn'] != self.function_info.get('lambda').get('arn')]
+            filter_conf = [x for x in lambda_conf if x['LambdaFunctionArn'] != self.resources_info.get('lambda').get('arn')]
             notification = { "LambdaFunctionConfigurations": filter_conf }
             self.client.put_notification_configuration(bucket_name, notification)
             logger.info("Bucket notifications successfully deleted")
 
     def get_trigger_configuration(self, bucket_name: str) -> Dict:
-        return  {"LambdaFunctionArn": self.function_info.get('lambda').get('arn'),
+        return  {"LambdaFunctionArn": self.resources_info.get('lambda').get('arn'),
                  "Events": [ "s3:ObjectCreated:*" ],
                  "Filter": { "Key": { "FilterRules": [{ "Name": "prefix", "Value": bucket_name }]}}
                  }
@@ -108,19 +108,23 @@ class S3(GenericClient):
 
     @excp.exception(logger)
     def get_bucket_file_list(self):
-        bucket_name = self.function_info.s3.input_bucket
-        if self.client.find_bucket(bucket_name):
-            kwargs = {"Bucket" : bucket_name}
-            if hasattr(self.function_info.s3, "input_folder") and self.function_info.s3.input_folder:
-                kwargs["Prefix"] = self.function_info.s3.input_folder
-            return self.client.list_files(**kwargs)
-        else:
-            raise excp.BucketNotFoundError(bucket_name=bucket_name)
+        files = []
+        for storage_info in self.resources_info.get('lambda').get('input'):
+            if storage_info.get('storage_provider') == 's3':
+                bucket_name, folder_path = get_bucket_and_folders(storage_info.get('path'))
+                if self.client.find_bucket(bucket_name):
+                    kwargs = {"Bucket" : bucket_name}
+                    if folder_path:
+                        kwargs["Prefix"] = folder_path
+                    files.extend(self.client.list_files(**kwargs))
+                else:
+                    raise excp.BucketNotFoundError(bucket_name=bucket_name)
+        return files
 
     def get_s3_event(self, s3_file_key):
         return {"Records": [{"eventSource": "aws:s3",
-                             "s3" : {"bucket" : {"name": self.function_info.s3.input_bucket,
-                                                 "arn": f'arn:aws:s3:::{self.function_info.s3.input_bucket}'},
+                             "s3" : {"bucket" : {"name": self.resources_info.s3.input_bucket,
+                                                 "arn": f'arn:aws:s3:::{self.resources_info.s3.input_bucket}'},
                                      "object" : {"key": s3_file_key}}}]}
 
     def get_s3_event_list(self, s3_file_keys):
@@ -128,7 +132,7 @@ class S3(GenericClient):
 
     def download_file(self, bucket_name, file_key, file_path):
         kwargs = {'Bucket' : bucket_name, 'Key' : file_key}
-        logger.info("Downloading file '{0}' from bucket '{1}' in path '{2}'".format(file_key, bucket_name, file_path))
+        logger.info(f"Downloading file '{file_key}' from bucket '{bucket_name}' in path '{file_path}'")
         with open(file_path, 'wb') as file:
             kwargs['Fileobj'] = file
             self.client.download_file(**kwargs)

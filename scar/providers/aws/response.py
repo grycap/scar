@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import json
+from typing import Dict
 from enum import Enum
 from tabulate import tabulate
 import scar.logger as logger
@@ -69,12 +70,10 @@ def _print_generic_response(response, output_type, aws_output, text_message=None
         logger.info_json(output)
 
 
-def parse_lambda_function_creation_response(response, function, access_key):
+def parse_lambda_function_creation_response(response, output_type, access_key):
     if response:
-        function_name = function.get('lambda', {}).get('name', '')
-        output_type = function.get('lambda', {}).get('cli_output', '')
         aws_output = 'LambdaOutput'
-        text_message = f"Function '{function_name}' successfully created."
+        text_message = f"Function '{response['FunctionName']}' successfully created."
         json_message = {aws_output : {
                             'AccessKey' : access_key,
                             'FunctionArn' : response['FunctionArn'],
@@ -109,36 +108,32 @@ def parse_delete_api_response(response, api_id, output_type):
         _print_generic_response(response, output_type, 'APIGateway', text_message)
 
 
-def parse_ls_response(lambda_functions, output_type):
+def parse_ls_response(aws_resources: Dict, output_type: int) -> None:
     aws_output = 'Functions'
     result = []
     text_message = ""
     if output_type == OutputType.VERBOSE.value:
-        result = lambda_functions
+        result = aws_resources
     else:
-        for lambdaf in lambda_functions:
-            result.append(_parse_lambda_function_info(lambdaf))
+        for resources_info in aws_resources:
+            result.append(_parse_lambda_function_info(resources_info))
         text_message = _get_table(result)
     json_message = { aws_output : result }
     _print_generic_response('', output_type, aws_output, text_message, json_output=json_message, verbose_output=json_message)
 
 
-def _parse_lambda_function_info(function_info):
-    name = function_info.get('FunctionName', "-")
-    memory = function_info.get('MemorySize', "-")
-    timeout = function_info.get('Timeout', "-")
-    image_id = function_info['Environment']['Variables'].get('IMAGE_ID', "-")
-    api_gateway = function_info['Environment']['Variables'].get('API_GATEWAY_ID', "-")
+def _parse_lambda_function_info(resources_info):
+    api_gateway = resources_info.get('lambda').get('environment').get('Variables').get('API_GATEWAY_ID', "-")
     if api_gateway != '-':
-        region = function_info['FunctionArn'].split(':')[3]
-        api_gateway = f"https://{api_gateway}.execute-api.{region}.amazonaws.com/scar/launch"
-    super_version = function_info.get('SupervisorVersion', '-')
-    return {'Name' : name,
-            'Memory' : memory,
-            'Timeout' : timeout,
-            'Image_id': image_id,
+        stage_name = resources_info.get('api_gateway').get('stage_name')
+        region = resources_info.get('api_gateway').get('region')
+        api_gateway = f"https://{api_gateway}.execute-api.{region}.amazonaws.com/{stage_name}/launch"
+    return {'Name' : resources_info.get('lambda').get('name', "-"),
+            'Memory' : resources_info.get('lambda').get('memory', "-"),
+            'Timeout' : resources_info.get('lambda').get('timeout', "-"),
+            'Image_id': resources_info.get('lambda').get('image', "-"),
             'Api_gateway': api_gateway,
-            'Sup_version': super_version}
+            'Sup_version': resources_info.get('lambda').get('supervisor').get('version', '-')}
 
 
 def _get_table(functions_info):

@@ -308,13 +308,13 @@ class FileUtils:
             yaml.safe_dump(content, cfg_file)
 
     @staticmethod
-    def create_config_file(cfg_args):
+    def create_tmp_config_file(cfg_args):
         cfg_path = FileUtils.join_paths(SysUtils.get_user_home_path(), ".scar", "scar_tmp.yaml")
         os.environ['SCAR_TMP_CFG'] = cfg_path
         FileUtils.write_yaml(cfg_path, cfg_args)
         
     @staticmethod
-    def load_config_file():
+    def load_tmp_config_file():
         return FileUtils.load_yaml(os.environ['SCAR_TMP_CFG'])
     
     @staticmethod    

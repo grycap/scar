@@ -35,8 +35,8 @@ class Batch(GenericClient):
     def _set_required_environment_variables(self) -> None:
         self._set_batch_environment_variable('AWS_LAMBDA_FUNCTION_NAME', self.function_name)
         self._set_batch_environment_variable('SCRIPT', self._get_user_script())
-        if self.resources_info.get('lambda').get('container').get('environment_variables', False):
-            for key, value in self.resources_info.get('lambda').get('container').get('environment_variables').items():
+        if self.resources_info.get('lambda').get('container').get('environment').get('Variables', False):
+            for key, value in self.resources_info.get('lambda').get('container').get('environment').get('Variables').items():
                 self._set_batch_environment_variable(key, value)
 
     def _set_batch_environment_variable(self, key: str, value: str) -> None:

@@ -19,15 +19,13 @@ from botocore.exceptions import ClientError
 from scar.providers.aws import GenericClient
 from scar.providers.aws.functioncode import FunctionPackager
 from scar.providers.aws.lambdalayers import LambdaLayers
-from scar.providers.aws.clients.lambdafunction import LambdaClient
 from scar.providers.aws.s3 import S3
 from scar.providers.aws.validators import AWSValidator
 import scar.exceptions as excp
-import scar.http.request as request
 import scar.logger as logger
-import scar.providers.aws.response as response_parser
 from scar.utils import DataTypesUtils, FileUtils, StrUtils
 from typing import Dict
+from scar.parser.cfgfile import ConfigFileParser
 
 MAX_CONCURRENT_INVOCATIONS = 500
 ASYNCHRONOUS_CALL = {"invocation_type": "Event",
@@ -98,7 +96,7 @@ class Lambda(GenericClient):
         return code
 
     def delete_function(self):
-        return self.client.delete_function(self.function_info.get('lambda').get('name'))
+        return self.client.delete_function(self.resources_info.get('lambda').get('name'))
 
     def link_function_and_bucket(self, bucket_name: str) -> None:
         kwargs = {'FunctionName' : self.function.get('name'),
@@ -139,15 +137,14 @@ class Lambda(GenericClient):
         pool.close()
 
     def launch_lambda_instance(self):
-        'TODO'
-#         response = self._invoke_lambda_function()
-#         response_args = {'Response' : response,
-#                          'FunctionName' : self.aws.lambdaf.name,
-#                          'OutputType' : self.aws.output,
-#                          'IsAsynchronous' : self.aws.lambdaf.asynchronous}
-#         if hasattr(self.aws, "output_file"):
-#             response_args['OutputFile'] = self.aws.output_file
-#         response_parser.parse_invocation_response(**response_args)
+        if self.is_asynchronous():
+            self.set_asynchronous_call_parameters()        
+        response = self._invoke_lambda_function()
+        response_args = {'Response' : response,
+                         'FunctionName' : self.function.get('name'),
+                         'OutputType' : self.function.get('cli_output'),
+                         'IsAsynchronous' : self.function.get('asynchronous')}
+        return response_args
 
     def _get_invocation_payload(self):
         # Default payload
@@ -192,8 +189,8 @@ class Lambda(GenericClient):
 #             env_vars['Variables']['TIMEOUT_THRESHOLD'] = str(self.aws.lambdaf.timeout_threshold)
 #         if hasattr(self.aws.lambdaf, "log_level"):
 #             env_vars['Variables']['LOG_LEVEL'] = self.aws.lambdaf.log_level
-#         function_info['Environment']['Variables'].update(env_vars['Variables'])
-#         update_args['Environment'] = function_info['Environment']
+#         resources_info['Environment']['Variables'].update(env_vars['Variables'])
+#         update_args['Environment'] = resources_info['Environment']
 
     def _update_supervisor_layer(self, function_info, update_args):
         if hasattr(self.aws.lambdaf, "supervisor_layer"):
@@ -206,33 +203,46 @@ class Lambda(GenericClient):
 
     def update_function_configuration(self, function_info=None):
         'TODO'
-#         if not function_info:
-#             function_info = self.get_function_info()
-#         update_args = {'FunctionName' : function_info['FunctionName'] }
+#         if not resources_info:
+#             resources_info = self.get_function_info()
+#         update_args = {'FunctionName' : resources_info['FunctionName'] }
 # #         if hasattr(self.aws.lambdaf, "memory"):
 # #             update_args['MemorySize'] = self.aws.lambdaf.memory
 # #         else:
-# #             update_args['MemorySize'] = function_info['MemorySize']
+# #             update_args['MemorySize'] = resources_info['MemorySize']
 # #         if hasattr(self.aws.lambdaf, "time"):
 # #             update_args['Timeout'] = self.aws.lambdaf.time
 # #         else:
-# #             update_args['Timeout'] = function_info['Timeout']
-#         self._update_environment_variables(function_info, update_args)
-#         self._update_supervisor_layer(function_info, update_args)
+# #             update_args['Timeout'] = resources_info['Timeout']
+#         self._update_environment_variables(resources_info, update_args)
+#         self._update_supervisor_layer(resources_info, update_args)
 #         self.client.update_function_configuration(**update_args)
-#         logger.info("Function '{}' updated successfully.".format(function_info['FunctionName']))
+#         logger.info("Function '{}' updated successfully.".format(resources_info['FunctionName']))
 
     def _get_function_environment_variables(self):
         return self.get_function_info()['Environment']
 
+    def merge_aws_and_local_configuration(self, aws_conf: Dict) -> Dict:
+        result = ConfigFileParser().get_properties().get('aws')
+        result['lambda']['name'] = aws_conf['FunctionName']
+        result['lambda']['arn'] = aws_conf['FunctionArn']
+        result['lambda']['timeout'] = aws_conf['Timeout']
+        result['lambda']['memory'] = aws_conf['MemorySize']
+        result['lambda']['environment']['Variables'] = aws_conf['Environment']['Variables'].copy()
+        result['lambda']['layers'] = aws_conf['Layers'].copy()
+        result['lambda']['supervisor']['version'] = aws_conf['SupervisorVersion']
+        return result
+
     def get_all_functions(self, arn_list):
         try:
-            return [self.get_function_info(function_arn) for function_arn in arn_list]
+            return [self.merge_aws_and_local_configuration(self.get_function_info(function_arn)) 
+                    for function_arn in arn_list]
         except ClientError as cerr:
             print (f"Error getting function info by arn: {cerr}")
 
-    def get_function_info(self):
-        return self.client.get_function_info(self.function.get('name'))
+    def get_function_info(self, arn: str =None) -> Dict:
+        function = arn if arn else self.function.get('name')
+        return self.client.get_function_info(function)
 
     @excp.exception(logger)
     def find_function(self, function_name_or_arn=None):

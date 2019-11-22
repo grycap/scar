@@ -154,10 +154,6 @@ class Subparsers():
         ls.set_defaults(func='ls')
         # S3 args
         ls.add_argument("-b", "--bucket", help="Show bucket files")
-        # Layer args
-        ls.add_argument("-l", "--list-layers",
-                        help="Show lambda layers information",
-                        action="store_true")
 
     def _add_put_parser(self):
         put = self.subparser.add_parser('put',
