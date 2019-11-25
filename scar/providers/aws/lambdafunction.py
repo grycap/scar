@@ -142,7 +142,6 @@ class Lambda(GenericClient):
         response = self._invoke_lambda_function()
         response_args = {'Response' : response,
                          'FunctionName' : self.function.get('name'),
-                         'OutputType' : self.function.get('cli_output'),
                          'IsAsynchronous' : self.function.get('asynchronous')}
         return response_args
 

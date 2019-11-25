@@ -80,7 +80,7 @@ class CloudWatchLogs(GenericClient):
         """Deletes a CloudWatch Log Group."""
         return self.client.delete_log_group(log_group_name)
 
-    def getaws_log(self) -> str:
+    def get_aws_log(self) -> str:
         """Returns Lambda logs for an specific lambda function."""
         function_logs = ""
         try:

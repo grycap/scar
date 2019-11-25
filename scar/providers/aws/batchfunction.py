@@ -209,10 +209,10 @@ class Batch(GenericClient):
         response = self.client.describe_compute_environments(**creation_args)
         return len(response["computeEnvironments"]) > 0
 
-    def describe_jobs(self, job_id):
-        describe_args = {'jobs': [job_id]}
+    def get_jobs_with_request_id(self) -> Dict:
+        describe_args = {'jobs': [self.resources_info.get('cloudwatch').get('request_id')]}
         return self.client.describe_jobs(**describe_args)
 
-    def exist_job(self, job_id):
-        response = self.describe_jobs(job_id)
-        return len(response["jobs"]) != 0
+#     def exist_job(self, job_id: str) -> bool:
+#         response = self.describe_jobs(job_id)
+#         return len(response["jobs"]) != 0

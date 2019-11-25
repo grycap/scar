@@ -147,7 +147,7 @@ class AWS(Commands):
             self._create_lambda_function(resources_info)
             self._create_log_group(resources_info)
             self._create_s3_buckets(resources_info)
-            # The api_gateway permissions are added after the function is created
+            # The api_gateway permissions must be added after the function is created
             self._add_api_gateway_permissions(resources_info)
             self._create_batch_environment(resources_info)
             # self._preheat_function()
@@ -172,6 +172,7 @@ class AWS(Commands):
         response = Lambda(resources_info).launch_lambda_instance()     
         if self.scar_info.get("output_file", False):
             response['OutputFile'] = self.scar_info.get("output_file")
+        response['OutputType'] = self.scar_info.get("cli_output")
         response_parser.parse_invocation_response(**response)        
         'TODO FINISH'
 #         if hasattr(self.aws_properties, "s3") and hasattr(self.aws_properties.s3, "input_bucket"):
@@ -218,11 +219,15 @@ class AWS(Commands):
 
     @excp.exception(logger)
     def log(self):
-        'TODO'
-#         aws_log = self.cloudwatch_logs.get_aws_log()
-#         batch_logs = self._get_batch_logs()
-#         aws_log += batch_logs if batch_logs else ""
-#         print(aws_log)
+        index = 0
+        if len(self.aws_resources) > 1:
+            index = _choose_function(self.aws_resources)
+        # We only return the logs of one function each time
+        if index >= 0:            
+            aws_log = CloudWatchLogs(self.aws_resources[index]).get_aws_log()
+            batch_logs = self._get_batch_logs(self.aws_resources[index])
+            aws_log += batch_logs if batch_logs else ""
+            print(aws_log)
 
     @excp.exception(logger)
     def put(self):
@@ -355,12 +360,11 @@ class AWS(Commands):
         arn_list = ResourceGroups(resources_info).get_resource_arn_list(IAM(resources_info).get_user_name_or_id())
         return Lambda(resources_info).get_all_functions(arn_list)
 
-    def _get_batch_logs(self) -> str:
+    def _get_batch_logs(self, resources_info: Dict) -> str:
         logs = ""
-#         if hasattr(self.aws_properties.cloudwatch, "request_id") and \
-#         self.batch.exist_job(self.aws_properties.cloudwatch.request_id):
-#             batch_jobs = self.batch.describe_jobs(self.aws_properties.cloudwatch.request_id)
-#             logs = self.cloudwatch_logs.get_batch_job_log(batch_jobs["jobs"])
+        if resources_info.get('cloudwatch').get('request_id', False):
+            batch_jobs = Batch(resources_info).get_jobs_with_request_id()
+            logs = CloudWatchLogs(resources_info).get_batch_job_log(batch_jobs["jobs"])
         return logs
 
 #     def _preheat_function(self):
