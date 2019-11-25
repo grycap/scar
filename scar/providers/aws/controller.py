@@ -154,27 +154,31 @@ class AWS(Commands):
 
     @excp.exception(logger)
     def invoke(self):
-        'TODO'
-#         self._update_local_function_properties()
-#         response = self.aws_lambda.call_http_endpoint()
-#         response_parser.parse_http_response(response,
-#                                             self.aws_properties.lambdaf.name,
-#                                             self.aws_properties.lambdaf.asynchronous,
-#                                             self.aws_properties.output,
-#                                             getattr(self.scar, "output_file", ""))
+        index = 0
+        if len(self.aws_resources) > 1:
+            index = _choose_function(self.aws_resources)
+        if index >= 0:
+            resources_info = self.aws_resources[index]
+            response = Lambda(resources_info).call_http_endpoint()
+            response_parser.parse_http_response(response,
+                                                resources_info.get('lambda').get('name'),
+                                                resources_info.get('lambda').get('asynchronous'),
+                                                self.scar_info.get('cli_output'),
+                                                self.scar_info.get('output_file', ''))
 
     @excp.exception(logger)
     def run(self):
         index = 0
         if len(self.aws_resources) > 1:
             index = _choose_function(self.aws_resources)
-        resources_info = self.aws_resources[index]
-        response = Lambda(resources_info).launch_lambda_instance()     
-        if self.scar_info.get("output_file", False):
-            response['OutputFile'] = self.scar_info.get("output_file")
-        response['OutputType'] = self.scar_info.get("cli_output")
-        response_parser.parse_invocation_response(**response)        
-        'TODO FINISH'
+        if index >= 0:            
+            resources_info = self.aws_resources[index]
+            response = Lambda(resources_info).launch_lambda_instance()     
+            if self.scar_info.get("output_file", False):
+                response['OutputFile'] = self.scar_info.get("output_file")
+            response['OutputType'] = self.scar_info.get("cli_output")
+            response_parser.parse_invocation_response(**response)        
+            'TODO FINISH'
 #         if hasattr(self.aws_properties, "s3") and hasattr(self.aws_properties.s3, "input_bucket"):
 #             self._process_input_bucket_calls()
 
@@ -388,8 +392,13 @@ class AWS(Commands):
         for function_info in lambda_functions:
             self.aws_lambda.update_function_configuration(function_info)
 
-    def _update_local_function_properties(self, function_info):
-        self._reset_aws_properties()
+#     def _set_api_id(self, resources_info: Dict) -> None:
+#         api_gateway_id = Lambda(resources_info).get_function_info().get('Environment').get('Variables').get('API_GATEWAY_ID')
+#         if api_gateway_id:
+#             resources_info['lambda']['environment']['Variables']['API_GATEWAY_ID'] = api_gateway_id        
+
+#     def _update_local_function_properties(self, function_info):
+#         self._reset_aws_properties()
 #         """Update the defined properties with the AWS information."""
 #         if function_info:
 #             self.aws_properties.lambdaf.update_properties(**function_info)

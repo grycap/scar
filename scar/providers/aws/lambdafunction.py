@@ -14,6 +14,7 @@
 
 import base64
 import json
+from scar.http.request import call_http_endpoint
 from multiprocessing.pool import ThreadPool
 from botocore.exceptions import ClientError
 from scar.providers.aws import GenericClient
@@ -278,36 +279,35 @@ class Lambda(GenericClient):
         return env_vars['Variables'].get('API_GATEWAY_ID', '')
 
     def _get_api_gateway_url(self):
-        'TODO'
-#         api_id = self.get_api_gateway_id()
-#         if not api_id:
-#             raise excp.ApiEndpointNotFoundError(self.function.get('name'))
-#         return f'https://{api_id}.execute-api.{self.resources_info.region}.amazonaws.com/scar/launch'
+        api_id = self.get_api_gateway_id()
+        if not api_id:
+            raise excp.ApiEndpointNotFoundError(self.function.get('name'))
+        return self.resources_info.get('api_gateway').get('endpoint').format(api_id=api_id,
+                                                                             api_region=self.resources_info.get('api_gateway').get('region'),
+                                                                             stage_name=self.resources_info.get('api_gateway').get('stage_name'))
+    
 
     def call_http_endpoint(self):
-        'TODO'
-#         invoke_args = {'headers' : {'X-Amz-Invocation-Type':'Event'} if self.is_asynchronous() else {}}
-#         if hasattr(self.aws, "api_gateway"):
-#             self._set_invoke_args(invoke_args)
-#         return request.call_http_endpoint(self._get_api_gateway_url(), **invoke_args)
+        invoke_args = {'headers' : {'X-Amz-Invocation-Type':'Event'} if self.is_asynchronous() else {}}
+        self._set_invoke_args(invoke_args)
+        return call_http_endpoint(self._get_api_gateway_url(), **invoke_args)
 
     def _set_invoke_args(self, invoke_args):
-        'TODO'
-#         if hasattr(self.aws.api_gateway, "data_binary"):
-#             invoke_args['data'] = self._get_b64encoded_binary_data(self.aws.api_gateway.data_binary)
-#             invoke_args['headers'] = {'Content-Type': 'application/octet-stream'}
-#         if hasattr(self.aws.api_gateway, "parameters"):
-#             invoke_args['params'] = self._parse_http_parameters(self.aws.api_gateway.parameters)
-#         if hasattr(self.aws.api_gateway, "json_data"):
-#             invoke_args['data'] = self._parse_http_parameters(self.aws.api_gateway.json_data)
-#             invoke_args['headers'] = {'Content-Type': 'application/json'}
+        if self.resources_info.get('api_gateway').get('data_binary', False):
+            invoke_args['data'] = self._get_b64encoded_binary_data()
+            invoke_args['headers'] = {'Content-Type': 'application/octet-stream'}
+        if self.resources_info.get('api_gateway').get('parameters', False):
+            invoke_args['params'] = self._parse_http_parameters(self.resources_info.get('api_gateway').get('parameters'))
+        if self.resources_info.get('api_gateway').get('json_data', False):
+            invoke_args['data'] = self._parse_http_parameters(self.resources_info.get('api_gateway').get('json_data'))
+            invoke_args['headers'] = {'Content-Type': 'application/json'}
 
     def _parse_http_parameters(self, parameters):
         return parameters if type(parameters) is dict else json.loads(parameters)
 
     @excp.exception(logger)
-    def _get_b64encoded_binary_data(self, data_path):
-        if data_path:
-            AWSValidator.validate_http_payload_size(data_path, self.is_asynchronous())
-            with open(data_path, 'rb') as data_file:
-                return base64.b64encode(data_file.read())
+    def _get_b64encoded_binary_data(self):
+        data_path = self.resources_info.get('api_gateway').get('data_binary')
+        AWSValidator.validate_http_payload_size(data_path, self.is_asynchronous())
+        with open(data_path, 'rb') as data_file:
+            return base64.b64encode(data_file.read())
