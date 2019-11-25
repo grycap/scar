@@ -119,15 +119,13 @@ class Lambda(GenericClient):
         return self._launch_s3_event(s3_event)
 
     def _launch_s3_event(self, s3_event):
-        'TODO'
-#         self.aws.lambdaf.payload = s3_event
-#         logger.info(f"Sending event for file '{s3_event['Records'][0]['s3']['object']['key']}'")
-#         return self.launch_lambda_instance()
+        self.function['payload'] = s3_event
+        logger.info(f"Sending event for file '{s3_event['Records'][0]['s3']['object']['key']}'")
+        return self.launch_lambda_instance()
 
     def process_asynchronous_lambda_invocations(self, s3_event_list):
         if (len(s3_event_list) > MAX_CONCURRENT_INVOCATIONS):
-            s3_file_chunk_list = DataTypesUtils.divide_list_in_chunks(s3_event_list, MAX_CONCURRENT_INVOCATIONS)
-            for s3_file_chunk in s3_file_chunk_list:
+            for s3_file_chunk in DataTypesUtils.divide_list_in_chunks(s3_event_list, MAX_CONCURRENT_INVOCATIONS):
                 self._launch_concurrent_lambda_invocations(s3_file_chunk)
         else:
             self._launch_concurrent_lambda_invocations(s3_event_list)

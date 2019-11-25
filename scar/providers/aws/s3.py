@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import os
-from typing import Tuple, Dict
+from typing import Tuple, Dict, List
 from scar.providers.aws import GenericClient
 import scar.exceptions as excp
 import scar.logger as logger
@@ -107,28 +107,37 @@ class S3(GenericClient):
         self.client.upload_file(**kwargs)
 
     @excp.exception(logger)
-    def get_bucket_file_list(self):
+    def get_bucket_file_list(self, storage: Dict = None):
         files = []
-        for storage_info in self.resources_info.get('lambda').get('input'):
-            if storage_info.get('storage_provider') == 's3':
-                bucket_name, folder_path = get_bucket_and_folders(storage_info.get('path'))
-                if self.client.find_bucket(bucket_name):
-                    kwargs = {"Bucket" : bucket_name}
-                    if folder_path:
-                        kwargs["Prefix"] = folder_path
-                    files.extend(self.client.list_files(**kwargs))
-                else:
-                    raise excp.BucketNotFoundError(bucket_name=bucket_name)
+        if storage:
+            files = self._list_storage_files(storage)
+        else:
+            for storage_info in self.resources_info.get('lambda').get('input'):
+                if storage_info.get('storage_provider') == 's3':
+                    files.extend(self._list_storage_files(storage_info))
+        return files
+    
+    def _list_storage_files(self, storage: Dict) -> List:
+        files = []
+        bucket_name, folder_path = get_bucket_and_folders(storage.get('path'))
+        if self.client.find_bucket(bucket_name):
+            kwargs = {"Bucket" : bucket_name}
+            if folder_path:
+                kwargs["Prefix"] = folder_path
+            files = (self.client.list_files(**kwargs))
+        else:
+            raise excp.BucketNotFoundError(bucket_name=bucket_name)
         return files
 
-    def get_s3_event(self, s3_file_key):
-        return {"Records": [{"eventSource": "aws:s3",
-                             "s3" : {"bucket" : {"name": self.resources_info.s3.input_bucket,
-                                                 "arn": f'arn:aws:s3:::{self.resources_info.s3.input_bucket}'},
-                                     "object" : {"key": s3_file_key}}}]}
+    def get_s3_event(self, bucket_name, file_key):
+        event = self.resources_info.get("s3").get("event")
+        event['Records'][0]['s3']['bucket']['name'] = bucket_name
+        event['Records'][0]['s3']['bucket']['arn'] = event['Records'][0]['s3']['bucket']['arn'].format(bucket_name=bucket_name)
+        event['Records'][0]['s3']['object']['key'] = file_key
+        return event
 
-    def get_s3_event_list(self, s3_file_keys):
-        return [self.get_s3_event(s3_key) for s3_key in s3_file_keys]
+    def get_s3_event_list(self, bucket_name, file_keys):
+        return [self.get_s3_event(bucket_name, file_key) for file_key in file_keys]
 
     def download_file(self, bucket_name, file_key, file_path):
         kwargs = {'Bucket' : bucket_name, 'Key' : file_key}

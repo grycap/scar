@@ -110,6 +110,7 @@ class Subparsers():
         group.add_argument("-n", "--name", help="Lambda function name")
         group.add_argument("-f", "--conf-file", help="Yaml file with the function configuration")
         run.add_argument("-s", "--run-script", help="Path to the script passed to the function")
+        run.add_argument("-ib", "--input-bucket", help=("Bucket name with files to launch the function."))        
         run.add_argument('c_args',
                          nargs=argparse.REMAINDER,
                          help="Arguments passed to the container.")

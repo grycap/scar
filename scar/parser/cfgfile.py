@@ -21,7 +21,7 @@ from scar.utils import FileUtils, SysUtils, StrUtils
 
 _DEFAULT_CFG = {
     "scar": {
-        "config_version": "1.0.8"
+        "config_version": "1.0.9"
     },
     "aws": {
         "iam": {"boto_profile": "default",
@@ -59,6 +59,24 @@ _DEFAULT_CFG = {
                 "version": "latest",
                 'layer_name' : "faas-supervisor",
                 'license_info' : 'Apache 2.0'                
+            }
+        },
+        "s3": {
+            "boto_profile": "default",
+            "region": "us-east-1",            
+            "event" : {
+                "Records": [{
+                    "eventSource": "aws:s3",
+                    "s3" : {
+                        "bucket" : {
+                            "name": "{bucket_name}",
+                            "arn": "arn:aws:s3:::{bucket_name}"
+                        },
+                        "object" : {
+                            "key": "{file_key}"
+                        }
+                    }
+                }]
             }
         },
         "api_gateway": {

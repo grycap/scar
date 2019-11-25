@@ -171,16 +171,19 @@ class AWS(Commands):
         index = 0
         if len(self.aws_resources) > 1:
             index = _choose_function(self.aws_resources)
-        if index >= 0:            
+        if index >= 0:          
             resources_info = self.aws_resources[index]
-            response = Lambda(resources_info).launch_lambda_instance()     
-            if self.scar_info.get("output_file", False):
-                response['OutputFile'] = self.scar_info.get("output_file")
-            response['OutputType'] = self.scar_info.get("cli_output")
-            response_parser.parse_invocation_response(**response)        
-            'TODO FINISH'
-#         if hasattr(self.aws_properties, "s3") and hasattr(self.aws_properties.s3, "input_bucket"):
-#             self._process_input_bucket_calls()
+            using_s3_bucket = False
+            if resources_info.get('lambda').get('input', False):
+                for storage in resources_info.get('lambda').get('input'):
+                    if storage.get('storage_provider') == 's3':
+                        print("This function has an associated 'S3' input bucket.")
+                        response = input(f"Do you want to launch the function using the files in '{storage.get('path')}'? [Y/n] ")
+                        if response in ('Y', 'y'):
+                            using_s3_bucket = True
+                            self._process_s3_input_bucket_calls(resources_info, storage)
+            if not using_s3_bucket:
+                self._launch_lambda_function(resources_info)       
 
     @excp.exception(logger)
     def update(self):
@@ -197,7 +200,7 @@ class AWS(Commands):
         if resources_info.get('lambda').get('input', False):
             file_list = S3(resources_info).get_bucket_file_list()
             for file_info in file_list:
-                print(file_info)    
+                logger.info(file_info)    
         else:
             aws_resources = self._get_all_functions()
             response_parser.parse_ls_response(aws_resources, self.scar_info.get('cli_output'))        
@@ -231,7 +234,7 @@ class AWS(Commands):
             aws_log = CloudWatchLogs(self.aws_resources[index]).get_aws_log()
             batch_logs = self._get_batch_logs(self.aws_resources[index])
             aws_log += batch_logs if batch_logs else ""
-            print(aws_log)
+            logger.info(aws_log)
 
     @excp.exception(logger)
     def put(self):
@@ -249,7 +252,6 @@ class AWS(Commands):
     def _create_api_gateway(self, resources_info: Dict):
         if resources_info.get("api_gateway", {}).get('name', False):
             APIGateway(resources_info).create_api_gateway()
-    
             
     @excp.exception(logger)
     def _create_lambda_function(self, resources_info: Dict) -> None:
@@ -259,7 +261,6 @@ class AWS(Commands):
                                                                 self.scar_info.get('cli_output'),
                                                                 lambda_client.get_access_key())            
     
-    
     @excp.exception(logger)
     def _create_log_group(self, resources_info: Dict) -> None:
         cloudwatch_logs = CloudWatchLogs(resources_info)
@@ -267,7 +268,6 @@ class AWS(Commands):
         response_parser.parse_log_group_creation_response(response,
                                                           cloudwatch_logs.get_log_group_name(),
                                                           self.scar_info.get('cli_output'))
-    
         
     @excp.exception(logger)
     def _create_s3_buckets(self, resources_info: Dict) -> None:
@@ -285,12 +285,10 @@ class AWS(Commands):
                 if bucket.get('storage_provider') == 's3':
                     s3_service.create_bucket_and_folders(bucket.get('path'))
     
-    
     @excp.exception(logger)
     def _add_api_gateway_permissions(self, resources_info: Dict):
         if resources_info.get("api_gateway").get('name', False):
             Lambda(resources_info).add_invocation_permission_from_api_gateway()
-    
     
     @excp.exception(logger)
     def _create_batch_environment(self, resources_info: Dict) -> None:
@@ -314,7 +312,6 @@ class AWS(Commands):
         # Delete resources batch
         self._delete_batch_resources(resources_info)
     
-    
     def _delete_api_gateway(self, resources_info: Dict) -> None:
         api_gateway_id = Lambda(resources_info).get_function_info().get('Environment').get('Variables').get('API_GATEWAY_ID')
         if api_gateway_id:
@@ -324,7 +321,6 @@ class AWS(Commands):
                                                       api_gateway_id,
                                                       self.scar_info.get('cli_output'))
     
-    
     def _delete_logs(self, resources_info: Dict):
         cloudwatch_logs = CloudWatchLogs(resources_info)
         log_group_name = cloudwatch_logs.get_log_group_name(resources_info.get('lambda').get('name'))
@@ -333,7 +329,6 @@ class AWS(Commands):
                                                   log_group_name,
                                                   self.scar_info.get('cli_output'))
     
-    
     def _delete_bucket_notifications(self, resources_info: Dict) -> None:
         if resources_info.get('lambda').get('input', False):
             for input_storage in resources_info.get('lambda').get('input'):
@@ -341,13 +336,11 @@ class AWS(Commands):
                     bucket_name = input_storage.get('path').split("/", 1)[0]
                     S3(resources_info).delete_bucket_notification(bucket_name)
     
-    
     def _delete_lambda_function(self, resources_info: Dict) -> None:
         response = Lambda(resources_info).delete_function()
         response_parser.parse_delete_function_response(response,
                                                        resources_info.get('lambda').get('name'),
                                                        self.scar_info.get('cli_output'))
-    
     
     def _delete_batch_resources(self, resources_info: Dict) -> None:
         batch = Batch(resources_info)
@@ -357,6 +350,13 @@ class AWS(Commands):
 ############################################
 ###              ------------            ###
 ############################################
+
+    def _launch_lambda_function(self, resources_info):
+        response = Lambda(resources_info).launch_lambda_instance()     
+        if self.scar_info.get("output_file", False):
+            response['OutputFile'] = self.scar_info.get("output_file")
+        response['OutputType'] = self.scar_info.get("cli_output")
+        response_parser.parse_invocation_response(**response)          
 
     def _get_all_functions(self):
         # Return the resources of the region in the scar's configuration file
@@ -376,17 +376,20 @@ class AWS(Commands):
 #         if hasattr(self.scar, "preheat"):
 #             self.aws_lambda.preheat_function()
 
-    def _process_input_bucket_calls(self):
-        s3_file_list = self.aws_s3.get_bucket_file_list()
+    def _process_s3_input_bucket_calls(self, resources_info: Dict, storage: Dict) -> None:
+        s3_service = S3(resources_info)
+        lambda_service = Lambda(resources_info)
+        s3_file_list = s3_service.get_bucket_file_list(storage)
+        bucket_name, _ = get_bucket_and_folders(storage.get('path'))
         logger.info(f"Files found: '{s3_file_list}'")
         # First do a request response invocation to prepare the lambda environment
         if s3_file_list:
-            s3_event = self.aws_s3.get_s3_event(s3_file_list.pop(0))
-            self.aws_lambda.launch_request_response_event(s3_event)
+            s3_event = s3_service.get_s3_event(bucket_name, s3_file_list.pop(0))
+            lambda_service.launch_request_response_event(s3_event)
         # If the list has more elements, invoke functions asynchronously
         if s3_file_list:
-            s3_event_list = self.aws_s3.get_s3_event_list(s3_file_list)
-            self.aws_lambda.process_asynchronous_lambda_invocations(s3_event_list)
+            s3_event_list = s3_service.get_s3_event_list(bucket_name, s3_file_list)
+            lambda_service.process_asynchronous_lambda_invocations(s3_event_list)
 
     def _update_all_functions(self, lambda_functions):
         for function_info in lambda_functions:
