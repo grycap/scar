@@ -40,7 +40,7 @@ def parse_http_response(response, function_name, asynch, output_type, output_fil
             else:
                 text_message += f"\nLog Group Name: {response.headers['amz-log-group-name']}\n"
                 text_message += f"Log Stream Name: {response.headers['amz-log-stream-name']}\n"
-                text_message += json.loads(response.text)["udocker_output"]
+                text_message += StrUtils.base64_to_utf8_string(response.text)
     else:
         if asynch and response.status_code == 502:
             text_message = f"Function '{function_name}' launched sucessfully."
