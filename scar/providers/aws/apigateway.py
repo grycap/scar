@@ -66,7 +66,9 @@ class APIGateway(GenericClient):
         self.api['resource_id'] = resource_info.get('id', '')
 
     def _get_endpoint(self) -> str:
-        endpoint_args = {'api_id': self.api.get('id', ''), 'api_region': self.api.get('region', '')}
+        endpoint_args = {'api_id': self.api.get('id', ''),
+                         'api_region': self.api.get('region', ''),
+                         'stage_name': self.api.get('stage_name', '')}
         return self.api.get('endpoint', '').format(**endpoint_args)
 
     def create_api_gateway(self) -> None:
