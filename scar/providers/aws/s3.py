@@ -34,7 +34,7 @@ def get_bucket_and_folders(storage_path: str) -> Tuple:
 class S3(GenericClient):
 
     def __init__(self, resources_info):
-        super().__init__()
+        super().__init__(resources_info.get('s3'))
         self.resources_info = resources_info
 
     @excp.exception(logger)

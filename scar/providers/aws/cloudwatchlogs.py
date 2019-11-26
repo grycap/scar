@@ -17,6 +17,7 @@ CloudWatch Log functionalities at high level."""
 from typing import List, Dict
 from botocore.exceptions import ClientError
 from scar.providers.aws import GenericClient
+from scar.providers.aws.batchfunction import Batch
 import scar.logger as logger
 
 
@@ -65,6 +66,36 @@ class CloudWatchLogs(GenericClient):
                     parsed_msg += f'{line}\n'
         return parsed_msg
 
+    def _get_lambda_logs(self):
+        """Returns Lambda logs for an specific lambda function."""
+        function_logs = ""
+        try:
+            kwargs = self._get_log_group_name_arg()
+            if self.cloudwatch.get("log_stream_name", False):
+                kwargs["logStreamNames"] = [self.cloudwatch.get("log_stream_name")]
+            function_logs = _parse_events_in_message(self.client.get_log_events(**kwargs))
+            if self.cloudwatch.get("request_id", False):
+                function_logs = self._parse_logs_with_requestid(function_logs)
+        except ClientError as cerr:
+            logger.warning("Error getting the function logs: %s" % cerr)
+        return function_logs
+            
+    def _get_batch_job_log(self, jobs_info: List) -> str:
+        """Returns Batch logs for an specific job."""
+        batch_logs = ""
+        if jobs_info:
+            job = jobs_info[0]
+            batch_logs += f"Batch job status: {job.get('status', '')}\n"
+            kwargs = {'logGroupName': "/aws/batch/job"}
+            if job.get("status", "") == "SUCCEEDED":
+                kwargs['logStreamNames'] = [job.get("container", {}).get("logStreamName", "")]
+                batch_events = self.client.get_log_events(**kwargs)
+                msgs = [event.get('message', '')
+                        for response in batch_events
+                        for event in response.get("events", {})]
+                batch_logs += '\n'.join(msgs)
+        return batch_logs
+
     def create_log_group(self) -> Dict:
         """Creates a CloudWatch Log Group."""
         creation_args = self._get_log_group_name_arg()
@@ -80,32 +111,11 @@ class CloudWatchLogs(GenericClient):
         """Deletes a CloudWatch Log Group."""
         return self.client.delete_log_group(log_group_name)
 
-    def get_aws_log(self) -> str:
-        """Returns Lambda logs for an specific lambda function."""
-        function_logs = ""
-        try:
-            kwargs = self._get_log_group_name_arg()
-            if self.cloudwatch.get("log_stream_name", False):
-                kwargs["logStreamNames"] = [self.cloudwatch.get("log_stream_name")]
-            function_logs = _parse_events_in_message(self.client.get_log_events(**kwargs))
-            if self.cloudwatch.get("request_id", False):
-                function_logs = self._parse_logs_with_requestid(function_logs)
-        except ClientError as cerr:
-            logger.warning("Error getting the function logs: %s" % cerr)
-        return function_logs
-
-    def get_batch_job_log(self, jobs_info: List) -> str:
-        """Returns Batch logs for an specific job."""
+    def get_aws_logs(self) -> str:
+        """Returns Cloudwatch logs for an specific lambda function and batch job (if any)."""
+        aws_logs = self._get_lambda_logs()
         batch_logs = ""
-        if jobs_info:
-            job = jobs_info[0]
-            batch_logs += f"Batch job status: {job.get('status', '')}\n"
-            kwargs = {'logGroupName': "/aws/batch/job"}
-            if job.get("status", "") == "SUCCEEDED":
-                kwargs['logStreamNames'] = [job.get("container", {}).get("logStreamName", "")]
-                batch_events = self.client.get_log_events(**kwargs)
-                msgs = [event.get('message', '')
-                        for response in batch_events
-                        for event in response.get("events", {})]
-                batch_logs += '\n'.join(msgs)
-        return batch_logs
+        if self.resources_info.get('cloudwatch').get('request_id', False):
+            batch_jobs = Batch(self.resources_info).get_jobs_with_request_id()
+            batch_logs = self._get_batch_job_log(batch_jobs["jobs"])
+        return aws_logs + batch_logs if batch_logs else aws_logs

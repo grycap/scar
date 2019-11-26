@@ -108,7 +108,8 @@ class Lambda(GenericClient):
     def preheat_function(self):
         logger.info("Preheating function")
         self._set_request_response_call_parameters()
-        return self.launch_lambda_instance()
+        self.launch_lambda_instance()
+        logger.info("Preheating successful")
 
     def _launch_async_event(self, s3_event):
         self.set_asynchronous_call_parameters()
@@ -137,7 +138,7 @@ class Lambda(GenericClient):
 
     def launch_lambda_instance(self):
         if self.is_asynchronous():
-            self.set_asynchronous_call_parameters()        
+            self.set_asynchronous_call_parameters()
         response = self._invoke_lambda_function()
         response_args = {'Response' : response,
                          'FunctionName' : self.function.get('name'),
@@ -173,52 +174,8 @@ class Lambda(GenericClient):
     def _set_request_response_call_parameters(self):
         self.function.update(REQUEST_RESPONSE_CALL)
 
-    def _update_environment_variables(self, function_info, update_args):
-        'TODO'
-#         # To update the environment variables we need to retrieve the
-#         # variables defined in lambda and update them with the new values
-#         env_vars = self.aws.lambdaf.environment
-#         if hasattr(self.aws.lambdaf, "environment_variables"):
-#             for env_var in self.aws.lambdaf.environment_variables:
-#                 key_val = env_var.split("=")
-#                 # Add an specific prefix to be able to find the variables defined by the user
-#                 env_vars['Variables']['CONT_VAR_{0}'.format(key_val[0])] = key_val[1]
-#         if hasattr(self.aws.lambdaf, "timeout_threshold"):
-#             env_vars['Variables']['TIMEOUT_THRESHOLD'] = str(self.aws.lambdaf.timeout_threshold)
-#         if hasattr(self.aws.lambdaf, "log_level"):
-#             env_vars['Variables']['LOG_LEVEL'] = self.aws.lambdaf.log_level
-#         resources_info['Environment']['Variables'].update(env_vars['Variables'])
-#         update_args['Environment'] = resources_info['Environment']
-
-    def _update_supervisor_layer(self, function_info, update_args):
-        if hasattr(self.aws.lambdaf, "supervisor_layer"):
-            # Set supervisor layer Arn
-            function_layers = [self.layers.get_latest_supervisor_layer_arn()]
-            # Add the rest of layers (if exist)
-            if 'Layers' in function_info:
-                function_layers.extend([layer for layer in function_info['Layers'] if self.layers.layer_name not in layer['Arn']])
-            update_args['Layers'] = function_layers
-
-    def update_function_configuration(self, function_info=None):
-        'TODO'
-#         if not resources_info:
-#             resources_info = self.get_function_info()
-#         update_args = {'FunctionName' : resources_info['FunctionName'] }
-# #         if hasattr(self.aws.lambdaf, "memory"):
-# #             update_args['MemorySize'] = self.aws.lambdaf.memory
-# #         else:
-# #             update_args['MemorySize'] = resources_info['MemorySize']
-# #         if hasattr(self.aws.lambdaf, "time"):
-# #             update_args['Timeout'] = self.aws.lambdaf.time
-# #         else:
-# #             update_args['Timeout'] = resources_info['Timeout']
-#         self._update_environment_variables(resources_info, update_args)
-#         self._update_supervisor_layer(resources_info, update_args)
-#         self.client.update_function_configuration(**update_args)
-#         logger.info("Function '{}' updated successfully.".format(resources_info['FunctionName']))
-
     def _get_function_environment_variables(self):
-        return self.get_function_info()['Environment']
+        return self.get_function_configuration()['Environment']
 
     def merge_aws_and_local_configuration(self, aws_conf: Dict) -> Dict:
         result = ConfigFileParser().get_properties().get('aws')
@@ -233,21 +190,21 @@ class Lambda(GenericClient):
 
     def get_all_functions(self, arn_list):
         try:
-            return [self.merge_aws_and_local_configuration(self.get_function_info(function_arn)) 
+            return [self.merge_aws_and_local_configuration(self.get_function_configuration(function_arn))
                     for function_arn in arn_list]
         except ClientError as cerr:
             print (f"Error getting function info by arn: {cerr}")
 
-    def get_function_info(self, arn: str =None) -> Dict:
+    def get_function_configuration(self, arn: str=None) -> Dict:
         function = arn if arn else self.function.get('name')
-        return self.client.get_function_info(function)
+        return self.client.get_function_configuration(function)
 
     @excp.exception(logger)
     def find_function(self, function_name_or_arn=None):
         try:
             # If this call works the function exists
             name_arn = function_name_or_arn if function_name_or_arn else self.function.get('name', '')
-            self.get_function_info(name_arn)
+            self.get_function_configuration(name_arn)
             return True
         except ClientError as ce:
             # Function not found
@@ -283,7 +240,6 @@ class Lambda(GenericClient):
         return self.resources_info.get('api_gateway').get('endpoint').format(api_id=api_id,
                                                                              api_region=self.resources_info.get('api_gateway').get('region'),
                                                                              stage_name=self.resources_info.get('api_gateway').get('stage_name'))
-    
 
     def call_http_endpoint(self):
         invoke_args = {'headers' : {'X-Amz-Invocation-Type':'Event'} if self.is_asynchronous() else {}}

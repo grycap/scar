@@ -19,7 +19,7 @@ PROFILE = "profile_parser"
 EXEC = "exec_parser"
 STORAGE = "storage_parser"
 
-INIT_UPDATE_PARENTS = [PROFILE, FUNCTION_DEFINITION, OUTPUT]
+INIT_PARENTS = [PROFILE, FUNCTION_DEFINITION, OUTPUT]
 INVOKE_PARENTS = [PROFILE, EXEC]
 RUN_PARENTS = [PROFILE, EXEC, OUTPUT]
 RM_LS_PARENTS = [PROFILE, OUTPUT]
@@ -41,7 +41,7 @@ class Subparsers():
 
     def _add_init_parser(self):
         init = self.subparser.add_parser('init',
-                                         parents=self._get_parents(INIT_UPDATE_PARENTS),
+                                         parents=self._get_parents(INIT_PARENTS),
                                          help="Create lambda function")
         # Set default function
         init.set_defaults(func="init")
@@ -74,7 +74,7 @@ class Subparsers():
                                            parents=self._get_parents(INVOKE_PARENTS),
                                            help="Call a lambda function using an HTTP request")
         # Set default function
-        invoke.set_defaults(func='invoke')        
+        invoke.set_defaults(func='invoke')
         group = invoke.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name",
                            help="Lambda function name")
@@ -89,28 +89,17 @@ class Subparsers():
                                   "you can pass the parameters here (i.e. '{\"key1\": "
                                   "\"value1\", \"key2\": [\"value2\", \"value3\"]}')."))
 
-    def _add_update_parser(self):
-        update = self.subparser.add_parser('update',
-                                           parents=self._get_parents(INIT_UPDATE_PARENTS),
-                                           help="Update function properties")
-        # Set default function
-        update.set_defaults(func='update')        
-        group = update.add_mutually_exclusive_group(required=True)
-        group.add_argument("-n", "--name", help="Lambda function name")
-        group.add_argument("-a", "--all", help="Update all lambda functions", action="store_true")
-        group.add_argument("-f", "--conf-file", help="Yaml file with the function configuration")
-
     def _add_run_parser(self):
         run = self.subparser.add_parser('run',
                                         parents=self._get_parents(RUN_PARENTS),
                                         help="Deploy function")
         # Set default function
-        run.set_defaults(func='run')        
+        run.set_defaults(func='run')
         group = run.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name", help="Lambda function name")
         group.add_argument("-f", "--conf-file", help="Yaml file with the function configuration")
         run.add_argument("-s", "--run-script", help="Path to the script passed to the function")
-        run.add_argument("-ib", "--input-bucket", help=("Bucket name with files to launch the function."))        
+        run.add_argument("-ib", "--input-bucket", help=("Bucket name with files to launch the function."))
         run.add_argument('c_args',
                          nargs=argparse.REMAINDER,
                          help="Arguments passed to the container.")
@@ -120,7 +109,7 @@ class Subparsers():
                                        parents=self._get_parents(RM_LS_PARENTS),
                                        help="Delete function")
         # Set default function
-        rm.set_defaults(func='rm')        
+        rm.set_defaults(func='rm')
         group = rm.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name",
                            help="Lambda function name")
@@ -135,7 +124,7 @@ class Subparsers():
                                         parents=self._get_parents(LOG_PARENTS),
                                         help="Show the logs for the lambda function")
         # Set default function
-        log.set_defaults(func='log')        
+        log.set_defaults(func='log')
         group = log.add_mutually_exclusive_group(required=True)
         group.add_argument("-n", "--name",
                            help="Lambda function name")
@@ -161,7 +150,7 @@ class Subparsers():
                                         parents=self._get_parents(PUT_GET_PARENTS),
                                         help="Upload file(s) to bucket")
         # Set default function
-        put.set_defaults(func='put')        
+        put.set_defaults(func='put')
 
     def _add_get_parser(self):
         get = self.subparser.add_parser('get',
@@ -169,4 +158,4 @@ class Subparsers():
                                         help="Download file(s) from bucket")
         # Set default function
         get.set_defaults(func='get')
-        
+

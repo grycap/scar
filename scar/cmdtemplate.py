@@ -19,7 +19,6 @@ class CallType(Enum):
     INIT = "init"
     INVOKE = "invoke"
     RUN = "run"
-    UPDATE = "update"    
     LS = "ls"
     RM = "rm"
     LOG = "log"
@@ -41,10 +40,6 @@ class Commands(metaclass=abc.ABCMeta):
     @abc.abstractmethod    
     def run(self):
         pass
-
-    @abc.abstractmethod    
-    def update(self):
-        pass    
 
     @abc.abstractmethod    
     def ls(self):

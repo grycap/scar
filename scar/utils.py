@@ -24,6 +24,8 @@ import tempfile
 import uuid
 import sys
 import yaml
+from zipfile import ZipFile
+from io import BytesIO
 from typing import Optional, Dict, List, Generator, Union, Any
 from distutils import dir_util
 from packaging import version
@@ -205,6 +207,12 @@ class FileUtils:
         return tempfile.TemporaryDirectory()
 
     @staticmethod
+    def create_tmp_file(**kwargs) -> tempfile.NamedTemporaryFile:
+        """Creates a directory in the temporal folder of the system.
+        When the context is finished, the folder is automatically deleted."""
+        return tempfile.NamedTemporaryFile(**kwargs)
+
+    @staticmethod
     def get_tree_size(path: str) -> int:
         """Return total size of files in given path and subdirs."""
         total = 0
@@ -317,9 +325,14 @@ class FileUtils:
     def load_tmp_config_file():
         return FileUtils.load_yaml(os.environ['SCAR_TMP_CFG'])
     
-    @staticmethod    
+    @staticmethod
     def get_file_name(file_path: str) -> str:
         return os.path.basename(file_path)
+
+    @staticmethod
+    def extract_zip_from_url(url: str, dest_path: str) -> None:
+        with ZipFile(BytesIO(url)) as thezip:
+            thezip.extractall(dest_path)
 
 class StrUtils:
     """Common methods for string management."""

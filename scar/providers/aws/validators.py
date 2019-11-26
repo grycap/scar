@@ -15,7 +15,6 @@
 
 from scar.exceptions import ValidatorError, S3CodeSizeError, \
                             FunctionCodeSizeError, InvocationPayloadError
-from scar.validator import GenericValidator
 from scar.utils import FileUtils, StrUtils
 
 VALID_LAMBDA_NAME_REGEX = (r"(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}(-gov)?-[a-z]+-\d{1}:)?("
@@ -26,10 +25,10 @@ MAX_POST_BODY_SIZE = MB * 6
 MAX_POST_BODY_SIZE_ASYNC = KB * 95
 
 
-class AWSValidator(GenericValidator):
+class AWSValidator():
     """Class with methods to validate AWS properties."""
 
-    @classmethod
+    @staticmethod
     def validate_kwargs(cls, **kwargs):
         aws_functions = kwargs.get('functions', {}).get('aws', {})
         for function in aws_functions:
@@ -49,7 +48,7 @@ class AWSValidator(GenericValidator):
                                  parameter_value=iam_properties,
                                  error_msg=error_msg)
 
-    @classmethod
+    @staticmethod
     def validate_lambda(cls, lambda_properties):
         if 'name' in lambda_properties:
             cls.validate_function_name(lambda_properties['name'])
@@ -58,7 +57,7 @@ class AWSValidator(GenericValidator):
         if 'time' in lambda_properties:
             cls.validate_time(lambda_properties['time'])
 
-    @classmethod
+    @staticmethod
     def validate_batch(cls, batch_properties):
         if 'vcpus' in batch_properties:
             cls.validate_batch_vcpus(batch_properties['vcpus'])

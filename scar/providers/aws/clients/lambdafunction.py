@@ -34,7 +34,7 @@ class LambdaClient(BotoClient):
         logger.debug("Creating lambda function.")
         return self.client.create_function(**kwargs)
 
-    def get_function_info(self, function_name_or_arn: str) -> Dict:
+    def get_function_configuration(self, function_name_or_arn: str) -> Dict:
         """Returns the configuration information
         of the Lambda function."""
         function_info = self.client.get_function_configuration(FunctionName=function_name_or_arn)

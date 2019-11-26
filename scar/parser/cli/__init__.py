@@ -48,9 +48,7 @@ def _set_args(args: Dict, key: str, val: str) -> None:
 
 
 def _parse_scar_args(cmd_args: Dict) -> Dict:
-    scar_args = ['conf_file', 'json',
-                 'verbose', 'path',
-                 'preheat', 'execution_mode',
+    scar_args = ['conf_file', 'json', 'verbose', 'path', 'execution_mode',
                  'output_file', 'supervisor_version', 'all']
     return {'scar' : DataTypesUtils.parse_arg_list(scar_args, cmd_args)}
 
@@ -64,7 +62,7 @@ def _parse_lambda_args(cmd_args: Dict) -> Dict:
     lambda_arg_list = ['name', 'asynchronous', 'init_script', 'run_script', 'c_args', 'memory',
                        'timeout', 'timeout_threshold', 'image', 'image_file', 'description',
                        'lambda_role', 'extra_payload', ('environment', 'environment_variables'),
-                       'layers', 'lambda_environment', 'list_layers', 'log_level']
+                       'layers', 'lambda_environment', 'list_layers', 'log_level', 'preheat']
     lambda_args = DataTypesUtils.parse_arg_list(lambda_arg_list, cmd_args)
     # Standardize log level if defined
     if "log_level" in lambda_args:
