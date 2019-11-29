@@ -13,9 +13,11 @@
 # limitations under the License.
 
 from typing import Dict, List
+import yaml
 from scar.providers.aws import GenericClient
 import scar.logger as logger
 from scar.providers.aws.launchtemplates import LaunchTemplates
+from scar.providers.aws.functioncode import create_function_config
 from scar.utils import FileUtils, StrUtils
 
 
@@ -35,6 +37,7 @@ class Batch(GenericClient):
     def _set_required_environment_variables(self) -> None:
         self._set_batch_environment_variable('AWS_LAMBDA_FUNCTION_NAME', self.function_name)
         self._set_batch_environment_variable('SCRIPT', self._get_user_script())
+        self._set_batch_environment_variable('FUNCTION_CONFIG', self._get_config_file())
         if self.resources_info.get('lambda').get('container').get('environment').get('Variables', False):
             for key, value in self.resources_info.get('lambda').get('container').get('environment').get('Variables').items():
                 self._set_batch_environment_variable(key, value)
@@ -48,6 +51,13 @@ class Batch(GenericClient):
             file_content = FileUtils.read_file(self.resources_info.get('lambda').get('init_script'))
             script = StrUtils.utf8_to_base64_string(file_content)
         return script
+
+    def _get_config_file(self) -> str:
+        cfg_file = ''
+        config = create_function_config(self.resources_info)
+        yaml_str = yaml.safe_dump(config)
+        cfg_file = StrUtils.utf8_to_base64_string(yaml_str)
+        return cfg_file
 
     def _delete_job_definitions(self) -> None:
         # Get main job definition

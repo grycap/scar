@@ -88,8 +88,8 @@ class Lambda(GenericClient):
         if self.function.get('deployment').get('bucket', False):
             file_key = f"lambda/{self.function.get('name')}.zip"
             S3(self.resources_info).upload_file(bucket=self.function.get('deployment').get('bucket'),
-                             file_path=zip_payload_path,
-                             file_key=file_key)
+                                                file_path=zip_payload_path,
+                                                file_key=file_key)
             code = {"S3Bucket": self.function.get('deployment_bucket'),
                     "S3Key": file_key}
         else:
@@ -100,9 +100,9 @@ class Lambda(GenericClient):
         return self.client.delete_function(self.resources_info.get('lambda').get('name'))
 
     def link_function_and_bucket(self, bucket_name: str) -> None:
-        kwargs = {'FunctionName' : self.function.get('name'),
-                  'Principal' : "s3.amazonaws.com",
-                  'SourceArn' : f'arn:aws:s3:::{bucket_name}'}
+        kwargs = {'FunctionName': self.function.get('name'),
+                  'Principal': "s3.amazonaws.com",
+                  'SourceArn': f'arn:aws:s3:::{bucket_name}'}
         self.client.add_invocation_permission(**kwargs)
 
     def preheat_function(self):

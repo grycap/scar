@@ -124,7 +124,7 @@ def _parse_s3_args(aws_args: Dict, cmd_args: Dict) -> Dict:
             aws_args['lambda']['input'] = [{'storage_provider': 's3', 'path':  s3_args['input_bucket']}]
         if 'output_bucket' in s3_args:
             aws_args['lambda']['output'] = [{'storage_provider': 's3', 'path':  s3_args['output_bucket']}]
-        storage['storage_providers'] = {'s3': []}
+        storage['storage_providers'] = {'s3': {}}
     return storage
 
 

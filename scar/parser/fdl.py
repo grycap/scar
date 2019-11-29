@@ -38,5 +38,5 @@ def merge_cmd_yaml(cmd: Dict, yaml: Dict) -> Dict:
     result['scar'] = DataTypesUtils.merge_dicts_with_copy(result.get('scar', {}),
                                                           cmd.get('scar', {}))
     result['storage_providers'] = DataTypesUtils.merge_dicts_with_copy(result.get('storage_providers', {}),
-                                                              cmd.get('storage_providers', {}))
+                                                                       cmd.get('storage_providers', {}))
     return result

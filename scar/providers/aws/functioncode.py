@@ -23,6 +23,12 @@ from scar.http.request import get_file
 from scar.utils import FileUtils, GitHubUtils, \
                        GITHUB_USER, GITHUB_SUPERVISOR_PROJECT
 
+
+def create_function_config(resources_info):
+    function_cfg = {'storage_providers': FileUtils.load_tmp_config_file().get('storage_providers', {})}
+    function_cfg.update(resources_info.get('lambda'))
+    return function_cfg
+
 class FunctionPackager():
     """Class to manage the deployment package creation."""
 
@@ -69,8 +75,7 @@ class FunctionPackager():
 
     def _copy_function_configuration(self):
         cfg_file_path = FileUtils.join_paths(self._tmp_payload_folder.name, "function_config.yaml")
-        function_cfg = {"storage_providers": FileUtils.load_tmp_config_file().get('storage_providers', {})}
-        function_cfg.update(self.resources_info['lambda'])
+        function_cfg = create_function_config(self.resources_info)
         FileUtils.write_yaml(cfg_file_path, function_cfg)
 
     def _manage_udocker_images(self):

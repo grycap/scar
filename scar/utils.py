@@ -309,8 +309,8 @@ class FileUtils:
                 return yaml.safe_load(cfg_file)
         else:
             raise YamlFileNotFoundError(file_path=file_path)
-        
-    @staticmethod        
+
+    @staticmethod
     def write_yaml(file_path: str, content: Dict) -> None:
         with open(file_path, 'w') as cfg_file:
             yaml.safe_dump(content, cfg_file)
@@ -320,11 +320,11 @@ class FileUtils:
         cfg_path = FileUtils.join_paths(SysUtils.get_user_home_path(), ".scar", "scar_tmp.yaml")
         os.environ['SCAR_TMP_CFG'] = cfg_path
         FileUtils.write_yaml(cfg_path, cfg_args)
-        
+
     @staticmethod
     def load_tmp_config_file():
         return FileUtils.load_yaml(os.environ['SCAR_TMP_CFG'])
-    
+
     @staticmethod
     def get_file_name(file_path: str) -> str:
         return os.path.basename(file_path)
