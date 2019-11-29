@@ -31,12 +31,12 @@ def merge_cmd_yaml(cmd: Dict, yaml: Dict) -> Dict:
     result = yaml.copy()
     # We merge the cli commands with all the defined functions
     # CLI only allows define AWS parameters
-    for cli_cmd in cmd.get('functions', {}).get("aws",{}):
+    for cli_cmd in cmd.get('functions', {}).get("aws", {}):
         for index, function in enumerate(result.get('functions', {}).get("aws", {})):
             result['functions']['aws'][index] = \
                 DataTypesUtils.merge_dicts_with_copy(function, cli_cmd)
     result['scar'] = DataTypesUtils.merge_dicts_with_copy(result.get('scar', {}),
                                                           cmd.get('scar', {}))
-    result['storages'] = DataTypesUtils.merge_dicts_with_copy(result.get('storages', {}),
-                                                              cmd.get('storages', {}))
+    result['storage_providers'] = DataTypesUtils.merge_dicts_with_copy(result.get('storage_providers', {}),
+                                                              cmd.get('storage_providers', {}))
     return result

@@ -131,7 +131,7 @@ class AWS(Commands):
         self.raw_args = FileUtils.load_tmp_config_file()
         AWSValidator.validate_kwargs(self.raw_args)
         self.aws_resources = self.raw_args.get('functions', {}).get('aws', {})
-        self.storages = self.raw_args.get('storages', {})
+        self.storage_providers = self.raw_args.get('storage_providers', {})
         self.scar_info = self.raw_args.get('scar', {})
         _add_extra_aws_properties(self.scar_info, self.aws_resources)
         # Call the user's command

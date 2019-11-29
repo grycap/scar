@@ -111,9 +111,9 @@ def _parse_cloudwatchlogs_args(cmd_args: Dict) -> Dict:
 
 def _parse_s3_args(aws_args: Dict, cmd_args: Dict) -> Dict:
     s3_arg_list = ['deployment_bucket',
-               'input_bucket',
-               'output_bucket',
-               ('bucket', 'input_bucket')]
+                   'input_bucket',
+                   'output_bucket',
+                   ('bucket', 'input_bucket')]
 
     s3_args = DataTypesUtils.parse_arg_list(s3_arg_list, cmd_args)
     storage = {}
@@ -121,10 +121,10 @@ def _parse_s3_args(aws_args: Dict, cmd_args: Dict) -> Dict:
         if 'deployment_bucket' in s3_args:
             aws_args['lambda']['deployment'] = {'bucket': s3_args['deployment_bucket']}
         if 'input_bucket' in s3_args:
-            aws_args['lambda']['input'] = [{'storage_provider' : 's3', 'path':  s3_args['input_bucket']}]
+            aws_args['lambda']['input'] = [{'storage_provider': 's3', 'path':  s3_args['input_bucket']}]
         if 'output_bucket' in s3_args:
-            aws_args['lambda']['output'] = [{'storage_provider' : 's3', 'path':  s3_args['output_bucket']}]
-        storage['storages'] = {'s3': []}
+            aws_args['lambda']['output'] = [{'storage_provider': 's3', 'path':  s3_args['output_bucket']}]
+        storage['storage_providers'] = {'s3': []}
     return storage
 
 
