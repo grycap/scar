@@ -37,7 +37,7 @@ class FunctionPackager():
         # Temporal folder to store the supervisor and udocker files
         self._tmp_payload_folder = FileUtils.create_tmp_dir()
         # Path where the supervisor is downloaded
-        self._supervisor_zip_path = FileUtils.join_paths(FileUtils.get_tmp_dir(), 'faas.zip')
+        self._supervisor_zip_path = FileUtils.join_paths(FileUtils.create_tmp_dir().name, 'faas.zip')
 
     @exception(logger)
     def create_zip(self, lambda_payload_path: str) -> None:
