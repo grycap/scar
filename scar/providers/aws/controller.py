@@ -164,10 +164,8 @@ class AWS(Commands):
             resources_info = self.aws_resources[index]
             response = Lambda(resources_info).call_http_endpoint()
             response_parser.parse_http_response(response,
-                                                resources_info.get('lambda').get('name'),
-                                                resources_info.get('lambda').get('asynchronous'),
-                                                self.scar_info.get('cli_output'),
-                                                self.scar_info.get('output_file', ''))
+                                                resources_info,
+                                                self.scar_info)
 
     @excp.exception(logger)
     def run(self):
