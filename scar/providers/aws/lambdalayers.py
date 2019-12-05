@@ -114,7 +114,7 @@ class LambdaLayers():
         return {'LayerName' : self.layer_name,
                 'Description' : self.supervisor_version,
                 'Content' : {'ZipFile': FileUtils.read_file(layer_zip_path, mode="rb")},
-                'LicenseInfo' : self.resources_info.get('supervisor').get('license_info')}
+                'LicenseInfo' : self.resources_info.get('lambda').get('supervisor').get('license_info')}
 
     def _create_layer(self) -> None:
         tmp_zip_path, layer_code_path = _create_tmp_folders()

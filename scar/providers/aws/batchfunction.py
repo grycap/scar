@@ -43,7 +43,7 @@ class Batch(GenericClient):
                 self._set_batch_environment_variable(key, value)
 
     def _set_batch_environment_variable(self, key: str, value: str) -> None:
-        self.resources_info['batch']['environment']['Variables'].update({'name': key, 'value': value})
+        self.resources_info['batch']['environment']['Variables'].update({key: value})
 
     def _get_user_script(self) -> str:
         script = ''
@@ -146,7 +146,7 @@ class Batch(GenericClient):
                                          'order': 1}, ],
             'jobQueueName':  self.function_name,
             'priority': 1,
-            'state': self.batch.get('compute_resources').get('state'),
+            'state': self.batch.get('state'),
         }
 
     def _get_job_definition_args(self):
@@ -154,7 +154,7 @@ class Batch(GenericClient):
             'jobDefinitionName': self.function_name,
             'type': 'container',
             'containerProperties': {
-                'image': self.resources_info.get('lambda').get('image'),
+                'image': self.resources_info.get('lambda').get('container').get('image'),
                 'memory': int(self.batch.get('memory')),
                 'vcpus': int(self.batch.get('vcpus')),
                 'command': [
@@ -170,7 +170,7 @@ class Batch(GenericClient):
                         'name': 'supervisor-bin'
                     }
                 ],
-                'environment': [{key, value} for key, value in self.resources_info['batch']['environment']['Variables'].items()],
+                'environment': [{'name': key, 'value': value} for key, value in self.resources_info['batch']['environment']['Variables'].items()],
                 'mountPoints': [
                     {
                         'containerPath': '/opt/faas-supervisor/bin',

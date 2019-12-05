@@ -94,7 +94,7 @@ class FunctionPackager():
             FileUtils.copy_file(init_script_path,
                                 FileUtils.join_paths(self._tmp_payload_folder.name,
                                                      FileUtils.get_file_name(init_script_path)))
-            del(self.resources_info['lambda']['init_script'])
+            #del(self.resources_info['lambda']['init_script'])
 
     def _add_extra_payload(self) -> None:
         if self.resources_info.get('lambda').get('extra_payload', False):
