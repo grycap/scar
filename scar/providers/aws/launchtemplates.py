@@ -35,17 +35,13 @@ from string import Template
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from scar.providers.aws import GenericClient
-from scar.utils import GitHubUtils, StrUtils
+from scar.utils import SupervisorUtils, StrUtils
 import scar.exceptions as excp
 import scar.logger as logger
 
 
 class LaunchTemplates(GenericClient):
     """Class to manage the creation and update of launch templates."""
-
-    _SUPERVISOR_GITHUB_REPO = 'faas-supervisor'
-    _SUPERVISOR_GITHUB_USER = 'grycap'
-    _SUPERVISOR_GITHUB_ASSET_NAME = 'supervisor'
 
     # Script to download 'faas-supervisor'
     _LAUNCH_TEMPLATE_SCRIPT = Template(
@@ -59,11 +55,6 @@ class LaunchTemplates(GenericClient):
         super().__init__(resources_info.get('batch'))
         self.supervisor_version = resources_info.get('lambda').get('supervisor').get('version')
         self.template_name = resources_info.get('batch').get('compute_resources').get('launch_template_name')
-        if self.supervisor_version == 'latest':
-            self.supervisor_version = GitHubUtils.get_latest_release(
-                self._SUPERVISOR_GITHUB_USER,
-                self._SUPERVISOR_GITHUB_REPO
-            )
 
     @excp.exception(logger)
     def _is_supervisor_created(self) -> bool:
@@ -117,10 +108,7 @@ class LaunchTemplates(GenericClient):
         chmod +x /opt/faas-supervisor/bin/supervisor
         --===============3595946014116037730==--"""
         multipart = MIMEMultipart()
-        url = GitHubUtils.get_asset_url(self._SUPERVISOR_GITHUB_USER,
-                                        self._SUPERVISOR_GITHUB_REPO,
-                                        self._SUPERVISOR_GITHUB_ASSET_NAME,
-                                        self.supervisor_version)
+        url = SupervisorUtils.get_supervisor_binary_url(self.supervisor_version)
         script = self._LAUNCH_TEMPLATE_SCRIPT.substitute(
             supervisor_binary_url=url)
         content = MIMEText(script, 'x-shellscript')

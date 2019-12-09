@@ -24,7 +24,7 @@ from scar.providers.aws.s3 import S3
 from scar.providers.aws.validators import AWSValidator
 import scar.exceptions as excp
 import scar.logger as logger
-from scar.utils import DataTypesUtils, FileUtils, StrUtils
+from scar.utils import DataTypesUtils, FileUtils, StrUtils, SupervisorUtils
 from typing import Dict
 from scar.parser.cfgfile import ConfigFileParser
 
@@ -43,6 +43,12 @@ class Lambda(GenericClient):
         super().__init__(resources_info.get('lambda', {}))
         self.resources_info = resources_info
         self.function = resources_info.get('lambda', {})
+        supervisor_version = resources_info.get('lambda').get('supervisor').get('version')
+        self.supervisor_path = FileUtils.create_tmp_dir()
+        self.supervisor_zip_path = SupervisorUtils.download_supervisor(
+            supervisor_version,
+            self.supervisor_path.name
+        )
 
     def _get_creations_args(self, zip_payload_path: str) -> Dict:
         return {'FunctionName': self.function.get('name'),
@@ -76,15 +82,14 @@ class Lambda(GenericClient):
         return response
 
     def _manage_supervisor_layer(self):
-        layers_client = LambdaLayers(self.resources_info, self.client)
-        layers_client.check_faas_supervisor_layer()
-        self.function.get('layers', []).append(layers_client.get_latest_supervisor_layer_arn())
+        layers_client = LambdaLayers(self.resources_info, self.client, self.supervisor_zip_path)
+        self.function.get('layers', []).append(layers_client.get_supervisor_layer_arn())
 
     @excp.exception(logger)
     def _get_function_code(self, zip_payload_path: str) -> Dict:
         '''Zip all the files and folders needed.'''
         code = {}
-        FunctionPackager(self.resources_info).create_zip(zip_payload_path)
+        FunctionPackager(self.resources_info, self.supervisor_zip_path).create_zip(zip_payload_path)
         if self.function.get('deployment').get('bucket', False):
             file_key = f"lambda/{self.function.get('name')}.zip"
             S3(self.resources_info).upload_file(bucket=self.function.get('deployment').get('bucket'),
@@ -154,18 +159,18 @@ class Lambda(GenericClient):
                 script_path = self.function.get("run_script")
                 # We first code to base64 in bytes and then decode those bytes to allow the json lib to parse the data
                 # https://stackoverflow.com/questions/37225035/serialize-in-json-a-base64-encoded-data#37239382
-                payload = { "script" : StrUtils.bytes_to_base64str(FileUtils.read_file(script_path, 'rb')) }
+                payload = {"script": StrUtils.bytes_to_base64str(FileUtils.read_file(script_path, 'rb'))}
             # Check for defined commands
             # This overrides any other function payload
             if self.function.get("c_args", False):
-                payload = {"cmd_args" : json.dumps(self.function.get("c_args"))}
+                payload = {"cmd_args": json.dumps(self.function.get("c_args"))}
         return json.dumps(payload)
 
     def _invoke_lambda_function(self):
-        invoke_args = {'FunctionName' :  self.function.get('name'),
-                       'InvocationType' :  self.function.get('invocation_type'),
-                       'LogType' :  self.function.get('log_type'),
-                       'Payload' : self._get_invocation_payload()}
+        invoke_args = {'FunctionName':  self.function.get('name'),
+                       'InvocationType':  self.function.get('invocation_type'),
+                       'LogType':  self.function.get('log_type'),
+                       'Payload': self._get_invocation_payload()}
         return self.client.invoke_function(**invoke_args)
 
     def set_asynchronous_call_parameters(self):

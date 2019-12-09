@@ -33,8 +33,6 @@ import scar.logger as logger
 import scar.http.request as request
 from scar.exceptions import GitHubTagNotFoundError, YamlFileNotFoundError
 
-GITHUB_USER = 'grycap'
-GITHUB_SUPERVISOR_PROJECT = 'faas-supervisor'
 COMMANDS = ['scar-config']
 
 def lazy_property(func):
@@ -455,3 +453,51 @@ class GitHubUtils:
             if isinstance(response, dict):
                 source_url = response.get('zipball_url')
         return source_url
+
+
+class SupervisorUtils:
+    """Common methods for FaaS Supervisor management.
+    https://github.com/grycap/faas-supervisor/"""
+
+    _SUPERVISOR_GITHUB_REPO = 'faas-supervisor'
+    _SUPERVISOR_GITHUB_USER = 'grycap'
+    _SUPERVISOR_GITHUB_ASSET_NAME = 'supervisor'
+
+    @classmethod
+    def download_supervisor(cls, supervisor_version: str, path: str) -> str:
+        """Downloads the FaaS Supervisor .zip package to the specified path."""
+        supervisor_zip_path = FileUtils.join_paths(path, 'faas-supervisor.zip')
+        supervisor_zip_url = GitHubUtils.get_source_code_url(
+            cls._SUPERVISOR_GITHUB_USER,
+            cls._SUPERVISOR_GITHUB_REPO,
+            supervisor_version)
+        with open(supervisor_zip_path, "wb") as thezip:
+            thezip.write(request.get_file(supervisor_zip_url))
+        return supervisor_zip_path
+
+    @classmethod
+    def check_supervisor_version(cls, supervisor_version: str) -> str:
+        """Checks if the specified version exists in FaaS Supervisor's GitHub
+        repository. Returns the version if exists and 'latest' if not."""
+        if GitHubUtils.exists_release_in_repo(cls._SUPERVISOR_GITHUB_USER,
+                                              cls._SUPERVISOR_GITHUB_REPO,
+                                              supervisor_version):
+            return version
+        latest_version = SupervisorUtils.get_latest_release()
+        logger.info(('Defined supervisor version does not exists. '
+                     f'Using latest release: {latest_version}.'))
+        return latest_version
+
+    @classmethod
+    def get_supervisor_binary_url(cls, supervisor_version: str) -> str:
+        """Returns the supervisor's binary download url."""
+        return GitHubUtils.get_asset_url(cls._SUPERVISOR_GITHUB_USER,
+                                         cls._SUPERVISOR_GITHUB_REPO,
+                                         cls._SUPERVISOR_GITHUB_ASSET_NAME,
+                                         supervisor_version)
+
+    @classmethod
+    def get_latest_release(cls) -> str:
+        """Returns the latest FaaS Supervisor version."""
+        return GitHubUtils.get_latest_release(cls._SUPERVISOR_GITHUB_USER,
+                                              cls._SUPERVISOR_GITHUB_REPO)

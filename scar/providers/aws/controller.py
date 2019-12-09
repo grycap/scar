@@ -28,7 +28,7 @@ from scar.providers.aws.validators import AWSValidator
 import scar.exceptions as excp
 import scar.logger as logger
 import scar.providers.aws.response as response_parser
-from scar.utils import StrUtils, FileUtils
+from scar.utils import StrUtils, FileUtils, SupervisorUtils
 
 _ACCOUNT_ID_REGEX = r'\d{12}'
 
@@ -147,6 +147,9 @@ class AWS(Commands):
             _check_function_defined(resources_info)
             # We have to create the gateway before creating the function
             self._create_api_gateway(resources_info)
+            # Check the specified supervisor version
+            resources_info['lambda']['supervisor']['version'] = SupervisorUtils.check_supervisor_version(
+                resources_info.get('lambda').get('supervisor').get('version'))
             self._create_lambda_function(resources_info)
             self._create_log_group(resources_info)
             self._create_s3_buckets(resources_info)
