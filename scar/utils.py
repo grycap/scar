@@ -485,7 +485,7 @@ class SupervisorUtils:
             return version
         latest_version = SupervisorUtils.get_latest_release()
         logger.info(('Defined supervisor version does not exists. '
-                     f'Using latest release: {latest_version}.'))
+                     f'Using latest release: \'{latest_version}\'.'))
         return latest_version
 
     @classmethod

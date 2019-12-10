@@ -96,6 +96,21 @@ class LambdaClient(BotoClient):
         return layers
 
     @excp.exception(logger)
+    def list_layer_versions(self, layer_name: str, next_token: Optional[str]=None) -> str:
+        """Lists the versions of an AWS Lambda layer."""
+        logger.debug(f'Listing versions of lambda layer "{layer_name}".')
+        versions = []
+        kwargs = {'LayerName': layer_name}
+        if next_token:
+            kwargs['Marker'] = next_token
+        layer_versions_info = self.client.list_layer_version(**kwargs)
+        if 'LayerVersions' in layer_versions_info and layer_versions_info['LayerVersions']:
+            versions.extend(layer_versions_info['LayerVersions'])
+        if 'NextMarker' in layer_versions_info:
+            versions.extend(self.list_layer_versions(layer_name, next_token=layer_versions_info['NextMarker']))
+        return versions
+
+    @excp.exception(logger)
     def delete_function(self, function_name: str) -> Dict:
         """Deletes the specified Lambda
         function code and configuration."""

@@ -14,9 +14,10 @@
 
 import base64
 import json
-from scar.http.request import call_http_endpoint
+from typing import Dict
 from multiprocessing.pool import ThreadPool
 from botocore.exceptions import ClientError
+from scar.http.request import call_http_endpoint
 from scar.providers.aws import GenericClient
 from scar.providers.aws.functioncode import FunctionPackager
 from scar.providers.aws.lambdalayers import LambdaLayers
@@ -25,7 +26,6 @@ from scar.providers.aws.validators import AWSValidator
 import scar.exceptions as excp
 import scar.logger as logger
 from scar.utils import DataTypesUtils, FileUtils, StrUtils, SupervisorUtils
-from typing import Dict
 from scar.parser.cfgfile import ConfigFileParser
 
 MAX_CONCURRENT_INVOCATIONS = 500
@@ -198,7 +198,7 @@ class Lambda(GenericClient):
             return [self.merge_aws_and_local_configuration(self.get_function_configuration(function_arn))
                     for function_arn in arn_list]
         except ClientError as cerr:
-            print (f"Error getting function info by arn: {cerr}")
+            print(f"Error getting function info by arn: {cerr}")
 
     def get_function_configuration(self, arn: str=None) -> Dict:
         function = arn if arn else self.function.get('name')
