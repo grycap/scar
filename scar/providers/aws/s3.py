@@ -53,10 +53,10 @@ class S3(GenericClient):
             self.add_bucket_folder(bucket, folders)
         return bucket, folders
 
-    def set_input_bucket_notification(self, bucket_name: str) -> None:
+    def set_input_bucket_notification(self, bucket_name: str, folders: str) -> None:
         # First check that the function doesn't have other configurations
         bucket_conf = self.client.get_notification_configuration(bucket_name)
-        trigger_conf = self.get_trigger_configuration(bucket_name)
+        trigger_conf = self.get_trigger_configuration(folders)
         lambda_conf = [trigger_conf]
         if "LambdaFunctionConfigurations" in bucket_conf:
             lambda_conf = bucket_conf["LambdaFunctionConfigurations"]
@@ -69,15 +69,16 @@ class S3(GenericClient):
         if bucket_conf and "LambdaFunctionConfigurations" in bucket_conf:
             lambda_conf = bucket_conf["LambdaFunctionConfigurations"]
             filter_conf = [x for x in lambda_conf if x['LambdaFunctionArn'] != self.resources_info.get('lambda').get('arn')]
-            notification = { "LambdaFunctionConfigurations": filter_conf }
+            notification = {"LambdaFunctionConfigurations": filter_conf}
             self.client.put_notification_configuration(bucket_name, notification)
             logger.info("Bucket notifications successfully deleted")
 
-    def get_trigger_configuration(self, bucket_name: str) -> Dict:
-        return  {"LambdaFunctionArn": self.resources_info.get('lambda').get('arn'),
-                 "Events": [ "s3:ObjectCreated:*" ],
-                 "Filter": { "Key": { "FilterRules": [{ "Name": "prefix", "Value": bucket_name }]}}
-                 }
+    def get_trigger_configuration(self, folders: str) -> Dict:
+        conf = {"LambdaFunctionArn": self.resources_info.get('lambda').get('arn'),
+                "Events": ["s3:ObjectCreated:*"]}
+        if folders != '':
+            conf['Filter'] = {"Key": {"FilterRules": [{"Name": "prefix", "Value": f'{folders}/'}]}}
+        return conf
 
     def get_file_key(self, folder_name=None, file_path=None, file_key=None):
         if file_key:
@@ -92,8 +93,8 @@ class S3(GenericClient):
         return file_key
 
     @excp.exception(logger)
-    def upload_file(self, bucket: str, folder_name: str =None, file_path: str =None, file_key: str =None) -> None:
-        kwargs = {'Bucket' : bucket}
+    def upload_file(self, bucket: str, folder_name: str = None, file_path: str = None, file_key: str = None) -> None:
+        kwargs = {'Bucket': bucket}
         kwargs['Key'] = self.get_file_key(folder_name, file_path, file_key)
         if file_path:
             try:

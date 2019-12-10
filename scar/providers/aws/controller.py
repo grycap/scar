@@ -274,9 +274,9 @@ class AWS(Commands):
             s3_service = S3(resources_info)
             for bucket in resources_info.get('lambda').get('input'):
                 if bucket.get('storage_provider') == 's3':
-                    bucket_name, _ = s3_service.create_bucket_and_folders(bucket.get('path'))
+                    bucket_name, folders = s3_service.create_bucket_and_folders(bucket.get('path'))
                     Lambda(resources_info).link_function_and_bucket(bucket_name)
-                    s3_service.set_input_bucket_notification(bucket_name)
+                    s3_service.set_input_bucket_notification(bucket_name, folders)
 
         if resources_info.get('lambda').get('output', False):
             s3_service = S3(resources_info)
