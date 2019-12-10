@@ -103,7 +103,7 @@ class LambdaClient(BotoClient):
         kwargs = {'LayerName': layer_name}
         if next_token:
             kwargs['Marker'] = next_token
-        layer_versions_info = self.client.list_layer_version(**kwargs)
+        layer_versions_info = self.client.list_layer_versions(**kwargs)
         if 'LayerVersions' in layer_versions_info and layer_versions_info['LayerVersions']:
             versions.extend(layer_versions_info['LayerVersions'])
         if 'NextMarker' in layer_versions_info:
