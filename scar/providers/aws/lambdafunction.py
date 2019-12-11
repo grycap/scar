@@ -47,19 +47,14 @@ class Lambda(GenericClient):
         super().__init__(resources_info.get('lambda', {}))
         self.resources_info = resources_info
         self.function = resources_info.get('lambda', {})
-        supervisor_version = resources_info.get('lambda').get('supervisor').get('version')
-        self.supervisor_path = FileUtils.create_tmp_dir()
-        self.supervisor_zip_path = SupervisorUtils.download_supervisor(
-            supervisor_version,
-            self.supervisor_path.name
-        )
+        self.supervisor_version = resources_info.get('lambda').get('supervisor').get('version')
 
-    def _get_creations_args(self, zip_payload_path: str) -> Dict:
+    def _get_creations_args(self, zip_payload_path: str, supervisor_zip_path: str) -> Dict:
         return {'FunctionName': self.function.get('name'),
                 'Runtime': self.function.get('runtime'),
                 'Role': self.resources_info.get('iam').get('role'),
                 'Handler': self.function.get('handler'),
-                'Code': self._get_function_code(zip_payload_path),
+                'Code': self._get_function_code(zip_payload_path, supervisor_zip_path),
                 'Environment': self.function.get('environment'),
                 'Description': self.function.get('description'),
                 'Timeout':  self.function.get('timeout'),
@@ -76,24 +71,33 @@ class Lambda(GenericClient):
 
     @excp.exception(logger)
     def create_function(self):
+        # Create tmp folders
+        supervisor_path = FileUtils.create_tmp_dir()
         tmp_folder = FileUtils.create_tmp_dir()
+        # Download supervisor
+        supervisor_zip_path = SupervisorUtils.download_supervisor(
+            self.supervisor_version,
+            supervisor_path.name
+        )
+        # Manage supervisor layer
+        self._manage_supervisor_layer(supervisor_zip_path)
+        # Create function
         zip_payload_path = FileUtils.join_paths(tmp_folder.name, 'function.zip')
-        self._manage_supervisor_layer()
-        creation_args = self._get_creations_args(zip_payload_path)
+        creation_args = self._get_creations_args(zip_payload_path, supervisor_zip_path)
         response = self.client.create_function(**creation_args)
         if response and "FunctionArn" in response:
             self.function['arn'] = response.get('FunctionArn', "")
         return response
 
-    def _manage_supervisor_layer(self):
-        layers_client = LambdaLayers(self.resources_info, self.client, self.supervisor_zip_path)
+    def _manage_supervisor_layer(self, supervisor_zip_path: str) -> None:
+        layers_client = LambdaLayers(self.resources_info, self.client, supervisor_zip_path)
         self.function.get('layers', []).append(layers_client.get_supervisor_layer_arn())
 
     @excp.exception(logger)
-    def _get_function_code(self, zip_payload_path: str) -> Dict:
+    def _get_function_code(self, zip_payload_path: str, supervisor_zip_path: str) -> Dict:
         '''Zip all the files and folders needed.'''
         code = {}
-        FunctionPackager(self.resources_info, self.supervisor_zip_path).create_zip(zip_payload_path)
+        FunctionPackager(self.resources_info, supervisor_zip_path).create_zip(zip_payload_path)
         if self.function.get('deployment').get('bucket', False):
             file_key = f"lambda/{self.function.get('name')}.zip"
             S3(self.resources_info).upload_file(bucket=self.function.get('deployment').get('bucket'),

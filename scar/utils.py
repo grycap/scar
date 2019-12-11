@@ -23,12 +23,12 @@ import tarfile
 import tempfile
 import uuid
 import sys
-import yaml
 from zipfile import ZipFile
 from io import BytesIO
 from typing import Optional, Dict, List, Generator, Union, Any
 from distutils import dir_util
 from packaging import version
+import yaml
 import scar.logger as logger
 import scar.http.request as request
 from scar.exceptions import GitHubTagNotFoundError, YamlFileNotFoundError
@@ -413,7 +413,10 @@ class GitHubUtils:
     def exists_release_in_repo(user: str, project: str, tag_name: str) -> bool:
         """Check if a tagged release exists in a repository."""
         url = f'https://api.github.com/repos/{user}/{project}/releases/tags/{tag_name}'
-        response = json.loads(request.get_file(url))
+        response = request.get_file(url)
+        if not response:
+            return False
+        response = json.loads(response)
         if 'message' in response and response['message'] == 'Not Found':
             return False
         return True
@@ -484,8 +487,9 @@ class SupervisorUtils:
                                               supervisor_version):
             return supervisor_version
         latest_version = SupervisorUtils.get_latest_release()
-        logger.info(('Defined supervisor version does not exists. '
-                     f'Using latest release: \'{latest_version}\'.'))
+        if supervisor_version != 'latest':
+            logger.info('Defined supervisor version does not exists.')
+        logger.info(f'Using latest supervisor release: \'{latest_version}\'.')
         return latest_version
 
     @classmethod

@@ -66,7 +66,7 @@ class Batch(GenericClient):
         for job_def in _get_job_definitions(job_info):
             kwars = {"jobDefinition": job_def}
             self.client.deregister_job_definition(**kwars)
-        logger.info("Job definitions deleted")
+        logger.info("Job definitions successfully deleted.")
 
     def _get_job_queue_info(self):
         job_queue_info_args = {'jobQueues': [self.function_name]}
@@ -88,8 +88,8 @@ class Batch(GenericClient):
             self.client.update_job_queue(**updating_args)
         elif state == "DISABLED":
             deleting_args = {'jobQueue': self.function_name}
-            logger.info("Job queue deleted")
             self.client.delete_job_queue(**deleting_args)
+            logger.info("Job queue successfully deleted.")
 
     def _get_describe_compute_env_args(self):
         return {'computeEnvironments': [self.function_name]}
@@ -114,8 +114,8 @@ class Batch(GenericClient):
             self.client.update_compute_environment(**update_args)
         elif state == "DISABLED":
             delete_args = {'computeEnvironment': self.function_name}
-            logger.info("Compute environment deleted")
             self.client.delete_compute_environment(**delete_args)
+            logger.info("Compute environment successfully deleted.")
 
     def _get_compute_env_args(self):
         account_id = self.resources_info.get('iam').get('account_id')
