@@ -14,10 +14,13 @@
 
 import base64
 import json
+import io
+import yaml
 from typing import Dict
 from multiprocessing.pool import ThreadPool
+from zipfile import ZipFile
 from botocore.exceptions import ClientError
-from scar.http.request import call_http_endpoint
+from scar.http.request import call_http_endpoint, get_file
 from scar.providers.aws import GenericClient
 from scar.providers.aws.functioncode import FunctionPackager
 from scar.providers.aws.lambdalayers import LambdaLayers
@@ -27,6 +30,7 @@ import scar.exceptions as excp
 import scar.logger as logger
 from scar.utils import DataTypesUtils, FileUtils, StrUtils, SupervisorUtils
 from scar.parser.cfgfile import ConfigFileParser
+
 
 MAX_CONCURRENT_INVOCATIONS = 500
 ASYNCHRONOUS_CALL = {"invocation_type": "Event",
@@ -200,9 +204,19 @@ class Lambda(GenericClient):
         except ClientError as cerr:
             print(f"Error getting function info by arn: {cerr}")
 
-    def get_function_configuration(self, arn: str=None) -> Dict:
+    def get_function_configuration(self, arn: str = None) -> Dict:
         function = arn if arn else self.function.get('name')
         return self.client.get_function_configuration(function)
+
+    def get_fdl_config(self, arn: str = None) -> Dict:
+        function = arn if arn else self.function.get('name')
+        function_info = self.client.get_function(function)
+        dep_pack_url = function_info.get('Code').get('Location')
+        dep_pack = get_file(dep_pack_url)
+        # Extract function_config.yaml
+        with ZipFile(io.BytesIO(dep_pack)) as thezip:
+            with thezip.open('function_config.yaml') as cfg_yaml:
+                return yaml.safe_load(cfg_yaml)
 
     @excp.exception(logger)
     def find_function(self, function_name_or_arn=None):

@@ -329,7 +329,11 @@ class AWS(Commands):
                                                   self.scar_info.get('cli_output'))
 
     def _delete_bucket_notifications(self, resources_info: Dict) -> None:
-        if resources_info.get('lambda').get('input', False):
+        lambda_client = Lambda(resources_info)
+        function_name = resources_info.get('lambda').get('name')
+        resources_info['lambda']['arn'] = lambda_client.get_function_configuration(function_name).get('FunctionArn')
+        resources_info['lambda']['input'] = lambda_client.get_fdl_config(function_name).get('input', False)
+        if resources_info.get('lambda').get('input'):
             for input_storage in resources_info.get('lambda').get('input'):
                 if input_storage.get('storage_provider') == 's3':
                     bucket_name = input_storage.get('path').split("/", 1)[0]

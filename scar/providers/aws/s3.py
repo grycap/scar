@@ -71,7 +71,7 @@ class S3(GenericClient):
             filter_conf = [x for x in lambda_conf if x['LambdaFunctionArn'] != self.resources_info.get('lambda').get('arn')]
             notification = {"LambdaFunctionConfigurations": filter_conf}
             self.client.put_notification_configuration(bucket_name, notification)
-            logger.info("Bucket notifications successfully deleted")
+            logger.info("Bucket notifications successfully deleted.")
 
     def get_trigger_configuration(self, folders: str) -> Dict:
         conf = {"LambdaFunctionArn": self.resources_info.get('lambda').get('arn'),
@@ -102,9 +102,9 @@ class S3(GenericClient):
             except FileNotFoundError:
                 raise excp.UploadFileNotFoundError(file_path=file_path)
         if folder_name and not file_path:
-            logger.info(f"Folder '{kwargs['Key']}' created in bucket '{kwargs['Bucket']}'")
+            logger.info(f"Folder '{kwargs['Key']}' created in bucket '{kwargs['Bucket']}'.")
         else:
-            logger.info(f"Uploading file '{file_path}' to bucket '{kwargs['Bucket']}' with key '{kwargs['Key']}'")
+            logger.info(f"Uploading file '{file_path}' to bucket '{kwargs['Bucket']}' with key '{kwargs['Key']}'.")
         self.client.upload_file(**kwargs)
 
     @excp.exception(logger)
@@ -142,7 +142,7 @@ class S3(GenericClient):
 
     def download_file(self, bucket_name, file_key, file_path):
         kwargs = {'Bucket' : bucket_name, 'Key' : file_key}
-        logger.info(f"Downloading file '{file_key}' from bucket '{bucket_name}' in path '{file_path}'")
+        logger.info(f"Downloading file '{file_key}' from bucket '{bucket_name}' in path '{file_path}'.")
         with open(file_path, 'wb') as file:
             kwargs['Fileobj'] = file
             self.client.download_file(**kwargs)

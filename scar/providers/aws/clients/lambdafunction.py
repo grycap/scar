@@ -42,6 +42,14 @@ class LambdaClient(BotoClient):
         function_info['SupervisorVersion'] = self.get_supervisor_version(function_info)
         return function_info
 
+    def get_function(self, function_name_or_arn: str) -> Dict:
+        """Returns the information of the Lambda function with a link to
+        download the deployment package that's valid for 10 minutes."""
+        function_info = self.client.get_function(FunctionName=function_name_or_arn)
+        # Add supervisor version
+        function_info['SupervisorVersion'] = self.get_supervisor_version(function_info)
+        return function_info
+
     @excp.exception(logger)
     def get_supervisor_version(self, function_info):
         version = '-'
