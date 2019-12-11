@@ -124,7 +124,7 @@ def parse_ls_response(aws_resources: Dict, output_type: int) -> None:
         for resources_info in aws_resources:
             result.append(_parse_lambda_function_info(resources_info))
         text_message = _get_table(result)
-    json_message = { aws_output : result }
+    json_message = {aws_output: result}
     _print_generic_response('', output_type, aws_output, text_message, json_output=json_message, verbose_output=json_message)
 
 
@@ -134,10 +134,13 @@ def _parse_lambda_function_info(resources_info: Dict) -> Dict:
         stage_name = resources_info.get('api_gateway').get('stage_name')
         region = resources_info.get('api_gateway').get('region')
         api_gateway = f"https://{api_gateway}.execute-api.{region}.amazonaws.com/{stage_name}/launch"
-    return {'Name' : resources_info.get('lambda').get('name', "-"),
-            'Memory' : resources_info.get('lambda').get('memory', "-"),
-            'Timeout' : resources_info.get('lambda').get('timeout', "-"),
-            'Image_id': resources_info.get('lambda').get('image', "-"),
+    image_id = '-'
+    if resources_info.get('lambda').get('container'):
+        image_id = resources_info.get('lambda').get('container').get('image', '-')
+    return {'Name': resources_info.get('lambda').get('name', "-"),
+            'Memory': resources_info.get('lambda').get('memory', "-"),
+            'Timeout': resources_info.get('lambda').get('timeout', "-"),
+            'Image_id': image_id,
             'Api_gateway': api_gateway,
             'Sup_version': resources_info.get('lambda').get('supervisor').get('version', '-')}
 

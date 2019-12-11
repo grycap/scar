@@ -99,7 +99,7 @@ class FunctionPackager():
         save it in the expected path of the payload."""
         FileUtils.zip_folder(lambda_payload_path,
                              self.tmp_payload_folder.name,
-                             "Creating function package")
+                             "Creating function package.")
 
     def _check_code_size(self):
         # Check if the code size fits within the AWS limits

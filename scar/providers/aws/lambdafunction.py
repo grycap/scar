@@ -15,10 +15,10 @@
 import base64
 import json
 import io
-import yaml
 from typing import Dict
 from multiprocessing.pool import ThreadPool
-from zipfile import ZipFile
+from zipfile import ZipFile, BadZipfile
+import yaml
 from botocore.exceptions import ClientError
 from scar.http.request import call_http_endpoint, get_file
 from scar.providers.aws import GenericClient
@@ -188,8 +188,12 @@ class Lambda(GenericClient):
 
     def merge_aws_and_local_configuration(self, aws_conf: Dict) -> Dict:
         result = ConfigFileParser().get_properties().get('aws')
+        fdl_config = self.get_fdl_config(aws_conf.get('FunctionArn'))
         result['lambda']['name'] = aws_conf['FunctionName']
         result['lambda']['arn'] = aws_conf['FunctionArn']
+        result['lambda']['container'] = fdl_config.get('container')
+        result['lambda']['input'] = fdl_config.get('input')
+        result['lambda']['output'] = fdl_config.get('output')
         result['lambda']['timeout'] = aws_conf['Timeout']
         result['lambda']['memory'] = aws_conf['MemorySize']
         result['lambda']['environment']['Variables'] = aws_conf['Environment']['Variables'].copy()
@@ -214,9 +218,12 @@ class Lambda(GenericClient):
         dep_pack_url = function_info.get('Code').get('Location')
         dep_pack = get_file(dep_pack_url)
         # Extract function_config.yaml
-        with ZipFile(io.BytesIO(dep_pack)) as thezip:
-            with thezip.open('function_config.yaml') as cfg_yaml:
-                return yaml.safe_load(cfg_yaml)
+        try:
+            with ZipFile(io.BytesIO(dep_pack)) as thezip:
+                with thezip.open('function_config.yaml') as cfg_yaml:
+                    return yaml.safe_load(cfg_yaml)
+        except (KeyError, BadZipfile):
+            return {}
 
     @excp.exception(logger)
     def find_function(self, function_name_or_arn=None):
