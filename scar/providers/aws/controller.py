@@ -15,6 +15,7 @@
 
 import os
 from typing import Dict
+from copy import deepcopy
 from scar.cmdtemplate import Commands
 from scar.providers.aws.apigateway import APIGateway
 from scar.providers.aws.batchfunction import Batch
@@ -144,6 +145,7 @@ class AWS(Commands):
     @excp.exception(logger)
     def init(self) -> None:
         for resources_info in self.aws_resources:
+            resources_info = deepcopy(resources_info)
             _check_function_defined(resources_info)
             # We have to create the gateway before creating the function
             self._create_api_gateway(resources_info)
