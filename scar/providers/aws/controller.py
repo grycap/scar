@@ -55,7 +55,7 @@ def _choose_function(aws_resources: Dict) -> int:
     for idx, element in enumerate(function_names):
         print(f"{idx+1}) {element}")
     i = input("Enter number: ")
-    if 0 < int(i) <= len(function_names):
+    if 0 <= int(i) <= len(function_names):
         return int(i) - 1
     return None
 
@@ -66,7 +66,7 @@ def _get_all_functions(resources_info: Dict):
 
 def _check_preheat_function(resources_info: Dict):
     if resources_info.get('lambda').get('preheat', False):
-        Lambda(resources_info).preheat_function()    
+        Lambda(resources_info).preheat_function()
 
 ############################################
 ###          ADD EXTRA PROPERTIES        ###
