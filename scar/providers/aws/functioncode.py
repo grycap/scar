@@ -27,6 +27,7 @@ def create_function_config(resources_info):
     function_cfg.update(resources_info.get('lambda'))
     return function_cfg
 
+
 class FunctionPackager():
     """Class to manage the deployment package creation."""
 
@@ -40,10 +41,10 @@ class FunctionPackager():
     def create_zip(self, lambda_payload_path: str) -> None:
         """Creates the lambda function deployment package."""
         self._extract_handler_code()
-        self._copy_function_configuration()
         self._manage_udocker_images()
         self._add_init_script()
         self._add_extra_payload()
+        self._copy_function_configuration()
         self._zip_scar_folder(lambda_payload_path)
         self._check_code_size()
 
@@ -67,12 +68,8 @@ class FunctionPackager():
         FileUtils.write_yaml(cfg_file_path, function_cfg)
 
     def _manage_udocker_images(self):
-        if self.resources_info.get('lambda').get('deployment').get('bucket', False) and \
-           self.resources_info.get('lambda').get('container').get('image', False):
-            Udocker(self.resources_info, self.tmp_payload_folder.name, self.supervisor_zip_path).download_udocker_image()
-        if self.resources_info.get('lambda').get('image_file'):
+        if self.resources_info.get('lambda').get('container').get('image_file', False):
             Udocker(self.resources_info, self.tmp_payload_folder.name, self.supervisor_zip_path).prepare_udocker_image()
-            del(self.resources_info['lambda']['image_file'])
 
     def _add_init_script(self) -> None:
         """Copy the init script defined by the user to the payload folder."""

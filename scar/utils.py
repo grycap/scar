@@ -35,6 +35,7 @@ from scar.exceptions import GitHubTagNotFoundError, YamlFileNotFoundError
 
 COMMANDS = ['scar-config']
 
+
 def lazy_property(func):
     # Skipped type hinting: https://github.com/python/mypy/issues/3157
     """ A decorator that makes a property lazy-evaluated."""
@@ -79,22 +80,10 @@ class SysUtils:
     def execute_command_with_msg(command: List[str], cmd_wd: Optional[str]=None,
                                  cli_msg: str='') -> str:
         """Execute the specified command and return the result."""
-        cmd_out = subprocess.check_output(command, cwd=cmd_wd).decode('utf-8')
+        cmd_out = subprocess.check_output(command, cwd=cmd_wd, stderr=subprocess.STDOUT).decode('utf-8')
         logger.debug(cmd_out)
         logger.info(cli_msg)
         return cmd_out[:-1]
-
-    @staticmethod
-    def get_filtered_env_vars(key_filter: str) -> Dict:
-        """Returns the global variables that start with the
-        key_filter provided and removes the filter used."""
-        size = len(key_filter)
-        env_vars = {}
-        for key, val in os.environ.items():
-            # Find global variables with the specified prefix
-            if key.startswith(key_filter):
-                env_vars[key[size:]] = val
-        return env_vars
 
     @staticmethod
     def get_user_home_path() -> str:
@@ -331,6 +320,7 @@ class FileUtils:
     def extract_zip_from_url(url: str, dest_path: str) -> None:
         with ZipFile(BytesIO(url)) as thezip:
             thezip.extractall(dest_path)
+
 
 class StrUtils:
     """Common methods for string management."""

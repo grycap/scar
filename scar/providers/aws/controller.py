@@ -279,12 +279,16 @@ class AWS(Commands):
                     bucket_name, folders = s3_service.create_bucket_and_folders(bucket.get('path'))
                     Lambda(resources_info).link_function_and_bucket(bucket_name)
                     s3_service.set_input_bucket_notification(bucket_name, folders)
+                    if not folders:
+                        logger.info(f'Input bucket "{bucket_name}" successfully created')
 
         if resources_info.get('lambda').get('output', False):
             s3_service = S3(resources_info)
             for bucket in resources_info.get('lambda').get('output'):
                 if bucket.get('storage_provider') == 's3':
-                    s3_service.create_bucket_and_folders(bucket.get('path'))
+                    bucket_name, folders = s3_service.create_bucket_and_folders(bucket.get('path'))
+                    if not folders:
+                        logger.info(f'Output bucket "{bucket_name}" successfully created')
 
     @excp.exception(logger)
     def _add_api_gateway_permissions(self, resources_info: Dict):

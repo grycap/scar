@@ -2,26 +2,6 @@
 
 Docker image for [MrBayes](http://mrbayes.sourceforge.net/) based on the [ubuntu:14.04](https://hub.docker.com/r/library/ubuntu/tags/14.04/) Docker image.
 
-## Building docker image
-
-```sh
-docker build -t grycap/mrbayes -f Dockerfile binary/
-```
-
-## Local Usage
-
-Gaining shell access:
-
-```sh
-docker run --rm -ti grycap/mrbayes /bin/bash
-```
-
-A sample execution can be initiated with:
-
-```sh
-docker run --rm -ti grycap/mrbayes /tmp/mrbayes-sample-run.sh
-```
-
 ## Usage in AWS Lambda via SCAR
 
 You can run this image in AWS Lambda via [SCAR](https://github.com/grycap/scar) using the following procedure:
@@ -32,9 +12,19 @@ You can run this image in AWS Lambda via [SCAR](https://github.com/grycap/scar) 
 scar init -f scar-mrbayes.yaml
 ```
 
-2. Execute the Lambda function passing an execution script (in this case, specified on the configuration file)
+2. Execute the Lambda function uploading a file to the linked bucket.
 
 ```sh
-scar run -f scar-mrbayes.yaml
+scar put -b scar-mrbayes/input -p cynmix.nex
+```
+3. Check the function logs to see when the execution has finished.
+
+```sh
+scar ls -b scar-mrbayes
 ```
 
+4. Download the generated result file
+
+```sh
+scar get -b scar-mrbayes/output -p .
+```

@@ -1,3 +1,6 @@
 functions:
-  scar-r:
-    image: grycap/r-base-lambda
+  aws:
+  - lambda:
+      name: scar-r
+      container:
+        image: grycap/r-base-lambda

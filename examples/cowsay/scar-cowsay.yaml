@@ -1,3 +1,6 @@
 functions:
-  scar-cowsay:
-    image: grycap/cowsay
+  aws:
+  - lambda:
+      name: scar-cowsay
+      container:
+        image: grycap/cowsay

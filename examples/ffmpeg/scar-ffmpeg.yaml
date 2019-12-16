@@ -1,7 +1,14 @@
 functions:
-  scar-ffmpeg:
-    image: sameersbn/ffmpeg
-    memory: 2048
-    init_script: grayify-video.sh
-    s3:
-      input_bucket: scar-test
+  aws:
+  - lambda:
+      name: scar-ffmpeg
+      memory: 2048
+      init_script: grayify-video.sh
+      container:
+        image: sameersbn/ffmpeg
+      input:
+      - storage_provider: s3
+        path: scar-ffmpeg/input
+      output:
+      - storage_provider: s3
+        path: scar-ffmpeg/output

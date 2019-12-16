@@ -1,3 +1,6 @@
 functions:
-  scar-erlang:
-    image: grycap/erlang
+  aws:
+  - lambda:
+      name: scar-erlang
+      container:
+        image: grycap/erlang

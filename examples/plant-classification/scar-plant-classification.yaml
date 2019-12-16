@@ -1,8 +1,15 @@
 functions:
-  scar-plants:
-    image: deephdc/deep-oc-plant-classification-theano
-    memory: 1024
-    execution_mode: batch
-    s3:
-      input_bucket: scar-test
-    init_script: bootstrap-plants.sh
+  aws:
+  - lambda:
+      name: scar-plants
+      init_script: bootstrap-plants.sh
+      memory: 1024
+      execution_mode: batch
+      container:
+        image: deephdc/deep-oc-plant-classification-theano
+      input:
+      - storage_provider: s3
+        path: scar-plants/input
+      output:
+      - storage_provider: s3
+        path: scar-plants/output

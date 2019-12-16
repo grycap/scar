@@ -1,6 +1,10 @@
 functions:
-  scar-aws-cli:
-    image: grycap/awscli
-    environment:
-      AWS_ACCESS_KEY_ID: XXXXX
-      AWS_SECRET_ACCESS_KEY: XXXXX
+  aws:
+  - lambda:
+      name: scar-aws-cli
+      container:
+        image: grycap/awscli
+        environment:
+          Variables:
+            AWS_ACCESS_KEY_ID: XXXXX
+            AWS_SECRET_ACCESS_KEY: XXXXX

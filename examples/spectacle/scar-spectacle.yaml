@@ -1,7 +1,14 @@
 functions:
-  scar-spectacle:
-    image: sourcey/spectacle
-    memory: 1024
-    init_script: generate-documentation.sh
-    s3:
-      input_bucket: scar-test
+  aws:
+  - lambda:
+      name: scar-spectacle
+      init_script: generate-documentation.sh
+      memory: 1024
+      container:
+        image: sourcey/spectacle
+      input:
+      - storage_provider: s3
+        path: scar-spectacle/input
+      output:
+      - storage_provider: s3
+        path: scar-spectacle/output

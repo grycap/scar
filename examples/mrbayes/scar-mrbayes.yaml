@@ -1,6 +1,13 @@
 functions:
-  scar-mrbayes:
-    image: grycap/mrbayes
-    init_script: mrbayes-sample-run.sh
-    s3:
-      input_bucket: scar-mrbayes    
+  aws:
+  - lambda:
+      name: scar-mrbayes
+      init_script: mrbayes-sample-run.sh
+      container:
+        image: grycap/mrbayes
+      input:
+      - storage_provider: s3
+        path: scar-mrbayes/input
+      output:
+      - storage_provider: s3
+        path: scar-mrbayes/output
