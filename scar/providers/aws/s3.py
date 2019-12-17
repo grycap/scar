@@ -44,7 +44,8 @@ class S3(GenericClient):
 
     @excp.exception(logger)
     def add_bucket_folder(self, bucket: str, folders: str) -> None:
-        self.upload_file(bucket, folder_name=folders)
+        if not self.client.is_folder(bucket, folders):
+            self.upload_file(bucket, folder_name=folders)
 
     def create_bucket_and_folders(self, storage_path: str) -> Tuple:
         bucket, folders = get_bucket_and_folders(storage_path)
@@ -93,7 +94,7 @@ class S3(GenericClient):
         return file_key
 
     @excp.exception(logger)
-    def upload_file(self, bucket: str, folder_name: str = None, file_path: str = None, file_key: str = None) -> None:
+    def upload_file(self, bucket: str, folder_name: str=None, file_path: str=None, file_key: str=None) -> None:
         kwargs = {'Bucket': bucket}
         kwargs['Key'] = self.get_file_key(folder_name, file_path, file_key)
         if file_path:
@@ -102,13 +103,14 @@ class S3(GenericClient):
             except FileNotFoundError:
                 raise excp.UploadFileNotFoundError(file_path=file_path)
         if folder_name and not file_path:
+            kwargs['ContentType'] = 'application/x-directory'
             logger.info(f"Folder '{kwargs['Key']}' created in bucket '{kwargs['Bucket']}'.")
         else:
             logger.info(f"Uploading file '{file_path}' to bucket '{kwargs['Bucket']}' with key '{kwargs['Key']}'.")
         self.client.upload_file(**kwargs)
 
     @excp.exception(logger)
-    def get_bucket_file_list(self, storage: Dict = None):
+    def get_bucket_file_list(self, storage: Dict=None):
         files = []
         if storage:
             files = self._list_storage_files(storage)
@@ -117,7 +119,7 @@ class S3(GenericClient):
                 if storage_info.get('storage_provider') == 's3':
                     files.extend(self._list_storage_files(storage_info))
         return files
-    
+
     def _list_storage_files(self, storage: Dict) -> List:
         files = []
         bucket_name, folder_path = get_bucket_and_folders(storage.get('path'))

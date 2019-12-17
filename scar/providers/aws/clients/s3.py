@@ -70,6 +70,21 @@ class S3Client(BotoClient):
         return self.client.download_fileobj(**kwargs)
 
     @exception(logger)
+    def is_folder(self, bucket: str, folder: str) -> bool:
+        """Checks if a file with the key specified exists."""
+        try:
+            kwargs = {'Bucket' : bucket,
+                      'Key' : folder if folder.endswith('/') else folder + '/'}
+            # If this call works the folder exist
+            self.client.get_object(**kwargs)
+            return True
+        except ClientError as cerr:
+            # Folder not found
+            if cerr.response['Error']['Code'] == 'NoSuchKey':
+                return False
+            raise cerr
+
+    @exception(logger)
     def list_files(self, **kwargs: Dict) -> List:
         """Returns the keys of all the objects in a bucket.
         Excludes the S3 'folders', i.e. files with key ending in '/'."""
