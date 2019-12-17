@@ -279,12 +279,12 @@ class Lambda(GenericClient):
     def _set_invoke_args(self, invoke_args):
         if self.resources_info.get('api_gateway').get('data_binary', False):
             invoke_args['data'] = self._get_b64encoded_binary_data()
-            invoke_args['headers'] = {'Content-Type': 'application/octet-stream'}
+            invoke_args['headers'].update({'Content-Type': 'application/octet-stream'})
         if self.resources_info.get('api_gateway').get('parameters', False):
             invoke_args['params'] = self._parse_http_parameters(self.resources_info.get('api_gateway').get('parameters'))
         if self.resources_info.get('api_gateway').get('json_data', False):
             invoke_args['data'] = self._parse_http_parameters(self.resources_info.get('api_gateway').get('json_data'))
-            invoke_args['headers'] = {'Content-Type': 'application/json'}
+            invoke_args['headers'].update({'Content-Type': 'application/json'})
 
     def _parse_http_parameters(self, parameters):
         return parameters if type(parameters) is dict else json.loads(parameters)
