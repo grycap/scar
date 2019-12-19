@@ -65,23 +65,22 @@ functions:
       input:
         # Storage type
         # Possible values 'minio', 's3', 'onedata'
-      - storage: minio
+      - storage_provider: minio
         # Complete path of the bucket with folders 'if any'
         path: my-bucket/test
-        # Define a filter for the parsed files based on prefix or suffix
-        files:
-          # Possible values 'prefix', 'suffix'
-          suffix:
-            # List of suffixes to filter (can be any string)
-            - wav
-            - srt
       # Define output storage providers linked with the function
       output:
-      - storage: s3
+      - storage_provider: s3
         path: my-bucket/test-output
-        files:
-          prefix:
-            - wav
+        # Define optional filters to upload the output files based on prefix or suffix
+        # Possible values 'prefix', 'suffix'
+        suffix:
+          # List of suffixes to filter (can be any string)
+          - wav
+          - srt
+        prefix:
+          # List of prefixes to filter (can be any string)
+          - result-
       # Properties for the faas-supervisor used in the inside the lambda function
       supervisor:
         # Must be a Github tag or "latest". Default 'latest'
@@ -167,7 +166,7 @@ functions:
 
 # Define different storage providers connections. Supported 's3','minio', 'onedata'
 # If you use a default S3 storage with the default boto configuration, this properties are not needed.
-storages:
+storage_providers:
   # Define S3 properties
   # If used, REQUIRED properties are 'access_key', 'secret_key'
   # The supervisor will try to create the boto3 client using the function permissions (in AWS Lambda environment)
@@ -179,8 +178,8 @@ storages:
   # If used, REQUIRED properties are 'access_key', 'secret_key'
   minio:
     endpoint: minio-endpoint
-    verify: ''
-    region: minio-region
+    verify: True
+    region: us-east-1
     access_key: muser           
     secret_key: mpass
   # Define onedata properties
