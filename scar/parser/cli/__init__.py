@@ -89,6 +89,9 @@ def _get_lambda_environment_variables(lambda_args: Dict) -> None:
     if "image" in lambda_args:
         lambda_env_vars['container']['image'] = lambda_args.get('image')
         del(lambda_args['image'])
+    if "image_file" in lambda_args:
+        lambda_env_vars['container']['image_file'] = lambda_args.get('image_file')
+        del(lambda_args['image_file'])        
 
     if "lambda_environment" in lambda_args:
         # These variables define the lambda environment variables

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from _ast import Or
 """Module with methods and classes to create the function deployment package."""
 
 from typing import Dict
@@ -68,7 +69,8 @@ class FunctionPackager():
         FileUtils.write_yaml(cfg_file_path, function_cfg)
 
     def _manage_udocker_images(self):
-        if self.resources_info.get('lambda').get('container').get('image_file', False):
+        if self.resources_info.get('lambda').get('container').get('image_file', False) or \
+           self.resources_info.get('lambda').get('deployment').get('bucket', False):
             Udocker(self.resources_info, self.tmp_payload_folder.name, self.supervisor_zip_path).prepare_udocker_image()
 
     def _add_init_script(self) -> None:

@@ -80,7 +80,7 @@ class SysUtils:
     def execute_command_with_msg(command: List[str], cmd_wd: Optional[str]=None,
                                  cli_msg: str='') -> str:
         """Execute the specified command and return the result."""
-        cmd_out = subprocess.check_output(command, cwd=cmd_wd, stderr=subprocess.STDOUT).decode('utf-8')
+        cmd_out = subprocess.check_output(command, cwd=cmd_wd).decode('utf-8')
         logger.debug(cmd_out)
         logger.info(cli_msg)
         return cmd_out[:-1]

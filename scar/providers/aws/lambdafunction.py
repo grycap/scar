@@ -103,7 +103,7 @@ class Lambda(GenericClient):
             S3(self.resources_info).upload_file(bucket=self.function.get('deployment').get('bucket'),
                                                 file_path=zip_payload_path,
                                                 file_key=file_key)
-            code = {"S3Bucket": self.function.get('deployment_bucket'),
+            code = {"S3Bucket": self.function.get('deployment').get('bucket'),
                     "S3Key": file_key}
         else:
             code = {"ZipFile": FileUtils.read_file(zip_payload_path, mode="rb")}
