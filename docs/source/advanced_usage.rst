@@ -94,7 +94,7 @@ or use CLI parameters::
 
   scar run -n scar-cowsay -s runcow.sh
 
-or a combination of both (to avoid editing the initial *.yaml file)::
+or a combination of both (to avoid editing the initial .yaml file)::
 
   scar run -f cow.yaml -s runcow.sh
 

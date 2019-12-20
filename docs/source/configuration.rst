@@ -46,9 +46,10 @@ Configuration file
 
 The first time you execute SCAR a default configuration file is created in the user location: ``$HOME/.scar/scar.cfg``.
 As explained above, it is mandatory to set a value for the ``aws.iam.role`` property to use the Lambda service.
-If you also want to use the Batch service you have to update the values of the ``aws.batch.compute_resources.security_group_ids``, and ``aws.batch.compute_resources.subnets``.
-An explanation of all the configurable properties can be found in the `example configuration file <https://github.com/grycap/scar/blob/master/fdl-example.yaml>`_.
+If you also want to use the Batch service you have to update the values of the ``aws.batch.compute_resources.security_group_ids``, and ``aws.batch.compute_resources.subnets``. There is more information about the Batch usage `here <https://scar.readthedocs.io/en/latest/batch.html>`_.
+Additionally, an explanation of all the configurable properties can be found in the `example configuration file <https://github.com/grycap/scar/blob/master/fdl-example.yaml>`_.
 Below is the complete default configuration file ::
+
   {
     "scar": {
       "config_version": "1.0.9"
