@@ -134,13 +134,10 @@ def _parse_lambda_function_info(resources_info: Dict) -> Dict:
         stage_name = resources_info.get('api_gateway').get('stage_name')
         region = resources_info.get('api_gateway').get('region')
         api_gateway = f"https://{api_gateway}.execute-api.{region}.amazonaws.com/{stage_name}/launch"
-    image_id = '-'
-    if resources_info.get('lambda').get('container'):
-        image_id = resources_info.get('lambda').get('container').get('image', '-')
     return {'Name': resources_info.get('lambda').get('name', "-"),
             'Memory': resources_info.get('lambda').get('memory', "-"),
             'Timeout': resources_info.get('lambda').get('timeout', "-"),
-            'Image_id': image_id,
+            'Image_id': resources_info.get('lambda').get('environment').get('Variables').get('IMAGE_ID', "-"),
             'Api_gateway': api_gateway,
             'Sup_version': resources_info.get('lambda').get('supervisor').get('version', '-')}
 

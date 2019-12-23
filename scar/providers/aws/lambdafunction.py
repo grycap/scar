@@ -83,11 +83,17 @@ class Lambda(GenericClient):
         self._manage_supervisor_layer(supervisor_zip_path)
         # Create function
         zip_payload_path = FileUtils.join_paths(tmp_folder.name, 'function.zip')
+        self._set_image_id()
         creation_args = self._get_creations_args(zip_payload_path, supervisor_zip_path)
         response = self.client.create_function(**creation_args)
         if response and "FunctionArn" in response:
             self.function['arn'] = response.get('FunctionArn', "")
         return response
+
+    def _set_image_id(self):
+        image = self.function.get('container').get('image')
+        if image:
+            self.function['environment']['Variables']['IMAGE_ID'] = image
 
     def _manage_supervisor_layer(self, supervisor_zip_path: str) -> None:
         layers_client = LambdaLayers(self.resources_info, self.client, supervisor_zip_path)
@@ -192,12 +198,8 @@ class Lambda(GenericClient):
 
     def merge_aws_and_local_configuration(self, aws_conf: Dict) -> Dict:
         result = ConfigFileParser().get_properties().get('aws')
-        fdl_config = self.get_fdl_config(aws_conf.get('FunctionArn'))
         result['lambda']['name'] = aws_conf['FunctionName']
         result['lambda']['arn'] = aws_conf['FunctionArn']
-        result['lambda']['container'] = fdl_config.get('container')
-        result['lambda']['input'] = fdl_config.get('input')
-        result['lambda']['output'] = fdl_config.get('output')
         result['lambda']['timeout'] = aws_conf['Timeout']
         result['lambda']['memory'] = aws_conf['MemorySize']
         result['lambda']['environment']['Variables'] = aws_conf['Environment']['Variables'].copy()
