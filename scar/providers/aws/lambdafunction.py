@@ -106,9 +106,11 @@ class Lambda(GenericClient):
         FunctionPackager(self.resources_info, supervisor_zip_path).create_zip(zip_payload_path)
         if self.function.get('deployment').get('bucket', False):
             file_key = f"lambda/{self.function.get('name')}.zip"
-            S3(self.resources_info).upload_file(bucket=self.function.get('deployment').get('bucket'),
-                                                file_path=zip_payload_path,
-                                                file_key=file_key)
+            s3_client = S3(self.resources_info)
+            s3_client.create_bucket(self.function.get('deployment').get('bucket'))
+            s3_client.upload_file(bucket=self.function.get('deployment').get('bucket'),
+                                  file_path=zip_payload_path,
+                                  file_key=file_key)
             code = {"S3Bucket": self.function.get('deployment').get('bucket'),
                     "S3Key": file_key}
         else:
