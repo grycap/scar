@@ -26,4 +26,4 @@ mcmc file=${INPUT_FILE_PATH}3
 quit
 EOF
 
-mb < batch.txt 
+mb < batch.txt > $TMP_OUTPUT_FOLDER.out

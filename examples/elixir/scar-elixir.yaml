@@ -1,3 +1,6 @@
 functions:
-  scar-elixir:
-    image: grycap/elixir
+  aws:
+  - lambda:
+      name: scar-elixir
+      container:
+        image: grycap/elixir

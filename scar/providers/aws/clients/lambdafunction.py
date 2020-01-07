@@ -34,10 +34,18 @@ class LambdaClient(BotoClient):
         logger.debug("Creating lambda function.")
         return self.client.create_function(**kwargs)
 
-    def get_function_info(self, function_name_or_arn: str) -> Dict:
+    def get_function_configuration(self, function_name_or_arn: str) -> Dict:
         """Returns the configuration information
         of the Lambda function."""
         function_info = self.client.get_function_configuration(FunctionName=function_name_or_arn)
+        # Add supervisor version
+        function_info['SupervisorVersion'] = self.get_supervisor_version(function_info)
+        return function_info
+
+    def get_function(self, function_name_or_arn: str) -> Dict:
+        """Returns the information of the Lambda function with a link to
+        download the deployment package that's valid for 10 minutes."""
+        function_info = self.client.get_function(FunctionName=function_name_or_arn)
         # Add supervisor version
         function_info['SupervisorVersion'] = self.get_supervisor_version(function_info)
         return function_info
@@ -94,6 +102,21 @@ class LambdaClient(BotoClient):
         if 'NextMarker' in layers_info:
             layers.extend(self.list_layers(next_token=layers_info['NextMarker']))
         return layers
+
+    @excp.exception(logger)
+    def list_layer_versions(self, layer_name: str, next_token: Optional[str]=None) -> str:
+        """Lists the versions of an AWS Lambda layer."""
+        logger.debug(f'Listing versions of lambda layer "{layer_name}".')
+        versions = []
+        kwargs = {'LayerName': layer_name}
+        if next_token:
+            kwargs['Marker'] = next_token
+        layer_versions_info = self.client.list_layer_versions(**kwargs)
+        if 'LayerVersions' in layer_versions_info and layer_versions_info['LayerVersions']:
+            versions.extend(layer_versions_info['LayerVersions'])
+        if 'NextMarker' in layer_versions_info:
+            versions.extend(self.list_layer_versions(layer_name, next_token=layer_versions_info['NextMarker']))
+        return versions
 
     @excp.exception(logger)
     def delete_function(self, function_name: str) -> Dict:

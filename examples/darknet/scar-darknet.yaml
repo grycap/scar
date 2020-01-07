@@ -1,7 +1,15 @@
 functions:
-  scar-darknet-s3:
-    image: grycap/darknet
-    memory: 2048
-    init_script: yolo.sh
-    s3:
-      input_bucket: scar-darknet
+  aws:
+  - lambda:
+      name: scar-darknet-s3
+      memory: 2048
+      init_script: yolo.sh
+      container:
+        image: grycap/darknet
+      input:
+      - storage_provider: s3
+        path: scar-darknet/input
+      output:
+      - storage_provider: s3
+        path: scar-darknet/output
+

@@ -1,8 +1,0 @@
-functions:
-  scar-lambda-darknet:
-    image: grycap/darknet
-    memory: 3008
-    init_script: yolo-sample-object-detection.sh
-    s3:
-      input_bucket: scar-ffmpeg/scar-batch-ffmpeg-split/video-output
-      output_bucket: scar-ffmpeg/scar-batch-ffmpeg-split/image-output

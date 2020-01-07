@@ -38,17 +38,3 @@ Procedure for testing:
 Further information is available in the udocker documentation::
 
     udocker help
-
-Testing of the Lambda functions with emulambda
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-For easier debugging of the Lambda functions, `emulambda <https://github.com/fugue/emulambda>`_ can be employed to locally execute them.
-
-#) Install emulambda
-
-#) Execute a sample local test::
-
-    sh test/emulambda/run-local-test.sh
-
-
-This test locally executes the ubuntu:16.04 image in DockerHub via udocker executing a simple shell-script.    

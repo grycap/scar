@@ -12,14 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import random
 from typing import Dict, List
+import yaml
 from scar.providers.aws import GenericClient
 import scar.logger as logger
 from scar.providers.aws.launchtemplates import LaunchTemplates
-from scar.utils import lazy_property, FileUtils, StrUtils
-
-_LAUNCH_TEMPLATE_NAME = 'faas-supervisor'
+from scar.providers.aws.functioncode import create_function_config
+from scar.utils import FileUtils, StrUtils
 
 
 def _get_job_definitions(jobs_info: Dict) -> List:
@@ -29,170 +28,135 @@ def _get_job_definitions(jobs_info: Dict) -> List:
 
 class Batch(GenericClient):
 
-    @lazy_property
-    def launch_templates(self):
-        launch_templates = LaunchTemplates(self.aws, self.supervisor_version)
-        return launch_templates
+    def __init__(self, resources_info):
+        super().__init__(resources_info.get('batch'))
+        self.resources_info = resources_info
+        self.batch = resources_info.get('batch')
+        self.function_name = self.resources_info.get('lambda').get('name')
 
-    def __init__(self, aws_properties, supervisor_version):
-        super().__init__(aws_properties)
-        self.supervisor_version = supervisor_version
-        self.aws.batch.instance_role = (f"arn:aws:iam::{self.aws.account_id}:"
-                                        "instance-profile/ecsInstanceRole")
-        self.aws.batch.service_role = (f"arn:aws:iam::{self.aws.account_id}:"
-                                       "role/service-role/AWSBatchServiceRole")
-        self.aws.batch.env_vars = []
-
-    def _set_required_environment_variables(self):
-        self._set_batch_environment_variable('AWS_LAMBDA_FUNCTION_NAME', self.aws.lambdaf.name)
+    def _set_required_environment_variables(self) -> None:
+        self._set_batch_environment_variable('AWS_LAMBDA_FUNCTION_NAME', self.function_name)
         self._set_batch_environment_variable('SCRIPT', self._get_user_script())
-        if (hasattr(self.aws.lambdaf, 'environment_variables') and
-                self.aws.lambdaf.environment_variables):
-            self._add_custom_environment_variables(self.aws.lambdaf.environment_variables)
-        if (hasattr(self.aws.lambdaf, 'lambda_environment') and
-                self.aws.lambdaf.lambda_environment):
-            self._add_custom_environment_variables(self.aws.lambdaf.lambda_environment)
-        if hasattr(self.aws, "s3"):
-            self._add_s3_environment_vars()
+        self._set_batch_environment_variable('FUNCTION_CONFIG', self._get_config_file())
+        if self.resources_info.get('lambda').get('container').get('environment').get('Variables', False):
+            for key, value in self.resources_info.get('lambda').get('container').get('environment').get('Variables').items():
+                self._set_batch_environment_variable(key, value)
 
-    def _add_custom_environment_variables(self, env_vars):
-        if isinstance(env_vars, dict):
-            for key, val in env_vars.items():
-                self._set_batch_environment_variable(key, val)
-        else:
-            for env_var in env_vars:
-                self._set_batch_environment_variable(*env_var.split("="))
+    def _set_batch_environment_variable(self, key: str, value: str) -> None:
+        self.resources_info['batch']['environment']['Variables'].update({key: value})
 
-    def _set_batch_environment_variable(self, key, value):
-        if key and value is not None:
-            self.aws.batch.env_vars.append({'name': key, 'value': value})
-
-    def _add_s3_environment_vars(self):
-        provider_id = random.randint(1, 1000001)
-        if hasattr(self.aws.s3, "input_bucket"):
-            self._set_batch_environment_variable(f'STORAGE_PATH_INPUT_{provider_id}',
-                                                 self.aws.s3.storage_path_input)
-        if hasattr(self.aws.s3, "output_bucket"):
-            self._set_batch_environment_variable(f'STORAGE_PATH_OUTPUT_{provider_id}',
-                                                 self.aws.s3.storage_path_output)
-        else:
-            self._set_batch_environment_variable(f'STORAGE_PATH_OUTPUT_{provider_id}',
-                                                 self.aws.s3.storage_path_input)
-        self._set_batch_environment_variable(f'STORAGE_AUTH_S3_USER_{provider_id}', 'scar')
-
-    def _get_user_script(self):
+    def _get_user_script(self) -> str:
         script = ''
-        if hasattr(self.aws.lambdaf, "init_script"):
-            file_content = FileUtils.read_file(self.aws.lambdaf.init_script)
+        if self.resources_info.get('lambda').get('init_script', False):
+            file_content = FileUtils.read_file(self.resources_info.get('lambda').get('init_script'))
             script = StrUtils.utf8_to_base64_string(file_content)
         return script
 
-    def _delete_job_definitions(self, name):
-        job_definitions = []
-        # Get IO definitions (if any)
-        kwargs = {"jobDefinitionName": '{0}-io'.format(name)}
-        io_job_info = self.client.describe_job_definitions(**kwargs)
-        job_definitions.extend(_get_job_definitions(io_job_info))
+    def _get_config_file(self) -> str:
+        cfg_file = ''
+        config = create_function_config(self.resources_info)
+        yaml_str = yaml.safe_dump(config)
+        cfg_file = StrUtils.utf8_to_base64_string(yaml_str)
+        return cfg_file
+
+    def _delete_job_definitions(self) -> None:
         # Get main job definition
-        kwargs = {"jobDefinitionName": name}
+        kwargs = {"jobDefinitionName": self.function_name}
         job_info = self.client.describe_job_definitions(**kwargs)
-        job_definitions.extend(_get_job_definitions(job_info))
-        for job_def in job_definitions:
+        for job_def in _get_job_definitions(job_info):
             kwars = {"jobDefinition": job_def}
             self.client.deregister_job_definition(**kwars)
-        logger.info("Job definitions deleted")
+        logger.info("Job definitions successfully deleted.")
 
-    def _get_job_queue_info(self, name):
-        job_queue_info_args = {'jobQueues': [self._get_resource_name(name)]}
+    def _get_job_queue_info(self):
+        job_queue_info_args = {'jobQueues': [self.function_name]}
         return self.client.describe_job_queues(**job_queue_info_args)
 
-    def _delete_job_queue(self, name):
-        response = self._get_job_queue_info(name)
+    def _delete_job_queue(self):
+        response = self._get_job_queue_info()
         while response["jobQueues"]:
             state = response["jobQueues"][0]["state"]
             status = response["jobQueues"][0]["status"]
             if status == "VALID":
-                self._delete_valid_job_queue(state, name)
-            response = self._get_job_queue_info(name)
+                self._delete_valid_job_queue(state)
+            response = self._get_job_queue_info()
 
-    def _delete_valid_job_queue(self, state, name):
+    def _delete_valid_job_queue(self, state):
         if state == "ENABLED":
-            updating_args = {'jobQueue': self._get_resource_name(name),
+            updating_args = {'jobQueue': self.function_name,
                              'state': 'DISABLED'}
             self.client.update_job_queue(**updating_args)
         elif state == "DISABLED":
-            deleting_args = {'jobQueue': self._get_resource_name(name)}
-            logger.info("Job queue deleted")
+            deleting_args = {'jobQueue': self.function_name}
             self.client.delete_job_queue(**deleting_args)
+            logger.info("Job queue successfully deleted.")
 
-    def _get_compute_env_info(self, name):
-        creation_args = self._get_describe_compute_env_args(name_c=name)
+    def _get_describe_compute_env_args(self):
+        return {'computeEnvironments': [self.function_name]}
+
+    def _get_compute_env_info(self):
+        creation_args = self._get_describe_compute_env_args()
         return self.client.describe_compute_environments(**creation_args)
 
-    def _delete_compute_env(self, name):
-        response = self._get_compute_env_info(name)
+    def _delete_compute_env(self):
+        response = self._get_compute_env_info()
         while response["computeEnvironments"]:
             state = response["computeEnvironments"][0]["state"]
             status = response["computeEnvironments"][0]["status"]
             if status == "VALID":
-                self._delete_valid_compute_environment(state, name)
-            response = self._get_compute_env_info(name)
+                self._delete_valid_compute_environment(state)
+            response = self._get_compute_env_info()
 
-    def _delete_valid_compute_environment(self, state, name):
+    def _delete_valid_compute_environment(self, state):
         if state == "ENABLED":
-            update_args = {'computeEnvironment': self._get_resource_name(name),
+            update_args = {'computeEnvironment': self.function_name,
                            'state': 'DISABLED'}
             self.client.update_compute_environment(**update_args)
         elif state == "DISABLED":
-            delete_args = {'computeEnvironment': self._get_resource_name(name)}
-            logger.info("Compute environment deleted")
+            delete_args = {'computeEnvironment': self.function_name}
             self.client.delete_compute_environment(**delete_args)
+            logger.info("Compute environment successfully deleted.")
 
     def _get_compute_env_args(self):
+        account_id = self.resources_info.get('iam').get('account_id')
         return {
-            'computeEnvironmentName': self.aws.lambdaf.name,
-            'serviceRole': self.aws.batch.service_role,
-            'type': self.aws.batch.compute_resources['type'],
-            'state':  self.aws.batch.compute_resources['state'],
+            'computeEnvironmentName': self.function_name,
+            'serviceRole': self.batch.get('service_role').format(account_id=account_id),
+            'type': self.batch.get('type'),
+            'state':  self.batch.get('state'),
             'computeResources': {
-                'type': self.aws.batch.compute_resources['comp_type'],
-                'minvCpus': self.aws.batch.compute_resources['min_v_cpus'],
-                'maxvCpus': self.aws.batch.compute_resources['max_v_cpus'],
-                'desiredvCpus': self.aws.batch.compute_resources['desired_v_cpus'],
-                'instanceTypes': self.aws.batch.compute_resources['instance_types'],
-                'subnets': self.aws.batch.compute_resources['subnets'],
-                'securityGroupIds': self.aws.batch.compute_resources['security_group_ids'],
-                'instanceRole': self.aws.batch.instance_role,
+                'type': self.batch.get('compute_resources').get('type'),
+                'minvCpus': self.batch.get('compute_resources').get('min_v_cpus'),
+                'maxvCpus': self.batch.get('compute_resources').get('max_v_cpus'),
+                'desiredvCpus': self.batch.get('compute_resources').get('desired_v_cpus'),
+                'instanceTypes': self.batch.get('compute_resources').get('instance_types'),
+                'subnets': self.batch.get('compute_resources').get('subnets'),
+                'securityGroupIds': self.batch.get('compute_resources').get('security_group_ids'),
+                'instanceRole': self.batch.get('compute_resources').get('instance_role').format(account_id=account_id),
                 'launchTemplate': {
-                    'launchTemplateName': _LAUNCH_TEMPLATE_NAME,
-                    'version': str(self.launch_templates.get_launch_template_version())
+                    'launchTemplateName': self.batch.get('compute_resources').get('launch_template_name'),
+                    'version': str(LaunchTemplates(self.resources_info).get_launch_template_version())
                 }
             }
         }
 
     def _get_creations_job_queue_args(self):
         return {
-            'computeEnvironmentOrder': [{'computeEnvironment': self.aws.lambdaf.name,
+            'computeEnvironmentOrder': [{'computeEnvironment': self.function_name,
                                          'order': 1}, ],
-            'jobQueueName':  self.aws.lambdaf.name,
+            'jobQueueName':  self.function_name,
             'priority': 1,
-            'state': self.aws.batch.compute_resources['state'],
+            'state': self.batch.get('state'),
         }
-
-    def _get_resource_name(self, name=None):
-        return name if name else self.aws.lambdaf.name
-
-    def _get_describe_compute_env_args(self, name_c=None):
-        return {'computeEnvironments': [self._get_resource_name(name_c)]}
 
     def _get_job_definition_args(self):
         job_def_args = {
-            'jobDefinitionName': self.aws.lambdaf.name,
+            'jobDefinitionName': self.function_name,
             'type': 'container',
             'containerProperties': {
-                'image': self.aws.lambdaf.image,
-                'memory': int(self.aws.batch.memory),
-                'vcpus': int(self.aws.batch.vcpus),
+                'image': self.resources_info.get('lambda').get('container').get('image'),
+                'memory': int(self.batch.get('memory')),
+                'vcpus': int(self.batch.get('vcpus')),
                 'command': [
                     '/bin/sh',
                     '-c',
@@ -206,7 +170,7 @@ class Batch(GenericClient):
                         'name': 'supervisor-bin'
                     }
                 ],
-                'environment': self.aws.batch.env_vars,
+                'environment': [{'name': key, 'value': value} for key, value in self.resources_info['batch']['environment']['Variables'].items()],
                 'mountPoints': [
                     {
                         'containerPath': '/opt/faas-supervisor/bin',
@@ -215,7 +179,7 @@ class Batch(GenericClient):
                 ]
             }
         }
-        if self.aws.batch.enable_gpu:
+        if self.batch.get('enable_gpu'):
             job_def_args['containerProperties']['resourceRequirements'] = [
                 {
                     'value': '1',
@@ -224,8 +188,8 @@ class Batch(GenericClient):
             ]
         return job_def_args
 
-    def _get_state_and_status_of_compute_env(self, name=None):
-        creation_args = self._get_describe_compute_env_args(name_c=name)
+    def _get_state_and_status_of_compute_env(self):
+        creation_args = self._get_describe_compute_env_args()
         response = self.client.describe_compute_environments(**creation_args)
         return (response["computeEnvironments"][0]["state"],
                 response["computeEnvironments"][0]["status"])
@@ -242,23 +206,23 @@ class Batch(GenericClient):
                 self.client.create_job_queue(**creation_args)
                 logger.info('Job queue successfully created.')
                 creation_args = self._get_job_definition_args()
-                logger.info(f"Registering '{self.aws.lambdaf.name}' job definition.")
+                logger.info(f"Registering '{self.function_name}' job definition.")
                 return self.client.register_job_definition(**creation_args)
 
-    def delete_compute_environment(self, name):
-        self._delete_job_definitions(name)
-        self._delete_job_queue(name)
-        self._delete_compute_env(name)
+    def delete_compute_environment(self):
+        self._delete_job_definitions()
+        self._delete_job_queue()
+        self._delete_compute_env()
 
-    def exist_compute_environments(self, name):
-        creation_args = self._get_describe_compute_env_args(name_c=name)
+    def exist_compute_environments(self):
+        creation_args = self._get_describe_compute_env_args()
         response = self.client.describe_compute_environments(**creation_args)
         return len(response["computeEnvironments"]) > 0
 
-    def describe_jobs(self, job_id):
-        describe_args = {'jobs': [job_id]}
+    def get_jobs_with_request_id(self) -> Dict:
+        describe_args = {'jobs': [self.resources_info.get('cloudwatch').get('request_id')]}
         return self.client.describe_jobs(**describe_args)
 
-    def exist_job(self, job_id):
-        response = self.describe_jobs(job_id)
-        return len(response["jobs"]) != 0
+#     def exist_job(self, job_id: str) -> bool:
+#         response = self.describe_jobs(job_id)
+#         return len(response["jobs"]) != 0

@@ -31,15 +31,6 @@ class CloudWatchLogsClient(BotoClient):
     @exception(logger)
     def get_log_events(self, **kwargs: Dict) -> List:
         """Lists log events from the specified log group."""
-#         logs = []
-#         kwargs = {}
-#         response = self.client.filter_log_events(**kwargs)
-#         logs.append(response)
-#         while 'nextToken' in response and (response['nextToken']):
-#             kwargs['nextToken'] = response['nextToken']
-#             response = self.client.filter_log_events(**kwargs)
-#             logs.append(response)
-#         return logs
         log_events = []
         logs_info = self.client.filter_log_events(**kwargs)
         log_events.extend(logs_info.get('events', []))

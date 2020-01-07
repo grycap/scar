@@ -1,7 +1,8 @@
 #!/bin/bash
 
-RESULT="$TMP_OUTPUT_DIR/result.out"
-OUTPUT_IMAGE="$TMP_OUTPUT_DIR/image-result"
+IMAGE_NAME=`basename "$INPUT_FILE_PATH" .jpg`
+RESULT="$TMP_OUTPUT_DIR/$IMAGE_NAME.out"
+OUTPUT_IMAGE="$TMP_OUTPUT_DIR/$IMAGE_NAME"
 
 echo "SCRIPT: Analyzing file '$INPUT_FILE_PATH', saving the result in '$RESULT' and the output image in '$OUTPUT_IMAGE.png'"
 

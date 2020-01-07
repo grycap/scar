@@ -1,3 +1,6 @@
 functions:
-  scar-minicow:
-    image_file: minicow.tar.gz
+  aws:
+  - lambda:
+      name: scar-minicow
+      container:
+        image_file: minicow.tar.gz

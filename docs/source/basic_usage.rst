@@ -8,8 +8,11 @@ Using a configuration file (recommended)
 
     cat >> basic-cow.yaml << EOF
     functions:
-      scar-cowsay:
-        image: grycap/cowsay
+      aws:
+      - lambda:
+          name: scar-cowsay
+          container:
+            image: grycap/cowsay
     EOF
 
   Where you define the name of the function and under it the image that will run inside the function.
@@ -25,17 +28,6 @@ Using a configuration file (recommended)
 4) Checking the function logs is as easy as::
 
     scar log -f basic-cow.yaml
-
-  If you want to get an specific log stream or request id from the logs you can specify it either in the configuration file or in the command line, although due to the dinamic nature of those parameters its easier to specify them in the cli.
-  To retrieve an specific log stream or request id using the configuration file would be::
-
-    cat >> basic-cow.yaml << EOF
-    functions:
-      scar-cowsay:
-        image: grycap/cowsay
-        log_stream_name: 2018/07/10/[$LATEST]037b5bbf77a44a5basdfwerb92805303
-        request_id: bc456798-841a-11e8-8z1b-49c89abc6ff1
-    EOF
 
 5) Finally to delete the function::
 

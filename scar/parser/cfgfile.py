@@ -21,41 +21,119 @@ from scar.utils import FileUtils, SysUtils, StrUtils
 
 _DEFAULT_CFG = {
     "scar": {
-        # Must be a tag or "latest"
-        "supervisor_version": "latest",
-        "config_version": "1.0.0"
+        "config_version": "1.0.9"
     },
     "aws": {
-        "boto_profile": "default",
-        "region": "us-east-1",
-        "execution_mode": "lambda",
-        "iam": {"role": ""},
+        "iam": {"boto_profile": "default",
+                "role": ""},
         "lambda": {
-            "time": 300,
+            "boto_profile": "default",
+            "region": "us-east-1",
+            "execution_mode": "lambda",
+            "timeout": 300,
             "memory": 512,
             "description": "Automatically generated lambda function",
-            "timeout_threshold": 10,
-            "runtime": "python3.6",
-            "max_payload_size": 52428800,
-            "max_s3_payload_size": 262144000,
-            "layers": []
+            "runtime": "python3.7",
+            "layers": [],
+            "invocation_type": "RequestResponse",
+            "asynchronous": False,
+            "log_type": "Tail",
+            "log_level": "INFO",
+            "environment": {
+                "Variables": {
+                    "UDOCKER_BIN" : "/opt/udocker/bin/",
+                    "UDOCKER_LIB" : "/opt/udocker/lib/",
+                    "UDOCKER_DIR" : "/tmp/shared/udocker",
+                    "UDOCKER_EXEC": "/opt/udocker/udocker.py"}},
+            "deployment": {
+                "max_payload_size": 52428800,
+                "max_s3_payload_size": 262144000           
+            },
+            "container": {
+                "environment" : {
+                    "Variables" : {}},
+                "timeout_threshold": 10
+            },
+            # Must be a Github tag or "latest"
+            "supervisor": {
+                "version": "latest",
+                'layer_name' : "faas-supervisor",
+                'license_info' : 'Apache 2.0'                
+            }
         },
-        "cloudwatch": {"log_retention_policy_in_days": 30},
+        "s3": {
+            "boto_profile": "default",
+            "region": "us-east-1",            
+            "event" : {
+                "Records": [{
+                    "eventSource": "aws:s3",
+                    "s3" : {
+                        "bucket" : {
+                            "name": "{bucket_name}",
+                            "arn": "arn:aws:s3:::{bucket_name}"
+                        },
+                        "object" : {
+                            "key": "{file_key}"
+                        }
+                    }
+                }]
+            }
+        },
+        "api_gateway": {
+            "boto_profile": "default",
+            "region": "us-east-1",            
+            "endpoint": "https://{api_id}.execute-api.{api_region}.amazonaws.com/{stage_name}/launch",
+            'request_parameters': {"integration.request.header.X-Amz-Invocation-Type":
+                                   "method.request.header.X-Amz-Invocation-Type"},
+            # ANY, DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT
+            'http_method': "ANY",
+            "method" : {
+                # NONE, AWS_IAM, CUSTOM, COGNITO_USER_POOLS
+                'authorizationType': "NONE",
+                'requestParameters': {'method.request.header.X-Amz-Invocation-Type' : False},
+            },
+            "integration": {
+                # 'HTTP'|'AWS'|'MOCK'|'HTTP_PROXY'|'AWS_PROXY'
+                'type': "AWS_PROXY",
+                'integrationHttpMethod' : "POST",
+                'uri' : "arn:aws:apigateway:{api_region}:lambda:path/2015-03-31/functions/arn:aws:lambda:{lambda_region}:{account_id}:function:{function_name}/invocations",
+                'requestParameters' : {"integration.request.header.X-Amz-Invocation-Type":
+                                       "method.request.header.X-Amz-Invocation-Type"}            
+            },
+            'path_part': "{proxy+}",
+            'stage_name': "scar",
+            # Used to add invocation permissions to lambda
+            'service_id': 'apigateway.amazonaws.com',
+            'source_arn_testing': 'arn:aws:execute-api:{api_region}:{account_id}:{api_id}/*',
+            'source_arn_invocation': 'arn:aws:execute-api:{api_region}:{account_id}:{api_id}/{stage_name}/ANY'
+        },
+        "cloudwatch": {
+            "boto_profile": "default",
+            "region": "us-east-1",
+            "log_retention_policy_in_days": 30
+        },
         "batch": {
+            "boto_profile": "default",
+            "region": "us-east-1",
             "vcpus": 1,
             "memory": 1024,
             "enable_gpu": False,
+            "state": "ENABLED",
+            "type": "MANAGED",
+            "environment" : {
+                "Variables" : {}},
             "compute_resources": {
-                "state": "ENABLED",
-                "type": "MANAGED",
                 "security_group_ids": [],
-                "comp_type": "EC2",
+                "type": "EC2",
                 "desired_v_cpus": 0,
                 "min_v_cpus": 0,
                 "max_v_cpus": 2,
                 "subnets": [],
-                "instance_types": ["m3.medium"]
-            }
+                "instance_types": ["m3.medium"],
+                "launch_template_name": "faas-supervisor",
+                "instance_role": "arn:aws:iam::{account_id}:instance-profile/ecsInstanceRole"
+            },
+            "service_role": "arn:aws:iam::{account_id}:role/service-role/AWSBatchServiceRole"            
         }
     }
 }
@@ -86,7 +164,7 @@ class ConfigFileParser():
         if 'config_version' not in self.cfg_data['scar']:
             return False
         return StrUtils.compare_versions(self.cfg_data.get('scar', {}).get("config_version", ""),
-                                         _DEFAULT_CFG['scar']["config_version"]) <= 0
+                                         _DEFAULT_CFG['scar']["config_version"]) >= 0
 
     def get_properties(self):
         """Returns the configuration data of the configuration file."""
@@ -114,30 +192,3 @@ class ConfigFileParser():
         logger.info((f"New configuration file saved in '{self.config_file_path}'.\n"
                      "Please fill your new configuration file with your account information."))
         SysUtils.finish_scar_execution()
-
-#         self._merge_files(self.cfg_data, _DEFAULT_CFG)
-#         self._delete_unused_data()
-#         with open(self.config_file_path, mode='w') as cfg_file:
-#             cfg_file.write(json.dumps(self.cfg_data, indent=2))
-
-#     def _add_missing_attributes(self):
-#         logger.info("Updating old scar config file '{0}'.\n".format(self.config_file_path))
-#         FileUtils.copy_file(self.config_file_path, self.backup_file_path)
-#         logger.info("Old scar config file saved in '{0}'.\n".format(self.backup_file_path))
-#         self._merge_files(self.cfg_data, _DEFAULT_CFG)
-#         self._delete_unused_data()
-#         with open(self.config_file_path, mode='w') as cfg_file:
-#             cfg_file.write(json.dumps(self.cfg_data, indent=2))
-#
-#     def _merge_files(self, cfg_data, default_data):
-#         for key, val in default_data.items():
-#             if key not in cfg_data:
-#                 cfg_data[key] = val
-#             elif isinstance(cfg_data[key], dict):
-#                 self._merge_files(cfg_data[key], default_data[key])
-#
-#     def _delete_unused_data(self):
-#         if 'region' in self.cfg_data['aws']['lambda']:
-#             region = self.cfg_data['aws']['lambda'].pop('region', None)
-#             if region:
-#                 self.cfg_data['aws']['region'] = region

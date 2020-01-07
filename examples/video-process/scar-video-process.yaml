@@ -1,0 +1,26 @@
+functions:
+  aws:
+  - lambda:
+      name: scar-batch-ffmpeg-split
+      init_script: split-video.sh
+      execution_mode: batch
+      container:
+        image: grycap/ffmpeg
+      input:
+      - storage_provider: s3
+        path: scar-video/input
+      output:
+      - storage_provider: s3
+        path: scar-video/split-images
+  - lambda:
+      name: scar-lambda-darknet
+      init_script: yolo-sample-object-detection.sh
+      memory: 3008
+      container:
+        image: grycap/darknet
+      input:
+      - storage_provider: s3
+        path: scar-video/split-images
+      output:
+      - storage_provider: s3
+        path: scar-video/output

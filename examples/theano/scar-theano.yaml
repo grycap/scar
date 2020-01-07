@@ -1,3 +1,6 @@
 functions:
-  scar-theano:
-    image: grycap/theano
+  aws:
+  - lambda:
+      name: scar-theano
+      container:
+        image: grycap/theano

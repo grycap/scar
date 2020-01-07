@@ -13,73 +13,73 @@
 # limitations under the License.
 
 import os
+from typing import Tuple, Dict, List
 from scar.providers.aws import GenericClient
 import scar.exceptions as excp
 import scar.logger as logger
 from scar.utils import FileUtils
-from scar.providers.aws.properties import S3Properties
+
+
+def get_bucket_and_folders(storage_path: str) -> Tuple:
+    output_bucket = storage_path
+    output_folders = ""
+    output_path = storage_path.split("/", 1)
+    if len(output_path) > 1:
+        # There are folders defined
+        output_bucket = output_path[0]
+        output_folders = output_path[1]
+    return (output_bucket, output_folders)
 
 
 class S3(GenericClient):
 
-    def __init__(self, aws_properties):
-        super().__init__(aws_properties)
-        if hasattr(self.aws, 's3'):
-            if type(self.aws.s3) is dict:
-                self.aws.s3 = S3Properties(self.aws.s3)
-            self._initialize_properties()
-
-    def _initialize_properties(self):
-        if not hasattr(self.aws.s3, "input_folder"):
-            self.aws.s3.input_folder = ''
-            if hasattr(self.aws.lambdaf, "name"):
-                self.aws.s3.input_folder = "{0}/input/".format(self.aws.lambdaf.name)
-        elif not self.aws.s3.input_folder.endswith("/"):
-            self.aws.s3.input_folder = "{0}/".format(self.aws.s3.input_folder)
+    def __init__(self, resources_info):
+        super().__init__(resources_info.get('s3'))
+        self.resources_info = resources_info
 
     @excp.exception(logger)
-    def create_bucket(self, bucket_name):
+    def create_bucket(self, bucket_name) -> None:
         if not self.client.find_bucket(bucket_name):
             self.client.create_bucket(bucket_name)
 
-    def create_output_bucket(self):
-        self.create_bucket(self.aws.s3.output_bucket)
-
     @excp.exception(logger)
-    def add_bucket_folder(self):
-        if self.aws.s3.input_folder:
-            self.upload_file(folder_name=self.aws.s3.input_folder)
+    def add_bucket_folder(self, bucket: str, folders: str) -> None:
+        if not self.client.is_folder(bucket, folders):
+            self.upload_file(bucket, folder_name=folders)
 
-    def create_input_bucket(self, create_input_folder=False):
-        self.create_bucket(self.aws.s3.input_bucket)
-        if create_input_folder:
-            self.add_bucket_folder()
+    def create_bucket_and_folders(self, storage_path: str) -> Tuple:
+        bucket, folders = get_bucket_and_folders(storage_path)
+        self.create_bucket(bucket)
+        if folders:
+            self.add_bucket_folder(bucket, folders)
+        return bucket, folders
 
-    def set_input_bucket_notification(self):
+    def set_input_bucket_notification(self, bucket_name: str, folders: str) -> None:
         # First check that the function doesn't have other configurations
-        bucket_conf = self.client.get_notification_configuration(self.aws.s3.input_bucket)
-        trigger_conf = self.get_trigger_configuration()
+        bucket_conf = self.client.get_notification_configuration(bucket_name)
+        trigger_conf = self.get_trigger_configuration(folders)
         lambda_conf = [trigger_conf]
         if "LambdaFunctionConfigurations" in bucket_conf:
             lambda_conf = bucket_conf["LambdaFunctionConfigurations"]
             lambda_conf.append(trigger_conf)
-        notification = { "LambdaFunctionConfigurations": lambda_conf }
-        self.client.put_notification_configuration(self.aws.s3.input_bucket, notification)
+        notification = {"LambdaFunctionConfigurations": lambda_conf}
+        self.client.put_notification_configuration(bucket_name, notification)
 
-    def delete_bucket_notification(self, bucket_name, function_arn):
+    def delete_bucket_notification(self, bucket_name):
         bucket_conf = self.client.get_notification_configuration(bucket_name)
         if bucket_conf and "LambdaFunctionConfigurations" in bucket_conf:
             lambda_conf = bucket_conf["LambdaFunctionConfigurations"]
-            filter_conf = [x for x in lambda_conf if x['LambdaFunctionArn'] != function_arn]
-            notification = { "LambdaFunctionConfigurations": filter_conf }
+            filter_conf = [x for x in lambda_conf if x['LambdaFunctionArn'] != self.resources_info.get('lambda').get('arn')]
+            notification = {"LambdaFunctionConfigurations": filter_conf}
             self.client.put_notification_configuration(bucket_name, notification)
-            logger.info("Bucket notifications successfully deleted")
+            logger.info("Bucket notifications successfully deleted.")
 
-    def get_trigger_configuration(self):
-        return  {"LambdaFunctionArn": self.aws.lambdaf.arn,
-                 "Events": [ "s3:ObjectCreated:*" ],
-                 "Filter": { "Key": { "FilterRules": [{ "Name": "prefix", "Value": self.aws.s3.input_folder }]}}
-                 }
+    def get_trigger_configuration(self, folders: str) -> Dict:
+        conf = {"LambdaFunctionArn": self.resources_info.get('lambda').get('arn'),
+                "Events": ["s3:ObjectCreated:*"]}
+        if folders != '':
+            conf['Filter'] = {"Key": {"FilterRules": [{"Name": "prefix", "Value": f'{folders}/'}]}}
+        return conf
 
     def get_file_key(self, folder_name=None, file_path=None, file_key=None):
         if file_key:
@@ -94,8 +94,8 @@ class S3(GenericClient):
         return file_key
 
     @excp.exception(logger)
-    def upload_file(self, folder_name=None, file_path=None, file_key=None):
-        kwargs = {'Bucket' : self.aws.s3.input_bucket}
+    def upload_file(self, bucket: str, folder_name: str=None, file_path: str=None, file_key: str=None) -> None:
+        kwargs = {'Bucket': bucket}
         kwargs['Key'] = self.get_file_key(folder_name, file_path, file_key)
         if file_path:
             try:
@@ -103,34 +103,48 @@ class S3(GenericClient):
             except FileNotFoundError:
                 raise excp.UploadFileNotFoundError(file_path=file_path)
         if folder_name and not file_path:
-            logger.info("Folder '{0}' created in bucket '{1}'".format(kwargs['Key'], kwargs['Bucket']))
+            kwargs['ContentType'] = 'application/x-directory'
+            logger.info(f"Folder '{kwargs['Key']}' created in bucket '{kwargs['Bucket']}'.")
         else:
-            logger.info("Uploading file '{0}' to bucket '{1}' with key '{2}'".format(file_path, kwargs['Bucket'], kwargs['Key']))
+            logger.info(f"Uploading file '{file_path}' to bucket '{kwargs['Bucket']}' with key '{kwargs['Key']}'.")
         self.client.upload_file(**kwargs)
 
     @excp.exception(logger)
-    def get_bucket_file_list(self):
-        bucket_name = self.aws.s3.input_bucket
+    def get_bucket_file_list(self, storage: Dict=None):
+        files = []
+        if storage:
+            files = self._list_storage_files(storage)
+        else:
+            for storage_info in self.resources_info.get('lambda').get('input'):
+                if storage_info.get('storage_provider') == 's3':
+                    files.extend(self._list_storage_files(storage_info))
+        return files
+
+    def _list_storage_files(self, storage: Dict) -> List:
+        files = []
+        bucket_name, folder_path = get_bucket_and_folders(storage.get('path'))
         if self.client.find_bucket(bucket_name):
             kwargs = {"Bucket" : bucket_name}
-            if hasattr(self.aws.s3, "input_folder") and self.aws.s3.input_folder:
-                kwargs["Prefix"] = self.aws.s3.input_folder
-            return self.client.list_files(**kwargs)
+            if folder_path:
+                kwargs["Prefix"] = folder_path
+            files = (self.client.list_files(**kwargs))
         else:
             raise excp.BucketNotFoundError(bucket_name=bucket_name)
+        return files
 
-    def get_s3_event(self, s3_file_key):
-        return {"Records": [{"eventSource": "aws:s3",
-                             "s3" : {"bucket" : {"name": self.aws.s3.input_bucket,
-                                                 "arn": f'arn:aws:s3:::{self.aws.s3.input_bucket}'},
-                                     "object" : {"key": s3_file_key}}}]}
+    def get_s3_event(self, bucket_name, file_key):
+        event = self.resources_info.get("s3").get("event")
+        event['Records'][0]['s3']['bucket']['name'] = bucket_name
+        event['Records'][0]['s3']['bucket']['arn'] = event['Records'][0]['s3']['bucket']['arn'].format(bucket_name=bucket_name)
+        event['Records'][0]['s3']['object']['key'] = file_key
+        return event
 
-    def get_s3_event_list(self, s3_file_keys):
-        return [self.get_s3_event(s3_key) for s3_key in s3_file_keys]
+    def get_s3_event_list(self, bucket_name, file_keys):
+        return [self.get_s3_event(bucket_name, file_key) for file_key in file_keys]
 
     def download_file(self, bucket_name, file_key, file_path):
         kwargs = {'Bucket' : bucket_name, 'Key' : file_key}
-        logger.info("Downloading file '{0}' from bucket '{1}' in path '{2}'".format(file_key, bucket_name, file_path))
+        logger.info(f"Downloading file '{file_key}' from bucket '{bucket_name}' in path '{file_path}'.")
         with open(file_path, 'wb') as file:
             kwargs['Fileobj'] = file
             self.client.download_file(**kwargs)

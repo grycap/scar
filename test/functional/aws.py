@@ -35,9 +35,9 @@ class AwsTest(unittest.TestCase):
         cmd = self.get_cmd(["init","-n", function_name, "-i", "centos:7"])
         cmd_out = self.execute_command(cmd)
         self.assertTrue("Packing udocker files" in cmd_out)
-        self.assertTrue("Creating function package" in cmd_out)
-        self.assertTrue("Function '{0}' successfully created".format(function_name) in cmd_out)
-        self.assertTrue("Log group '/aws/lambda/{0}' successfully created".format(function_name) in cmd_out)
+        self.assertTrue("Creating function package." in cmd_out)
+        self.assertTrue("Function '{0}' successfully created.".format(function_name) in cmd_out)
+        self.assertTrue("Log group '/aws/lambda/{0}' successfully created.".format(function_name) in cmd_out)
      
     def test_empty_ls_table(self):
         cmd = self.get_cmd(["ls"])

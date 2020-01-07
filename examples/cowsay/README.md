@@ -1,6 +1,6 @@
 # Alpine-less Cowsay
 
-Docker image for [Cowsay](https://en.wikipedia.org/wiki/Cowsay) and [Fortune](https://en.wikipedia.org/wiki/Fortune_(Unix)) based on the [ubuntu:16.04](https://hub.docker.com/r/library/ubuntu/tags/16.04/) Docker image.
+Docker image for [Cowsay](https://en.wikipedia.org/wiki/Cowsay) and [Fortune](https://en.wikipedia.org/wiki/Fortune_(Unix) based on the [ubuntu:16.04](https://hub.docker.com/r/library/ubuntu/tags/16.04/) Docker image.
 
 ## Local Usage
 

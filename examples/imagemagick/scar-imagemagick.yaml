@@ -1,6 +1,13 @@
 functions:
-  scar-imagemagick:
-    image: grycap/imagemagick
-    init_script: grayify-image.sh
-    s3:
-      input_bucket: scar-imagemagick
+  aws:
+  - lambda:
+      name: scar-imagemagick
+      init_script: grayify-image.sh
+      container:
+        image: grycap/imagemagick
+      input:
+      - storage_provider: s3
+        path: scar-imagemagick/input
+      output:
+      - storage_provider: s3
+        path: scar-imagemagick/output

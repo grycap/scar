@@ -1,0 +1,35 @@
+functions:
+  aws:
+  - lambda:
+      name: scar-batch-ffmpeg-split
+      image: grycap/ffmpeg
+      init_script: split-video.sh
+      execution_mode: batch
+      log_level: debug
+      input:
+      - storage_provider: s3
+        path: scar-ffmpeg
+      output:
+      - storage_provider: s3
+        path: scar-ffmpeg/scar-batch-ffmpeg-split/video-output
+  - lambda:          
+      name: scar-lambda-darknet
+      image: grycap/darknet
+      memory: 3008
+      log_level: debug
+      init_script: yolo-sample-object-detection.sh
+      input:
+      - storage_provider: s3
+        path: scar-ffmpeg/scar-batch-ffmpeg-split/video-output
+      output:
+      - storage_provider: s3
+        path: scar-ffmpeg/scar-batch-ffmpeg-split/image-output
+
+storage_providers:
+  s3:
+  - name: s3-bucket
+  minio:
+  - name: minio-bucket
+    auth:
+      user: muser
+      pass: mpass

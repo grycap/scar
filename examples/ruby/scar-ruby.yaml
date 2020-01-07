@@ -1,3 +1,6 @@
 functions:
-  scar-ruby:
-    image: ruby:2.2.10-slim-jessie
+  aws:
+  - lambda:
+      name: scar-ruby
+      container:
+        image: ruby:2.2.10-slim-jessie

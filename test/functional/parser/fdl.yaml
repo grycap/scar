@@ -1,0 +1,39 @@
+functions:
+  - name: function1
+    input:
+      - name: minio-local                    # Match with automatically generated id -> 123
+        path: my-bucket/test                 #STORAGE_PATH_INTPUT_123=my-bucket/test
+      - name: s3-bucket                      # Match with automatically generated id -> 456
+        path: s3-bucket/test1                #STORAGE_PATH_INTPUT_456=s3-bucket/test1
+    output:
+      - name: minio-local                    # Match with automatically generated id -> 123
+        path: my-bucket/test-output          #STORAGE_PATH_OUTPUT_123=my-bucket/test-output
+        files:
+          sufix:                             #STORAGE_PATH_SUFIX_123=wav:srt
+            - wav
+            - srt
+      - name: s3-bucket                      # Match with automatically generated id -> 456
+        path: s3-bucket/test1-output         #STORAGE_PATH_OUTPUT_456=s3-bucket/test1-output
+        files:
+          sufix:                             # Possible values: 'prefix', 'sufix'
+            - avi                            #STORAGE_PATH_SUFIX_123=avi
+  - name: function2
+    input:
+      - name: minio-local                    # Match with automatically generated id -> 123
+        path: my-bucket2/test                 #STORAGE_PATH_INTPUT_123=my-bucket/test
+    output:
+      - name: minio-local                    # Match with automatically generated id -> 123
+        path: my-bucket2/test-output          #STORAGE_PATH_OUTPUT_123=my-bucket/test-output
+        files:
+          prefix:                             #STORAGE_PATH_SUFIX_123=wav:srt
+            - my_file
+
+
+storages:
+  - name: minio-local            # Generate random id -> 123
+    type: minio                  # Possible values: 'minio', 's3', 'onedata'
+    auth:                        # Possible values: 'user', 'pass', 'token', 'space', 'host'
+      user: muser              #STORAGE_AUTH_MINIO_USER_123=muser
+      pass: mpass              #STORAGE_AUTH_MINIO_PASS_123=mpass
+  - name: s3-bucket              # Generate random id -> 456
+    type: S3
