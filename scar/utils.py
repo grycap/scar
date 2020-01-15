@@ -23,6 +23,7 @@ import tarfile
 import tempfile
 import uuid
 import sys
+from copy import deepcopy
 from zipfile import ZipFile
 from io import BytesIO
 from typing import Optional, Dict, List, Generator, Union, Any
@@ -118,7 +119,7 @@ class DataTypesUtils:
     def merge_dicts_with_copy(dict1: Dict, dict2: Dict) -> Dict:
         """Merge 'dict1' and 'dict2' dicts into a new Dict.
         'dict2' has precedence over 'dict1'."""
-        result = dict1.copy()
+        result = deepcopy(dict1)
         for key, val in dict2.items():
             if val is not None:
                 if isinstance(val, dict) and key in result:
