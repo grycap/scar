@@ -16,8 +16,7 @@ SCAR is integrated with API Gateway in order to expose an application via a high
 SCAR allows to create serverless workflows by combining functions that run on either AWS Batch or AWS Lambda which produce output files that trigger the execution of functions that, again, run on either AWS Batch or AWS Lambda, using the very same Docker images, thus effectively creating highly-scalable cross-services serverless workflows.
 
 <a name="toc"></a>
-**Related resources**:
-  [Website](https://grycap.github.io/scar/) |
+**Related resources**:  
   [Scientific Paper](http://linkinghub.elsevier.com/retrieve/pii/S0167739X17316485) ([pre-print](http://www.grycap.upv.es/gmolto/publications/preprints/Perez2018scc.pdf)).
 
 ## Update 3.0.0
