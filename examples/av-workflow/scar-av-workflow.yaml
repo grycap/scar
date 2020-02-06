@@ -1,0 +1,57 @@
+functions:
+  aws:
+  - lambda:
+      name: scar-av-workflow-ffmpeg
+      container: 
+        image: jrottenberg/ffmpeg:4.1-ubuntu
+      init_script: ffmpeg-script.sh
+      execution_mode: lambda-batch
+      memory: 1024
+      timeout: 900
+      input: 
+      - storage_provider: s3
+        path: scar-av-workflow/start
+      output:
+      - storage_provider: s3
+        path: scar-av-workflow/video
+        suffix:
+        - avi
+      - storage_provider: s3
+        path: scar-av-workflow/audio
+        suffix:
+        - wav
+  - lambda:
+      name: scar-av-workflow-audio2srt
+      container:
+        image: grycap/audio2srt:mini
+      init_script: audio2srt-script.sh
+      execution_mode: lambda-batch
+      memory: 1024
+      timeout: 900
+      input: 
+      - storage_provider: s3
+        path: scar-av-workflow/audio
+      output:
+      - storage_provider: s3
+        path: scar-av-workflow/result
+  - lambda:
+      name: scar-av-workflow-yolov3
+      container:
+        image: grycap/yolov3:opencv-cudnn
+      init_script: yolov3-script.sh
+      execution_mode: batch
+      memory: 128
+      input: 
+      - storage_provider: s3
+        path: scar-av-workflow/video
+      output:
+      - storage_provider: s3
+        path: scar-av-workflow/result
+    batch:
+      vcpus: 4
+      memory: 12288
+      enable_gpu: true
+      compute_resources:
+        max_v_cpus: 12
+        instance_types:
+        - g3s.xlarge
