@@ -1,0 +1,15 @@
+functions:
+  aws:
+  - lambda:
+      name: scar-deepaas-audio
+      memory: 1024
+      execution_mode: batch
+      init_script: deepaas.sh
+      container:
+        image: deephdc/deep-oc-audio-classification-tf
+      input:
+      - storage_provider: s3
+        path: scar-deepaas/audio/input
+      output:
+      - storage_provider: s3
+        path:  scar-deepaas/audio/output
