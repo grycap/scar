@@ -19,5 +19,6 @@ There are also examples that combine AWS Lambda and AWS Batch in order to offer 
 * video-process: an application to perform object recognition from videos using AWS Batch and AWS Lambda.
 * plant-classification: an application to classify plants using Lasagne/Theano.
 * av-workflow: a workflow that combines [FFmpeg](https://ffmpeg.org/), [YOLOv3](https://pjreddie.com/darknet/yolo/) and [audio2srt](https://gitlab.com/RunasSudo/audio2srt) to perform automatic subtitle generation and GPU-based video object recognition.
+* deep-audio: Integration of a model for [Audio Classification](https://marketplace.deep-hybrid-datacloud.eu/modules/deep-oc-audio-classification-tf.html) from the [DEEP Open Catalog](https://marketplace.deep-hybrid-datacloud.eu/) with AWS Batch
 
 Are you using SCAR for another application? Let us know by creating an issue.
