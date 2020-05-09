@@ -15,6 +15,7 @@
 of managing the SCAR configuration file."""
 
 import json
+import os
 from scar.exceptions import exception, ScarConfigFileError
 import scar.logger as logger
 from scar.utils import FileUtils, SysUtils, StrUtils
@@ -142,10 +143,19 @@ _DEFAULT_CFG = {
 class ConfigFileParser():
     """Class to manage the SCAR configuration file creation, update and load."""
 
+    _CONFIG_FOLDER_PATH_ENV_VAR = 'SCAR_CONFIG_FOLDER'
     _CONFIG_FOLDER_PATH = ".scar"
     _CONFIG_FILE_PATH = "scar.cfg"
     _CONFIG_FILE_NAME_BCK = "scar.cfg_old"
+
+    # Set default config folder path
     config_file_folder = FileUtils.join_paths(SysUtils.get_user_home_path(), _CONFIG_FOLDER_PATH)
+
+    # Check if config folder env var is set, and use it for config paths
+    if _CONFIG_FOLDER_PATH_ENV_VAR in os.environ:
+        config_file_folder = os.getenv(_CONFIG_FOLDER_PATH_ENV_VAR)
+
+    # Set config file paths
     config_file_path = FileUtils.join_paths(config_file_folder, _CONFIG_FILE_PATH)
     backup_file_path = FileUtils.join_paths(config_file_folder, _CONFIG_FILE_NAME_BCK)
 
