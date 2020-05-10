@@ -147,6 +147,7 @@ class ConfigFileParser():
     _CONFIG_FOLDER_PATH = ".scar"
     _CONFIG_FILE_PATH = "scar.cfg"
     _CONFIG_FILE_NAME_BCK = "scar.cfg_old"
+    _CONFIG_FILE_NAME_TMP_YAML = "scar_tmp.yaml"
 
     # Set default config folder path
     config_file_folder = FileUtils.join_paths(SysUtils.get_user_home_path(), _CONFIG_FOLDER_PATH)
@@ -158,6 +159,7 @@ class ConfigFileParser():
     # Set config file paths
     config_file_path = FileUtils.join_paths(config_file_folder, _CONFIG_FILE_PATH)
     backup_file_path = FileUtils.join_paths(config_file_folder, _CONFIG_FILE_NAME_BCK)
+    tmp_yaml_file_path = FileUtils.join_paths(config_file_folder, _CONFIG_FILE_NAME_TMP_YAML)
 
     @exception(logger)
     def __init__(self):

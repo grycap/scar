@@ -47,7 +47,7 @@ def parse_arguments():
         # CMD >> SCAR.CONF
         merged_args = fdl.merge_conf(config_args, cmd_args)
     #self.cloud_provider.parse_arguments(merged_args)
-    FileUtils.create_tmp_config_file(merged_args)
+    FileUtils.create_tmp_config_file(merged_args, ConfigFileParser())
     return func_call
 
 def main():
