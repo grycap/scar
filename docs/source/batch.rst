@@ -11,7 +11,7 @@ Three execution modes are now available in SCAR:
   * `lambda-batch`: Executions will be run on AWS Lambda. If the default timeout is reached, then the execution is automatically delegated to AWS Batch.
   * `batch`: Executions will be automatically diverted to AWS Batch.
 
-This way, you can use AWS Lambda as a highly-scalable cache for burts of short computational jobs while longer executions can be automatically deleted to AWS Batch. 
+This way, you can use AWS Lambda as a highly-scalable cache for burts of short computational jobs while longer executions can be automatically delegated to AWS Batch. 
 The very same `programming model <https://scar.readthedocs.io/en/latest/prog_model.html>`_ is maintained regardless of the service employed to perform the computation.
 
 Set up your configuration file
