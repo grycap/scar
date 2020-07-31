@@ -1,12 +1,11 @@
 #!/bin/bash
+
 if [ "${EXEC_TYPE,,}" = 'lambda' ]; then
   export OMPI_MCA_plm_rsh_agent=/bin/false
   mpirun ${MPI_PARAMS} ${APP_BIN} ${APP_PARAMS}
 
 elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
 
-  apt-get update
-  apt-get install -y wget
   wget -q -P /tmp https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
   unzip -q -d /tmp /tmp/awscli-exe-linux-x86_64.zip
   /tmp/aws/install
