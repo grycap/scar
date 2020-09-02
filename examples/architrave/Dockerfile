@@ -40,7 +40,6 @@ RUN apt-get update \
   && ulimit -n 1024 \
   && rm -rf /tmp/* /var/lib/apt/lists/* \
   && chmod 755 /opt/mpi-run.sh \
-  && chmod 755 /opt/run_batch.sh \
-  && chmod 755 ${APP_BIN}
+  && chmod 755 /opt/run_batch.sh
 
 CMD /opt/run_batch.sh
