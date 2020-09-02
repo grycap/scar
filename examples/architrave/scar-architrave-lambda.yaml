@@ -8,7 +8,6 @@ functions:
         environment:
           Variables:
             EXEC_TYPE: lambda
-            TST: default_init default_run
       deployment:
         bucket: scar-architrave
       output:

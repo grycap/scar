@@ -6,8 +6,14 @@ if [ "${EXEC_TYPE,,}" = 'lambda' ]; then
 
 elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
 
+  export AWS_BATCH_EXIT_CODE_FILE=~/batch_exit_code.file
+  echo "Running on node index $AWS_BATCH_JOB_NODE_INDEX out of $AWS_BATCH_JOB_NUM_NODES nodes"
+  echo "Master node index is $AWS_BATCH_JOB_MAIN_NODE_INDEX and its IP is $AWS_BATCH_JOB_MAIN_NODE_PRIVATE_IPV4_ADDRESS"
+
+  #wget -q -P /tmp --no-check-certificate --no-proxy 'http://scar-architrave.s3.amazonaws.com/awscli-exe-linux-x86_64.zip'
   wget -q -P /tmp https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
-  unzip -q -d /tmp /tmp/awscli-exe-linux-x86_64.zip
+  unzip -o -q -d /tmp /tmp/awscli-exe-linux-x86_64.zip
+  chmod +x /tmp/aws/install
   /tmp/aws/install
   echo "Version of dist: ${VERSION}"
   mkdir ~/.aws/
@@ -21,11 +27,12 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
   printf '%s\n' '[default]' "aws_access_key_id=${AWS_ACCESS_KEY}" "aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}" > ~/.aws/credentials
   printf '%s\n' '[default]' "region=${AWS_REGION}" "output=${AWS_OUTPUT}" > ~/.aws/config
   #aws s3 cp $S3_INPUT/common $SCRATCH_DIR
-  chmod +x ${SCRATCH_DIR}/simest
-  ## Install ssh from S3
-  mkdir /tmp/deps_batch
-  aws cli cp ${S3_INPUT}/batch /tmp/batch
-  dpkg -i /tmp/batch/deps/*.deb
+  ## Install batch only dependencies from S3
+  mkdir ${SCRATCH_DIR}
+  mkdir ${JOB_DIR}
+  aws s3 cp ${S3_BUCKET}/batch_deps/deps.tar.gz /tmp
+  tar -zxf /tmp/deps.tar.gz -C /tmp
+  dpkg -i /tmp/*.deb
 
   # COnfigure ssh
   sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd

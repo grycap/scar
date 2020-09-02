@@ -8,6 +8,7 @@ functions:
         environment:
           Variables:
             EXEC_TYPE: batch
+
       deployment:
         bucket: scar-architrave
       output:

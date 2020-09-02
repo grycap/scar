@@ -2,8 +2,7 @@ FROM debian:stretch-slim
 
 ARG ADD_BASE_DIR_ARCHITRAVE=scar/examples/architrave
 ARG ADD_PRIVATE_BASE_DIR=architrave
-ARG SSHDIR=/root/.ssh
-ARG BUILD_PACKAGES=' make gcc g++ iproute2 cmake  build-essential gfortran curl unzip '
+ARG BUILD_PACKAGES=' make gcc g++ iproute2 cmake  build-essential gfortran curl '
 
 ENV ADD_PRIVATE_BASE_DIR=${ADD_PRIVATE_BASE_DIR}
 ENV ADD_BASE_DIR_ARCHITRAVE=${ADD_BASE_DIR_ARCHITRAVE}
@@ -12,6 +11,7 @@ ENV VERSION=1.7
 ENV DEBIAN_FRONTEND=noninteractive
 ## Set to either lambda or batch
 ENV EXEC_TYPE=lambda
+ENV SSHDIR=/root/.ssh
 
 ENV EXAMPLE_FILE=/opt/examples/example
 ENV TMP_OUTPUT_DIR=/tmp
@@ -24,11 +24,12 @@ ENV AWS_ACCESS_KEY=''
 ENV AWS_SECRET_ACCESS_KEY=''
 ENV AWS_REGION='us-east-1'
 ENV AWS_OUTPUT='json'
+ENV S3_BUCKET="s3://scar-architrave"
 
 ADD  ${ADD_PRIVATE_BASE_DIR} ${ADD_BASE_DIR_ARCHITRAVE}/run_batch.sh ${ADD_BASE_DIR_ARCHITRAVE}/mpi-run.sh ${ADD_BASE_DIR_ARCHITRAVE}/debs.lst /opt/
 
 RUN apt-get update \
-  && apt-get install -y $BUILD_PACKAGES wget \
+  && apt-get install -y $BUILD_PACKAGES wget unzip \
   && wget -q --no-check-certificate -qO- https://download.open-mpi.org/release/open-mpi/v1.4/openmpi-1.4.3.tar.bz2 | tar xvfj - -C /tmp/ \
   && cd /tmp/openmpi-1.4.3/ \
   && ./configure --disable-pty-support \
@@ -44,4 +45,4 @@ RUN apt-get update \
   && chmod 755 /opt/run_batch.sh \
   && chmod 755 ${APP_BIN}
 
-CMD echo ${TST} && /opt/run_batch.sh
+CMD /opt/run_batch.sh
