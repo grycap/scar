@@ -12,7 +12,7 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
 
   #wget -q -P /tmp --no-check-certificate --no-proxy 'http://scar-architrave.s3.amazonaws.com/awscli-exe-linux-x86_64.zip'
   wget -q -P /tmp https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
-  unzip -o -q -d /tmp /tmp/awscli-exe-linux-x86_64.zip
+  7z x -aoa -o/tmp/ /tmp/awscli-exe-linux-x86_64.zip
   chmod +x /tmp/aws/install
   /tmp/aws/install
   echo "Version of dist: ${VERSION}"
@@ -30,9 +30,14 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
   ## Install batch only dependencies from S3
   mkdir ${SCRATCH_DIR}
   mkdir ${JOB_DIR}
-  aws s3 cp ${S3_BUCKET}/batch_deps/deps.tar.gz /tmp
+  aws s3 cp ${S3_BUCKET}/${S3_BATCH_DEPS_REL_PATH} /tmp
   tar -zxf /tmp/deps.tar.gz -C /tmp
   dpkg -i /tmp/*.deb
+
+  ## Add the private data from S3
+  #rm -rf /tmp/*
+  aws s3 cp ${S3_BUCKET}/${S3_BATCH_PRIVATE_REL_PATH} /tmp
+  7z x -aoa -p${PRIVATE_PASSWD} -o/opt /tmp/*.7z
 
   # COnfigure ssh
   sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
@@ -51,6 +56,8 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
     # check if ssh agent is running or not, if not, run
   eval `ssh-agent -s`
   ssh-add ${SSHDIR}/id_rsa
+
+  chmod +x ${APP_BIN}
 
   /opt/mpi-run.sh
 else
