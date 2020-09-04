@@ -2,15 +2,14 @@ functions:
   aws:
   - lambda:
       name: scar-architrave
+      init_script: run_batch.sh
       execution_mode: batch
       container:
-        image_file: /tmp/architrave-docker-img.tar.gz
+        image: asalic/scar-architrave
         environment:
           Variables:
             EXEC_TYPE: batch
 
-      deployment:
-        bucket: scar-architrave
       output:
       - storage_provider: s3
         path: scar-architrave/output

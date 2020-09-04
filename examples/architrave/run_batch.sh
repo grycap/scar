@@ -1,11 +1,4 @@
 #!/bin/bash
-
-if [ "${EXEC_TYPE,,}" = 'lambda' ]; then
-  export OMPI_MCA_plm_rsh_agent=/bin/false
-  mpirun ${MPI_PARAMS} ${APP_BIN} ${APP_PARAMS}
-
-elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
-
   export AWS_BATCH_EXIT_CODE_FILE=~/batch_exit_code.file
   echo "Running on node index $AWS_BATCH_JOB_NODE_INDEX out of $AWS_BATCH_JOB_NUM_NODES nodes"
   echo "Master node index is $AWS_BATCH_JOB_MAIN_NODE_INDEX and its IP is $AWS_BATCH_JOB_MAIN_NODE_PRIVATE_IPV4_ADDRESS"
@@ -60,7 +53,3 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
   chmod +x ${APP_BIN}
 
   /opt/mpi-run.sh
-else
-  echo "ERROR: unknown execution type '${EXEC_TYPE}'"
-  exit 1 # terminate and indicate error
-fi

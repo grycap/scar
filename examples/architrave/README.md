@@ -8,15 +8,36 @@ Due to the differences between Amazon Batch and Lambda and our choice to have on
 ### Lambda
 
 We included all necessary operations in the Dockerfile, therefore leaving the runtime execution populated only with the application execution itself.
-The Docker image doesn't have to be public, thus we can build it locally by calling:
+The Docker image doesn't have to be public, we can build it locally.
 
-`docker build --build-arg ADD_BASE_DIR_ARCHITRAVE=scar/examples/architrave --build-arg  --build-arg ADD_PRIVATE_BASE_DIR=architrave -f /tmp/scar/examples/architrave/Dockerfile --label architrave -t architrave /tmp`
+```
+# The base dir is the root context for Docker
+# We assume that you cloned this repo in the BASE_DIR
+export BASE_DIR=/tmp
+# The base dir with the private bits; It must be a child of BASE_DIR
+export ADD_PRIVATE_BASE_DIR=architrave
 
-This command implies that __/tmp__ is the base directory for the context.
-Herein, there's a folder __architrave__ that contains the private bits of the distribution, in our case the binary of the application and examples.
-The same base directory contains the cloned scar repository with the architrave example (the public bits).
+docker build --build-arg ADD_BASE_DIR_ARCHITRAVE=scar/examples/architrave --build-arg ADD_PRIVATE_BASE_DIR="$ADD_PRIVATE_BASE_DIR" -f "$BASE_DIR/scar/examples/architrave/Dockerfile" --label architrave -t architrave "$BASE_DIR"
+```
 
+Take into account that the input files  must be located in the __ADD_PRIVATE_BASE_DIR__ directory.
+e.g. if you have something like `$BASE_DIR/$ADD_PRIVATE_BASE_DIR/examples/example_input.file`, then you the example input ends up on the following path: `/opt/examples/example_input.file`
 
+If you want to run the container locally before launching it on Amazon Lambda, you can use the following:
+
+```
+# This is the path inside the container where the binary can be found
+# it is the relative path of ADD_PRIVATE_BASE_DIR without the root
+# e.g. for architrave/path/path2/execute_me (where ADD_PRIVATE_BASE_DIR=architrave) <exec> is  path/path2/execute_me
+export APP_BIN=/opt/<exec>
+# The full list of params needed for the app, don't forget the (double) quotes when there are spaces
+export APP_PARAMS=<app params>
+
+# Mount the results dir you specify in the APP_PARAMS env variable to <path out dir container>
+docker run -d -e EXEC_TYPE=lambda -e APP_BIN="$APP_BIN" -e APP_PARAMS="$APP_PARAMS" --name architrave_local -v /tmp/architrave-result:/<path out dir container> architrave:latest
+```
+
+#### Build context
 
 You can ignore everything but the private files and those from ##scar/examples/architrave## by creating a `.dockerignore` file in the root of the context with the following content:
 
@@ -36,7 +57,9 @@ You can ignore everything but the private files and those from ##scar/examples/a
 **/LICENSE
 ```
 
-### Batch additional required packages on S3
+### Batch
+
+#### Batch additional required packages on S3
 
 Start a Docker container based on the image of the distribution you use __to run on AWS__ the legacy application (not the distribution __of__ the legacy application).
 
