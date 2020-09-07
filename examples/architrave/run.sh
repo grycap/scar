@@ -7,7 +7,7 @@ if [ "${EXEC_TYPE,,}" = 'lambda' ]; then
 elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
 
 # The following comment line will be replaced with the necessary env vars:
-#$ENV_VARS$
+#=ENV_VARS=
 
   export AWS_BATCH_EXIT_CODE_FILE=~/batch_exit_code.file
   echo "Running on node index $AWS_BATCH_JOB_NODE_INDEX out of $AWS_BATCH_JOB_NUM_NODES nodes"

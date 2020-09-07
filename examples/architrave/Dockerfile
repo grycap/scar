@@ -30,7 +30,7 @@ ENV PRIVATE_PASSWD=<none>
 ADD  ${ADD_PRIVATE_BASE_DIR} ${ADD_BASE_DIR_ARCHITRAVE}/run.sh ${ADD_BASE_DIR_ARCHITRAVE}/mpi-run.sh ${ADD_BASE_DIR_ARCHITRAVE}/debs.lst /opt/
 
 RUN apt-get update \
-  && apt-get install -y $BUILD_PACKAGES wget p7zip-full \
+  && apt-get install -y $BUILD_PACKAGES wget p7zip-full xz-utils \
   && wget -q --no-check-certificate -qO- https://download.open-mpi.org/release/open-mpi/v1.4/openmpi-1.4.3.tar.bz2 | tar xvfj - -C /tmp/ \
   && cd /tmp/openmpi-1.4.3/ \
   && ./configure --disable-pty-support \

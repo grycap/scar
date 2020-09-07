@@ -2,6 +2,7 @@ functions:
   aws:
   - lambda:
       name: scar-architrave
+      log_level: DEBUG
       init_script: run_batch.sh
       execution_mode: batch
       container:
