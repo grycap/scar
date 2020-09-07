@@ -27,7 +27,7 @@ ENV S3_BATCH_DEPS_REL_PATH=batch/deps.tar.gz
 ENV S3_BATCH_PRIVATE_REL_PATH=<none>
 ENV PRIVATE_PASSWD=<none>
 
-ADD  ${ADD_PRIVATE_BASE_DIR} ${ADD_BASE_DIR_ARCHITRAVE}/run.sh ${ADD_BASE_DIR_ARCHITRAVE}/run_batch.sh ${ADD_BASE_DIR_ARCHITRAVE}/mpi-run.sh ${ADD_BASE_DIR_ARCHITRAVE}/debs.lst /opt/
+ADD  ${ADD_PRIVATE_BASE_DIR} ${ADD_BASE_DIR_ARCHITRAVE}/run.sh ${ADD_BASE_DIR_ARCHITRAVE}/mpi-run.sh ${ADD_BASE_DIR_ARCHITRAVE}/debs.lst /opt/
 
 RUN apt-get update \
   && apt-get install -y $BUILD_PACKAGES wget p7zip-full \

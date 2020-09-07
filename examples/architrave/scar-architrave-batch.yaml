@@ -9,7 +9,9 @@ functions:
         environment:
           Variables:
             EXEC_TYPE: batch
-
+      input:
+      - storage_provider: s3
+        path: scar-architrave/input
       output:
       - storage_provider: s3
         path: scar-architrave/output
