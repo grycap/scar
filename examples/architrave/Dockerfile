@@ -30,10 +30,17 @@ ENV PRIVATE_PASSWD=<none>
 ADD  ${ADD_PRIVATE_BASE_DIR} ${ADD_BASE_DIR_ARCHITRAVE}/run.sh ${ADD_BASE_DIR_ARCHITRAVE}/mpi-run.sh ${ADD_BASE_DIR_ARCHITRAVE}/debs.lst /opt/
 
 RUN apt-get update \
-  && apt-get install -y $BUILD_PACKAGES wget p7zip-full xz-utils \
+  && apt-get install -y $BUILD_PACKAGES wget p7zip-full \
+  && wget -P /tmp https://tukaani.org/xz/xz-5.2.5.tar.gz \
+  &&  tar -zxf /tmp/xz-5.2.5.tar.gz -C /tmp \
+  &&  cd /tmp/xz-5.2.5 \
+  &&  ./configure --enable-shared --disable-doc \
+  &&  make \
+  &&  make install  \
+  &&  ldconfig \
   && wget -q --no-check-certificate -qO- https://download.open-mpi.org/release/open-mpi/v1.4/openmpi-1.4.3.tar.bz2 | tar xvfj - -C /tmp/ \
   && cd /tmp/openmpi-1.4.3/ \
-  && ./configure --disable-pty-support \
+  && ./configure --disable-pty-support --disable-doc \
   && make -j8 \
   && make install \
   && wget -q -P /tmp -i /opt/debs.lst  \
