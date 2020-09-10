@@ -14,7 +14,8 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
   echo "Master node index is $AWS_BATCH_JOB_MAIN_NODE_INDEX and its IP is $AWS_BATCH_JOB_MAIN_NODE_PRIVATE_IPV4_ADDRESS"
 
   #wget -q -P /tmp --no-check-certificate --no-proxy 'http://scar-architrave.s3.amazonaws.com/awscli-exe-linux-x86_64.zip'
-  wget -q -P /tmp https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+  wget -P /tmp https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+  echo "Download awscli complete"
   7z x -aoa -o/tmp/ /tmp/awscli-exe-linux-x86_64.zip
   chmod +x /tmp/aws/install
   /tmp/aws/install
@@ -30,19 +31,19 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
   printf '%s\n' '[default]' "aws_access_key_id=${AWS_ACCESS_KEY}" "aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}" > ~/.aws/credentials
   printf '%s\n' '[default]' "region=${AWS_REGION}" "output=${AWS_OUTPUT}" > ~/.aws/config
   #aws s3 cp $S3_INPUT/common $SCRATCH_DIR
-  ## Install batch only dependencies from S3
+  echo "Install batch only dependencies from S3"
   mkdir ${SCRATCH_DIR}
   mkdir ${JOB_DIR}
   aws s3 cp ${S3_BUCKET}/${S3_BATCH_DEPS_REL_PATH} /tmp
   tar -zxf /tmp/deps.tar.gz -C /tmp
   dpkg -i /tmp/*.deb
 
-  ## Add the private data from S3
+  echo "Add private data from S3"
   #rm -rf /tmp/*
   aws s3 cp ${S3_BUCKET}/${S3_BATCH_PRIVATE_REL_PATH} /tmp
   7z x -aoa -p${PRIVATE_PASSWD} -o/opt /tmp/*.7z
 
-  # COnfigure ssh
+  echo "Configure ssh"
   sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
   echo "export VISIBLE=now" >> /etc/profile
   echo "${USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
@@ -62,6 +63,7 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
 
   chmod +x ${APP_BIN}
 
+  echo "Running app"
   /opt/mpi-run.sh
 else
   echo "ERROR: unknown execution type '${EXEC_TYPE}'"

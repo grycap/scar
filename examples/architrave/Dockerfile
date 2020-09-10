@@ -5,7 +5,7 @@ ARG ADD_PRIVATE_BASE_DIR
 ARG BUILD_PACKAGES=' make gcc g++ iproute2 cmake  build-essential gfortran curl '
 
 
-ENV VERSION=1.7
+ENV VERSION=1.8
 ENV DEBIAN_FRONTEND=noninteractive
 ## Set to either lambda or batch
 ENV EXEC_TYPE=lambda
@@ -31,13 +31,6 @@ ADD  ${ADD_PRIVATE_BASE_DIR} ${ADD_BASE_DIR_ARCHITRAVE}/run.sh ${ADD_BASE_DIR_AR
 
 RUN apt-get update \
   && apt-get install -y $BUILD_PACKAGES wget p7zip-full \
-  && wget -P /tmp https://tukaani.org/xz/xz-5.2.5.tar.gz \
-  &&  tar -zxf /tmp/xz-5.2.5.tar.gz -C /tmp \
-  &&  cd /tmp/xz-5.2.5 \
-  &&  ./configure --enable-shared --disable-doc \
-  &&  make \
-  &&  make install  \
-  &&  ldconfig \
   && wget -q --no-check-certificate -qO- https://download.open-mpi.org/release/open-mpi/v1.4/openmpi-1.4.3.tar.bz2 | tar xvfj - -C /tmp/ \
   && cd /tmp/openmpi-1.4.3/ \
   && ./configure --disable-pty-support --disable-doc \
