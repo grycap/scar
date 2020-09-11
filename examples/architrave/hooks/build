@@ -31,42 +31,6 @@ DESCRIPTION=$(curl -s https://api.github.com/repos/${GITHUB_USERREPO} \
 echo "[---] GITHUB_USERREPO: ${GITHUB_USERREPO}"
 echo "[---] DESCRIPTION: ${DESCRIPTION}"
 
-## Build all variant images.
-for FILE in ${DOCKERFILE_PATH}.*
-do
-    TARGET_ARCH=$(echo "${FILE}" | cut -d '.' -f 2)
-
-    ## FUDGE Factor because Docker Hub does not respect "32" in os/arch model
-    case "$TARGET_ARCH" in
-        *arm32v5)
-            BUILD_ARCH="armv5"
-            ;;
-        *arm32v6)
-            BUILD_ARCH="armv6"
-            ;;
-        *arm32v7)
-            BUILD_ARCH="armv7"
-            ;;
-        *)
-            BUILD_ARCH="${TARGET_ARCH}"
-            ;;
-    esac
-
-    # Not exactly sure this needs to run EVERY time, but for good measure.
-    docker run --rm --privileged multiarch/qemu-user-static:register --reset
-
-    docker build \
-        --network=host \
-        --file "${DOCKERFILE_PATH}.${TARGET_ARCH}" \
-        --build-arg APPLICATION=${APPLICATION} \
-        --build-arg BUILD_RFC3339=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
-        --build-arg REVISION=$(git rev-parse --short HEAD) \
-    	--build-arg PACKAGE="${GITHUB_USERREPO}" \
-        --build-arg DESCRIPTION="${DESCRIPTION}" \
-        --build-arg VERSION=$(git describe --tags --always) \
-        -t ${IMAGE_NAME}_${BUILD_ARCH} \
-        .
-done
 
 
 ## Build the prime image at the end.
@@ -79,7 +43,7 @@ docker build \
   	--build-arg PACKAGE="${GITHUB_USERREPO}" \
     --build-arg DESCRIPTION="${DESCRIPTION}" \
     --build-arg VERSION=$(git describe --tags --always) \
-    -t ${IMAGE_NAME}_${DEFAULT_ARCH} \
+    -t ${IMAGE_NAME} \
     .
 
 ## Push the default arch image so manifest-tool can find it
