@@ -12,7 +12,6 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
   export AWS_BATCH_EXIT_CODE_FILE=~/batch_exit_code.file
   echo "Running on node index $AWS_BATCH_JOB_NODE_INDEX out of $AWS_BATCH_JOB_NUM_NODES nodes"
   echo "Master node index is $AWS_BATCH_JOB_MAIN_NODE_INDEX and its IP is $AWS_BATCH_JOB_MAIN_NODE_PRIVATE_IPV4_ADDRESS"
-  ls -al $S3_BATCH_MNT
 
   #wget -q -P /tmp --no-check-certificate --no-proxy 'http://scar-architrave.s3.amazonaws.com/awscli-exe-linux-x86_64.zip'
   wget -P /tmp https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
