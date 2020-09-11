@@ -2,9 +2,6 @@
 # hooks/build
 # https://docs.docker.com/docker-cloud/builds/advanced/
 
-## requires to be an architecture+variant as defined by the manifest
-DEFAULT_ARCH="amd64"
-
 ## $IMAGE_NAME var is injected into the build so the tag is correct.
 echo "[***] Build hook starting..."
 
@@ -47,9 +44,9 @@ docker build \
     .
 
 ## Push the default arch image so manifest-tool can find it
-docker push ${IMAGE_NAME}_${DEFAULT_ARCH}
+docker push ${IMAGE_NAME}
 
 ## Tag the default image so dockerhub can push it.
-docker tag ${IMAGE_NAME}_${DEFAULT_ARCH} ${IMAGE_NAME}
+docker tag ${IMAGE_NAME} ${IMAGE_NAME}
 
 echo "[***] ...build hook complete."
