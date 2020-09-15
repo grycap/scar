@@ -33,7 +33,7 @@ echo "[---] DESCRIPTION: ${DESCRIPTION}"
 ## Build the prime image at the end.
 docker build \
     --network=host \
-    --file "${DOCKERFILE_PATH}" \
+    --file Dockerfile \
     -t ${IMAGE_NAME} \
     .
 
