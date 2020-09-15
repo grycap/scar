@@ -1,0 +1,66 @@
+# Copyright (C) GRyCAP - I3M - UPV
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Module with the class implementing the low-level functions to 
+communicate with an OSCAR cluster."""
+
+from typing import Dict
+import scar.logger as logger
+import scar.exceptions as excp
+import requests
+
+class OSCARClient():
+    _SERVICES_PATH = '/system/services'
+
+    def __init__(self, credentials_info: Dict):
+        self.endpoint = credentials_info.endpoint
+        self.auth_user = credentials_info.auth_user
+        self.auth_password = credentials_info.auth_password
+        self.ssl_verify = credentials_info.ssl_verify
+        
+    def create_service(self, **kwargs: Dict) -> Dict:
+        """Creates a new OSCAR service."""
+        logger.debug('Creating OSCAR service.')
+        res = requests.post(
+            f'{self.endpoint}{self._SERVICES_PATH}',
+            auth=(self.auth_user, self.auth_password),
+            verify=self.ssl_verify,
+            json=kwargs
+        )
+        # Raise a ServiceCreationError if the return code is not 201
+        if res.status_code != 201:
+            raise excp.ServiceCreationError(service_name=kwargs['name'], error_msg=res.text)
+
+    def delete_service(self, service_name: str) -> None:
+        """Deletes an OSCAR service."""
+        logger.debug('')
+        res = requests.delete(
+            f'{self.endpoint}{self._SERVICES_PATH}/{service_name}',
+            auth=(self.auth_user, self.auth_password),
+            verify=self.ssl_verify
+        )
+        # Raise a ServiceDeletionError if the return code is not 204
+        if res.status_code != 204:
+            raise excp.ServiceDeletionError(service_name=service_name, error_msg=res.text)
+
+    def get_service(self, service_name: str) -> Dict:
+        """Get the properties of the specified service."""
+        res = requests.get(
+            f'{self.endpoint}{self._SERVICES_PATH}/{service_name}',
+            auth=(self.auth_user, self.auth_password),
+            verify=self.ssl_verify
+        )
+        # Raise a ServiceNotFoundError if the return code is not 204
+        if res.status_code != 200:
+            raise excp.ServiceNotFoundError(service_name=service_name, error_msg=res.text)
+        return res.json()

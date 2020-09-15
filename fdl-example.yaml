@@ -4,7 +4,7 @@
 # To override permanently some of this values and apply them to all the deployed functions, please edit the SCAR default configuration file in ~/.scar/scar.cfg
 # ----------------------------------------------------------------------------------------------------------------
 functions:
-  # Define different providers under this property. Only supported 'aws'
+  # Define different providers under this property. Supported 'aws' and 'oscar'
   aws: 
     # Define a list of functions under this property.
     # You can define the function properties and all its related services
@@ -29,7 +29,6 @@ functions:
       # Possible values 'lambda', 'lambda-batch', 'batch'
       # Default 'lambda'
       execution_mode: lambda
-        "description": "Automatically generated lambda function",
       # Supervisor log level
       # Can be INFO, DEBUG, ERROR, WARNING
       # Default 'INFO'
@@ -162,29 +161,42 @@ functions:
         - "m3.medium"
         # The Amazon ECS instance profile applied to Amazon EC2 instances in a compute environment
         instance_role: "arn:..."
+  oscar:
+    # User specified identifier for an OSCAR cluster. 
+  - my_oscar:
+  
 
 
 # Define different storage providers connections. Supported 's3','minio', 'onedata'
 # If you use a default S3 storage with the default boto configuration, this properties are not needed.
 storage_providers:
-  # Define S3 properties
-  # If used, REQUIRED properties are 'access_key', 'secret_key'
-  # The supervisor will try to create the boto3 client using the function permissions (in AWS Lambda environment)
+  # S3 properties
   s3:
-    access_key: awsuser
-    secret_key: awskey
-    region: us-east-1
-  # Define minio properties
-  # If used, REQUIRED properties are 'access_key', 'secret_key'
+    # User provided identifier for an AWS account for accessing to the S3 service. Many accounts could be specified.
+    my_s3:
+    # Define S3 (AWS) account properties
+    # If used, REQUIRED properties are 'access_key', 'secret_key'
+    # The supervisor will try to create the boto3 client using the function permissions (in AWS Lambda environment)
+      access_key: awsuser
+      secret_key: awskey
+      region: us-east-1
+  # MinIO properties
   minio:
-    endpoint: minio-endpoint
-    verify: True
-    region: us-east-1
-    access_key: muser           
-    secret_key: mpass
-  # Define onedata properties
-  # If used, REQUIRED properties are 'oneprovider_host', 'token', 'space'
+    # User provided identifier for a MinIO server. Many servers could be specified.
+    my_minio:
+      # Define MinIO server properties
+      # If used, REQUIRED properties are 'endpoint', 'access_key', 'secret_key'
+      endpoint: minio-endpoint
+      verify: True
+      region: us-east-1
+      access_key: muser           
+      secret_key: mpass
+  # Onedata properties
   onedata:
-    oneprovider_host: op-host 
-    token: mytoken
-    space: onedata_space
+    # User provided identifier for a Onedata account. Many accounts could be specified.
+    my_onedata:
+      # Define onedata account properties
+      # If used, REQUIRED properties are 'oneprovider_host', 'token', 'space'
+      oneprovider_host: op-host 
+      token: mytoken
+      space: onedata_space

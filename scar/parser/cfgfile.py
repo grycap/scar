@@ -22,7 +22,24 @@ from scar.utils import FileUtils, SysUtils, StrUtils
 
 _DEFAULT_CFG = {
     "scar": {
-        "config_version": "1.0.9"
+        "config_version": "1.1.0"
+    },
+    "oscar": {
+        "my_oscar": {
+            # Cluster credentials
+            "endpoint": "",
+            "auth_user": "",
+            "auth_pass": "",
+            "ssl_verify": True,
+            # Default service parameters
+            # Memory limit for the service following the kubernetes format
+            # https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#meaning-of-memory
+            "memory": "256Mi",
+            # CPU limit for the service following the kubernetes format
+	        # https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#meaning-of-cpu
+            "cpu": "0.2",
+            "log_level": "INFO",
+        }
     },
     "aws": {
         "iam": {"boto_profile": "default",
