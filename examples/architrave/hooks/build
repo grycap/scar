@@ -34,12 +34,6 @@ echo "[---] DESCRIPTION: ${DESCRIPTION}"
 docker build \
     --network=host \
     --file "${DOCKERFILE_PATH}" \
-    --build-arg APPLICATION=${APPLICATION} \
-    --build-arg BUILD_RFC3339=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
-    --build-arg REVISION=$(git rev-parse --short HEAD) \
-  	--build-arg PACKAGE="${GITHUB_USERREPO}" \
-    --build-arg DESCRIPTION="${DESCRIPTION}" \
-    --build-arg VERSION=$(git describe --tags --always) \
     -t ${IMAGE_NAME} \
     .
 
