@@ -25,6 +25,7 @@ ENV SCRATCH_DIR=/root/scratch
 #ENV S3_BATCH_PRIVATE_REL_PATH=<none>
 ENV PRIVATE_PASSWD=<none>
 ENV S3_BATCH_MNT=/mnt/batch
+ENV S3_OUTPUT="s3://scar-architrave/output"
 
 ADD  ${ADD_PRIVATE_BASE_DIR} ${ADD_BASE_DIR_ARCHITRAVE}/run.sh ${ADD_BASE_DIR_ARCHITRAVE}/mpi-run.sh ${ADD_BASE_DIR_ARCHITRAVE}/debs.lst /opt/
 

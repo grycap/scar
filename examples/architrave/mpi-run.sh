@@ -86,8 +86,8 @@ wait_for_nodes () {
   sleep 2
 
   #if [ "${NODE_TYPE}" = 'main' ]; then
-    env GZIP=-9 tar -czvf $SCRATCH_DIR/batch_output_${AWS_BATCH_JOB_ID}.tar.gz $SCRATCH_DIR/output/*
-    aws s3 cp $SCRATCH_DIR/batch_output_${AWS_BATCH_JOB_ID}.tar.gz $S3_BUCKET/output/batch_output_${AWS_BATCH_JOB_ID}.tar.gz
+    # env GZIP=-9 tar -czvf $SCRATCH_DIR/batch_output_${AWS_BATCH_JOB_ID}.tar.gz $SCRATCH_DIR/output/*
+    # aws s3 cp $SCRATCH_DIR/batch_output_${AWS_BATCH_JOB_ID}.tar.gz $S3_BUCKET/output/batch_output_${AWS_BATCH_JOB_ID}.tar.gz
   #fi
 
   log "done! goodbye, writing exit code to $AWS_BATCH_EXIT_CODE_FILE and shutting down my supervisord"
