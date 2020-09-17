@@ -29,7 +29,7 @@ _DEFAULT_CFG = {
             # Cluster credentials
             "endpoint": "",
             "auth_user": "",
-            "auth_pass": "",
+            "auth_password": "",
             "ssl_verify": True,
             # Default service parameters
             # Memory limit for the service following the kubernetes format

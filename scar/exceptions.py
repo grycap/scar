@@ -337,9 +337,18 @@ class ServiceDeletionError(ScarError):
 
 class ServiceNotFoundError(ScarError):
     """
-    There was an error deleting the OSCAR service
+    There was an error getting the OSCAR service
 
     :ivar service_name: Name of the function
     :ivar error_msg: General error message
     """
     fmt = "The service '{service_name}' does not exist: {error_msg}"
+
+class ListServicesError(ScarError):
+    """
+    There was an error getting the OSCAR service
+
+    :ivar service_name: Name of the function
+    :ivar error_msg: General error message
+    """
+    fmt = "Unable to list services from OSCAR cluster '{cluster_id}': {error_msg}"

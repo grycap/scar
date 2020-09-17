@@ -14,19 +14,23 @@
 """Module with the class implementing the low-level functions to 
 communicate with an OSCAR cluster."""
 
-from typing import Dict
+from typing import Dict, List
 import scar.logger as logger
 import scar.exceptions as excp
 import requests
 
+# Disable warning requests
+requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
+
 class OSCARClient():
     _SERVICES_PATH = '/system/services'
 
-    def __init__(self, credentials_info: Dict):
-        self.endpoint = credentials_info.endpoint
-        self.auth_user = credentials_info.auth_user
-        self.auth_password = credentials_info.auth_password
-        self.ssl_verify = credentials_info.ssl_verify
+    def __init__(self, credentials_info: Dict, cluster_id: str):
+        self.cluster_id = cluster_id
+        self.endpoint = credentials_info['endpoint']
+        self.auth_user = credentials_info['auth_user']
+        self.auth_password = credentials_info['auth_password']
+        self.ssl_verify = credentials_info['ssl_verify']
         
     def create_service(self, **kwargs: Dict) -> Dict:
         """Creates a new OSCAR service."""
@@ -60,7 +64,19 @@ class OSCARClient():
             auth=(self.auth_user, self.auth_password),
             verify=self.ssl_verify
         )
-        # Raise a ServiceNotFoundError if the return code is not 204
+        # Raise a ServiceNotFoundError if the return code is not 200
         if res.status_code != 200:
             raise excp.ServiceNotFoundError(service_name=service_name, error_msg=res.text)
+        return res.json()
+
+    def list_services(self) -> List:
+        """Get all the services registered in the cluster."""
+        res = requests.get(
+            f'{self.endpoint}{self._SERVICES_PATH}',
+            auth=(self.auth_user, self.auth_password),
+            verify=self.ssl_verify
+        )
+        # Raise a ListServicesError if the return code is not 200
+        if res.status_code != 200:
+            raise excp.ListServicesError(cluster_id=self.cluster_id, error_msg=res.text)
         return res.json()

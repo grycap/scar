@@ -78,7 +78,7 @@ def _add_extra_aws_properties(scar: Dict, aws_resources: Dict) -> None:
         _add_tags(resources_info)
         _add_handler(resources_info)
         _add_account_id(resources_info)
-        _add_output(scar)
+        add_output(scar)
         _add_config_file_path(scar, resources_info)
 
 
@@ -94,7 +94,7 @@ def _add_handler(resources_info: Dict):
     resources_info['lambda']['handler'] = f"{resources_info.get('lambda').get('name')}.lambda_handler"
 
 
-def _add_output(scar_info: Dict):
+def add_output(scar_info: Dict):
     scar_info['cli_output'] = response_parser.OutputType.PLAIN_TEXT.value
     if scar_info.get("json", False):
         scar_info['cli_output'] = response_parser.OutputType.JSON.value

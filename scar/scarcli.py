@@ -20,7 +20,7 @@ sys.path.append('.')
 from scar.parser.cfgfile import ConfigFileParser
 from scar.parser.cli import CommandParser
 from scar.providers.aws.controller import AWS
-from scar.providers.oscar import OSCAR
+from scar.providers.oscar.controller import OSCAR
 from scar.utils import FileUtils
 import scar.parser.fdl as fdl
 import scar.exceptions as excp
@@ -59,7 +59,7 @@ def main():
         # If more providers, analyze the arguments and build the required one
         AWS(func_call)
         # Build the OSCAR controller only with 'init' and 'rm' functions
-        if func_call in ['init', 'rm']:
+        if func_call in ['init', 'rm', 'ls']:
             OSCAR(func_call)
         logger.end_execution_trace()
     except Exception as excp:

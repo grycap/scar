@@ -117,13 +117,13 @@ def parse_delete_api_response(response, api_id, output_type):
 def parse_ls_response(aws_resources: Dict, output_type: int) -> None:
     aws_output = 'Functions'
     result = []
-    text_message = ""
+    text_message = 'AWS FUNCTIONS:\n'
     if output_type == OutputType.VERBOSE.value:
         result = aws_resources
     else:
         for resources_info in aws_resources:
             result.append(_parse_lambda_function_info(resources_info))
-        text_message = _get_table(result)
+        text_message += _get_table(result)
     json_message = {aws_output: result}
     _print_generic_response('', output_type, aws_output, text_message, json_output=json_message, verbose_output=json_message)
 
