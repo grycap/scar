@@ -39,7 +39,7 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
   chown -R ${USER}:${USER} ${HOME}/.ssh/
     # check if ssh agent is running or not, if not, run
   eval `ssh-agent -s`
-  ssh-add ${HOME}/id_rsa
+  ssh-add ${HOME}/.ssh/id_rsa
 
   chmod +x ${APP_BIN}
   service ssh status
