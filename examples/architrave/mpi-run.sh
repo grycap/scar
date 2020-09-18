@@ -81,7 +81,8 @@ wait_for_nodes () {
 
   cd $SCRATCH_DIR
   mkdir output
-  mpirun --mca btl_tcp_if_include eth0 --debug-daemons -x PATH -x LD_LIBRARY_PATH --allow-run-as-root --machinefile ${HOST_FILE_PATH}-deduped \
+  # --allow-run-as-root 
+  mpirun --mca btl_tcp_if_include eth0 --debug-daemons -x PATH -x LD_LIBRARY_PATH --machinefile ${HOST_FILE_PATH}-deduped \
       ${APP_BIN} ${APP_PARAMS}
   sleep 2
 
