@@ -27,7 +27,7 @@ def _get_creation_args(resources_info: Dict, storage_providers: Dict) -> Dict:
     creation_args = {}
     # Clean None values
     for k,v in resources_info.items():
-        if not v:
+        if v:
             creation_args[k] = v
     # Get the content of 'script'
     creation_args['script'] = FileUtils.read_file(creation_args['script'])
@@ -77,7 +77,8 @@ class OSCAR():
         for resources_info in self.oscar_resources:
             resources_info = deepcopy(resources_info)
             #_check_service_defined(resources_info)
-            _create_oscar_service(resources_info)
+            self._create_oscar_service(resources_info)
+            response_parser.parse_service_creation(resources_info, self.scar_info.get('cli_output'))
 
     @excp.exception(logger)
     def rm(self):
@@ -86,6 +87,7 @@ class OSCAR():
             #_check_service_defined(resources_info)
             credentials_info = _get_credentials_info(resources_info)
             OSCARClient(credentials_info, resources_info.get('cluster_id', '')).delete_service(resources_info['name'])
+            response_parser.parse_service_deletion(resources_info, self.scar_info.get('cli_output'))
 
     def _create_oscar_service(self, resources_info: Dict):
         credentials_info = _get_credentials_info(resources_info)

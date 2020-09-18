@@ -19,7 +19,7 @@ import scar.logger as logger
 import scar.exceptions as excp
 import requests
 
-# Disable warning requests
+# Disable InsecureRequestWarning in requests package
 requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
 class OSCARClient():
@@ -47,7 +47,7 @@ class OSCARClient():
 
     def delete_service(self, service_name: str) -> None:
         """Deletes an OSCAR service."""
-        logger.debug('')
+        logger.debug('Deleting OSCAR service.')
         res = requests.delete(
             f'{self.endpoint}{self._SERVICES_PATH}/{service_name}',
             auth=(self.auth_user, self.auth_password),
