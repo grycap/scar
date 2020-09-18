@@ -42,6 +42,9 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
   ssh-add ${SSHDIR}/id_rsa
 
   chmod +x ${APP_BIN}
+  service ssh status
+  service ssh restart
+  service ssh status
 
   echo "Running app"
   /opt/mpi-run.sh
