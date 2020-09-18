@@ -7,7 +7,6 @@ ARG BUILD_PACKAGES=' make gcc g++ iproute2 cmake  build-essential gfortran curl 
 ENV DEBIAN_FRONTEND=noninteractive
 ## Set to either lambda or batch
 ENV EXEC_TYPE=lambda
-ENV SSHDIR=/root/.ssh
 
 ENV EXAMPLE_FILE=/opt/examples/example
 ENV TMP_OUTPUT_DIR=/tmp
