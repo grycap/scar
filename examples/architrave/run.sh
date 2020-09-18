@@ -46,8 +46,6 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
   echo "Running app"
   /opt/mpi-run.sh
 
-  echo ${S3_OUTPUT} > ${S3_BATCH_MNT}/exec/docker_done
-  while inotifywait ${S3_BATCH_MNT}/exec -e create; do { echo "test"; break; }; done
 else
   echo "ERROR: unknown execution type '${EXEC_TYPE}'"
   exit 1 # terminate and indicate error

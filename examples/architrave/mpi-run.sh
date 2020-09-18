@@ -93,6 +93,10 @@ wait_for_nodes () {
   log "done! goodbye, writing exit code to $AWS_BATCH_EXIT_CODE_FILE and shutting down my supervisord"
   echo "0" > $AWS_BATCH_EXIT_CODE_FILE
   kill  $(cat /tmp/supervisord.pid)
+  #echo "#!/bin/bash" > ${S3_BATCH_MNT}/exec/docker_done
+  echo "env GZIP=-9 tar -czvf /mnt/batch/output/result.tar.gz /mnt/batch/output/*" > ${S3_BATCH_MNT}/exec/docker_done
+  echo "/usr/local/bin/aws s3 cp /mnt/batch/output/result.tar.gz s3://scar-architrave/output/result_$(date | tr ' ' _ ).tar.gz" > ${S3_BATCH_MNT}/exec/docker_done
+  while inotifywait ${S3_BATCH_MNT}/exec -e create; do { echo "EC2 host post-execution process completed, exiting container"; break; }; done
   exit 0
 }
 
@@ -116,6 +120,7 @@ report_to_master () {
     echo "Sleeping 5 seconds and trying again"
   done
   log "done! goodbye"
+  touch ${S3_BATCH_MNT}/exec/docker_done
   exit 0
 }
 
