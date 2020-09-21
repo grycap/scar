@@ -22,6 +22,22 @@ import requests
 # Disable InsecureRequestWarning in requests package
 requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
+
+def _get_error_msg(res: requests.Response) -> str:
+    error_msg = ''
+    if res.text:
+        error_msg = res.text
+    elif res.status_code == 400:
+        error_msg = 'Bad Request'
+    elif res.status_code == 401:
+        error_msg = 'Invalid Credentials'
+    elif res.status_code == 404:
+        error_msg = 'The Service doesn\'t exist'
+    elif res.status_code == 500:
+        error_msg = 'Internal Server Error'
+    return error_msg    
+
+
 class OSCARClient():
     _SERVICES_PATH = '/system/services'
 
@@ -43,7 +59,7 @@ class OSCARClient():
         )
         # Raise a ServiceCreationError if the return code is not 201
         if res.status_code != 201:
-            raise excp.ServiceCreationError(service_name=kwargs['name'], error_msg=res.text)
+            raise excp.ServiceCreationError(service_name=kwargs['name'], error_msg=_get_error_msg(res))
 
     def delete_service(self, service_name: str) -> None:
         """Deletes an OSCAR service."""
@@ -55,7 +71,7 @@ class OSCARClient():
         )
         # Raise a ServiceDeletionError if the return code is not 204
         if res.status_code != 204:
-            raise excp.ServiceDeletionError(service_name=service_name, error_msg=res.text)
+            raise excp.ServiceDeletionError(service_name=service_name, error_msg=_get_error_msg(res))
 
     def get_service(self, service_name: str) -> Dict:
         """Get the properties of the specified service."""
@@ -66,7 +82,7 @@ class OSCARClient():
         )
         # Raise a ServiceNotFoundError if the return code is not 200
         if res.status_code != 200:
-            raise excp.ServiceNotFoundError(service_name=service_name, error_msg=res.text)
+            raise excp.ServiceNotFoundError(service_name=service_name, error_msg=_get_error_msg(res))
         return res.json()
 
     def list_services(self) -> List:
@@ -78,5 +94,5 @@ class OSCARClient():
         )
         # Raise a ListServicesError if the return code is not 200
         if res.status_code != 200:
-            raise excp.ListServicesError(cluster_id=self.cluster_id, error_msg=res.text)
+            raise excp.ListServicesError(cluster_id=self.cluster_id, error_msg=_get_error_msg(res))
         return res.json()
