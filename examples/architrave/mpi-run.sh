@@ -81,7 +81,7 @@ wait_for_nodes () {
 
   cd $SCRATCH_DIR
   mkdir output
-  # --allow-run-as-root 
+  # --allow-run-as-root
   mpirun --mca btl_tcp_if_include eth0 --debug-daemons -x PATH -x LD_LIBRARY_PATH --machinefile ${HOST_FILE_PATH}-deduped \
       ${APP_BIN} ${APP_PARAMS}
   sleep 2
@@ -96,7 +96,9 @@ wait_for_nodes () {
   kill  $(cat /tmp/supervisord.pid)
   #echo "#!/bin/bash" > ${S3_BATCH_MNT}/exec/docker_done
   echo "env GZIP=-9 tar -czvf /mnt/batch/output/result.tar.gz /mnt/batch/output/*" > ${S3_BATCH_MNT}/exec/docker_done
-  echo "/usr/local/bin/aws s3 cp /mnt/batch/output/result.tar.gz s3://scar-architrave/output/result_$(date | tr ' ' _ ).tar.gz" > ${S3_BATCH_MNT}/exec/docker_done
+  echo "/usr/local/bin/aws s3 cp /mnt/batch/output/result.tar.gz s3://scar-architrave/output/result_$(date | tr ' ' _ ).tar.gz" >> ${S3_BATCH_MNT}/exec/docker_done
+  log "Signaling children to exit"
+  cat ${HOST_FILE_PATH}-deduped | awk -F_ '{print $1}' | xargs -I{} -n1 ssh {} "touch /mnt/batch/mpi/master_done"
   while inotifywait ${S3_BATCH_MNT}/exec -e create; do { echo "EC2 host post-execution process completed, exiting container"; break; }; done
   exit 0
 }
@@ -120,8 +122,10 @@ report_to_master () {
   do
     echo "Sleeping 5 seconds and trying again"
   done
-  log "done! goodbye"
   touch ${S3_BATCH_MNT}/exec/docker_done
+
+  echo "Wait for master to finish"
+  while inotifywait ${S3_BATCH_MNT}/mpi -e create; do { echo "Master has finished its execution, done! goodbye"; break; }; done
   exit 0
 }
 
