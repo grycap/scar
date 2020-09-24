@@ -15,6 +15,13 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
   echo "Running on node index $AWS_BATCH_JOB_NODE_INDEX out of $AWS_BATCH_JOB_NUM_NODES nodes"
   echo "Master node index is $AWS_BATCH_JOB_MAIN_NODE_INDEX and its IP is $AWS_BATCH_JOB_MAIN_NODE_PRIVATE_IPV4_ADDRESS"
 
+  mkdir -p /mnt/batch/exec
+  rm -rf /mnt/batch/exec/*
+  mkdir -p /mnt/batch/output
+  rm -rf /mnt/batch/output/*
+  mkdir -p /mnt/batch/mpi
+  rm -rf /mnt/batch/mpi/*
+  
   mkdir ${SCRATCH_DIR}
   mkdir ${JOB_DIR}
   mkdir ${S3_BATCH_MNT}/output
