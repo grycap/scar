@@ -82,8 +82,8 @@ wait_for_nodes () {
   cd $SCRATCH_DIR
   mkdir output
   # --allow-run-as-root
-  mpirun --mca btl_tcp_if_include eth0 --debug-daemons -x PATH -x LD_LIBRARY_PATH --machinefile ${HOST_FILE_PATH}-deduped \
-      ${APP_BIN} ${APP_PARAMS}
+  { time  mpirun --mca btl_tcp_if_include eth0 --debug-daemons -x PATH -x LD_LIBRARY_PATH --machinefile ${HOST_FILE_PATH}-deduped \
+      ${APP_BIN} ${APP_PARAMS}; } 2>&1 | cat > ${S3_BATCH_MNT}/output/time.log
   sleep 2
 
   #if [ "${NODE_TYPE}" = 'main' ]; then
