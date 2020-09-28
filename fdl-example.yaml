@@ -60,16 +60,18 @@ functions:
           Variables:
             KEY1: val1
             KEY2: val2
-      # Define input storage providers linked with the function
+      # Define input storage providers linked with the function.
+      # In AWS environments only S3 providers can be configured as inputs.
+      # In OSCAR clusters only MinIO providers can be configured as inputs.
       input:
-        # Storage type
-        # Possible values 'minio', 's3', 'onedata'
-      - storage_provider: minio
+        # Storage provider identifier. Must have the form <PROVIDER_TYPE>.<IDENTIFIER>
+        # Possible 'PROVIDER_TYPE' values: 'minio', 's3', 'onedata'
+      - storage_provider: minio.my_minio
         # Complete path of the bucket with folders 'if any'
         path: my-bucket/test
       # Define output storage providers linked with the function
       output:
-      - storage_provider: s3
+      - storage_provider: s3.my_s3
         path: my-bucket/test-output
         # Define optional filters to upload the output files based on prefix or suffix
         # Possible values 'prefix', 'suffix'
@@ -164,11 +166,56 @@ functions:
   oscar:
     # User specified identifier for an OSCAR cluster. 
   - my_oscar:
-  
+      # Service's name
+      # REQUIRED
+      name: service1
+      # Memory limit for the service following the kubernetes format
+      # https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#meaning-of-memory
+      # Optional. (default: 256Mi)
+      memory: 1Gi
+      # CPU limit for the service following the kubernetes format
+      # https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#meaning-of-cpu
+      # Optional. (default: 0.2)
+      cpu: 1.0
+      # Log level for the FaaS Supervisor
+      # Can be INFO, DEBUG, ERROR, WARNING
+      # Default 'INFO'
+      log_level: INFO
+      # Container image to use. REQUIRED
+      image: grycap/darknet
+      script:
+      # Environment variables of the function
+      environment:
+        Variables:
+          KEY1: val1
+          KEY2: val2
+      # Define input storage providers linked with the function.
+      # In AWS environments only S3 providers can be configured as inputs.
+      # In OSCAR clusters only MinIO providers can be configured as inputs.
+      input:
+        # Storage provider identifier. Must have the form <PROVIDER_TYPE>.<IDENTIFIER>
+        # Possible 'PROVIDER_TYPE' values: 'minio', 's3', 'onedata'
+      - storage_provider: minio.my_minio
+        # Complete path of the bucket with folders 'if any'
+        path: my-bucket/test
+      # Define output storage providers linked with the function
+      output:
+      - storage_provider: s3.my_s3
+        path: my-bucket/test-output
+        # Define optional filters to upload the output files based on prefix or suffix
+        # Possible values 'prefix', 'suffix'
+        suffix:
+          # List of suffixes to filter (can be any string)
+          - wav
+          - srt
+        prefix:
+          # List of prefixes to filter (can be any string)
+          - result-
 
 
 # Define different storage providers connections. Supported 's3','minio', 'onedata'
-# If you use a default S3 storage with the default boto configuration, this properties are not needed.
+# If you use a default S3 storage with the default boto configuration, this properties are not needed in an AWS environment.
+# If you use a default MinIO storage, this properties are not needed in an OSCAR cluster.
 storage_providers:
   # S3 properties
   s3:

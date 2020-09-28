@@ -58,7 +58,7 @@ def main():
         # Default provider
         # If more providers, analyze the arguments and build the required one
         AWS(func_call)
-        # Build the OSCAR controller only with 'init' and 'rm' functions
+        # Build the OSCAR controller only with 'init', 'rm' and 'ls' commands
         if func_call in ['init', 'rm', 'ls']:
             OSCAR(func_call)
         logger.end_execution_trace()

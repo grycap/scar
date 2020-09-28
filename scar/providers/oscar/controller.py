@@ -68,15 +68,12 @@ class OSCAR():
         self.scar_info = self.raw_args.get('scar', {})
         add_output(self.scar_info)
         # Call the user's command
-        # Currently only 'init' and 'rm' supported
-        # TODO: check function_call
         getattr(self, func_call)()
 
     @excp.exception(logger)
     def init(self):
         for resources_info in self.oscar_resources:
             resources_info = deepcopy(resources_info)
-            #_check_service_defined(resources_info)
             self._create_oscar_service(resources_info)
             response_parser.parse_service_creation(resources_info, self.scar_info.get('cli_output'))
 
@@ -84,7 +81,6 @@ class OSCAR():
     def rm(self):
         for resources_info in self.oscar_resources:
             resources_info = deepcopy(resources_info)
-            #_check_service_defined(resources_info)
             credentials_info = _get_credentials_info(resources_info)
             OSCARClient(credentials_info, resources_info.get('cluster_id', '')).delete_service(resources_info['name'])
             response_parser.parse_service_deletion(resources_info, self.scar_info.get('cli_output'))
