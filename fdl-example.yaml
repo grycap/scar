@@ -176,14 +176,14 @@ functions:
       # CPU limit for the service following the kubernetes format
       # https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#meaning-of-cpu
       # Optional. (default: 0.2)
-      cpu: 1.0
+      cpu: '1.0'
       # Log level for the FaaS Supervisor
       # Can be INFO, DEBUG, ERROR, WARNING
       # Default 'INFO'
       log_level: INFO
       # Container image to use. REQUIRED
       image: grycap/darknet
-      script:
+      script: my-script.sh
       # Environment variables of the function
       environment:
         Variables:
