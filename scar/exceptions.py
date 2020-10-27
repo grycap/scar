@@ -64,7 +64,7 @@ class ScarError(Exception):
 
 
 ################################################
-# #             GENERAL EXCEPTIONS             ##
+##             GENERAL EXCEPTIONS             ##
 ################################################
 class MissingCommandError(ScarError):
     """
@@ -183,7 +183,7 @@ class AuthenticationVariableNotSupportedError(ScarError):
     fmt = "The authentication variable '{auth_var}' is not supported."
 
 ################################################
-# #             LAMBDA EXCEPTIONS              ##
+##             LAMBDA EXCEPTIONS              ##
 ################################################
 class FunctionCreationError(ScarError):
     """
@@ -214,7 +214,7 @@ class FunctionExistsError(ScarError):
 
 
 ################################################
-# #               S3 EXCEPTIONS                ##
+##               S3 EXCEPTIONS                ##
 ################################################
 class BucketNotFoundError(ScarError):
     """
@@ -235,7 +235,7 @@ class ExistentBucketWarning(ScarError):
 
 
 ################################################
-# #         CLOUDWATCH LOGS EXCEPTIONS         ##
+##         CLOUDWATCH LOGS EXCEPTIONS         ##
 ################################################
 class ExistentLogGroupWarning(ScarError):
     """
@@ -256,7 +256,7 @@ class NotExistentLogGroupWarning(ScarError):
 
 
 ################################################
-# #           API GATEWAY EXCEPTIONS           ##
+##           API GATEWAY EXCEPTIONS           ##
 ################################################
 class ApiEndpointNotFoundError(ScarError):
     """
@@ -290,7 +290,7 @@ class NotExistentApiGatewayWarning(ScarError):
 
 
 ################################################
-# #               IAM EXCEPTIONS               ##
+##               IAM EXCEPTIONS               ##
 ################################################
 class GetUserInfoError(ScarError):
     """
@@ -302,7 +302,7 @@ class GetUserInfoError(ScarError):
 
 
 ################################################
-# #              BATCH EXCEPTIONS              ##
+##              BATCH EXCEPTIONS              ##
 ################################################
 class InvalidComputeEnvironmentError(ScarError):
     """
@@ -311,3 +311,44 @@ class InvalidComputeEnvironmentError(ScarError):
     :ivar error_msg: General error message
     """
     fmt = "Error creating the AWS Batch Compute Environment\n."
+
+
+################################################
+##              OSCAR EXCEPTIONS              ##
+################################################
+class ServiceCreationError(ScarError):
+    """
+    There was an error creating the OSCAR service
+
+    :ivar service_name: Name of the function
+    :ivar error_msg: General error message
+    """
+    fmt = "Unable to create the service '{service_name}': {error_msg}"
+
+
+class ServiceDeletionError(ScarError):
+    """
+    There was an error deleting the OSCAR service
+
+    :ivar service_name: Name of the function
+    :ivar error_msg: General error message
+    """
+    fmt = "Unable to delete the service '{service_name}': {error_msg}"
+
+class ServiceNotFoundError(ScarError):
+    """
+    There was an error getting the OSCAR service
+
+    :ivar service_name: Name of the function
+    :ivar error_msg: General error message
+    """
+    fmt = "The service '{service_name}' does not exist: {error_msg}"
+
+class ListServicesError(ScarError):
+    """
+    There was an error getting the OSCAR service
+
+    :ivar service_name: Name of the function
+    :ivar error_msg: General error message
+    """
+    fmt = "Unable to list services from OSCAR cluster '{cluster_id}': {error_msg}"

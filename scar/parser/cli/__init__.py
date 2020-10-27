@@ -36,7 +36,7 @@ def _parse_aws_args(cmd_args: Dict) -> Dict:
     _set_args(aws_args, 'api_gateway', _parse_api_gateway_args(cmd_args))
     aws_args.update(DataTypesUtils.parse_arg_list(other_args, cmd_args))
     storage = _parse_s3_args(aws_args, cmd_args)
-    result = {'functions': {'aws': [aws_args]}}
+    result = {'functions': {'oscar': [{}], 'aws': [aws_args]}}
     if storage:
         result.update(storage)
     return result

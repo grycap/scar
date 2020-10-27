@@ -4,7 +4,7 @@
 # To override permanently some of this values and apply them to all the deployed functions, please edit the SCAR default configuration file in ~/.scar/scar.cfg
 # ----------------------------------------------------------------------------------------------------------------
 functions:
-  # Define different providers under this property. Only supported 'aws'
+  # Define different providers under this property. Supported 'aws' and 'oscar'
   aws: 
     # Define a list of functions under this property.
     # You can define the function properties and all its related services
@@ -29,7 +29,6 @@ functions:
       # Possible values 'lambda', 'lambda-batch', 'batch'
       # Default 'lambda'
       execution_mode: lambda
-        "description": "Automatically generated lambda function",
       # Supervisor log level
       # Can be INFO, DEBUG, ERROR, WARNING
       # Default 'INFO'
@@ -61,16 +60,18 @@ functions:
           Variables:
             KEY1: val1
             KEY2: val2
-      # Define input storage providers linked with the function
+      # Define input storage providers linked with the function.
+      # In AWS environments only S3 providers can be configured as inputs.
+      # In OSCAR clusters only MinIO providers can be configured as inputs.
       input:
-        # Storage type
-        # Possible values 'minio', 's3', 'onedata'
-      - storage_provider: minio
+        # Storage provider identifier. Must have the form <PROVIDER_TYPE>.<IDENTIFIER>
+        # Possible 'PROVIDER_TYPE' values: 'minio', 's3', 'onedata'
+      - storage_provider: minio.my_minio
         # Complete path of the bucket with folders 'if any'
         path: my-bucket/test
       # Define output storage providers linked with the function
       output:
-      - storage_provider: s3
+      - storage_provider: s3.my_s3
         path: my-bucket/test-output
         # Define optional filters to upload the output files based on prefix or suffix
         # Possible values 'prefix', 'suffix'
@@ -162,29 +163,87 @@ functions:
         - "m3.medium"
         # The Amazon ECS instance profile applied to Amazon EC2 instances in a compute environment
         instance_role: "arn:..."
+  oscar:
+    # User specified identifier for an OSCAR cluster. 
+  - my_oscar:
+      # Service's name
+      # REQUIRED
+      name: service1
+      # Memory limit for the service following the kubernetes format
+      # https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#meaning-of-memory
+      # Optional. (default: 256Mi)
+      memory: 1Gi
+      # CPU limit for the service following the kubernetes format
+      # https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#meaning-of-cpu
+      # Optional. (default: 0.2)
+      cpu: '1.0'
+      # Log level for the FaaS Supervisor
+      # Can be INFO, DEBUG, ERROR, WARNING
+      # Default 'INFO'
+      log_level: INFO
+      # Container image to use. REQUIRED
+      image: grycap/darknet
+      script: my-script.sh
+      # Environment variables of the function
+      environment:
+        Variables:
+          KEY1: val1
+          KEY2: val2
+      # Define input storage providers linked with the function.
+      # In AWS environments only S3 providers can be configured as inputs.
+      # In OSCAR clusters only MinIO providers can be configured as inputs.
+      input:
+        # Storage provider identifier. Must have the form <PROVIDER_TYPE>.<IDENTIFIER>
+        # Possible 'PROVIDER_TYPE' values: 'minio', 's3', 'onedata'
+      - storage_provider: minio.my_minio
+        # Complete path of the bucket with folders 'if any'
+        path: my-bucket/test
+      # Define output storage providers linked with the function
+      output:
+      - storage_provider: s3.my_s3
+        path: my-bucket/test-output
+        # Define optional filters to upload the output files based on prefix or suffix
+        # Possible values 'prefix', 'suffix'
+        suffix:
+          # List of suffixes to filter (can be any string)
+          - wav
+          - srt
+        prefix:
+          # List of prefixes to filter (can be any string)
+          - result-
 
 
 # Define different storage providers connections. Supported 's3','minio', 'onedata'
-# If you use a default S3 storage with the default boto configuration, this properties are not needed.
+# If you use a default S3 storage with the default boto configuration, this properties are not needed in an AWS environment.
+# If you use a default MinIO storage, this properties are not needed in an OSCAR cluster.
 storage_providers:
-  # Define S3 properties
-  # If used, REQUIRED properties are 'access_key', 'secret_key'
-  # The supervisor will try to create the boto3 client using the function permissions (in AWS Lambda environment)
+  # S3 properties
   s3:
-    access_key: awsuser
-    secret_key: awskey
-    region: us-east-1
-  # Define minio properties
-  # If used, REQUIRED properties are 'access_key', 'secret_key'
+    # User provided identifier for an AWS account for accessing to the S3 service. Many accounts could be specified.
+    my_s3:
+    # Define S3 (AWS) account properties
+    # If used, REQUIRED properties are 'access_key', 'secret_key'
+    # The supervisor will try to create the boto3 client using the function permissions (in AWS Lambda environment)
+      access_key: awsuser
+      secret_key: awskey
+      region: us-east-1
+  # MinIO properties
   minio:
-    endpoint: minio-endpoint
-    verify: True
-    region: us-east-1
-    access_key: muser           
-    secret_key: mpass
-  # Define onedata properties
-  # If used, REQUIRED properties are 'oneprovider_host', 'token', 'space'
+    # User provided identifier for a MinIO server. Many servers could be specified.
+    my_minio:
+      # Define MinIO server properties
+      # If used, REQUIRED properties are 'endpoint', 'access_key', 'secret_key'
+      endpoint: minio-endpoint
+      verify: True
+      region: us-east-1
+      access_key: muser           
+      secret_key: mpass
+  # Onedata properties
   onedata:
-    oneprovider_host: op-host 
-    token: mytoken
-    space: onedata_space
+    # User provided identifier for a Onedata account. Many accounts could be specified.
+    my_onedata:
+      # Define onedata account properties
+      # If used, REQUIRED properties are 'oneprovider_host', 'token', 'space'
+      oneprovider_host: op-host 
+      token: mytoken
+      space: onedata_space
