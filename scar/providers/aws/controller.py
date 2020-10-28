@@ -78,7 +78,7 @@ def _add_extra_aws_properties(scar: Dict, aws_resources: Dict) -> None:
         _add_tags(resources_info)
         _add_handler(resources_info)
         _add_account_id(resources_info)
-        _add_output(scar)
+        add_output(scar)
         _add_config_file_path(scar, resources_info)
 
 
@@ -94,7 +94,7 @@ def _add_handler(resources_info: Dict):
     resources_info['lambda']['handler'] = f"{resources_info.get('lambda').get('name')}.lambda_handler"
 
 
-def _add_output(scar_info: Dict):
+def add_output(scar_info: Dict):
     scar_info['cli_output'] = response_parser.OutputType.PLAIN_TEXT.value
     if scar_info.get("json", False):
         scar_info['cli_output'] = response_parser.OutputType.JSON.value
@@ -131,7 +131,7 @@ class AWS(Commands):
     def __init__(self, func_call):
         self.raw_args = FileUtils.load_tmp_config_file()
         AWSValidator.validate_kwargs(self.raw_args)
-        self.aws_resources = self.raw_args.get('functions', {}).get('aws', {})
+        self.aws_resources = self.raw_args.get('functions', {}).get('aws', [])
         self.storage_providers = self.raw_args.get('storage_providers', {})
         self.scar_info = self.raw_args.get('scar', {})
         _add_extra_aws_properties(self.scar_info, self.aws_resources)
@@ -215,18 +215,24 @@ class AWS(Commands):
             for resources_info in _get_all_functions(self.aws_resources[0]):
                 self._delete_resources(resources_info)
         else:
-            index = 0
-            if len(self.aws_resources) > 1:
-                index = _choose_function(self.aws_resources)
-            # -1 means apply to all functions
-            if index == -1:
-                for resources_info in self.aws_resources:
-                    _check_function_not_defined(resources_info)
-                    self._delete_resources(resources_info)
-            else:
-                resources_info = self.aws_resources[index]
+            # Selector disabled, delete all the functions defined in the file
+            for resources_info in self.aws_resources:
                 _check_function_not_defined(resources_info)
                 self._delete_resources(resources_info)
+            # index = 0
+            # if len(self.aws_resources) > 1:
+            #     index = _choose_function(self.aws_resources)
+            # # -1 means apply to all functions
+            # if index == -1:
+            #     for resources_info in self.aws_resources:
+            #         _check_function_not_defined(resources_info)
+            #         self._delete_resources(resources_info)
+            # else:
+            #     print(self.aws_resources)
+            #     resources_info = self.aws_resources[index]
+            #     _check_function_not_defined(resources_info)
+            #     self._delete_resources(resources_info)
+
 
     @excp.exception(logger)
     def log(self):

@@ -69,7 +69,7 @@ Define a job to be executed in batch
 
 To enable this functionality you only need to set the execution mode of the Lambda function to one of the two available used to create batch jobs ('lambda-batch' or 'batch') and SCAR will take care of the integration process (before using this feature make sure you have the correct rights set in your AWS account).
 
-As an example, the following configuration file defines a Lambda function that creates an AWS Batch job to execute the `plants classification example <https://github.com/grycap/scar/tree/fdl/examples/plant-classification>`_ (all the required scripts and example files used in this example can be found there)::
+As an example, the following configuration file defines a Lambda function that creates an AWS Batch job to execute the `plants classification example <https://github.com/grycap/scar/tree/master/examples/plant-classification>`_ (all the required scripts and example files used in this example can be found there)::
 
   cat >> scar-plants.yaml << EOF
   functions:

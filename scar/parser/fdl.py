@@ -14,7 +14,7 @@
 from typing import Dict
 from scar.utils import DataTypesUtils
 
-FAAS_PROVIDERS = ["aws", "openfaas"]
+FAAS_PROVIDERS = ["aws", "oscar"]
 
 def merge_conf(conf: Dict, yaml: Dict) -> Dict:
     result = yaml.copy()
