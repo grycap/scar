@@ -14,10 +14,35 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
   export AWS_BATCH_EXIT_CODE_FILE=~/batch_exit_code.file
   echo "Running on node index $AWS_BATCH_JOB_NODE_INDEX out of $AWS_BATCH_JOB_NUM_NODES nodes"
   echo "Master node index is $AWS_BATCH_JOB_MAIN_NODE_INDEX and its IP is $AWS_BATCH_JOB_MAIN_NODE_PRIVATE_IPV4_ADDRESS"
+  
+  cd /tmp
+  wget -nc https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+	unzip awscli-exe-linux-x86_64.zip
+	chmod +x aws/install
+	./aws/install
+	
+	/usr/local/bin/aws configure set default.s3.max_concurrent_requests 30
+	/usr/local/bin/aws configure set default.s3.max_queue_size 10000
+	/usr/local/bin/aws configure set default.s3.multipart_threshold 64MB
+	/usr/local/bin/aws configure set default.s3.multipart_chunksize 16MB
+	/usr/local/bin/aws configure set default.s3.max_bandwidth 4096MB/s
+	/usr/local/bin/aws configure set default.s3.addressing_style path
+	
+	
+	mkdir -p ${S3_BATCH_MNT}/deps
+	mkdir -p ${S3_BATCH_MNT}/exec
+	rm -rf ${S3_BATCH_MNT}/exec/*
+	mkdir -p ${S3_BATCH_MNT}/output
+	rm -rf ${S3_BATCH_MNT}/output/*
+	mkdir -p ${S3_BATCH_MNT}/mpi
+	rm -rf ${S3_BATCH_MNT}/mpi/*
+	/usr/local/bin/aws s3 cp s3://scar-architrave/batch/private.7z ${S3_BATCH_MNT}
+	/usr/local/bin/aws s3 cp s3://scar-architrave/batch/deps.tar.gz ${S3_BATCH_MNT}
+	tar -zxf ${S3_BATCH_MNT}/deps.tar.gz -C ${S3_BATCH_MNT}/deps
 
-  rm -rf /mnt/batch/exec/*
-  rm -rf /mnt/batch/output/*
-  rm -rf /mnt/batch/mpi/*
+  #rm -rf /mnt/batch/exec/*
+  #rm -rf /mnt/batch/output/*
+  #rm -rf /mnt/batch/mpi/*
 
   mkdir ${SCRATCH_DIR}
   mkdir ${JOB_DIR}
