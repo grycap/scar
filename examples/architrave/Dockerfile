@@ -2,7 +2,7 @@ FROM debian:stretch-slim
 
 ARG ADD_BASE_DIR_ARCHITRAVE=examples/architrave
 ARG ADD_PRIVATE_BASE_DIR
-ARG BUILD_PACKAGES=' make gcc g++ iproute2 cmake  build-essential gfortran curl wget '
+ARG BUILD_PACKAGES=' make gcc g++ iproute2 cmake  build-essential gfortran curl  '
 
 ENV DEBIAN_FRONTEND=noninteractive
 ## Set to either lambda or batch
@@ -29,7 +29,7 @@ ENV S3_OUTPUT="s3://scar-architrave/output"
 ADD  ${ADD_PRIVATE_BASE_DIR} ${ADD_BASE_DIR_ARCHITRAVE}/run.sh ${ADD_BASE_DIR_ARCHITRAVE}/mpi-run.sh ${ADD_BASE_DIR_ARCHITRAVE}/debs.lst /opt/
 
 RUN apt-get update \
-  && apt-get install -y $BUILD_PACKAGES p7zip-full \
+  && apt-get install -y $BUILD_PACKAGES p7zip-full wget \
   && wget -q --no-check-certificate -qO- https://download.open-mpi.org/release/open-mpi/v1.4/openmpi-1.4.3.tar.bz2 | tar xvfj - -C /tmp/ \
   && cd /tmp/openmpi-1.4.3/ \
   && ./configure --disable-pty-support --disable-doc \
