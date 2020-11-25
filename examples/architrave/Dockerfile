@@ -8,10 +8,11 @@ ENV DEBIAN_FRONTEND=noninteractive
 ## Set to either lambda or batch
 ENV EXEC_TYPE=lambda
 
-ENV EXAMPLE_FILE=/opt/examples/example
+ENV APP_IN_FILE=/opt/examples/example
 ENV TMP_OUTPUT_DIR=/tmp
 ENV APP_BIN=/opt/simest
-ENV APP_PARAMS=""
+ENV APP_PARAMS1=""
+ENV APP_PARAMS2=""
 ENV MPI_PARAMS='-np 1 --debug-daemons'
 ENV JOB_DIR=/root/exec/
 ENV SCRATCH_DIR=/root/scratch
