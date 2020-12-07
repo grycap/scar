@@ -10,6 +10,11 @@ log () {
 HOST_FILE_PATH="/tmp/hostfile"
 AWS_BATCH_EXIT_CODE_FILE="/tmp/batch-exit-code"
 
+BATCH_SIGNAL_DIR=/tmp/batch
+if [ -d "${BATCH_SIGNAL_DIR}" ]; then rm -Rf ${BATCH_SIGNAL_DIR}; fi
+mkdir -p ${BATCH_SIGNAL_DIR}master_done
+mkdir -p ${BATCH_SIGNAL_DIR}/workers_done
+
 #aws s3 cp $S3_INPUT $SCRATCH_DIR
 #tar -xvf $SCRATCH_DIR/*.tar.gz -C $SCRATCH_DIR
 
@@ -83,10 +88,10 @@ wait_for_nodes () {
   mkdir output
   # --allow-run-as-root
   { time  mpirun --mca btl_tcp_if_include eth0 --debug-daemons -x PATH -x LD_LIBRARY_PATH --machinefile ${HOST_FILE_PATH}-deduped \
-      ${APP_BIN} ${APP_PARAMS} }; } 2>&1 | cat > ${S3_BATCH_MNT}/output/time.log
+      ${APP_BIN} ${APP_PARAMS} }; } 2>&1 | cat > ${TMP_OUTPUT_DIR}/time.log
   sleep 2
   echo 'Exec output:'
-  cat ${S3_BATCH_MNT}/output/time.log
+  cat ${TMP_OUTPUT_DIR}/time.log
 
   #if [ "${NODE_TYPE}" = 'main' ]; then
     # env GZIP=-9 tar -czvf $SCRATCH_DIR/batch_output_${AWS_BATCH_JOB_ID}.tar.gz $SCRATCH_DIR/output/*
@@ -99,8 +104,18 @@ wait_for_nodes () {
   #echo "#!/bin/bash" > ${S3_BATCH_MNT}/exec/docker_done
   #echo "env GZIP=-9 tar -czvf /mnt/batch/output/result.tar.gz /mnt/batch/output/*" > ${S3_BATCH_MNT}/exec/docker_done
   #echo "/usr/local/bin/aws s3 cp /mnt/batch/output/result.tar.gz s3://scar-architrave/output/result_$(date | tr ' ' _ ).tar.gz" >> ${S3_BATCH_MNT}/exec/docker_done
-  #log "Signaling children to exit"
-  #cat ${HOST_FILE_PATH}-deduped | awk -F_ '{print $1}' | xargs -I{} -n1 ssh {} "touch /mnt/batch/mpi/master_done"
+  log "Signaling children to exit"
+  cat ${HOST_FILE_PATH}-deduped | awk -F_ '{print $1}' | xargs -I{} -n1 ssh {} "touch ${BATCH_SIGNAL_DIR}/master_done/done"
+
+  log "Wait for children to finish their execution"
+  num_finished=$(ls ${BATCH_SIGNAL_DIR}/workers_done/|uniq|wc -l)
+  while [ "$AWS_BATCH_JOB_NUM_NODES" -gt "$num_finished" ]
+  do
+    log "$num_finished out of $AWS_BATCH_JOB_NUM_NODES nodes are done, check again in 1 second"
+    sleep 1
+    num_finished=$(ls ${BATCH_SIGNAL_DIR}/workers_done/|uniq|wc -l)
+  done
+
   #while inotifywait ${S3_BATCH_MNT}/exec -e create; do { echo "EC2 host post-execution process completed, exiting container"; break; }; done
   exit 0
 }
@@ -126,8 +141,9 @@ report_to_master () {
   done
   #touch ${S3_BATCH_MNT}/exec/docker_done
 
-  #echo "Wait for master to finish"
-  #while inotifywait ${S3_BATCH_MNT}/mpi -e create; do { echo "Master has finished its execution, done! goodbye"; break; }; done
+  echo "Wait for master to finish"
+  while inotifywait ${BATCH_SIGNAL_DIR}/master_done -e create; do { echo "Master has finished its execution, done! goodbye"; break; }; done
+  ssh ${AWS_BATCH_JOB_MAIN_NODE_PRIVATE_IPV4_ADDRESS} "touch ${BATCH_SIGNAL_DIR}/workers_done/${ip}"
   exit 0
 }
 
