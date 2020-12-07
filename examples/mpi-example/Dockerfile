@@ -17,7 +17,6 @@ ENV APP_BIN=/opt/$GIT_REPO_REL_PATH_EXEC
 
 ADD  ${ADD_BASE_DIR_ARCHITRAVE}/run.sh ${ADD_BASE_DIR_ARCHITRAVE}/mpi-run.sh /opt/
 
-
 RUN apt-get update \
   && apt-get install -y $BUILD_PACKAGES openmpi-bin libopenmpi-dev \
   && cd /opt/ \
