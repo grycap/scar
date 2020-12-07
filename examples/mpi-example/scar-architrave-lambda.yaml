@@ -1,0 +1,15 @@
+functions:
+  aws:
+  - lambda:
+      name: scar-mpi-example
+      run_script: /tmp/scar_run_init.sh
+      container:
+        image_file: /tmp/scar-mpi-example-docker-img.tar.gz
+        environment:
+          Variables:
+            EXEC_TYPE: lambda
+      deployment:
+        bucket: scar-architrave
+      output:
+      - storage_provider: s3
+        path: scar-architrave/output

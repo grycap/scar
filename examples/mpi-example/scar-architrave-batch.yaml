@@ -1,0 +1,18 @@
+functions:
+  aws:
+  - lambda:
+      name: scar-mpi-example
+      log_level: DEBUG
+      init_script: run_batch.sh
+      execution_mode: batch
+      container:
+        image: asalic/scar-mpi-example
+        environment:
+          Variables:
+            EXEC_TYPE: batch
+      input:
+      - storage_provider: s3
+        path: scar-architrave/input
+      output:
+      - storage_provider: s3
+        path: scar-architrave/output
