@@ -36,9 +36,9 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
   service ssh restart
   service ssh status
 
-  export AWS_BATCH_JOB_NODE_INDEX=0
-  export AWS_BATCH_JOB_NUM_NODES=1
-  export AWS_BATCH_JOB_MAIN_NODE_INDEX=0
+#  export AWS_BATCH_JOB_NODE_INDEX=0
+#  export AWS_BATCH_JOB_NUM_NODES=1
+#  export AWS_BATCH_JOB_MAIN_NODE_INDEX=0
 
   echo "Running app"
   /opt/mpi-run.sh
