@@ -12,7 +12,7 @@ functions:
             EXEC_TYPE: batch
       input:
       - storage_provider: s3
-        path: scar-architrave/input
+        path: scar-mpi-example/input
       output:
       - storage_provider: s3
-        path: scar-architrave/output
+        path: scar-mpi-example/output
