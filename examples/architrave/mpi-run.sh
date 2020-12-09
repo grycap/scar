@@ -83,10 +83,10 @@ wait_for_nodes () {
   mkdir output
   # --allow-run-as-root
   { time  mpirun --mca btl_tcp_if_include eth0 --debug-daemons -x PATH -x LD_LIBRARY_PATH --machinefile ${HOST_FILE_PATH}-deduped \
-      ${APP_BIN} ${APP_IN_FILE} ${APP_PARAMS1} ${TMP_OUTPUT_DIR} ${APP_PARAMS2}; } 2>&1 | cat > ${S3_BATCH_MNT}/output/time.log
+      ${APP_BIN} ${APP_IN_FILE} ${APP_PARAMS1} ${TMP_OUTPUT_DIR} ${APP_PARAMS2}; } 2>&1 | cat > ${TMP_OUTPUT_DIR}/time.log
   sleep 2
   echo 'Exec output:'
-  cat ${S3_BATCH_MNT}/output/time.log
+  cat ${TMP_OUTPUT_DIR}/time.log
 
   #if [ "${NODE_TYPE}" = 'main' ]; then
     # env GZIP=-9 tar -czvf $SCRATCH_DIR/batch_output_${AWS_BATCH_JOB_ID}.tar.gz $SCRATCH_DIR/output/*
