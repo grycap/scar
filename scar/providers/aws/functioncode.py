@@ -35,6 +35,12 @@ def create_function_config(resources_info):
     function_cfg = {'storage_providers': FileUtils.load_tmp_config_file().get('storage_providers', {})}
     function_cfg.update(resources_info.get('lambda'))
     clean_function_config(function_cfg)
+    print(resources_info)
+    # Add Batch specific info
+    if resources_info.get('lambda').get("execution_mode") == "batch":
+        function_cfg.update({"batch": {
+                             "multi_node_parallel": resources_info.get('batch').get("multi_node_parallel")
+                             }})
     return function_cfg
 
 
