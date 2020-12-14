@@ -17,11 +17,16 @@ ENV APP_BIN=/opt/$GIT_REPO_REL_PATH_EXEC
 ENV SSH_PRIV_FILE_KEY=ssh_host_rsa_key
 ENV SSH_PUB_FILE_KEY=ssh_host_rsa_key.pub
 
+ENV LANG en_US.UTF-8
+
 ADD  ${ADD_BASE_DIR_ARCHITRAVE}/run.sh  /opt/
 
 RUN apt-get update \
   && apt-get install -y $BUILD_PACKAGES openmpi-bin libopenmpi-dev locales \
   && locale-gen en_US.UTF-8 \
+  && sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen \
+  && dpkg-reconfigure --frontend=noninteractive locales \
+  && update-locale LANG=en_US.UTF-8 \
   && cd /opt/ \
   && git clone $GIT_REPO \
   && cd /opt/$GIT_REPO_REL_PATH_SRC \
@@ -33,5 +38,6 @@ RUN apt-get update \
   && chmod 755 /opt/run.sh \
   && echo $(date) > /build_date \
   && echo "Build date: $(cat  /build_date)"
+
 
 CMD /opt/run.sh

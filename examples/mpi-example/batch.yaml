@@ -10,7 +10,7 @@ functions:
         environment:
           Variables:
             EXEC_TYPE: batch
-            PYTHONIOENCODING: utf-8
+            PYTHONIOENCODING: utf8
       input:
       - storage_provider: s3
         path: scar-mpi-example/input
