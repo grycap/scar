@@ -167,8 +167,8 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
   mkdir -p ${HOME}/.ssh
   touch ${HOME}/.ssh/sshd_config
   #ssh-keygen -t rsa -f ${SSHDIR}/ssh_host_rsa_key -N ''
-  cat /opt/ssh_host_rsa_key.pub > ${HOME}/.ssh/authorized_keys
-  cp /opt/ssh_host_rsa_key  ${HOME}/.ssh/id_rsa
+  cat /opt/${SSH_PUB_FILE_KEY} > ${HOME}/.ssh/authorized_keys
+  cp /opt/${SSH_PRIV_FILE_KEY}  ${HOME}/.ssh/id_rsa
   echo " IdentityFile ${HOME}/.ssh/id_rsa" >> /etc/ssh/ssh_config
   echo "Host *" >> /etc/ssh/ssh_config
   echo " StrictHostKeyChecking no" >> /etc/ssh/ssh_config
