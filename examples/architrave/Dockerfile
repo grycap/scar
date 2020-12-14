@@ -42,7 +42,6 @@ RUN apt-get update \
   && dpkg --force-all -i /tmp/*.deb \
   && ulimit -n 1024 \
   && rm -rf /tmp/* /var/lib/apt/lists/* \
-  && chmod 755 /opt/mpi-run.sh \
   && chmod 755 /opt/run.sh \
   && echo $(date) > /build_date \
   && echo "Build date: $(cat  /build_date)"

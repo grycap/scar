@@ -17,7 +17,7 @@ ENV APP_BIN=/opt/$GIT_REPO_REL_PATH_EXEC
 ENV SSH_PRIV_FILE_KEY=ssh_host_rsa_key
 ENV SSH_PUB_FILE_KEY=ssh_host_rsa_key.pub
 
-ADD  ${ADD_BASE_DIR_ARCHITRAVE}/run.sh ${ADD_BASE_DIR_ARCHITRAVE}/mpi-run.sh /opt/
+ADD  ${ADD_BASE_DIR_ARCHITRAVE}/run.sh  /opt/
 
 RUN apt-get update \
   && apt-get install -y $BUILD_PACKAGES openmpi-bin libopenmpi-dev locales \
@@ -30,7 +30,6 @@ RUN apt-get update \
   && apt-get autoremove --purge -y \
   && ulimit -n 1024 \
   && chmod 755 /opt/$GIT_REPO_REL_PATH_EXEC \
-  && chmod 755 /opt/mpi-run.sh \
   && chmod 755 /opt/run.sh \
   && echo $(date) > /build_date \
   && echo "Build date: $(cat  /build_date)"
