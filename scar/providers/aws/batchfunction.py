@@ -203,7 +203,7 @@ class Batch(GenericClient):
             "mainNode": int(self.batch.get('multi_node_parallel').get('main_node_index')),
             "nodeRangeProperties": [
                 {
-                "targetNodes": "0:" + str(targetNodes),
+                "targetNodes": "0:", #+ str(targetNodes),
                 "container": self._get_container_properties_single_node_args()
                 }
             ]#[self._get_node_node_range_property_multi_node_args(target_nodes) for target_nodes in self.batch.get('multi_node_parallel').get('target_nodes')]
