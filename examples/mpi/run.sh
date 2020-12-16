@@ -146,8 +146,13 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
 
   apt update
   apt install -y inotify-tools iproute2 wget unzip openssh-server openssh-client
-  wget -nc https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
-  unzip awscli-exe-linux-x86_64.zip
+
+  #locale-gen en_US.UTF-8
+  #sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+  #dpkg-reconfigure --frontend=noninteractive locales
+  #update-locale LANG=en_US.UTF-8
+  wget -nc -nv https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+  unzip -qq awscli-exe-linux-x86_64.zip
   chmod +x aws/install
   ./aws/install
   /usr/local/bin/aws configure set default.s3.max_concurrent_requests 30
