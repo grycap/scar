@@ -138,7 +138,7 @@ echo "Runing as: ${USER} home @ ${HOME}"
 
 if [ "${EXEC_TYPE,,}" = 'lambda' ]; then
   export OMPI_MCA_plm_rsh_agent=/bin/false
-  { time mpirun ${MPI_PARAMS} ${APP_BIN} ${APP_PARAMS}; } 2>&1 | cat > $TMP_OUTPUT_DIR/time.log
+  { time mpirun -np 1 --debug-daemons ${APP_BIN} ${APP_PARAMS}; } 2>&1 | cat > $TMP_OUTPUT_DIR/time.log
 
 elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
 

@@ -57,6 +57,21 @@ You can ignore everything but the private files and those from ##scar/examples/a
 **/LICENSE
 ```
 
+#### Execution
+
+Due to the fact that we included the private files in our image, we have to launch it from a private location.
+For the sake of this example, we use the environment where we built the image in the previously steps.
+First, we dump the docker image and compress i t with gzip.
+
+`sudo docker save asalic/scar-architrave | gzip > /tmp/architrave-docker-img.gz`
+
+The image we just dumped should have less than 256MB.
+With scar installed, we can now create the lambda function using the example yaml file included with this example as a base:
+
+`scar init -f lambda.yaml`
+
+
+
 ### Batch
 
 #### Batch additional required packages on S3
@@ -70,7 +85,7 @@ In the running container:
 ```
 # determine all of the dependencies needed by the packages we want to install:
 apt update && apt install -y apt-rdepends && \
-apt-rdepends openssh-server openssh-client iproute2 inotify-tools | sed -E -e 's/^\s*Depends:\s*|^\s*PreDepends:\s*|\s*\(.*\)//g' | sort | uniq > /tmp/deps_tmp.lst &&\
+apt-rdepends openssh-server openssh-client iproute2 inotify-tools locales | sed -E -e 's/^\s*Depends:\s*|^\s*PreDepends:\s*|\s*\(.*\)//g' | sort | uniq > /tmp/deps_tmp.lst &&\
 apt-get --purge autoremove -y apt-rdepends && \
 # filter out already installed packages (since we use the same base distro to get that packages and to run the legacy app)
 apt list --installed | sed -E -e 's/\/.*//g' > /tmp/deps_installed.lst && \
