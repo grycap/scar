@@ -73,8 +73,9 @@ wait_for_nodes () {
   cat $HOST_FILE_PATH-deduped
   log "executing main MPIRUN workflow"
 
+  chmod +x ${APP_BIN}
   # --allow-run-as-root
-  { time  mpirun --allow-run-as-root --mca btl_tcp_if_include eth0 --debug-daemons -x PATH -x LD_LIBRARY_PATH --machinefile ${HOST_FILE_PATH}-deduped \
+  { time  mpirun --mca btl_tcp_if_include eth0 --debug-daemons -x PATH -x LD_LIBRARY_PATH --machinefile ${HOST_FILE_PATH}-deduped \
       ${APP_BIN} ${APP_IN_FILE} ${APP_PARAMS1} ${TMP_OUTPUT_DIR} ${APP_PARAMS2}; } 2>&1 | cat > ${TMP_OUTPUT_DIR}/time.log
   sleep 2
   echo 'Exec output:'
@@ -150,8 +151,8 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
   echo "Master node index is $AWS_BATCH_JOB_MAIN_NODE_INDEX and its IP is $AWS_BATCH_JOB_MAIN_NODE_PRIVATE_IPV4_ADDRESS"
 
   cd /tmp
-  wget -nc https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
-	unzip awscli-exe-linux-x86_64.zip
+  wget -nc -nv https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+	unzip -qq awscli-exe-linux-x86_64.zip
 	chmod +x aws/install
 	./aws/install
 
