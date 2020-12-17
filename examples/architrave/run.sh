@@ -163,7 +163,7 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
 	/usr/local/bin/aws configure set default.s3.addressing_style path
 
 
-	# mkdir -p /tmp/deps
+	mkdir -p /tmp/deps
 	# mkdir -p /tmp/exec
 	# rm -rf /tmp/exec/*
 	# mkdir -p /tmp/output

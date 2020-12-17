@@ -3,7 +3,7 @@ functions:
   - lambda:
       name: scar-architrave
       log_level: DEBUG
-      init_script: run_helper.sh
+      init_script: /tmp/run_batch.sh
       execution_mode: batch
       container:
         image: asalic/scar-architrave
@@ -16,3 +16,8 @@ functions:
       output:
       - storage_provider: s3
         path: scar-architrave/output
+    batch:
+      multi_node_parallel:
+        enabled: false
+        number_nodes: 2
+        main_node_index: 0
