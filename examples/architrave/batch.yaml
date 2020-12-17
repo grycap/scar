@@ -3,7 +3,7 @@ functions:
   - lambda:
       name: scar-architrave
       log_level: DEBUG
-      init_script: run_batch.sh
+      init_script: run_helper.sh
       execution_mode: batch
       container:
         image: asalic/scar-architrave

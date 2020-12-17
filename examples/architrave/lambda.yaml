@@ -2,8 +2,8 @@ functions:
   aws:
   - lambda:
       name: scar-architrave
-      init_script: /tmp/run.sh
-      run_script: /tmp/run.sh
+      init_script: /tmp/run_lambda.sh
+      run_script: /tmp/run_lambda.sh
       container:
         image_file: /tmp/architrave-docker.img
         environment:
