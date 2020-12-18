@@ -1,4 +1,36 @@
 #!/bin/bash
+echo "Executing as AWS ${EXEC_TYPE}"
+echo "Build date: $(cat  /build_date)"
+echo "Runing as: ${USER} home @ ${HOME}"
+echo "Running with interpreter: $(readlink -f $(which sh))"
+
+log () {
+  echo "${BASENAME} - ${1}"
+}
+
+# Standard function to print an error and exit with a failing return code
+error_exit () {
+  log "${BASENAME} - ${1}" >&2
+  log "${2:-1}" > $AWS_BATCH_EXIT_CODE_FILE
+  kill  $(cat /tmp/supervisord.pid)
+}
+
+usage () {
+  if [ "${#@}" -ne 0 ]; then
+    log "* ${*}"
+    log
+  fi
+  cat <<ENDUSAGE
+Usage:
+export AWS_BATCH_JOB_NODE_INDEX=0
+export AWS_BATCH_JOB_NUM_NODES=10
+export AWS_BATCH_JOB_MAIN_NODE_INDEX=0
+export AWS_BATCH_JOB_ID=string
+./mpi-run.sh
+ENDUSAGE
+
+  error_exit
+}
 
 # wait for all nodes to report
 wait_for_nodes () {
@@ -43,7 +75,7 @@ wait_for_nodes () {
 
   # --allow-run-as-root
   { time  mpirun --allow-run-as-root --mca btl_tcp_if_include eth0 --debug-daemons -x PATH -x LD_LIBRARY_PATH --machinefile ${HOST_FILE_PATH}-deduped \
-      ${APP_BIN} ${APP_PARAMS} }; } 2>&1 | cat > ${TMP_OUTPUT_DIR}/time.log
+      ${APP_BIN} ${APP_PARAMS}; } 2>&1 | cat > ${TMP_OUTPUT_DIR}/time.log
   sleep 2
   echo 'Exec output:'
   cat ${TMP_OUTPUT_DIR}/time.log
@@ -104,37 +136,6 @@ report_to_master () {
   ssh ${AWS_BATCH_JOB_MAIN_NODE_PRIVATE_IPV4_ADDRESS} "touch ${BATCH_SIGNAL_DIR}/workers_done/${ip}"
   exit 0
 }
-
-# Standard function to print an error and exit with a failing return code
-error_exit () {
-  log "${BASENAME} - ${1}" >&2
-  log "${2:-1}" > $AWS_BATCH_EXIT_CODE_FILE
-  kill  $(cat /tmp/supervisord.pid)
-}
-
-usage () {
-  if [ "${#@}" -ne 0 ]; then
-    log "* ${*}"
-    log
-  fi
-  cat <<ENDUSAGE
-Usage:
-export AWS_BATCH_JOB_NODE_INDEX=0
-export AWS_BATCH_JOB_NUM_NODES=10
-export AWS_BATCH_JOB_MAIN_NODE_INDEX=0
-export AWS_BATCH_JOB_ID=string
-./mpi-run.sh
-ENDUSAGE
-
-  error_exit
-}
-
-log () {
-  echo "${BASENAME} - ${1}"
-}
-
-echo "Build date: $(cat  /build_date)"
-echo "Runing as: ${USER} home @ ${HOME}"
 
 if [ "${EXEC_TYPE,,}" = 'lambda' ]; then
   echo 'Run lambda'

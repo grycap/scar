@@ -1,19 +1,24 @@
 functions:
   aws:
   - lambda:
-      name: scar-mpi-example
+      name: scar-mpi
       log_level: DEBUG
-      init_script: run_batch.sh
+      init_script: /tmp/run_batch.sh
       execution_mode: batch
       container:
-        image: asalic/scar-mpi-example
+        image: asalic/scar-mpi
         environment:
           Variables:
             EXEC_TYPE: batch
             PYTHONIOENCODING: utf8
       input:
       - storage_provider: s3
-        path: scar-mpi-example/input
+        path: scar-mpi/input
       output:
       - storage_provider: s3
-        path: scar-mpi-example/output
+        path: scar-mpi/output
+    batch:
+      multi_node_parallel:
+        enabled: true
+        number_nodes: 3
+        main_node_index: 0
