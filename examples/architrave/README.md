@@ -63,18 +63,26 @@ Due to the fact that we included the private files in our image, we have to laun
 For the sake of this example, we use the environment where we built the image in the previously steps.
 First, we dump the docker image and compress i t with gzip.
 
-`sudo docker save asalic/scar-architrave | gzip > /tmp/architrave-docker-img.gz`
+`sudo docker save scar-architrave > /tmp/architrave-docker.img`
 
 The image we just dumped should have less than 256MB.
+Before launch, check the RAM and timeout set in the SCAR configuration file, this example requires at least 1.2GB RAM and 15 seconds.
+The architrave's folder includes an example launch configuration yaml file used to init and run the application on lambda, __lambda.yaml__.
+Please modify the env variables needed by the application, uncomment the export of the **INPUT_FILE_PATH** env variable, and set the correct path of the __run_helper.sh__ launch script in the launch configuration file.
+This intermediate script launches __run.sh__ (that is found in the Docker image) that actually executes the application on Amazon Lambda or Batch.
 With scar installed, we can now create the lambda function using the example yaml file included with this example as a base:
 
 `scar init -f lambda.yaml`
 
+To execute the function simply run:
 
+`scar run -f lambda.yaml`
+
+Depending on the output Amazon S3 bucket/folder you have selected in the __lambda.yaml__ launch configuration, you should find the output files of the application and a __time.log__ file containing the execution log of the application.
 
 ### Batch
 
-#### Batch additional required packages on S3
+#### Batch additional packages required on S3
 
 Start a Docker container based on the image of the distribution you use __to run on AWS__ the legacy application (not the distribution __of__ the legacy application).
 
@@ -94,4 +102,31 @@ grep -F -v -f  /tmp/deps_installed.lst /tmp/deps_tmp.lst > /tmp/deps.lst && \
 cd /tmp/deps && apt-get download $(cat /tmp/deps.lst) && \
 # Create the list of deps in a file; This file is used to download the required deps from an S3 bucket
 ls -1 /tmp/deps > /tmp/deps/deps_batch.lst
+
 ```
+
+Since __/tmp/deps__ is shared between the host and the container, the downloaded debs can now be added to __deps.tar.gz__ archive and uploaded to an Amazon S3 bucket (defaults to **scar-architrave/batch**).
+The same S3 bucket/folder should contain a 7z archive called __private.7z__ that contains the architrave executable, the example(s), and the private/public ssh keys used for communication between the nodes.
+If the 7z is protected by a password, set the password via the env variable **PRIVATE_PASSWD** in the __run_helper.sh__ script.
+The ssh keys should be named __ssh_host_rsa_key.pub__ for the public key and __ssh_host_rsa_key__ for the private key.
+
+
+#### Batch execution
+
+Amazon batch execution is based on events.
+In the example launch configuration file __batch.yaml__, the **input** section specifies an Amazon S3 bucket/folder that is monitorized for changes.
+Please modify the env variables needed by the application and set the correct path of the __run_helper.sh__ launch script in the launch configuration file.
+
+There are two modes to execute on batch: single node or parallel multinode.
+For the former case, be sure that **functions.aws.batch.multi_node_parallel.enabled** to false, and uncomment the export of **AWS_BATCH_JOB_NUM_NODES**, **AWS_BATCH_JOB_NODE_INDEX**, and **AWS_BATCH_JOB_MAIN_NODE_INDEX** in the __run_helper.sh__.
+For the latter execution mode, enable the variable in __batch.yaml__ and leave the three env variables commented out.
+
+Once everything is set, use SCAR to init the deployment:
+
+`scar init -f batch.yaml`
+
+Nest, start the execution by uploading the customized __run_helper.sh__ script to S3 (using the default S3 bucket ):
+
+`aws s3 cp run_helper.sh s3://scar-architrave/input`
+
+This script gets executed by __run_batch.sh__.

@@ -18,6 +18,6 @@ functions:
         path: scar-architrave/output
     batch:
       multi_node_parallel:
-        enabled: false
-        number_nodes: 2
+        enabled: true
+        number_nodes: 3
         main_node_index: 0
