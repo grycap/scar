@@ -1,6 +1,6 @@
 FROM debian:stretch-slim
 
-ARG ADD_BASE_DIR_ARCHITRAVE=examples/mpi-example
+ARG ADD_BASE_DIR_ARCHITRAVE=examples/mpi
 ARG ADD_PRIVATE_BASE_DIR
 ARG BUILD_PACKAGES=' git make gcc g++ iproute2 cmake  build-essential gfortran curl '
 
