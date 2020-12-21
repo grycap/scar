@@ -51,8 +51,9 @@ You can ignore everything but the private files and those from ##scar/examples/a
 
 # Ignore unnecessary files inside allowed directories
 # This should go after the allowed directories
-**/scar-architrave-batch.yaml
-**/scar-architrave-lambda.yaml
+**/batch.yaml
+**/lambda.yaml
+**/run_helper.sh
 **/README.md
 **/LICENSE
 ```
@@ -116,6 +117,7 @@ The ssh keys should be named __ssh_host_rsa_key.pub__ for the public key and __s
 Amazon batch execution is based on events.
 In the example launch configuration file __batch.yaml__, the **input** section specifies an Amazon S3 bucket/folder that is monitorized for changes.
 Please modify the env variables needed by the application and set the correct path of the __run_helper.sh__ launch script in the launch configuration file.
+Set the Docker repo/image in __batch.yaml__.
 
 There are two modes to execute on batch: single node or parallel multinode.
 For the former case, be sure that **functions.aws.batch.multi_node_parallel.enabled** to false, and uncomment the export of **AWS_BATCH_JOB_NUM_NODES**, **AWS_BATCH_JOB_NODE_INDEX**, and **AWS_BATCH_JOB_MAIN_NODE_INDEX** in the __run_helper.sh__.

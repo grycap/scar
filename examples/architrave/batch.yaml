@@ -6,7 +6,7 @@ functions:
       init_script: /tmp/run_batch.sh
       execution_mode: batch
       container:
-        image: asalic/scar-architrave
+        image: <DockerHub repo/image>
         environment:
           Variables:
             EXEC_TYPE: batch

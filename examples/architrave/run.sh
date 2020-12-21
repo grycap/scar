@@ -165,23 +165,9 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
 
 
 	mkdir -p /tmp/deps
-	# mkdir -p /tmp/exec
-	# rm -rf /tmp/exec/*
-	# mkdir -p /tmp/output
-	# rm -rf /tmp/output/*
-	# mkdir -p /tmp/mpi
-	# rm -rf /tmp/mpi/*
 	/usr/local/bin/aws s3 cp s3://scar-architrave/batch/private.7z /tmp
 	/usr/local/bin/aws s3 cp s3://scar-architrave/batch/deps.tar.gz /tmp
 	tar -zxf /tmp/deps.tar.gz -C /tmp/deps
-
-  #rm -rf /mnt/batch/exec/*
-  #rm -rf /mnt/batch/output/*
-  #rm -rf /mnt/batch/mpi/*
-
-  #mkdir ${SCRATCH_DIR}
-  #mkdir ${JOB_DIR}
-  #mkdir /tmp/output
   dpkg -i /tmp/deps/*.deb
 
   echo "Add private data from S3"
@@ -209,8 +195,6 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
   service ssh status
   service ssh restart
   service ssh status
-
-  #PATH="$PATH:/opt/openmpi/bin/"
   BASENAME="${0##*/}"
   HOST_FILE_PATH="/tmp/hostfile"
   AWS_BATCH_EXIT_CODE_FILE="/tmp/batch-exit-code"
@@ -219,10 +203,6 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
   if [ -d "${BATCH_SIGNAL_DIR}" ]; then rm -Rf ${BATCH_SIGNAL_DIR}; fi
   mkdir -p ${BATCH_SIGNAL_DIR}/master_done
   mkdir -p ${BATCH_SIGNAL_DIR}/workers_done
-
-  #aws s3 cp $S3_INPUT $SCRATCH_DIR
-  #tar -xvf $SCRATCH_DIR/*.tar.gz -C $SCRATCH_DIR
-
   sleep 2
 
   # Set child by default switch to main if on main node container
