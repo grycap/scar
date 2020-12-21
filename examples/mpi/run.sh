@@ -196,53 +196,41 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
   service ssh status
   ssh-add ${HOME}/.ssh/id_rsa
   service ssh restart
-#  export AWS_BATCH_JOB_NODE_INDEX=0
-#  export AWS_BATCH_JOB_NUM_NODES=1
-#  export AWS_BATCH_JOB_MAIN_NODE_INDEX=0
-
   echo "Running app"
+  BASENAME="${0##*/}"
+  HOST_FILE_PATH="/tmp/hostfile"
+  AWS_BATCH_EXIT_CODE_FILE="/tmp/batch-exit-code"
 
-  #/opt/mpi-run.sh
+  BATCH_SIGNAL_DIR=/tmp/batch
+  if [ -d "${BATCH_SIGNAL_DIR}" ]; then rm -Rf ${BATCH_SIGNAL_DIR}; fi
+  mkdir -p ${BATCH_SIGNAL_DIR}/master_done
+  mkdir -p ${BATCH_SIGNAL_DIR}/workers_done
 
+  sleep 2
 
-#PATH="$PATH:/opt/openmpi/bin/"
-BASENAME="${0##*/}"
-HOST_FILE_PATH="/tmp/hostfile"
-AWS_BATCH_EXIT_CODE_FILE="/tmp/batch-exit-code"
-
-BATCH_SIGNAL_DIR=/tmp/batch
-if [ -d "${BATCH_SIGNAL_DIR}" ]; then rm -Rf ${BATCH_SIGNAL_DIR}; fi
-mkdir -p ${BATCH_SIGNAL_DIR}/master_done
-mkdir -p ${BATCH_SIGNAL_DIR}/workers_done
-
-#aws s3 cp $S3_INPUT $SCRATCH_DIR
-#tar -xvf $SCRATCH_DIR/*.tar.gz -C $SCRATCH_DIR
-
-sleep 2
-
-# Set child by default switch to main if on main node container
-NODE_TYPE="child"
-if [ "${AWS_BATCH_JOB_MAIN_NODE_INDEX}" == "${AWS_BATCH_JOB_NODE_INDEX}" ]; then
-  log "Running synchronize as the main node"
-  NODE_TYPE="main"
-fi
+  # Set child by default switch to main if on main node container
+  NODE_TYPE="child"
+  if [ "${AWS_BATCH_JOB_MAIN_NODE_INDEX}" == "${AWS_BATCH_JOB_NODE_INDEX}" ]; then
+    log "Running synchronize as the main node"
+    NODE_TYPE="main"
+  fi
 
 
-# Main - dispatch user request to appropriate function
-log $NODE_TYPE
-case $NODE_TYPE in
-  main)
-    wait_for_nodes "${@}"
-    ;;
+  # Main - dispatch user request to appropriate function
+  log $NODE_TYPE
+  case $NODE_TYPE in
+    main)
+      wait_for_nodes "${@}"
+      ;;
 
-  child)
-    report_to_master "${@}"
-    ;;
+    child)
+      report_to_master "${@}"
+      ;;
 
-  *)                                                                                                                                                                                                                                               log $NODE_TYPE
-    usage "Could not determine node type. Expected (main/child)"
-    ;;
-esac
+    *)                                                                                                                                                                                                                                               log $NODE_TYPE
+      usage "Could not determine node type. Expected (main/child)"
+      ;;
+  esac
 
 else
   echo "ERROR: unknown execution type '${EXEC_TYPE}'"
