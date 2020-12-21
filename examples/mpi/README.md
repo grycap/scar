@@ -37,7 +37,7 @@ The steps to run the example are:
 
 * [Batch] Upload a tar.gz archive file with the public and private keys in the root of the archive to the root of the bucket __scar-mpi__
 
-* [Batch multinode parallel] Be sure that you have access to the internet. You could create a private network for the nodes and a NAT EC2 instance both in the same security group. 
+* [Batch] Be sure that you have access to the internet. You could create a private network for the node(s) and a NAT EC2 instance, both in the same security group.
 
 * [Batch] Upload the modified __run_helper.yaml__ file to the bucket __scar-mpi/input__ to start the execution
 

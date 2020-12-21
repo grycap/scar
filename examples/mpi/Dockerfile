@@ -20,7 +20,7 @@ ENV LANG en_US.UTF-8
 ADD ${ADD_BASE_DIR}/run.sh  /opt/
 
 RUN apt-get update \
-  && apt-get install -y $BUILD_PACKAGES \
+  && apt-get install -y $BUILD_PACKAGES perl \
   && locale-gen en_US.UTF-8 \
   && sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen \
   && dpkg-reconfigure --frontend=noninteractive locales \

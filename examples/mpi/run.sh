@@ -146,8 +146,12 @@ elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
   echo 'Run batch'
 
   apt update
-  apt install -y inotify-tools iproute2 wget unzip openssh-server openssh-client locales
+  apt install -y inotify-tools iproute2 wget unzip openssh-server openssh-client locales perl
 
+  export LANGUAGE=en_US.UTF-8
+  export LANG=en_US.UTF-8
+  export LC_ALL=en_US.UTF-8
+  export LC_CTYPE=en_US.UTF-8
   locale-gen en_US.UTF-8
   sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
   dpkg-reconfigure --frontend=noninteractive locales
