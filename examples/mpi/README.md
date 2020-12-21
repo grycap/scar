@@ -15,7 +15,7 @@ The steps to run the example are:
 
 * Create a docker ignore if you plan to run Amazon Lambda or Batch with an uploaded image to DockerHub. The contents of the ignore are listed in this README.
 
-* [Lambda/Batch when upload to DockerHub] Build the the Docker image locally
+* [Lambda/Batch when upload to DockerHub] Build the the Docker image locally. **ADD_BASE_DIR** should be set as the relative path of the Github repo where the whole examples is found. Docker uses this to access additional files that are needed to be added inside the image (like __run.sh__).
 
 `docker build --build-arg ADD_BASE_DIR=scar/examples/mpi --label scar-mpi -t scar-mpi -f /tmp/scar/examples/mpi/Dockerfile /tmp`
 
@@ -25,7 +25,9 @@ The steps to run the example are:
 
 * Prepare __run_helper.yaml__. Follow the instructions inside the file.
 
-* [Batch] Set the Docker repo/image in __batch.yaml__
+* [Batch] Adjust the location of __run_batch.sh__ in __batch.yaml__
+
+* [Batch] Since AWS batch has to get the image from DockerHub, set the Docker repo/image in __batch.yaml__. You can create and automated build based on a Github repo by setting the **Build Context** as __/__ and the **Dockerfile location** as __examples/mpi/Dockerfile__ when asked by DockerHub.
 
 * Init the function using scar
 
@@ -35,7 +37,9 @@ The steps to run the example are:
 
 * [Batch] Upload a tar.gz archive file with the public and private keys in the root of the archive to the root of the bucket __scar-mpi__
 
-* [Batch] Upload the modified __run_helper.yaml__ file to the bucket __scar-mpi/input__
+* [Batch multinode parallel] Be sure that you have access to the internet. You could create a private network for the nodes and a NAT EC2 instance both in the same security group. 
+
+* [Batch] Upload the modified __run_helper.yaml__ file to the bucket __scar-mpi/input__ to start the execution
 
 * [Lambda] Run the function using SCAR
 
