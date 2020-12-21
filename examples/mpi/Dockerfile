@@ -17,7 +17,7 @@ ENV SSH_PUB_FILE_KEY=ssh_host_rsa_key.pub
 
 ENV LANG en_US.UTF-8
 
-ADD ${ADD_BASE_DIR}/run.sh  ${ADD_BASE_DIR}/debs.lst  /opt/
+ADD ${ADD_BASE_DIR}/run.sh  /opt/
 
 RUN apt-get update \
   && apt-get install -y $BUILD_PACKAGES \
@@ -31,14 +31,12 @@ RUN apt-get update \
   && make -j`nproc` \
   && make install \
   && ldconfig \
-  #&& wget -q -P /tmp -i /opt/debs.lst \
   && cd /opt/ \
   && git clone $GIT_REPO \
   && cd /opt/$GIT_REPO_REL_PATH_SRC \
   && make \
   && apt-get remove --purge -y $BUILD_PACKAGES gnupg* gnupg-agent* \
   && apt-get autoremove --purge -y \
-  #&& dpkg --force-all -i /tmp/*.deb \
   && rm -rf /tmp/* /var/lib/apt/lists/* \
   && ulimit -n 1024 \
   && chmod 755 /opt/$GIT_REPO_REL_PATH_EXEC \
