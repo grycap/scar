@@ -3,6 +3,7 @@ echo "Executing as AWS ${EXEC_TYPE}"
 echo "Build date: $(cat  /build_date)"
 echo "Runing as: ${USER} home @ ${HOME}"
 echo "Running with interpreter: $(readlink -f $(which sh))"
+echo "Running MPI binary: ${APP_BIN}"
 
 log () {
   echo "${BASENAME} - ${1}"
@@ -73,8 +74,7 @@ wait_for_nodes () {
   cat $HOST_FILE_PATH-deduped
   log "executing main MPIRUN workflow"
 
-  # --allow-run-as-root
-  { time  mpirun --allow-run-as-root --mca btl_tcp_if_include eth0 --debug-daemons -x PATH -x LD_LIBRARY_PATH --machinefile ${HOST_FILE_PATH}-deduped \
+  { time  mpirun --mca btl_tcp_if_include eth0 --debug-daemons -x PATH -x LD_LIBRARY_PATH --machinefile ${HOST_FILE_PATH}-deduped \
       ${APP_BIN} ${APP_PARAMS}; } 2>&1 | cat > ${TMP_OUTPUT_DIR}/time.log
   sleep 2
   echo 'Exec output:'
@@ -140,8 +140,8 @@ report_to_master () {
 if [ "${EXEC_TYPE,,}" = 'lambda' ]; then
   echo 'Run lambda'
   export OMPI_MCA_plm_rsh_agent=/bin/false
-  { time mpirun ${MPI_PARAMS} ${APP_BIN} ${APP_PARAMS}; } 2>&1 | cat > $TMP_OUTPUT_DIR/time.log
-
+  { time mpirun -np 1 --debug-daemons  ${APP_BIN} ${APP_PARAMS}; } 2>&1 | cat > $TMP_OUTPUT_DIR/time.log
+  cat $TMP_OUTPUT_DIR/time.log
 elif [ "${EXEC_TYPE,,}" = 'batch' ]; then
   echo 'Run batch'
 
