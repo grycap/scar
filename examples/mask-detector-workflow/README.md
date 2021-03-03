@@ -22,7 +22,7 @@ In order to create the "Anon and split" function you need to deploy an OSCAR clu
 
 Once the OSCAR cluster is properly deployed you must configure SCAR with the OSCAR's endpoint and credentials for allowing communication with its [API](https://grycap.github.io/oscar/api/). To do it you only have to edit the `~/.scar/scar.cfg` file:
 
-```json
+```
 {
   ...
 
