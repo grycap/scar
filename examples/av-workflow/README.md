@@ -26,6 +26,8 @@ In order to launch an execution you only have to upload a video to the defined *
 scar put -b scar-av-workflow/start -p my_video.mkv
 ```
 
+*A sample video can be downloaded [here](https://vimeo.com/44792497). Thanks [Alex Odam](https://vimeo.com/alexodam) for the video licensed under the [CC BY 3.0 license](https://creativecommons.org/licenses/by/3.0/).*
+
 ## Process the output
 
 When the execution of the workflow finishes, two output files are uploaded to the result folder of the `scar-av-workflow` S3 bucket. To check if the files are created and copied correctly you can use the command:

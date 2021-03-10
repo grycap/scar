@@ -2,20 +2,20 @@ functions:
   aws:
   - lambda:
       name: scar-mask-detector
-      memory: 512
+      memory: 1024
       init_script: mask-detector.sh
       container:
         image: grycap/mask-detector-yolo:mini
       input:
       - storage_provider: s3
-        path: scar-mask-detector/input
+        path: scar-mask-detector/intermediate
       output:
       - storage_provider: s3
-        path: scar-mask-detector/output
+        path: scar-mask-detector/result
   oscar:
   - my_oscar:
       name: oscar-anon-and-split
-      memory: 1Gi
+      memory: 2Gi
       cpu: '1.0'
       image: grycap/blurry-faces
       script: blurry-faces.sh
@@ -26,7 +26,7 @@ functions:
       - storage_provider: minio
         path: oscar-anon-and-split/output
       - storage_provider: s3.my_s3
-        path: scar-mask-detector/input
+        path: scar-mask-detector/intermediate
 
 storage_providers:
   s3:
