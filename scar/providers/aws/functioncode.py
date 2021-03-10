@@ -22,10 +22,10 @@ from scar.exceptions import exception
 import scar.logger as logger
 from scar.utils import FileUtils
 
+
 def create_function_config(resources_info):
     function_cfg = {'storage_providers': FileUtils.load_tmp_config_file().get('storage_providers', {})}
     function_cfg.update(resources_info.get('lambda'))
-    clean_function_config(function_cfg)
     return function_cfg
 
 
