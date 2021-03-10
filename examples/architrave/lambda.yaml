@@ -1,0 +1,16 @@
+functions:
+  aws:
+  - lambda:
+      name: scar-architrave
+      init_script: /tmp/run_lambda.sh
+      run_script: /tmp/run_lambda.sh
+      container:
+        image_file: /tmp/architrave-docker.img
+        environment:
+          Variables:
+            EXEC_TYPE: lambda
+      deployment:
+        bucket: scar-architrave
+      output:
+      - storage_provider: s3
+        path: scar-architrave/output
