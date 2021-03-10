@@ -16,20 +16,11 @@ from _ast import Or
 
 from typing import Dict
 from zipfile import ZipFile
-import ntpath
 from scar.providers.aws.udocker import Udocker
 from scar.providers.aws.validators import AWSValidator
 from scar.exceptions import exception
 import scar.logger as logger
 from scar.utils import FileUtils
-
-def clean_function_config(function_cfg: Dict):
-    # Rm full path from the init_script
-    if function_cfg.get('init_script', True):
-        function_cfg['init_script'] = ntpath.basename(function_cfg['init_script'])
-    # Rm the config path
-    function_cfg.pop('config_path', None)
-    return function_cfg
 
 def create_function_config(resources_info):
     function_cfg = {'storage_providers': FileUtils.load_tmp_config_file().get('storage_providers', {})}
@@ -117,4 +108,3 @@ class FunctionPackager():
         else:
             AWSValidator.validate_function_code_size(self.tmp_payload_folder.name,
                                                      self.resources_info.get('lambda').get('deployment').get('max_payload_size'))
-
