@@ -1,1 +1,0 @@
-bash $INPUT_FILE_PATH
