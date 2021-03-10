@@ -127,16 +127,3 @@ To create the AWS Batch job, the Lambda function defines a Job with the payload 
 The payload limit can be avoided by redefining the script used and passing the large payload files using other service (e.g S3 or some bash command like 'wget' or 'curl' to download the information in execution time). As we didi with the plant classification example, where a `bootstrap script <https://github.com/grycap/scar/blob/master/examples/plant-classification/bootstrap-plants.sh>`_ was used to download the `executed script <https://github.com/grycap/scar/blob/master/examples/plant-classification/plant-classification-run.sh>`_.
 
 Also, AWS Batch does not allow to override the container entrypoint so containers with an entrypoint defined can not execute an user script.
-
-Multinode parallel jobs
------------------------
-You can execute multinode parallel jobs in batch by enabling this mode either in the scar.cfg file or in the configuration file for the job (functions->aws->batch->multi_node_parallel->enable).
-You can also set the number of nodes and the index of the main node.
-Please take into account that the index of the main node starts from 0 up to the number of nodes -1.
-
-We included two examples of MPI jobs that can be executed as multinode parallel jobs.
-The first one, architrave, allows the execution of a commercial MPI application on AWS.
-The second example, mpi, is just a hello world from each CPU/node available for execution.
-Both work in Amazon Lambda and Batch single node, you can use the included configuration files as a starting point.
-For more details, please check the README.md that comes with each example.
-

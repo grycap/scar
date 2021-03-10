@@ -226,4 +226,3 @@ class Batch(GenericClient):
 #     def exist_job(self, job_id: str) -> bool:
 #         response = self.describe_jobs(job_id)
 #         return len(response["jobs"]) != 0
-
