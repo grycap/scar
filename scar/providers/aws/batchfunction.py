@@ -151,41 +151,33 @@ class Batch(GenericClient):
 
     def _get_job_definition_args(self):
         job_def_args = {
-            'jobDefinitionName': self.function_name
-        }
-        if self.batch.get('multi_node_parallel').get('enabled'):
-            job_def_args['nodeProperties'] = self._get_node_properties_multi_node_args()
-            job_def_args['type'] = 'multinode'
-        else:
-            job_def_args['containerProperties'] = self._get_container_properties_single_node_args()
-            job_def_args['type'] = 'container'
-        return job_def_args
-
-    def _get_container_properties_single_node_args(self):
-        job_def_args = {
-            'image': self.resources_info.get('lambda').get('container').get('image'),
-            'memory': int(self.batch.get('memory')),
-            'vcpus': int(self.batch.get('vcpus')),
-            'command': [
-                '/bin/sh',
-                '-c',
-                'echo $EVENT | /opt/faas-supervisor/bin/supervisor'
-            ],
-            'volumes': [
-                {
-                    'host': {
-                        'sourcePath': '/opt/faas-supervisor/bin'
-                    },
-                    'name': 'supervisor-bin'
-                }
-            ],
-            'environment': [{'name': key, 'value': value} for key, value in self.resources_info['batch']['environment']['Variables'].items()],
-            'mountPoints': [
-                {
-                    'containerPath': '/opt/faas-supervisor/bin',
-                    'sourceVolume': 'supervisor-bin'
-                }
-            ]
+            'jobDefinitionName': self.function_name,
+            'type': 'container',
+            'containerProperties': {
+                'image': self.resources_info.get('lambda').get('container').get('image'),
+                'memory': int(self.batch.get('memory')),
+                'vcpus': int(self.batch.get('vcpus')),
+                'command': [
+                    '/bin/sh',
+                    '-c',
+                    'echo $EVENT | /opt/faas-supervisor/bin/supervisor'
+                ],
+                'volumes': [
+                    {
+                        'host': {
+                            'sourcePath': '/opt/faas-supervisor/bin'
+                        },
+                        'name': 'supervisor-bin'
+                    }
+                ],
+                'environment': [{'name': key, 'value': value} for key, value in self.resources_info['batch']['environment']['Variables'].items()],
+                'mountPoints': [
+                    {
+                        'containerPath': '/opt/faas-supervisor/bin',
+                        'sourceVolume': 'supervisor-bin'
+                    }
+                ]
+            }
         }
         if self.batch.get('enable_gpu'):
             job_def_args['containerProperties']['resourceRequirements'] = [
@@ -194,20 +186,6 @@ class Batch(GenericClient):
                     'type': 'GPU'
                 }
             ]
-        return job_def_args
-
-    def _get_node_properties_multi_node_args(self):
-        targetNodes = self.batch.get('multi_node_parallel').get('number_nodes') - 1
-        job_def_args = {
-            "numNodes": int(self.batch.get('multi_node_parallel').get('number_nodes')),
-            "mainNode": int(self.batch.get('multi_node_parallel').get('main_node_index')),
-            "nodeRangeProperties": [
-                {
-                "targetNodes": "0:", #+ str(targetNodes),
-                "container": self._get_container_properties_single_node_args()
-                }
-            ]#[self._get_node_node_range_property_multi_node_args(target_nodes) for target_nodes in self.batch.get('multi_node_parallel').get('target_nodes')]
-        }
         return job_def_args
 
     def _get_state_and_status_of_compute_env(self):
@@ -248,3 +226,4 @@ class Batch(GenericClient):
 #     def exist_job(self, job_id: str) -> bool:
 #         response = self.describe_jobs(job_id)
 #         return len(response["jobs"]) != 0
+

@@ -25,7 +25,7 @@ from scar.utils import FileUtils
 
 def clean_function_config(function_cfg: Dict):
     # Rm full path from the init_script
-    if 'init_script' in function_cfg and function_cfg.get('init_script', True):
+    if function_cfg.get('init_script', True):
         function_cfg['init_script'] = ntpath.basename(function_cfg['init_script'])
     # Rm the config path
     function_cfg.pop('config_path', None)
@@ -35,11 +35,6 @@ def create_function_config(resources_info):
     function_cfg = {'storage_providers': FileUtils.load_tmp_config_file().get('storage_providers', {})}
     function_cfg.update(resources_info.get('lambda'))
     clean_function_config(function_cfg)
-    # Add Batch specific info
-    if resources_info.get('lambda').get("execution_mode") == "batch":
-        function_cfg.update({"batch": {
-                             "multi_node_parallel": resources_info.get('batch').get("multi_node_parallel")
-                             }})
     return function_cfg
 
 
@@ -122,3 +117,4 @@ class FunctionPackager():
         else:
             AWSValidator.validate_function_code_size(self.tmp_payload_folder.name,
                                                      self.resources_info.get('lambda').get('deployment').get('max_payload_size'))
+
