@@ -131,6 +131,11 @@ _DEFAULT_CFG = {
             "log_retention_policy_in_days": 30
         },
         "batch": {
+            "multi_node_parallel": {
+                "enabled": False,
+                "number_nodes": 10,
+                "main_node_index": 0
+            },
             "boto_profile": "default",
             "region": "us-east-1",
             "vcpus": 1,
