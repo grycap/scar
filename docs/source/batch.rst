@@ -134,8 +134,6 @@ You can execute multinode parallel jobs in batch by enabling this mode either in
 You can also set the number of nodes and the index of the main node.
 Please take into account that the index of the main node starts from 0 up to the number of nodes -1.
 
-We included two examples of MPI jobs that can be executed as multinode parallel jobs.
-The first one, architrave, allows the execution of a commercial MPI application on AWS.
-The second example, mpi, is just a hello world from each CPU/node available for execution.
+We included an `example <https://github.com/grycap/scar/tree/master/examples/mpi>`_ of MPI job that can be executed as multinode parallel job, showing a hello world from each CPU/node available for execution.
 Both work in Amazon Lambda and Batch single node, you can use the included configuration files as a starting point.
-For more details, please check the README.md that comes with each example.
+For more details, please check the README.md that comes with the example.
