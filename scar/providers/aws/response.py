@@ -190,25 +190,34 @@ def _parse_requestresponse_invocation_response(**kwargs):
     if kwargs['Response']:
         response = kwargs['Response']
         aws_output = 'LambdaOutput'
-        log_group_name = response['Payload']['headers']['amz-log-group-name']
-        log_stream_name = response['Payload']['headers']['amz-log-stream-name']
+
         request_id = response['ResponseMetadata']['RequestId']
-        if "exception" in response['Payload']['body']:
-            body = ("ERROR launching udocker container: \n "
-                    f"{json.loads(response['Payload']['body'])['exception']}")
+
+        if 'errorMessage' in response['Payload']:
+            json_message = response['Payload']
+            text_message = response['Payload']['errorMessage']
         else:
-            body = StrUtils.base64_to_utf8_string(response['Payload']['body'])
+            log_group_name = response['Payload']['headers']['amz-log-group-name']
+            log_stream_name = response['Payload']['headers']['amz-log-stream-name']
+            if "exception" in response['Payload']['body']:
+                body = ("ERROR launching udocker container: \n "
+                        f"{json.loads(response['Payload']['body'])['exception']}")
+            else:
+                if response['Payload']['isBase64Encoded']:
+                    body = StrUtils.base64_to_utf8_string(response['Payload']['body'])
+                else:
+                    body = response['Payload']['body']
 
-        text_message = (f"Request Id: {request_id}\n"
-                        f"Log Group Name: {log_group_name}\n"
-                        f"Log Stream Name: {log_stream_name}\n")
-        text_message += body
+            text_message = (f"Request Id: {request_id}\n"
+                            f"Log Group Name: {log_group_name}\n"
+                            f"Log Stream Name: {log_stream_name}\n")
+            text_message += body
 
-        json_message = {aws_output : {'StatusCode' : response['StatusCode'],
-                                      'Payload' : body,
-                                      'LogGroupName' : log_group_name,
-                                      'LogStreamName' : log_stream_name,
-                                      'RequestId' : request_id}}
+            json_message = {aws_output : {'StatusCode' : response['StatusCode'],
+                                        'Payload' : body,
+                                        'LogGroupName' : log_group_name,
+                                        'LogStreamName' : log_stream_name,
+                                        'RequestId' : request_id}}
         if 'OutputFile' in kwargs and kwargs['OutputFile']:
             _print_generic_response(response, kwargs['OutputType'], aws_output, text_message, json_output=json_message, output_file=kwargs['OutputFile'])
         else:

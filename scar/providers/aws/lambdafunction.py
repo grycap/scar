@@ -50,17 +50,31 @@ class Lambda(GenericClient):
         self.supervisor_version = resources_info.get('lambda').get('supervisor').get('version')
 
     def _get_creations_args(self, zip_payload_path: str, supervisor_zip_path: str) -> Dict:
-        return {'FunctionName': self.function.get('name'),
-                'Runtime': self.function.get('runtime'),
-                'Role': self.resources_info.get('iam').get('role'),
-                'Handler': self.function.get('handler'),
-                'Code': self._get_function_code(zip_payload_path, supervisor_zip_path),
-                'Environment': self.function.get('environment'),
-                'Description': self.function.get('description'),
-                'Timeout':  self.function.get('timeout'),
-                'MemorySize': self.function.get('memory'),
-                'Tags': self.function.get('tags'),
-                'Layers': self.function.get('layers')}
+        if self.function.get('runtime') == "provided":
+            args = {'FunctionName': self.function.get('name'),
+                    'Role': self.resources_info.get('iam').get('role'),
+                    'Code': {
+                        'ImageUri': self.function.get('container').get('image')
+                    },
+                    'Environment': self.function.get('environment'),
+                    'Description': self.function.get('description'),
+                    'Timeout':  self.function.get('timeout'),
+                    'MemorySize': self.function.get('memory'),
+                    'Tags': self.function.get('tags'),
+                    'PackageType': 'Image'}
+        else:
+            args = {'FunctionName': self.function.get('name'),
+                    'Runtime': self.function.get('runtime'),
+                    'Role': self.resources_info.get('iam').get('role'),
+                    'Handler': self.function.get('handler'),
+                    'Code': self._get_function_code(zip_payload_path, supervisor_zip_path),
+                    'Environment': self.function.get('environment'),
+                    'Description': self.function.get('description'),
+                    'Timeout':  self.function.get('timeout'),
+                    'MemorySize': self.function.get('memory'),
+                    'Tags': self.function.get('tags'),
+                    'Layers': self.function.get('layers')}
+        return args
 
     def is_asynchronous(self):
         return self.function.get('asynchronous', False)
@@ -79,8 +93,9 @@ class Lambda(GenericClient):
             self.supervisor_version,
             supervisor_path.name
         )
-        # Manage supervisor layer
-        self._manage_supervisor_layer(supervisor_zip_path)
+        if self.function.get('runtime') != "provided":
+            # Manage supervisor layer
+            self._manage_supervisor_layer(supervisor_zip_path)
         # Create function
         zip_payload_path = FileUtils.join_paths(tmp_folder.name, 'function.zip')
         self._set_image_id()
@@ -204,8 +219,10 @@ class Lambda(GenericClient):
         result['lambda']['arn'] = aws_conf['FunctionArn']
         result['lambda']['timeout'] = aws_conf['Timeout']
         result['lambda']['memory'] = aws_conf['MemorySize']
-        result['lambda']['environment']['Variables'] = aws_conf['Environment']['Variables'].copy()
-        result['lambda']['layers'] = aws_conf['Layers'].copy()
+        if 'Environment' in result:
+            result['lambda']['environment']['Variables'] = aws_conf['Environment']['Variables'].copy()
+        if 'Layers' in result:
+            result['lambda']['layers'] = aws_conf['Layers'].copy()
         result['lambda']['supervisor']['version'] = aws_conf['SupervisorVersion']
         return result
 
@@ -223,7 +240,10 @@ class Lambda(GenericClient):
     def get_fdl_config(self, arn: str = None) -> Dict:
         function = arn if arn else self.function.get('name')
         function_info = self.client.get_function(function)
-        dep_pack_url = function_info.get('Code').get('Location')
+        if 'Location' in function_info.get('Code'):
+            dep_pack_url = function_info.get('Code').get('Location')
+        else:
+            return {}
         dep_pack = get_file(dep_pack_url)
         # Extract function_config.yaml
         try:

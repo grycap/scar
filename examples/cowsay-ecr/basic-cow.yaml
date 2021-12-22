@@ -1,0 +1,6 @@
+functions:
+  aws:
+  - lambda:
+      name: scar-ecr-cowsay
+      container:
+        image: 974349055189.dkr.ecr.us-east-1.amazonaws.com/micafer:latest
