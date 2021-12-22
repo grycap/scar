@@ -23,6 +23,7 @@ from scar.providers.aws.clients.lambdafunction import LambdaClient
 from scar.providers.aws.clients.resourcegroups import ResourceGroupsClient
 from scar.providers.aws.clients.s3 import S3Client
 from scar.providers.aws.clients.ec2 import EC2Client
+from scar.providers.aws.clients.ecr import ElasticContainerRegistryClient
 
 
 class GenericClient():
@@ -37,7 +38,8 @@ class GenericClient():
                 'LAMBDA': LambdaClient,
                 'RESOURCEGROUPS': ResourceGroupsClient,
                 'S3': S3Client,
-                'LAUNCHTEMPLATES': EC2Client}
+                'LAUNCHTEMPLATES': EC2Client,
+                'ECR': ElasticContainerRegistryClient}
 
     def __init__(self, resource_info: Dict =None):
         self.properties = {}

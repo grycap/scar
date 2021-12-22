@@ -25,6 +25,7 @@ from scar.providers.aws import GenericClient
 from scar.providers.aws.functioncode import FunctionPackager, create_function_config
 from scar.providers.aws.lambdalayers import LambdaLayers
 from scar.providers.aws.s3 import S3
+from scar.providers.aws.ecr import ECR
 from scar.providers.aws.validators import AWSValidator
 import scar.exceptions as excp
 import scar.logger as logger
@@ -78,7 +79,9 @@ class Lambda(GenericClient):
         """Creates an ECR image using the user provided image adding the supervisor tools"""
         tmp_folder = FileUtils.create_tmp_dir()
         orig_image = self.function.get('container').get('image')
-        ecr_image = '974349055189.dkr.ecr.us-east-1.amazonaws.com/micafer'
+        if not self.function.get('container').get('ecr_image'):
+            raise Exception('Container ecr_image not set.')
+        ecr_image = self.function.get('container').get('ecr_image')
 
         # Create function config file
         cfg_file_path = FileUtils.join_paths(tmp_folder.name, "function_config.yaml")
@@ -93,8 +96,10 @@ class Lambda(GenericClient):
                                 FileUtils.join_paths(tmp_folder.name,
                                                      FileUtils.get_file_name(init_script_path)))
 
-        # TODO: 
-        FileUtils.copy_file('/home/micafer/codigo/scar/scar/examples/cowsay-ecr/awslambdaric',
+        # Get awslambdaric
+        # TODO: Generalize
+        awslambdaric_path = '/home/micafer/codigo/scar/scar/examples/cowsay-ecr/awslambdaric'
+        FileUtils.copy_file(awslambdaric_path,
                             FileUtils.join_paths(tmp_folder.name,'awslambdaric'))
 
         import docker
@@ -116,9 +121,13 @@ class Lambda(GenericClient):
 
         logger.info('Building new ECR image: %s' % ecr_image)
         client.images.build(path=tmp_folder.name, tag=ecr_image, pull=True)
-        # TODO: Login to ECR
-        # aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 974349055189.dkr.ecr.us-east-1.amazonaws.com
-        logger.info('Pusing new image to ECR')
+
+        registry = ecr_image.split('/')[0]
+        logger.info('Login to ECR registry %s' % registry)
+        token = ECR(self.resources_info).get_authorization_token()
+        client.login(username='AWS', password=token, registry=registry)
+
+        logger.info('Pushing new image to ECR')
         client.images.push(ecr_image)
         self.function['container']['image'] = "%s:latest" % ecr_image
 

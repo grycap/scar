@@ -5,3 +5,4 @@ functions:
       name: scar-ecr-cowsay
       container:
         image: ubuntu:18.04
+        ecr_image: 974349055189.dkr.ecr.us-east-1.amazonaws.com/micafer
