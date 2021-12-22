@@ -43,3 +43,21 @@ class ElasticContainerRegistryClient(BotoClient):
         response = self.client.get_authorization_token()
         self.token = response["authorizationData"][0]
         return self.token["authorizationToken"]
+
+    @exception(logger)
+    def get_registry_id(self) -> str:
+        response = self.client.describe_registry()
+        return response["registryId"]
+
+    @exception(logger)
+    def describe_repositories(self, **kwargs: Dict) -> str:
+        try:
+            response = self.client.describe_registry(**kwargs)
+            return response
+        except Exception:
+            return None
+
+    @exception(logger)
+    def create_repository(self, repository_name: str) -> str:
+        return self.client.create_repository(repository_name)
+

@@ -15,7 +15,7 @@
 CloudWatch Log functionalities at high level."""
 
 from typing import Dict
-from scar.providers.aws import GenericClient
+from scar.providers.aws import GenericClient, response
 
 
 class ECR(GenericClient):
@@ -28,3 +28,21 @@ class ECR(GenericClient):
     def get_authorization_token(self) -> str:
         """Retrieves an authorization token."""
         return self.client.get_authorization_token()
+
+    def get_registry_url(self) -> str:
+        """Retrieves the registry URL."""
+        registry_id = self.client.get_registry_id()
+        return "%s.dkr.ecr.us-east-1.amazonaws.com" % registry_id
+
+    def get_repository_uri(self, repository_name: str) -> str:
+        """Check if a repository exists."""
+        response = self.client.describe_repositories(repositoryNames=[repository_name])
+        if response:
+            return response["repositories"][0]["repositoryUri"]
+        else:
+            return None
+
+    def create_repository(self, repository_name: str) -> str:
+        """Creates a repository."""
+        response = self.client.create_repository(repositoryName=repository_name)
+        return response["repositoryUri"]

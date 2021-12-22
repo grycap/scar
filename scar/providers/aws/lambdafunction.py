@@ -79,9 +79,6 @@ class Lambda(GenericClient):
         """Creates an ECR image using the user provided image adding the supervisor tools"""
         tmp_folder = FileUtils.create_tmp_dir()
         orig_image = self.function.get('container').get('image')
-        if not self.function.get('container').get('ecr_image'):
-            raise Exception('Container ecr_image not set.')
-        ecr_image = self.function.get('container').get('ecr_image')
 
         # Create function config file
         cfg_file_path = FileUtils.join_paths(tmp_folder.name, "function_config.yaml")
@@ -119,12 +116,19 @@ class Lambda(GenericClient):
 
         FileUtils.create_file_with_content("%s/Dockerfile" % tmp_folder.name, dockerfile)
 
+        ecr_cli = ECR(self.resources_info)
+
+        repo_name = self.function.get('name')
+        ecr_image = ecr_cli.get_registry_url(repo_name)
+        if not ecr_image:
+            ecr_image = ecr_cli.create_repository(repo_name)
+
         logger.info('Building new ECR image: %s' % ecr_image)
         client.images.build(path=tmp_folder.name, tag=ecr_image, pull=True)
 
-        registry = ecr_image.split('/')[0]
+        registry = ecr_cli.get_registry_url()
         logger.info('Login to ECR registry %s' % registry)
-        token = ECR(self.resources_info).get_authorization_token()
+        token = ecr_cli.get_authorization_token()
         client.login(username='AWS', password=token, registry=registry)
 
         logger.info('Pushing new image to ECR')
