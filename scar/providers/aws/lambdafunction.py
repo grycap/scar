@@ -95,7 +95,7 @@ class Lambda(GenericClient):
 
         # Get awslambdaric
         # TODO: Generalize
-        awslambdaric_path = '/home/micafer/codigo/scar/scar/examples/cowsay-ecr/awslambdaric'
+        awslambdaric_path = 'examples/cowsay-ecr/awslambdaric'
         FileUtils.copy_file(awslambdaric_path,
                             FileUtils.join_paths(tmp_folder.name,'awslambdaric'))
 
@@ -119,7 +119,7 @@ class Lambda(GenericClient):
         ecr_cli = ECR(self.resources_info)
 
         repo_name = self.function.get('name')
-        ecr_image = ecr_cli.get_registry_url(repo_name)
+        ecr_image = ecr_cli.get_repository_uri(repo_name)
         if not ecr_image:
             ecr_image = ecr_cli.create_repository(repo_name)
 
@@ -128,8 +128,8 @@ class Lambda(GenericClient):
 
         registry = ecr_cli.get_registry_url()
         logger.info('Login to ECR registry %s' % registry)
-        token = ecr_cli.get_authorization_token()
-        client.login(username='AWS', password=token, registry=registry)
+        username, password = ecr_cli.get_authorization_token()
+        client.login(username=username, password=password, registry=registry)
 
         logger.info('Pushing new image to ECR')
         client.images.push(ecr_image)

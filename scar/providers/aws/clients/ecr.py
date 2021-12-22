@@ -14,6 +14,7 @@
 """Module with the class necessary to manage the
 Cloudwatch Logs creation, deletion and configuration."""
 
+import base64
 from datetime import datetime
 from typing import Dict
 from scar.exceptions import exception
@@ -42,7 +43,7 @@ class ElasticContainerRegistryClient(BotoClient):
 
         response = self.client.get_authorization_token()
         self.token = response["authorizationData"][0]
-        return self.token["authorizationToken"]
+        return base64.b64decode(self.token["authorizationToken"]).decode().split(':')
 
     @exception(logger)
     def get_registry_id(self) -> str:
@@ -52,12 +53,12 @@ class ElasticContainerRegistryClient(BotoClient):
     @exception(logger)
     def describe_repositories(self, **kwargs: Dict) -> str:
         try:
-            response = self.client.describe_registry(**kwargs)
+            response = self.client.describe_repositories(**kwargs)
             return response
         except Exception:
             return None
 
     @exception(logger)
-    def create_repository(self, repository_name: str) -> str:
-        return self.client.create_repository(repository_name)
+    def create_repository(self, repository_name: str):
+        return self.client.create_repository(repositoryName=repository_name)
 

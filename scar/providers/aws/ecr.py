@@ -44,5 +44,5 @@ class ECR(GenericClient):
 
     def create_repository(self, repository_name: str) -> str:
         """Creates a repository."""
-        response = self.client.create_repository(repositoryName=repository_name)
-        return response["repositoryUri"]
+        response = self.client.create_repository(repository_name)
+        return response["repository"]["repositoryUri"]
