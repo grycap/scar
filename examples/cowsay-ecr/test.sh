@@ -1,2 +1,4 @@
 #!/bin/sh
-echo "OK"
+env
+cat ${INPUT_FILE_PATH}
+echo "OK1"

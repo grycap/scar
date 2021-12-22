@@ -6,3 +6,4 @@ requests
 pyyaml
 setuptools>=40.8.0
 packaging
+docker

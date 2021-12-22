@@ -1,6 +1,7 @@
 functions:
   aws:
   - lambda:
+      init_script: test.sh
       name: scar-ecr-cowsay
       container:
-        image: 974349055189.dkr.ecr.us-east-1.amazonaws.com/micafer:latest
+        image: ubuntu:18.04

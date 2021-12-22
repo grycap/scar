@@ -22,7 +22,7 @@ import yaml
 from botocore.exceptions import ClientError
 from scar.http.request import call_http_endpoint, get_file
 from scar.providers.aws import GenericClient
-from scar.providers.aws.functioncode import FunctionPackager
+from scar.providers.aws.functioncode import FunctionPackager, create_function_config
 from scar.providers.aws.lambdalayers import LambdaLayers
 from scar.providers.aws.s3 import S3
 from scar.providers.aws.validators import AWSValidator
@@ -50,30 +50,21 @@ class Lambda(GenericClient):
         self.supervisor_version = resources_info.get('lambda').get('supervisor').get('version')
 
     def _get_creations_args(self, zip_payload_path: str, supervisor_zip_path: str) -> Dict:
+        args = {'FunctionName': self.function.get('name'),
+                'Role': self.resources_info.get('iam').get('role'),
+                'Environment': self.function.get('environment'),
+                'Description': self.function.get('description'),
+                'Timeout':  self.function.get('timeout'),
+                'MemorySize': self.function.get('memory'),
+                'Tags': self.function.get('tags')}
         if self.function.get('runtime') == "provided":
-            args = {'FunctionName': self.function.get('name'),
-                    'Role': self.resources_info.get('iam').get('role'),
-                    'Code': {
-                        'ImageUri': self.function.get('container').get('image')
-                    },
-                    'Environment': self.function.get('environment'),
-                    'Description': self.function.get('description'),
-                    'Timeout':  self.function.get('timeout'),
-                    'MemorySize': self.function.get('memory'),
-                    'Tags': self.function.get('tags'),
-                    'PackageType': 'Image'}
+            args['Code'] = {'ImageUri': self.function.get('container').get('image')}
+            args['PackageType'] = 'Image'
         else:
-            args = {'FunctionName': self.function.get('name'),
-                    'Runtime': self.function.get('runtime'),
-                    'Role': self.resources_info.get('iam').get('role'),
-                    'Handler': self.function.get('handler'),
-                    'Code': self._get_function_code(zip_payload_path, supervisor_zip_path),
-                    'Environment': self.function.get('environment'),
-                    'Description': self.function.get('description'),
-                    'Timeout':  self.function.get('timeout'),
-                    'MemorySize': self.function.get('memory'),
-                    'Tags': self.function.get('tags'),
-                    'Layers': self.function.get('layers')}
+            args['Code'] = self._get_function_code(zip_payload_path, supervisor_zip_path)
+            args['Runtime'] = self.function.get('runtime')
+            args['Handler'] = self.function.get('handler')
+            args['Layers'] = self.function.get('layers')
         return args
 
     def is_asynchronous(self):
@@ -83,21 +74,74 @@ class Lambda(GenericClient):
         """Returns the access key belonging to the boto_profile used."""
         return self.client.get_access_key()
 
+    def _create_ecr_image(self):
+        """Creates an ECR image using the user provided image adding the supervisor tools"""
+        tmp_folder = FileUtils.create_tmp_dir()
+        orig_image = self.function.get('container').get('image')
+        ecr_image = '974349055189.dkr.ecr.us-east-1.amazonaws.com/micafer'
+
+        # Create function config file
+        cfg_file_path = FileUtils.join_paths(tmp_folder.name, "function_config.yaml")
+        function_cfg = create_function_config(self.resources_info)
+        FileUtils.write_yaml(cfg_file_path, function_cfg)
+
+        init_script_path = None
+        # Copy the init script defined by the user to the payload folder
+        if self.resources_info.get('lambda').get('init_script', False):
+            init_script_path = self.resources_info.get('lambda').get('init_script')
+            FileUtils.copy_file(init_script_path,
+                                FileUtils.join_paths(tmp_folder.name,
+                                                     FileUtils.get_file_name(init_script_path)))
+
+        # TODO: 
+        FileUtils.copy_file('/home/micafer/codigo/scar/scar/examples/cowsay-ecr/awslambdaric',
+                            FileUtils.join_paths(tmp_folder.name,'awslambdaric'))
+
+        import docker
+        client = docker.from_env()
+
+        dockerfile = 'from %s\n' % orig_image
+        dockerfile += 'ARG FUNCTION_DIR="/var/task"\n'
+        dockerfile += 'RUN mkdir -p ${FUNCTION_DIR}\n'
+        dockerfile += 'WORKDIR ${FUNCTION_DIR}\n'
+        dockerfile += 'ENV PATH="${FUNCTION_DIR}:${PATH}"\n'
+        dockerfile += 'ENTRYPOINT [ "awslambdaric" ]\n'
+        dockerfile += 'CMD [ "faassupervisor.supervisor.main" ]\n'
+        dockerfile += 'COPY awslambdaric ${FUNCTION_DIR}\n'
+        dockerfile += 'COPY function_config.yaml ${FUNCTION_DIR}\n'
+        if init_script_path:
+            dockerfile += 'COPY %s ${FUNCTION_DIR}\n' % FileUtils.get_file_name(init_script_path)
+
+        FileUtils.create_file_with_content("%s/Dockerfile" % tmp_folder.name, dockerfile)
+
+        logger.info('Building new ECR image: %s' % ecr_image)
+        client.images.build(path=tmp_folder.name, tag=ecr_image, pull=True)
+        # TODO: Login to ECR
+        # aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 974349055189.dkr.ecr.us-east-1.amazonaws.com
+        logger.info('Pusing new image to ECR')
+        client.images.push(ecr_image)
+        self.function['container']['image'] = "%s:latest" % ecr_image
+
     @excp.exception(logger)
     def create_function(self):
         # Create tmp folders
         supervisor_path = FileUtils.create_tmp_dir()
         tmp_folder = FileUtils.create_tmp_dir()
-        # Download supervisor
-        supervisor_zip_path = SupervisorUtils.download_supervisor(
-            self.supervisor_version,
-            supervisor_path.name
-        )
-        if self.function.get('runtime') != "provided":
+        if self.function.get('runtime') == "provided":
+            # Create docker image in ECR
+            zip_payload_path = None
+            supervisor_zip_path = None
+            self._create_ecr_image()
+        else:
+            # Download supervisor
+            supervisor_zip_path = SupervisorUtils.download_supervisor(
+                self.supervisor_version,
+                supervisor_path.name
+            )
             # Manage supervisor layer
             self._manage_supervisor_layer(supervisor_zip_path)
-        # Create function
-        zip_payload_path = FileUtils.join_paths(tmp_folder.name, 'function.zip')
+            # Create function
+            zip_payload_path = FileUtils.join_paths(tmp_folder.name, 'function.zip')
         self._set_image_id()
         creation_args = self._get_creations_args(zip_payload_path, supervisor_zip_path)
         response = self.client.create_function(**creation_args)

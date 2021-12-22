@@ -397,8 +397,12 @@ class GitHubUtils:
     def get_latest_release(user: str, project: str) -> str:
         """Get the tag of the latest release in a repository."""
         url = f'https://api.github.com/repos/{user}/{project}/releases/latest'
-        response = json.loads(request.get_file(url))
-        return response.get('tag_name', '')
+        response = request.get_file(url)
+        if response:
+            response = json.loads(response)
+            return response.get('tag_name', '')
+        else:
+            return None
 
     @staticmethod
     def exists_release_in_repo(user: str, project: str, tag_name: str) -> bool:
