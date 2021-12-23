@@ -96,6 +96,8 @@ class Lambda(GenericClient):
         # Get awslambdaric
         # TODO: Generalize
         awslambdaric_path = 'examples/cowsay-ecr/awslambdaric'
+        if self.function.get('container').get('alpine'):
+            awslambdaric_path = 'examples/cowsay-ecr/awslambdaric-alpine'
         FileUtils.copy_file(awslambdaric_path,
                             FileUtils.join_paths(tmp_folder.name,'awslambdaric'))
 
@@ -121,6 +123,7 @@ class Lambda(GenericClient):
         repo_name = self.function.get('name')
         ecr_image = ecr_cli.get_repository_uri(repo_name)
         if not ecr_image:
+            logger.info('Creating ECR repository: %s' % repo_name)
             ecr_image = ecr_cli.create_repository(repo_name)
 
         logger.info('Building new ECR image: %s' % ecr_image)

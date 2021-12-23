@@ -4,4 +4,5 @@ functions:
       init_script: test.sh
       name: scar-ecr-cowsay
       container:
-        image: ubuntu:18.04
+        alpine: true
+        image: alpine:3.14
