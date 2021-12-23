@@ -95,11 +95,11 @@ class Lambda(GenericClient):
 
         # Get awslambdaric
         # TODO: Generalize
-        awslambdaric_path = 'examples/cowsay-ecr/awslambdaric'
+        awslambdaric_path = 'examples/cowsay-ecr/awslambdaric.tar.gz'
         if self.function.get('container').get('alpine'):
-            awslambdaric_path = 'examples/cowsay-ecr/awslambdaric-alpine'
+            awslambdaric_path = 'examples/cowsay-ecr/awslambdaric-alpine.tar.gz'
         FileUtils.copy_file(awslambdaric_path,
-                            FileUtils.join_paths(tmp_folder.name,'awslambdaric'))
+                            FileUtils.join_paths(tmp_folder.name,'awslambdaric.tar.gz'))
 
         import docker
         client = docker.from_env()
@@ -111,7 +111,7 @@ class Lambda(GenericClient):
         dockerfile += 'ENV PATH="${FUNCTION_DIR}:${PATH}"\n'
         dockerfile += 'ENTRYPOINT [ "awslambdaric" ]\n'
         dockerfile += 'CMD [ "faassupervisor.supervisor.main" ]\n'
-        dockerfile += 'COPY awslambdaric ${FUNCTION_DIR}\n'
+        dockerfile += 'ADD awslambdaric.tar.gz ${FUNCTION_DIR}\n'
         dockerfile += 'COPY function_config.yaml ${FUNCTION_DIR}\n'
         if init_script_path:
             dockerfile += 'COPY %s ${FUNCTION_DIR}\n' % FileUtils.get_file_name(init_script_path)
