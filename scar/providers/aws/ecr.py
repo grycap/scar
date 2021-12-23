@@ -46,3 +46,6 @@ class ECR(GenericClient):
         """Creates a repository."""
         response = self.client.create_repository(repository_name)
         return response["repository"]["repositoryUri"]
+
+    def delete_repository(self, repository_name: str):
+        self.client.delete_repository(repository_name)

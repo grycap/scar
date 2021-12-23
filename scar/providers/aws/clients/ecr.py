@@ -62,3 +62,6 @@ class ElasticContainerRegistryClient(BotoClient):
     def create_repository(self, repository_name: str):
         return self.client.create_repository(repositoryName=repository_name)
 
+    @exception(logger)
+    def delete_repository(self, repository_name: str):
+        return self.client.delete_repository(repositoryName=repository_name, force=True)

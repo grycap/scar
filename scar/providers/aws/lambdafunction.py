@@ -19,6 +19,7 @@ from typing import Dict
 from multiprocessing.pool import ThreadPool
 from zipfile import ZipFile, BadZipfile
 import yaml
+import docker
 from botocore.exceptions import ClientError
 from scar.http.request import call_http_endpoint, get_file
 from scar.providers.aws import GenericClient
@@ -75,8 +76,18 @@ class Lambda(GenericClient):
         """Returns the access key belonging to the boto_profile used."""
         return self.client.get_access_key()
 
+    def _delete_ecr_image(self):
+        """Delete the ECR repository created in _create_ecr_image function."""
+        ecr_cli = ECR(self.resources_info)
+        repo_name = self.function.get('name')
+        if ecr_cli.get_repository_uri(repo_name):
+            logger.info('Deleting ECR repo: %s' % repo_name)
+            ecr_cli.delete_repository(repo_name)
+
     def _create_ecr_image(self):
         """Creates an ECR image using the user provided image adding the supervisor tools"""
+        client = docker.from_env()
+
         tmp_folder = FileUtils.create_tmp_dir()
         orig_image = self.function.get('container').get('image')
 
@@ -93,17 +104,15 @@ class Lambda(GenericClient):
                                 FileUtils.join_paths(tmp_folder.name,
                                                      FileUtils.get_file_name(init_script_path)))
 
-        # Get awslambdaric
-        # TODO: Generalize
+        # Get awslambdaric + supervisor
+        # TODO: Obtain in a similar way as supervisor binary
         awslambdaric_path = 'examples/cowsay-ecr/awslambdaric.tar.gz'
         if self.function.get('container').get('alpine'):
             awslambdaric_path = 'examples/cowsay-ecr/awslambdaric-alpine.tar.gz'
         FileUtils.copy_file(awslambdaric_path,
                             FileUtils.join_paths(tmp_folder.name,'awslambdaric.tar.gz'))
 
-        import docker
-        client = docker.from_env()
-
+        # Create dockerfile to generate the new ECR image
         dockerfile = 'from %s\n' % orig_image
         dockerfile += 'ARG FUNCTION_DIR="/var/task"\n'
         dockerfile += 'RUN mkdir -p ${FUNCTION_DIR}\n'
@@ -115,25 +124,27 @@ class Lambda(GenericClient):
         dockerfile += 'COPY function_config.yaml ${FUNCTION_DIR}\n'
         if init_script_path:
             dockerfile += 'COPY %s ${FUNCTION_DIR}\n' % FileUtils.get_file_name(init_script_path)
-
         FileUtils.create_file_with_content("%s/Dockerfile" % tmp_folder.name, dockerfile)
 
+        # Create the ECR Repo and get the image uri
         ecr_cli = ECR(self.resources_info)
-
         repo_name = self.function.get('name')
         ecr_image = ecr_cli.get_repository_uri(repo_name)
         if not ecr_image:
             logger.info('Creating ECR repository: %s' % repo_name)
             ecr_image = ecr_cli.create_repository(repo_name)
 
+        # Build the image
         logger.info('Building new ECR image: %s' % ecr_image)
         client.images.build(path=tmp_folder.name, tag=ecr_image, pull=True)
 
+        # Login to the ECR registry
         registry = ecr_cli.get_registry_url()
         logger.info('Login to ECR registry %s' % registry)
         username, password = ecr_cli.get_authorization_token()
         client.login(username=username, password=password, registry=registry)
 
+        # Push the image, and change it in the container image to use it insteads of the user one
         logger.info('Pushing new image to ECR')
         client.images.push(ecr_image)
         self.function['container']['image'] = "%s:latest" % ecr_image
@@ -193,7 +204,10 @@ class Lambda(GenericClient):
         return code
 
     def delete_function(self):
-        return self.client.delete_function(self.resources_info.get('lambda').get('name'))
+        res = self.client.delete_function(self.resources_info.get('lambda').get('name'))
+        if self.function.get('runtime') == "provided":
+            self._delete_ecr_image()
+        return res
 
     def link_function_and_bucket(self, bucket_name: str) -> None:
         kwargs = {'FunctionName': self.function.get('name'),
