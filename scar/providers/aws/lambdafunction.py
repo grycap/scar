@@ -91,6 +91,9 @@ class Lambda(GenericClient):
         dockerfile += 'RUN mkdir -p ${FUNCTION_DIR}\n'
         dockerfile += 'WORKDIR ${FUNCTION_DIR}\n'
         dockerfile += 'ENV PATH="${FUNCTION_DIR}:${PATH}"\n'
+        # Add PYTHONIOENCODING to avoid UnicodeEncodeError as sugested in:
+        # https://github.com/aws/aws-lambda-python-runtime-interface-client/issues/19
+        dockerfile += 'ENV PYTHONIOENCODING="utf8"\n'
         dockerfile += 'ENTRYPOINT [ "awslambdaric" ]\n'
         dockerfile += 'CMD [ "faassupervisor.supervisor.main" ]\n'
         dockerfile += 'ADD awslambdaric.tar.gz ${FUNCTION_DIR}\n'
