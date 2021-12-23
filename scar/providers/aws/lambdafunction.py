@@ -84,36 +84,9 @@ class Lambda(GenericClient):
             logger.info('Deleting ECR repo: %s' % repo_name)
             ecr_cli.delete_repository(repo_name)
 
-    def _create_ecr_image(self):
-        """Creates an ECR image using the user provided image adding the supervisor tools"""
-        client = docker.from_env()
-
-        tmp_folder = FileUtils.create_tmp_dir()
-        orig_image = self.function.get('container').get('image')
-
-        # Create function config file
-        cfg_file_path = FileUtils.join_paths(tmp_folder.name, "function_config.yaml")
-        function_cfg = create_function_config(self.resources_info)
-        FileUtils.write_yaml(cfg_file_path, function_cfg)
-
-        init_script_path = None
-        # Copy the init script defined by the user to the payload folder
-        if self.resources_info.get('lambda').get('init_script', False):
-            init_script_path = self.resources_info.get('lambda').get('init_script')
-            FileUtils.copy_file(init_script_path,
-                                FileUtils.join_paths(tmp_folder.name,
-                                                     FileUtils.get_file_name(init_script_path)))
-
-        # Get awslambdaric + supervisor
-        # TODO: Obtain in a similar way as supervisor binary
-        awslambdaric_path = 'examples/cowsay-ecr/awslambdaric.tar.gz'
-        if self.function.get('container').get('alpine'):
-            awslambdaric_path = 'examples/cowsay-ecr/awslambdaric-alpine.tar.gz'
-        FileUtils.copy_file(awslambdaric_path,
-                            FileUtils.join_paths(tmp_folder.name,'awslambdaric.tar.gz'))
-
-        # Create dockerfile to generate the new ECR image
-        dockerfile = 'from %s\n' % orig_image
+    def _create_dockerfile_ecr_image(self, init_script_path):
+        """Create dockerfile to generate the new ECR image."""
+        dockerfile = 'from %s\n' % self.function.get('container').get('image')
         dockerfile += 'ARG FUNCTION_DIR="/var/task"\n'
         dockerfile += 'RUN mkdir -p ${FUNCTION_DIR}\n'
         dockerfile += 'WORKDIR ${FUNCTION_DIR}\n'
@@ -124,7 +97,31 @@ class Lambda(GenericClient):
         dockerfile += 'COPY function_config.yaml ${FUNCTION_DIR}\n'
         if init_script_path:
             dockerfile += 'COPY %s ${FUNCTION_DIR}\n' % FileUtils.get_file_name(init_script_path)
-        FileUtils.create_file_with_content("%s/Dockerfile" % tmp_folder.name, dockerfile)
+        return dockerfile
+
+    def _create_ecr_image(self, awslambdaric_path):
+        """Creates an ECR image using the user provided image adding the supervisor tools"""
+        client = docker.from_env()
+        tmp_folder = FileUtils.create_tmp_dir()
+
+        # Create function config file
+        FileUtils.write_yaml(FileUtils.join_paths(tmp_folder.name, "function_config.yaml"),
+                             create_function_config(self.resources_info))
+
+        init_script_path = self.resources_info.get('lambda').get('init_script')
+        # Copy the init script defined by the user to the payload folder
+        if init_script_path:
+            FileUtils.copy_file(init_script_path,
+                                FileUtils.join_paths(tmp_folder.name,
+                                                     FileUtils.get_file_name(init_script_path)))
+
+        # Copy the awslambdaric file to the temp file
+        FileUtils.copy_file(awslambdaric_path,
+                            FileUtils.join_paths(tmp_folder.name,'awslambdaric.tar.gz'))
+
+        # Create dockerfile to generate the new ECR image
+        FileUtils.create_file_with_content("%s/Dockerfile" % tmp_folder.name,
+                                           self._create_dockerfile_ecr_image(init_script_path))
 
         # Create the ECR Repo and get the image uri
         ecr_cli = ECR(self.resources_info)
@@ -158,7 +155,12 @@ class Lambda(GenericClient):
             # Create docker image in ECR
             zip_payload_path = None
             supervisor_zip_path = None
-            self._create_ecr_image()
+            # Get awslambdaric + supervisor
+            # TODO: Obtain it in a similar way as supervisor zip
+            awslambdaric_path = 'examples/cowsay-ecr/awslambdaric.tar.gz'
+            if self.function.get('container').get('alpine'):
+                awslambdaric_path = 'examples/cowsay-ecr/awslambdaric-alpine.tar.gz'
+            self._create_ecr_image(awslambdaric_path)
         else:
             # Download supervisor
             supervisor_zip_path = SupervisorUtils.download_supervisor(
