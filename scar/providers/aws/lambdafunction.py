@@ -94,15 +94,14 @@ class Lambda(GenericClient):
         # Add PYTHONIOENCODING to avoid UnicodeEncodeError as sugested in:
         # https://github.com/aws/aws-lambda-python-runtime-interface-client/issues/19
         dockerfile += 'ENV PYTHONIOENCODING="utf8"\n'
-        dockerfile += 'ENTRYPOINT [ "awslambdaric" ]\n'
-        dockerfile += 'CMD [ "faassupervisor.supervisor.main" ]\n'
-        dockerfile += 'ADD awslambdaric.tar.gz ${FUNCTION_DIR}\n'
+        dockerfile += 'CMD [ "supervisor" ]\n'
+        dockerfile += 'ADD supervisor ${FUNCTION_DIR}\n'
         dockerfile += 'COPY function_config.yaml ${FUNCTION_DIR}\n'
         if init_script_path:
             dockerfile += 'COPY %s ${FUNCTION_DIR}\n' % FileUtils.get_file_name(init_script_path)
         return dockerfile
 
-    def _create_ecr_image(self, awslambdaric_path):
+    def _create_ecr_image(self, supervisor_path):
         """Creates an ECR image using the user provided image adding the supervisor tools"""
         client = docker.from_env()
         tmp_folder = FileUtils.create_tmp_dir()
@@ -118,9 +117,8 @@ class Lambda(GenericClient):
                                 FileUtils.join_paths(tmp_folder.name,
                                                      FileUtils.get_file_name(init_script_path)))
 
-        # Copy the awslambdaric file to the temp file
-        FileUtils.copy_file(awslambdaric_path,
-                            FileUtils.join_paths(tmp_folder.name,'awslambdaric.tar.gz'))
+        # Unzip the supervisor file to the temp file
+        FileUtils.unzip_folder(supervisor_path, tmp_folder.name)
 
         # Create dockerfile to generate the new ECR image
         FileUtils.create_file_with_content("%s/Dockerfile" % tmp_folder.name,
@@ -139,6 +137,7 @@ class Lambda(GenericClient):
         client.images.build(path=tmp_folder.name, tag=ecr_image, pull=True)
 
         # Login to the ECR registry
+        # TODO: It seems that it does not work as expected
         registry = ecr_cli.get_registry_url()
         logger.info('Login to ECR registry %s' % registry)
         username, password = ecr_cli.get_authorization_token()
@@ -157,13 +156,14 @@ class Lambda(GenericClient):
         if self.function.get('runtime') == "provided":
             # Create docker image in ECR
             zip_payload_path = None
-            supervisor_zip_path = None
-            # Get awslambdaric + supervisor
+            # Get supervisor with awslambdaric support binary
             # TODO: Obtain it in a similar way as supervisor zip
-            awslambdaric_path = 'examples/cowsay-ecr/awslambdaric.tar.gz'
+            # when it is released
+            import os
+            supervisor_zip_path = os.path.abspath('examples/cowsay-ecr/supervisor.zip')
             if self.function.get('container').get('alpine'):
-                awslambdaric_path = 'examples/cowsay-ecr/awslambdaric-alpine.tar.gz'
-            self._create_ecr_image(awslambdaric_path)
+                supervisor_zip_path = os.path.abspath('examples/cowsay-ecr/supervisor-alpine.zip')
+            self._create_ecr_image(supervisor_zip_path)
         else:
             # Download supervisor
             supervisor_zip_path = SupervisorUtils.download_supervisor(
