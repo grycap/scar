@@ -15,7 +15,7 @@
 CloudWatch Log functionalities at high level."""
 
 from typing import Dict
-from scar.providers.aws import GenericClient, response
+from scar.providers.aws import GenericClient
 
 
 class ECR(GenericClient):
