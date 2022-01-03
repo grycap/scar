@@ -500,3 +500,15 @@ class SupervisorUtils:
         """Returns the latest FaaS Supervisor version."""
         return GitHubUtils.get_latest_release(cls._SUPERVISOR_GITHUB_USER,
                                               cls._SUPERVISOR_GITHUB_REPO)
+
+    @classmethod
+    def download_supervisor_asset(cls, version: str, asset_name: str, path: str) -> str:
+        """Downloads the FaaS Supervisor asset to the specified path."""
+        supervisor_zip_path = FileUtils.join_paths(path, 'supervisor.zip')
+        supervisor_zip_url = GitHubUtils.get_asset_url(cls._SUPERVISOR_GITHUB_USER,
+                                                       cls._SUPERVISOR_GITHUB_REPO,
+                                                       asset_name,
+                                                       version)
+        with open(supervisor_zip_path, "wb") as thezip:
+            thezip.write(request.get_file(supervisor_zip_url))
+        return supervisor_zip_path

@@ -137,11 +137,11 @@ class Lambda(GenericClient):
         client.images.build(path=tmp_folder.name, tag=ecr_image, pull=True)
 
         # Login to the ECR registry
-        # TODO: It seems that it does not work as expected
+        # TODO: Sometimes it does not work as expected
         registry = ecr_cli.get_registry_url()
         logger.info('Login to ECR registry %s' % registry)
         username, password = ecr_cli.get_authorization_token()
-        client.login(username=username, password=password, registry=registry)
+        res = client.login(username=username, password=password, registry=registry)
 
         # Push the image, and change it in the container image to use it insteads of the user one
         logger.info('Pushing new image to ECR')
@@ -157,12 +157,22 @@ class Lambda(GenericClient):
             # Create docker image in ECR
             zip_payload_path = None
             # Get supervisor with awslambdaric support binary
+
             # TODO: Obtain it in a similar way as supervisor zip
             # when it is released
+            # asset_name = 'supervisor.zip'
+            # if self.function.get('container').get('alpine'):
+            #     asset_name = 'supervisor-alpine.zip'
+            # supervisor_zip_path = SupervisorUtils.download_supervisor_asset(
+            #     self.supervisor_version,
+            #     asset_name,
+            #     supervisor_path.name
+            # )
             import os
             supervisor_zip_path = os.path.abspath('examples/cowsay-ecr/supervisor.zip')
             if self.function.get('container').get('alpine'):
                 supervisor_zip_path = os.path.abspath('examples/cowsay-ecr/supervisor-alpine.zip')
+
             self._create_ecr_image(supervisor_zip_path)
         else:
             # Download supervisor
