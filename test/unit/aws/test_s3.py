@@ -65,3 +65,10 @@ class TestS3(unittest.TestCase):
         self.assertEqual(s3.client.client.put_object.call_args_list[0],
                          call(Bucket='bname', Key=os.path.basename(tmpfile.name), Body=b'Hello world!'))
 
+    @patch('boto3.Session')
+    def test_get_bucket_file_list(self, boto_session):
+        boto_session.return_value = self._init_mocks(['get_bucket_location', 'list_objects_v2'])
+        s3 = S3({})
+        s3.client.client.list_objects_v2.return_value = {'IsTruncated': False, 'Contents': [{'Key': 'key1'}]}
+        self.assertEqual(s3.get_bucket_file_list({'path': '/'}), ['key1'])
+    
