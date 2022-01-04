@@ -94,6 +94,12 @@ class Lambda(GenericClient):
         # Add PYTHONIOENCODING to avoid UnicodeEncodeError as sugested in:
         # https://github.com/aws/aws-lambda-python-runtime-interface-client/issues/19
         dockerfile += 'ENV PYTHONIOENCODING="utf8"\n'
+
+        # Add user environment variables
+        if self.resources_info.get('lambda').get('container').get('environment').get('Variables', False):
+            for key, value in self.resources_info.get('lambda').get('container').get('environment').get('Variables').items():
+                dockerfile += 'ENV %s="%s"\n' % (key, value)
+    
         dockerfile += 'CMD [ "supervisor" ]\n'
         dockerfile += 'ADD supervisor ${FUNCTION_DIR}\n'
         dockerfile += 'COPY function_config.yaml ${FUNCTION_DIR}\n'
