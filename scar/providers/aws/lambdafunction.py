@@ -147,11 +147,12 @@ class Lambda(GenericClient):
         registry = ecr_cli.get_registry_url()
         logger.info('Login to ECR registry %s' % registry)
         username, password = ecr_cli.get_authorization_token()
-        res = client.login(username=username, password=password, registry=registry)
+        client.login(username=username, password=password, registry=registry)
 
         # Push the image, and change it in the container image to use it insteads of the user one
         logger.info('Pushing new image to ECR')
-        client.images.push(ecr_image)
+        for line in client.images.push(ecr_image, stream=True, decode=True):
+            logger.debug(line)
         self.function['container']['image'] = "%s:latest" % ecr_image
 
     @excp.exception(logger)
@@ -227,7 +228,11 @@ class Lambda(GenericClient):
     def delete_function(self):
         res = self.client.delete_function(self.resources_info.get('lambda').get('name'))
         if self.function.get('runtime') == "image":
-            self._delete_ecr_image()
+            delete_image = False
+            if self.resources_info.get('ecr') and self.resources_info.get('ecr').get('delete_image') != False:
+                delete_image = True
+            if delete_image != False:
+                self._delete_ecr_image()
         return res
 
     def link_function_and_bucket(self, bucket_name: str) -> None:
