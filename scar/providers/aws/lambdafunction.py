@@ -59,7 +59,7 @@ class Lambda(GenericClient):
                 'Timeout':  self.function.get('timeout'),
                 'MemorySize': self.function.get('memory'),
                 'Tags': self.function.get('tags')}
-        if self.function.get('runtime') == "provided":
+        if self.function.get('runtime') == "image":
             args['Code'] = {'ImageUri': self.function.get('container').get('image')}
             args['PackageType'] = 'Image'
         else:
@@ -153,7 +153,7 @@ class Lambda(GenericClient):
         # Create tmp folders
         supervisor_path = FileUtils.create_tmp_dir()
         tmp_folder = FileUtils.create_tmp_dir()
-        if self.function.get('runtime') == "provided":
+        if self.function.get('runtime') == "image":
             # Create docker image in ECR
             zip_payload_path = None
             # Get supervisor with awslambdaric support binary
@@ -220,7 +220,7 @@ class Lambda(GenericClient):
 
     def delete_function(self):
         res = self.client.delete_function(self.resources_info.get('lambda').get('name'))
-        if self.function.get('runtime') == "provided":
+        if self.function.get('runtime') == "image":
             self._delete_ecr_image()
         return res
 

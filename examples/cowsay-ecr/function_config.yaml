@@ -12,7 +12,7 @@ deployment:
 environment:
   Variables: {}
 description: Automatically generated lambda function
-execution_mode: container
+execution_mode: lambda
 handler: scar-ecr-cowsay.lambda_handler
 init_script: test.sh
 invocation_type: RequestResponse
@@ -22,7 +22,7 @@ log_type: Tail
 memory: 512
 name: scar-ecr-cowsay
 region: us-east-1
-runtime: provided
+runtime: image
 storage_providers: {}
 supervisor:
   layer_name: faas-supervisor
