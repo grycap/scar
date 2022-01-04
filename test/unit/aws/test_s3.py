@@ -37,12 +37,15 @@ class TestS3(unittest.TestCase):
         ecr = S3({})
         self.assertEqual(type(ecr.client.client).__name__, "S3")
 
+    def _init_mocks(self, call_list):
+        session = MagicMock(['client'])
+        client = MagicMock(call_list)
+        session.client.return_value = client
+        return session   
+
     @patch('boto3.Session')
     def test_create_bucket(self, boto_session):
-        session = MagicMock(['client'])
-        client = MagicMock(['get_bucket_location', 'create_bucket'])
-        session.client.return_value = client
-        boto_session.return_value = session
+        boto_session.return_value = self._init_mocks(['get_bucket_location', 'create_bucket'])
         s3 = S3({})
         s3.client.client.get_bucket_location.side_effect = ClientError({'Error': {'Code': 'NoSuchBucket'}}, 'op')
         s3.client.client.create_bucket.return_value = {}
@@ -51,10 +54,7 @@ class TestS3(unittest.TestCase):
 
     @patch('boto3.Session')
     def test_upload_file(self, boto_session):
-        session = MagicMock(['client'])
-        client = MagicMock(['put_object'])
-        session.client.return_value = client
-        boto_session.return_value = session
+        boto_session.return_value = self._init_mocks(['put_object'])
         s3 = S3({})
         s3.client.client.put_object.return_value = {}
         tmpfile = tempfile.NamedTemporaryFile(delete=False)
