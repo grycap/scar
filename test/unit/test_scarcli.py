@@ -44,3 +44,4 @@ class TestSCARCli(unittest.TestCase):
         main()
         os.unlink(tmpfile.name)
         self.assertEqual(aws.call_args_list[0][0], ('init',))
+        self.assertEqual(oscar.call_args_list[0][0], ('init',))
