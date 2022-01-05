@@ -16,6 +16,7 @@
 import unittest
 import sys
 import tempfile
+import os
 import os.path
 from mock import MagicMock
 from mock import patch, call

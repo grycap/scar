@@ -15,6 +15,7 @@
 # limitations under the License.
 import unittest
 import sys
+import os
 from mock import MagicMock
 from mock import patch, call
 
