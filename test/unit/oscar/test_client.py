@@ -40,3 +40,35 @@ class TestOSCARClient(unittest.TestCase):
         oscar.create_service(key="value")
         self.assertEqual(post.call_args_list[0][0][0], "url/system/services")
         self.assertEqual(post.call_args_list[0][1], {'auth': ('user', 'pass'), 'verify': False, 'json': {'key': 'value'}})
+
+    @patch('requests.delete')
+    def test_delete_service(self, delete):
+        response = MagicMock("status_code")
+        response.status_code = 204
+        delete.return_value = response
+        oscar = OSCARClient({"endpoint": "url", "auth_user": "user", "auth_password": "pass", "ssl_verify": False}, "cid")
+        oscar.delete_service("sname")
+        self.assertEqual(delete.call_args_list[0][0][0], "url/system/services/sname")
+        self.assertEqual(delete.call_args_list[0][1], {'auth': ('user', 'pass'), 'verify': False})
+
+    @patch('requests.get')
+    def test_get_service(self, get):
+        response = MagicMock(["status_code", "json"])
+        response.status_code = 200
+        response.json.return_value = {"key": "value"}
+        get.return_value = response
+        oscar = OSCARClient({"endpoint": "url", "auth_user": "user", "auth_password": "pass", "ssl_verify": False}, "cid")
+        self.assertEqual(oscar.get_service("sname"), {"key": "value"})
+        self.assertEqual(get.call_args_list[0][0][0], "url/system/services/sname")
+        self.assertEqual(get.call_args_list[0][1], {'auth': ('user', 'pass'), 'verify': False})
+
+    @patch('requests.get')
+    def test_list_services(self, get):
+        response = MagicMock(["status_code", "json"])
+        response.status_code = 200
+        response.json.return_value = {"key": "value"}
+        get.return_value = response
+        oscar = OSCARClient({"endpoint": "url", "auth_user": "user", "auth_password": "pass", "ssl_verify": False}, "cid")
+        self.assertEqual(oscar.list_services(), {"key": "value"})
+        self.assertEqual(get.call_args_list[0][0][0], "url/system/services")
+        self.assertEqual(get.call_args_list[0][1], {'auth': ('user', 'pass'), 'verify': False})
