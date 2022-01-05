@@ -71,4 +71,49 @@ class TestS3(unittest.TestCase):
         s3 = S3({})
         s3.client.client.list_objects_v2.return_value = {'IsTruncated': False, 'Contents': [{'Key': 'key1'}]}
         self.assertEqual(s3.get_bucket_file_list({'path': '/'}), ['key1'])
-    
+
+    @patch('boto3.Session')
+    def test_set_input_bucket_notification(self, boto_session):
+        boto_session.return_value = self._init_mocks(['put_bucket_notification_configuration',
+                                                      'get_bucket_notification_configuration'])
+        s3 = S3({'lambda': {'arn': 'arn'}})
+        s3.client.client.get_bucket_notification_configuration.return_value = {'LambdaFunctionConfigurations': []}
+        s3.client.client.put_bucket_notification_configuration.return_value = {}
+        s3.set_input_bucket_notification('bucket','folders')
+        expected_res = call(Bucket='bucket',
+                            NotificationConfiguration={'LambdaFunctionConfigurations': [{'LambdaFunctionArn': 'arn',
+                                                                                         'Events': ['s3:ObjectCreated:*'],
+                                                                                         'Filter': {'Key': {'FilterRules': [{'Name': 'prefix',
+                                                                                                                             'Value': 'folders/'}]}}}]})
+        self.assertEqual(s3.client.client.put_bucket_notification_configuration.call_args_list[0], expected_res)
+
+    @patch('boto3.Session')
+    def test_delete_bucket_notification(self, boto_session):
+        boto_session.return_value = self._init_mocks(['put_bucket_notification_configuration',
+                                                      'get_bucket_notification_configuration'])
+        s3 = S3({'lambda': {'arn': 'arn'}})
+        s3.client.client.get_bucket_notification_configuration.return_value = {'LambdaFunctionConfigurations': []}
+        s3.client.client.put_bucket_notification_configuration.return_value = {}
+        s3.delete_bucket_notification('bucket')
+        expected_res = call(Bucket='bucket', NotificationConfiguration={'LambdaFunctionConfigurations': []})
+        self.assertEqual(s3.client.client.put_bucket_notification_configuration.call_args_list[0], expected_res)
+
+    @patch('boto3.Session')
+    def test_create_bucket_and_folders(self, boto_session):
+        boto_session.return_value = self._init_mocks(['get_bucket_location', 'create_bucket', 'put_object', 'get_object'])
+        s3 = S3({})
+        s3.client.client.get_bucket_location.side_effect = ClientError({'Error': {'Code': 'NoSuchBucket'}}, 'op')
+        s3.client.client.create_bucket.return_value = {}
+        s3.client.client.put_object.return_value = {}
+        s3.client.client.get_object.return_value = {}
+        self.assertEqual(s3.create_bucket_and_folders('storage/path'), ('storage', 'path'))
+
+    @patch('boto3.Session')
+    def test_download_file(self, boto_session):
+        boto_session.return_value = self._init_mocks(['download_fileobj'])
+        s3 = S3({})
+        s3.client.client.download_fileobj.return_value = {}
+        s3.download_file('bucket', 'key', 'path')
+        self.assertEqual(s3.client.client.download_fileobj.call_args_list[0][1]['Bucket'], 'bucket')
+        self.assertEqual(s3.client.client.download_fileobj.call_args_list[0][1]['Key'], 'key')
+        self.assertIn('Fileobj', s3.client.client.download_fileobj.call_args_list[0][1])
