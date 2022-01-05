@@ -34,9 +34,10 @@ class TestController(unittest.TestCase):
         os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
         unittest.TestCase.__init__(self, *args)
 
+    @patch('scar.providers.aws.controller.IAM')
     @patch('scar.providers.aws.controller.Lambda')
     @patch('scar.providers.aws.controller.FileUtils.load_tmp_config_file')
-    def test_invoke(self, load_tmp_config_file, lambda_cli):
+    def test_invoke(self, load_tmp_config_file, lambda_cli, iam_cli):
         lcli = MagicMock(['call_http_endpoint'])
         response = MagicMock(["ok", "headers", "text"])
         response.ok.return_value = True
@@ -48,6 +49,10 @@ class TestController(unittest.TestCase):
                                                                                "supervisor": {"version": "latest"}},
                                                                     "iam": {"account_id": "id",
                                                                             "role": "role"}}]}}
+        iamcli = MagicMock(['get_user_name_or_id'])
+        iamcli.get_user_name_or_id.return_value = "username"
+        iam_cli.return_value = iamcli
+
         AWS("invoke")
         self.assertEqual(lambda_cli.call_args_list[0][0][0]['lambda']['name'], "fname")
 
