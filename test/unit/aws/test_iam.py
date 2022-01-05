@@ -17,7 +17,7 @@ import unittest
 import sys
 import os
 from mock import MagicMock
-from mock import patch, call
+from mock import patch
 
 sys.path.append("..")
 sys.path.append(".")
