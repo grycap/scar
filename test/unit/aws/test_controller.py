@@ -28,7 +28,7 @@ sys.path.append("../..")
 from scar.providers.aws.controller import AWS
 
 
-class TestIAM(unittest.TestCase):
+class TestController(unittest.TestCase):
 
     def __init__(self, *args):
         os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
@@ -51,12 +51,13 @@ class TestIAM(unittest.TestCase):
         AWS("invoke")
         self.assertEqual(lambda_cli.call_args_list[0][0][0]['lambda']['name'], "fname")
 
+    @patch('scar.providers.aws.controller.IAM')
     @patch('scar.providers.aws.controller.S3')
     @patch('scar.providers.aws.controller.APIGateway')
     @patch('scar.providers.aws.controller.CloudWatchLogs')
     @patch('scar.providers.aws.controller.Lambda')
     @patch('scar.providers.aws.controller.FileUtils.load_tmp_config_file')
-    def test_init(self, load_tmp_config_file, lambda_cli, cloud_watch_cli, api_gateway_cli, s3_cli):
+    def test_init(self, load_tmp_config_file, lambda_cli, cloud_watch_cli, api_gateway_cli, s3_cli, iam_cli):
         lcli = MagicMock(['find_function', 'create_function', 'get_access_key',
                           'add_invocation_permission_from_api_gateway', 'link_function_and_bucket'])
         lcli.find_function.return_value = False
@@ -71,6 +72,9 @@ class TestIAM(unittest.TestCase):
         s3_cli.return_value = s3cli
         api_gateway_cli.return_value = agcli
         cloud_watch_cli.return_value = cwcli
+        iamcli = MagicMock(['get_user_name_or_id'])
+        iamcli.get_user_name_or_id.return_value = "username"
+        iam_cli.return_value = iamcli
         load_tmp_config_file.return_value = {"functions": {"aws": [{"lambda": {"name": "fname",
                                                                                "input": [{"storage_provider": "s3",
                                                                                           "path": "some"}],
@@ -82,4 +86,5 @@ class TestIAM(unittest.TestCase):
         self.assertEqual(lcli.create_function.call_count, 1)
         self.assertEqual(cwcli.create_log_group.call_count, 1)
         self.assertEqual(agcli.create_api_gateway.call_count, 1)
+        self.assertEqual(iamcli.get_user_name_or_id.call_count, 1)
         self.assertEqual(s3cli.create_bucket_and_folders.call_args_list[0][0][0], 'some')
