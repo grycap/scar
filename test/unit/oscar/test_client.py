@@ -24,7 +24,7 @@ sys.path.append(".")
 sys.path.append("../..")
 
 from scar.providers.oscar.client import OSCARClient
-
+from scar.exceptions import ServiceCreationError
 
 class TestOSCARClient(unittest.TestCase):
 
@@ -33,13 +33,22 @@ class TestOSCARClient(unittest.TestCase):
 
     @patch('requests.post')
     def test_create_serviced(self, post):
-        response = MagicMock("status_code")
+        response = MagicMock(["status_code", "text"])
         response.status_code = 201
         post.return_value = response
         oscar = OSCARClient({"endpoint": "url", "auth_user": "user", "auth_password": "pass", "ssl_verify": False}, "cid")
         oscar.create_service(key="value")
         self.assertEqual(post.call_args_list[0][0][0], "url/system/services")
         self.assertEqual(post.call_args_list[0][1], {'auth': ('user', 'pass'), 'verify': False, 'json': {'key': 'value'}})
+
+        response.status_code = 401
+        response.text = "Some error"
+        with self.assertRaises(ServiceCreationError) as ex:
+            oscar.create_service(name="sname")
+        self.assertEqual(
+            "Unable to create the service 'sname': Some error",
+            str(ex.exception)
+        )
 
     @patch('requests.delete')
     def test_delete_service(self, delete):
