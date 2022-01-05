@@ -24,7 +24,7 @@ sys.path.append(".")
 sys.path.append("../..")
 
 from scar.providers.oscar.client import OSCARClient
-from scar.exceptions import ServiceCreationError
+from scar.exceptions import ServiceCreationError, ServiceDeletionError, ServiceNotFoundError, ListServicesError
 
 class TestOSCARClient(unittest.TestCase):
 
@@ -52,13 +52,22 @@ class TestOSCARClient(unittest.TestCase):
 
     @patch('requests.delete')
     def test_delete_service(self, delete):
-        response = MagicMock("status_code")
+        response = MagicMock(["status_code", "text"])
         response.status_code = 204
         delete.return_value = response
         oscar = OSCARClient({"endpoint": "url", "auth_user": "user", "auth_password": "pass", "ssl_verify": False}, "cid")
         oscar.delete_service("sname")
         self.assertEqual(delete.call_args_list[0][0][0], "url/system/services/sname")
         self.assertEqual(delete.call_args_list[0][1], {'auth': ('user', 'pass'), 'verify': False})
+
+        response.status_code = 401
+        response.text = "Some error"
+        with self.assertRaises(ServiceDeletionError) as ex:
+            oscar.delete_service("sname")
+        self.assertEqual(
+            "Unable to delete the service 'sname': Some error",
+            str(ex.exception)
+        )
 
     @patch('requests.get')
     def test_get_service(self, get):
@@ -71,6 +80,15 @@ class TestOSCARClient(unittest.TestCase):
         self.assertEqual(get.call_args_list[0][0][0], "url/system/services/sname")
         self.assertEqual(get.call_args_list[0][1], {'auth': ('user', 'pass'), 'verify': False})
 
+        response.status_code = 401
+        response.text = "Some error"
+        with self.assertRaises(ServiceNotFoundError) as ex:
+            oscar.get_service("sname"), {"key": "value"}
+        self.assertEqual(
+            "The service 'sname' does not exist: Some error",
+            str(ex.exception)
+        )
+
     @patch('requests.get')
     def test_list_services(self, get):
         response = MagicMock(["status_code", "json"])
@@ -81,3 +99,12 @@ class TestOSCARClient(unittest.TestCase):
         self.assertEqual(oscar.list_services(), {"key": "value"})
         self.assertEqual(get.call_args_list[0][0][0], "url/system/services")
         self.assertEqual(get.call_args_list[0][1], {'auth': ('user', 'pass'), 'verify': False})
+
+        response.status_code = 401
+        response.text = "Some error"
+        with self.assertRaises(ListServicesError) as ex:
+            oscar.list_services(), {"key": "value"}
+        self.assertEqual(
+            "Unable to list services from OSCAR cluster 'cid': Some error",
+            str(ex.exception)
+        )
