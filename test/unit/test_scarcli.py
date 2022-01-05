@@ -17,7 +17,7 @@ import unittest
 import sys
 import os
 import tempfile
-from mock import MagicMock
+import yaml
 from mock import patch
 
 sys.path.append("..")
@@ -45,3 +45,7 @@ class TestSCARCli(unittest.TestCase):
         os.unlink(tmpfile.name)
         self.assertEqual(aws.call_args_list[0][0], ('init',))
         self.assertEqual(oscar.call_args_list[0][0], ('init',))
+        with open(os.environ['SCAR_TMP_CFG']) as f:
+            cfg_file = yaml.load(f.read())
+        self.assertEqual(cfg_file["functions"]["aws"][0]["api_gateway"]["boto_profile"], "default")
+        os.unlink(os.environ['SCAR_TMP_CFG'])
