@@ -150,7 +150,7 @@ class Lambda(GenericClient):
         client.login(username=username, password=password, registry=registry)
 
         # Push the image, and change it in the container image to use it insteads of the user one
-        logger.info('Pushing new image to ECR')
+        logger.info('Pushing new image to ECR ...')
         for line in client.images.push(ecr_image, stream=True, decode=True):
             logger.debug(line)
         self.function['container']['image'] = "%s:latest" % ecr_image
