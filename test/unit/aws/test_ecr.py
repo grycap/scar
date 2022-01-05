@@ -15,6 +15,7 @@
 # limitations under the License.
 import unittest
 import sys
+import os
 from mock import MagicMock
 from mock import patch, call
 
@@ -28,6 +29,7 @@ from scar.providers.aws.ecr import ECR
 class TestECR(unittest.TestCase):
 
     def __init__(self, *args):
+        os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
         unittest.TestCase.__init__(self, *args)
 
     def test_init(self):

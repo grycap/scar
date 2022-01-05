@@ -28,6 +28,7 @@ from scar.providers.aws.iam import IAM
 class TestIAM(unittest.TestCase):
 
     def __init__(self, *args):
+        os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
         unittest.TestCase.__init__(self, *args)
 
     def test_init(self):
