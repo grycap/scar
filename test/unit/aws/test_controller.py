@@ -17,6 +17,7 @@ import unittest
 import sys
 import os
 import base64
+import json
 from mock import MagicMock
 from mock import patch
 from scar.providers.aws import response
@@ -62,7 +63,9 @@ class TestController(unittest.TestCase):
     @patch('scar.providers.aws.controller.CloudWatchLogs')
     @patch('scar.providers.aws.controller.Lambda')
     @patch('scar.providers.aws.controller.FileUtils.load_tmp_config_file')
-    def test_init(self, load_tmp_config_file, lambda_cli, cloud_watch_cli, api_gateway_cli, s3_cli, iam_cli):
+    @patch('scar.providers.aws.controller.SupervisorUtils.check_supervisor_version')
+    def test_init(self, check_supervisor_version, load_tmp_config_file, lambda_cli,
+                 cloud_watch_cli, api_gateway_cli, s3_cli, iam_cli):
         lcli = MagicMock(['find_function', 'create_function', 'get_access_key',
                           'add_invocation_permission_from_api_gateway', 'link_function_and_bucket'])
         lcli.find_function.return_value = False
@@ -87,9 +90,81 @@ class TestController(unittest.TestCase):
                                                                     "iam": {"account_id": "id",
                                                                             "role": "role"},
                                                                     "api_gateway": {"name": "api_name"}}]}}
+        check_supervisor_version.return_value = '1.4.2'
+
         AWS("init")
         self.assertEqual(lcli.create_function.call_count, 1)
         self.assertEqual(cwcli.create_log_group.call_count, 1)
         self.assertEqual(agcli.create_api_gateway.call_count, 1)
         self.assertEqual(iamcli.get_user_name_or_id.call_count, 1)
         self.assertEqual(s3cli.create_bucket_and_folders.call_args_list[0][0][0], 'some')
+
+    @patch('scar.providers.aws.controller.IAM')
+    @patch('scar.providers.aws.controller.Lambda')
+    @patch('scar.providers.aws.controller.FileUtils.load_tmp_config_file')
+    @patch('scar.providers.aws.controller.SupervisorUtils.check_supervisor_version')
+    def test_run(self, check_supervisor_version, load_tmp_config_file, lambda_cli, iam_cli):
+        lcli = MagicMock(['launch_lambda_instance'])
+        payload = MagicMock(['read'])
+        payload_json = {'headers': {'amz-log-group-name': 'group',
+                                            'amz-log-stream-name': 'stream'},
+                        'isBase64Encoded': False,
+                        'body': 'body'}
+        payload.read.return_value = json.dumps(payload_json).encode()
+        response = {'LogResult': base64.b64encode(b"log"),
+                    'Payload': payload,
+                    'StatusCode': 200,
+                    'ResponseMetadata': {'RequestId': 'reqid',
+                                         'HTTPHeaders': {'x-amz-log-result': base64.b64encode(b"log2")}}}
+        lcli.launch_lambda_instance.return_value = {'OutputFile': 'file', 'Response': response,
+                                                    'IsAsynchronous': False}
+        lambda_cli.return_value = lcli
+        load_tmp_config_file.return_value = {"functions": {"aws": [{"lambda": {"name": "fname",
+                                                                               "supervisor": {"version": "latest"}},
+                                                                    "iam": {"account_id": "id",
+                                                                            "role": "role"}}]}}
+        iamcli = MagicMock(['get_user_name_or_id'])
+        iamcli.get_user_name_or_id.return_value = "username"
+        iam_cli.return_value = iamcli
+        check_supervisor_version.return_value = '1.4.2'
+
+        AWS("run")
+        self.assertEqual(lambda_cli.call_args_list[0][0][0]['lambda']['name'], "fname")
+
+    @patch('scar.providers.aws.controller.IAM')
+    @patch('scar.providers.aws.controller.Lambda')
+    @patch('scar.providers.aws.controller.APIGateway')
+    @patch('scar.providers.aws.controller.CloudWatchLogs')
+    @patch('scar.providers.aws.controller.Batch')
+    @patch('scar.providers.aws.controller.FileUtils.load_tmp_config_file')
+    def test_rm(self, load_tmp_config_file, batch_cli, cloud_watch_cli, api_gateway_cli, lambda_cli, iam_cli):
+        lcli = MagicMock(['find_function', 'get_function_configuration', 'get_fdl_config', 'delete_function'])
+        lcli.get_function_configuration.return_value = {'Environment': {'Variables': {'API_GATEWAY_ID': 'i'}}}
+        lcli.find_function.return_value = True
+        lcli.get_fdl_config.return_value = {'input': False}
+        lcli.delete_function.return_value = ""
+        lambda_cli.return_value = lcli
+        load_tmp_config_file.return_value = {"functions": {"aws": [{"lambda": {"name": "fname",
+                                                                               "environment": {'Variables': {}},
+                                                                               "supervisor": {"version": "latest"}},
+                                                                    "iam": {"account_id": "id",
+                                                                            "role": "role"}}]}}
+        iamcli = MagicMock(['get_user_name_or_id'])
+        iamcli.get_user_name_or_id.return_value = "username"
+        iam_cli.return_value = iamcli
+        agcli = MagicMock(['delete_api_gateway'])
+        agcli.delete_api_gateway.return_value = ""
+        api_gateway_cli.return_value = agcli
+        cwcli = MagicMock(['delete_log_group', 'get_log_group_name'])
+        cwcli.delete_log_group.return_value = ""
+        cwcli.get_log_group_name.return_value = "gname"
+        cloud_watch_cli.return_value = cwcli
+        bcli = MagicMock(['exist_compute_environments', 'delete_compute_environment'])
+        bcli.exist_compute_environments.return_value = True
+        batch_cli.return_value = bcli
+        AWS("rm")
+        self.assertEqual(lambda_cli.call_args_list[0][0][0]['lambda']['name'], "fname")
+        self.assertEqual(cwcli.delete_log_group.call_count, 1)
+        self.assertEqual(agcli.delete_api_gateway.call_count, 1)
+        self.assertEqual(lcli.delete_function.call_count, 1)
+        self.assertEqual(bcli.delete_compute_environment.call_count, 1)
