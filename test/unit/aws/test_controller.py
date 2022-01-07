@@ -227,3 +227,42 @@ class TestController(unittest.TestCase):
         self.assertEqual(s3cli.upload_file.call_args_list[1][1], {'bucket': 'bucket',
                                                                   'folder_name': 'folder',
                                                                   'file_path': 'f2'})
+
+    @patch('scar.providers.aws.controller.IAM')
+    @patch('scar.providers.aws.controller.CloudWatchLogs')
+    @patch('scar.providers.aws.controller.FileUtils.load_tmp_config_file')
+    def test_log(self, load_tmp_config_file, cloud_watch_cli, iam_cli):
+        load_tmp_config_file.return_value = {"functions": {"aws": [{"lambda": {"name": "fname",
+                                                                               "input": [{"storage_provider": "s3",
+                                                                                          "path": "some"}],
+                                                                               "supervisor": {"version": "latest"}},
+                                                                    "iam": {"account_id": "id",
+                                                                            "role": "role"}}]}}
+        iamcli = MagicMock(['get_user_name_or_id'])
+        iamcli.get_user_name_or_id.return_value = "username"
+        iam_cli.return_value = iamcli
+        cwcli = MagicMock(['get_aws_logs'])
+        cwcli.get_aws_logs.return_value = ""
+        cloud_watch_cli.return_value = cwcli
+
+        AWS("log")
+        self.assertEqual(cwcli.get_aws_logs.call_count, 1)
+
+    @patch('scar.providers.aws.controller.IAM')
+    @patch('scar.providers.aws.controller.S3')
+    @patch('scar.providers.aws.controller.FileUtils.load_tmp_config_file')
+    def test_ls(self, load_tmp_config_file, s3_cli, iam_cli):
+        load_tmp_config_file.return_value = {"functions": {"aws": [{"lambda": {"name": "fname",
+                                                                               "input": [{"storage_provider": "s3",
+                                                                                          "path": "some"}],
+                                                                               "supervisor": {"version": "latest"}},
+                                                                    "iam": {"account_id": "id",
+                                                                            "role": "role"}}]}}
+        iamcli = MagicMock(['get_user_name_or_id'])
+        iamcli.get_user_name_or_id.return_value = "username"
+        iam_cli.return_value = iamcli
+        s3wcli = MagicMock(['get_bucket_file_list'])
+        s3wcli.get_bucket_file_list.return_value = ['f1', 'f2']
+        s3_cli.return_value = s3wcli
+
+        AWS("ls")
