@@ -101,10 +101,12 @@ class TestController(unittest.TestCase):
 
     @patch('scar.providers.aws.controller.IAM')
     @patch('scar.providers.aws.controller.Lambda')
+    @patch('scar.providers.aws.controller.S3')
     @patch('scar.providers.aws.controller.FileUtils.load_tmp_config_file')
     @patch('scar.providers.aws.controller.SupervisorUtils.check_supervisor_version')
-    def test_run(self, check_supervisor_version, load_tmp_config_file, lambda_cli, iam_cli):
-        lcli = MagicMock(['launch_lambda_instance'])
+    @patch('scar.providers.aws.controller.input')
+    def test_run(self, mock_input, check_supervisor_version, load_tmp_config_file, s3_cli, lambda_cli, iam_cli):
+        lcli = MagicMock(['launch_lambda_instance', 'launch_request_response_event', 'process_asynchronous_lambda_invocations'])
         payload = MagicMock(['read'])
         payload_json = {'headers': {'amz-log-group-name': 'group',
                                             'amz-log-stream-name': 'stream'},
@@ -120,6 +122,8 @@ class TestController(unittest.TestCase):
                                                     'IsAsynchronous': False}
         lambda_cli.return_value = lcli
         load_tmp_config_file.return_value = {"functions": {"aws": [{"lambda": {"name": "fname",
+                                                                               "input": [{"storage_provider": "s3",
+                                                                                          "path": "some"}],
                                                                                "supervisor": {"version": "latest"}},
                                                                     "iam": {"account_id": "id",
                                                                             "role": "role"}}]}}
@@ -127,6 +131,10 @@ class TestController(unittest.TestCase):
         iamcli.get_user_name_or_id.return_value = "username"
         iam_cli.return_value = iamcli
         check_supervisor_version.return_value = '1.4.2'
+        s3cli = MagicMock(['get_bucket_file_list', 'get_s3_event', 'get_s3_event_list'])
+        s3cli.get_bucket_file_list.return_value = ['f1', 'f2']
+        s3_cli.return_value = s3cli
+        mock_input.return_value = "Y"
 
         AWS("run")
         self.assertEqual(lambda_cli.call_args_list[0][0][0]['lambda']['name'], "fname")
@@ -162,6 +170,7 @@ class TestController(unittest.TestCase):
         bcli = MagicMock(['exist_compute_environments', 'delete_compute_environment'])
         bcli.exist_compute_environments.return_value = True
         batch_cli.return_value = bcli
+
         AWS("rm")
         self.assertEqual(lambda_cli.call_args_list[0][0][0]['lambda']['name'], "fname")
         self.assertEqual(cwcli.delete_log_group.call_count, 1)
