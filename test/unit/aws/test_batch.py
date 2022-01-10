@@ -130,8 +130,7 @@ class TestBatch(unittest.TestCase):
         self.assertEqual(batch.client.client.create_compute_environment.call_args_list[0][1], res)
 
     @patch('boto3.Session')
-    @patch('scar.providers.aws.controller.FileUtils.load_tmp_config_file')
-    def test_delete_compute_environment(self, load_tmp_config_file, boto_session):
+    def test_delete_compute_environment(self, boto_session):
         session = MagicMock(['client'])
         client = MagicMock(['describe_job_definitions', 'deregister_job_definition',
                             'describe_job_queues', 'update_job_queue', 'delete_job_queue',
