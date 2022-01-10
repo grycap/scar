@@ -32,8 +32,8 @@ class TestBatch(unittest.TestCase):
         unittest.TestCase.__init__(self, *args)
 
     def test_init(self):
-        ecr = Batch({'lambda': {'name': 'fname'}})
-        self.assertEqual(type(ecr.client.client).__name__, "Batch")
+        batch = Batch({'lambda': {'name': 'fname'}})
+        self.assertEqual(type(batch.client.client).__name__, "Batch")
 
     @patch('boto3.Session')
     @patch('scar.providers.aws.launchtemplates.SupervisorUtils.get_supervisor_binary_url')
@@ -56,6 +56,9 @@ class TestBatch(unittest.TestCase):
                        'batch': {'service_role': 'srole',
                                  'memory': 1024,
                                  'vcpus': 1,
+                                 'type': 'MANAGED',
+                                 'state': 'ENABLED',
+                                 'enable_gpu': True,
                                  'compute_resources': {'instance_role': 'irole',
                                                        'type': 'EC2',
                                                        'min_v_cpus': 0,
@@ -103,15 +106,17 @@ class TestBatch(unittest.TestCase):
                                    {'name': 'SCRIPT', 'value': ''},
                                    {'name': 'FUNCTION_CONFIG', 'value': func_config_64}],
                    'mountPoints': [{'containerPath': '/opt/faas-supervisor/bin',
-                                   'sourceVolume': 'supervisor-bin'}]},
+                                   'sourceVolume': 'supervisor-bin'}],
+                   'resourceRequirements': [{'value': '1',
+                                             'type': 'GPU'}]},
                'type': 'container'}
         self.assertEqual(batch.client.client.register_job_definition.call_args_list[0][1], res)
         self.assertEqual(batch.client.client.create_launch_template.call_args_list[0][1]['LaunchTemplateName'], 'temp_name')
         self.assertEqual(batch.client.client.create_launch_template.call_args_list[0][1]['VersionDescription'], '1.4.2')
         res = {'computeEnvironmentName': 'fname',
                'serviceRole': 'srole',
-               'type': None,
-               'state': None,
+               'type': 'MANAGED',
+               'state': 'ENABLED',
                'computeResources': {'type': 'EC2',
                                     'minvCpus': 0,
                                     'maxvCpus': 2,
@@ -123,3 +128,40 @@ class TestBatch(unittest.TestCase):
                                     'launchTemplate': {'launchTemplateName': 'temp_name',
                                                        'version': '1'}}}
         self.assertEqual(batch.client.client.create_compute_environment.call_args_list[0][1], res)
+
+    @patch('boto3.Session')
+    @patch('scar.providers.aws.controller.FileUtils.load_tmp_config_file')
+    def test_delete_compute_environment(self, load_tmp_config_file, boto_session):
+        session = MagicMock(['client'])
+        client = MagicMock(['describe_job_definitions', 'deregister_job_definition',
+                            'describe_job_queues', 'update_job_queue', 'delete_job_queue',
+                            'describe_compute_environments', 'update_compute_environment',
+                            'delete_compute_environment'])
+        session.client.return_value = client
+        boto_session.return_value = session
+
+        batch = Batch({'lambda': {'name': 'fname'}})
+
+        batch.client.client.describe_job_definitions.return_value = {}
+        batch.client.client.describe_job_queues.side_effect = [{'jobQueues': [{'state': 'ENABLED',
+                                                                               'status': 'VALID'}]},
+                                                               {'jobQueues': [{'state': 'DISABLED',
+                                                                               'status': 'VALID'}]},
+                                                               {'jobQueues': []}]
+        batch.client.client.describe_compute_environments.side_effect = [
+            {'computeEnvironments': [{'state': 'ENABLED', 'status': 'VALID'}]},
+            {'computeEnvironments': [{'state': 'DISABLED', 'status': 'VALID'}]},
+            {'computeEnvironments': []}
+        ]
+
+        batch.delete_compute_environment()
+
+        res = {'jobQueue': 'fname', 'state': 'DISABLED'}
+        self.assertEqual(batch.client.client.update_job_queue.call_args_list[0][1], res)
+        res = {'jobQueue': 'fname'}
+        self.assertEqual(batch.client.client.delete_job_queue.call_args_list[0][1], res)
+
+        res = {'computeEnvironment': 'fname', 'state': 'DISABLED'}
+        self.assertEqual(batch.client.client.update_compute_environment.call_args_list[0][1], res)
+        res = {'computeEnvironment': 'fname'}
+        self.assertEqual(batch.client.client.delete_compute_environment.call_args_list[0][1], res)
