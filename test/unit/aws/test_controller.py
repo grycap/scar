@@ -20,7 +20,6 @@ import base64
 import json
 from mock import MagicMock
 from mock import patch
-from scar.providers.aws import response
 
 sys.path.append("..")
 sys.path.append(".")
