@@ -91,8 +91,7 @@ class CloudWatchLogs(GenericClient):
                 kwargs['logStreamNames'] = [job.get("container", {}).get("logStreamName", "")]
                 batch_events = self.client.get_log_events(**kwargs)
                 msgs = [event.get('message', '')
-                        for response in batch_events
-                        for event in response.get("events", {})]
+                        for event in batch_events]
                 batch_logs += '\n'.join(msgs)
         return batch_logs
 
