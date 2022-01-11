@@ -35,6 +35,33 @@ class TestLambda(unittest.TestCase):
         os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
         unittest.TestCase.__init__(self, *args)
 
+    def _init_mocks(self, call_list):
+        session = MagicMock(['client'])
+        client = MagicMock(call_list)
+        session.client.return_value = client
+
+        resource_info = {'lambda': {'name': 'fname',
+                                'runtime': 'python3.7',
+                                'timeout': 300,
+                                'memory': 512,
+                                'layers': [],
+                                'tags': {'createdby': 'scar'},
+                                'handler': 'some.handler',
+                                'description': 'desc',
+                                'deployment': {'bucket': 'someb',
+                                            'max_s3_payload_size': 262144000},
+                                'environment': {'Variables': {'IMAGE_ID': 'some/image'}},
+                                'container': {'image': 'some/image:tag',
+                                            'image_file': 'some.tgz',
+                                            'environment': {'Variables': {}}},
+                                'supervisor': {'version': '1.4.2',
+                                            'layer_name': 'layername'}},
+                        'ecr': {"delete_image": True},
+                        'iam': {'role': 'iamrole'}}
+
+        lam = Lambda(resource_info)
+        return session, lam, client
+
     def test_init(self):
         cli = Lambda({'lambda': {'name': 'fname',
                                  'supervisor': {'version': '1.4.2'}}})
@@ -46,32 +73,15 @@ class TestLambda(unittest.TestCase):
     @patch('scar.providers.aws.controller.FileUtils.load_tmp_config_file')
     def test_create_function(self, load_tmp_config_file, prepare_udocker_image,
                              download_supervisor, boto_session):
-        session = MagicMock(['client'])
-        client = MagicMock(['list_layers', 'publish_layer_version', 'get_bucket_location', 'put_object',
+        session, lam, client = self._init_mocks(['list_layers', 'publish_layer_version', 'get_bucket_location', 'put_object',
                             'create_function', 'list_layer_versions'])
-        session.client.return_value = client
         boto_session.return_value = session
+
         load_tmp_config_file.return_value = {}
 
         tests_path = os.path.dirname(os.path.abspath(__file__))
         download_supervisor.return_value = os.path.join(tests_path, "../../files/supervisor.zip")
-        lam = Lambda({'lambda': {'name': 'fname',
-                                 'runtime': 'python3.7',
-                                 'timeout': 300,
-                                 'memory': 512,
-                                 'layers': [],
-                                 'tags': {'createdby': 'scar'},
-                                 'handler': 'some.handler',
-                                 'description': 'desc',
-                                 'deployment': {'bucket': 'someb',
-                                                'max_s3_payload_size': 262144000},
-                                 'environment': {'Variables': {'IMAGE_ID': 'some/image'}},
-                                 'container': {'image': 'some/image:tag',
-                                               'image_file': 'some.tgz',
-                                               'environment': {'Variables': {}}},
-                                 'supervisor': {'version': '1.4.2',
-                                                'layer_name': 'layername'}},
-                        'iam': {'role': 'iamrole'}})
+
         lam.client.client.list_layers.return_value = {'Layers': [{'LayerName': 'layername'}]}
         lam.client.client.publish_layer_version.return_value = {'LayerVersionArn': '1'}
         lam.client.client.create_function.return_value = {'FunctionArn': 'farn'}
@@ -103,31 +113,14 @@ class TestLambda(unittest.TestCase):
     @patch('docker.from_env')
     def test_create_function_image(self, from_env, unzip_folder, load_tmp_config_file,
                                    download_supervisor, boto_session):
-        session = MagicMock(['client'])
-        client = MagicMock(['create_function', 'create_repository', 'describe_registry', 'get_authorization_token'])
-        session.client.return_value = client
+        session, lam, client = self._init_mocks(['create_function', 'create_repository',
+                                                 'describe_registry', 'get_authorization_token'])
         boto_session.return_value = session
+
         load_tmp_config_file.return_value = {}
 
         tests_path = os.path.dirname(os.path.abspath(__file__))
         download_supervisor.return_value = os.path.join(tests_path, "../../files/supervisor.zip")
-        lam = Lambda({'lambda': {'name': 'fname',
-                                 'runtime': 'image',
-                                 'timeout': 300,
-                                 'memory': 512,
-                                 'layers': [],
-                                 'tags': {'createdby': 'scar'},
-                                 'handler': 'some.handler',
-                                 'description': 'desc',
-                                 'deployment': {'bucket': 'someb',
-                                                'max_s3_payload_size': 262144000},
-                                 'environment': {'Variables': {'IMAGE_ID': 'some/image'}},
-                                 'container': {'image': 'some/image:tag',
-                                               'image_file': 'some.tgz',
-                                               'environment': {'Variables': {}}},
-                                 'supervisor': {'version': '1.4.2',
-                                                'layer_name': 'layername'}},
-                        'iam': {'role': 'iamrole'}})
         
         docker = MagicMock(['login', 'images'])
         docker.images = MagicMock(['build', 'push'])
@@ -137,6 +130,7 @@ class TestLambda(unittest.TestCase):
         client.describe_registry.return_value = {'registryId': 'regid'}
         client.get_authorization_token.return_value = {'authorizationData': [{'authorizationToken': 'QVdTOnRva2Vu'}]}
 
+        lam.resources_info['lambda']['runtime'] = 'image'
         lam.create_function()
         res = {'FunctionName': 'fname',
                'Role': 'iamrole',
@@ -150,3 +144,50 @@ class TestLambda(unittest.TestCase):
         self.assertEqual(lam.client.client.create_function.call_args_list[0][1], res)
         self.assertEqual(docker.images.push.call_args_list[0][0][0], "repouri")
         self.assertEqual(docker.images.build.call_args_list[0][1]['tag'], "repouri")
+
+    @patch('boto3.Session')
+    def test_delete_function(self, boto_session):
+        session, lam, _ = self._init_mocks(['delete_function'])
+        boto_session.return_value = session
+
+        lam.client.client.delete_function.return_value = {}
+        
+        lam.delete_function()
+        self.assertEqual(lam.client.client.delete_function.call_args_list[0][1], {'FunctionName': 'fname'})
+
+    @patch('boto3.Session')
+    @patch('scar.providers.aws.lambdafunction.ECR')
+    def test_delete_function_image(self, ecr_client, boto_session):
+        session, lam, _ = self._init_mocks(['delete_function'])
+        boto_session.return_value = session
+  
+        ecr = MagicMock(['get_repository_uri', 'delete_repository'])
+        ecr.get_repository_uri.return_value = "repouri"
+        ecr_client.return_value = ecr
+
+        lam.client.client.delete_function.return_value = {}
+        lam.resources_info['lambda']['runtime'] = 'image'
+        
+        lam.delete_function()
+        self.assertEqual(lam.client.client.delete_function.call_args_list[0][1], {'FunctionName': 'fname'})
+        self.assertEqual(ecr.delete_repository.call_args_list[0][0][0], 'fname')
+
+    @patch('boto3.Session')
+    def test_preheat_function(self, boto_session):
+        session, lam, _ = self._init_mocks(['invoke'])
+        boto_session.return_value = session
+        
+        lam.preheat_function()
+        res = {'FunctionName': 'fname', 'InvocationType': 'Event', 'LogType': 'None', 'Payload': '{}'}
+        self.assertEqual(lam.client.client.invoke.call_args_list[0][1], res)
+
+    @patch('boto3.Session')
+    def test_find_function(self, boto_session):
+        session, lam, _ = self._init_mocks(['get_function_configuration'])
+        boto_session.return_value = session
+
+        lam.client.client.get_function_configuration.return_value = {}
+        
+        self.assertEqual(lam.find_function('fname'), True)
+        res = {'FunctionName': 'fname'}
+        self.assertEqual(lam.client.client.get_function_configuration.call_args_list[0][1], res)
