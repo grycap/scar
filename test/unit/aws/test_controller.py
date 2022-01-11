@@ -18,6 +18,7 @@ import sys
 import os
 import base64
 import json
+from io import StringIO
 from mock import MagicMock
 from mock import patch
 
@@ -241,16 +242,23 @@ class TestController(unittest.TestCase):
         iamcli.get_user_name_or_id.return_value = "username"
         iam_cli.return_value = iamcli
         cwcli = MagicMock(['get_aws_logs'])
-        cwcli.get_aws_logs.return_value = ""
+        cwcli.get_aws_logs.return_value = "log\nlog2"
         cloud_watch_cli.return_value = cwcli
 
+        old_stdout = sys.stdout
+        sys.stdout = StringIO()
         AWS("log")
+        res = sys.stdout.getvalue()
+        sys.stdout = old_stdout
         self.assertEqual(cwcli.get_aws_logs.call_count, 1)
+        self.assertEqual(res, 'log\nlog2\n')
 
     @patch('scar.providers.aws.controller.IAM')
     @patch('scar.providers.aws.controller.S3')
+    @patch('scar.providers.aws.controller.ResourceGroups')
+    @patch('scar.providers.aws.controller.Lambda')
     @patch('scar.providers.aws.controller.FileUtils.load_tmp_config_file')
-    def test_ls(self, load_tmp_config_file, s3_cli, iam_cli):
+    def test_ls(self, load_tmp_config_file, lambda_cli, res_cli, s3_cli, iam_cli):
         load_tmp_config_file.return_value = {"functions": {"aws": [{"lambda": {"name": "fname",
                                                                                "input": [{"storage_provider": "s3",
                                                                                           "path": "some"}],
@@ -260,8 +268,44 @@ class TestController(unittest.TestCase):
         iamcli = MagicMock(['get_user_name_or_id'])
         iamcli.get_user_name_or_id.return_value = "username"
         iam_cli.return_value = iamcli
-        s3wcli = MagicMock(['get_bucket_file_list'])
-        s3wcli.get_bucket_file_list.return_value = ['f1', 'f2']
-        s3_cli.return_value = s3wcli
+        s3cli = MagicMock(['get_bucket_file_list'])
+        s3cli.get_bucket_file_list.return_value = ['f1', 'f2']
+        s3_cli.return_value = s3cli
+        rcli = MagicMock(['get_resource_arn_list'])
+        res_cli.return_value = rcli
+        rcli.get_resource_arn_list.return_value = ['rarn']
 
+
+
+        old_stdout = sys.stdout
+        sys.stdout = StringIO()
         AWS("ls")
+        res = sys.stdout.getvalue()
+        sys.stdout = old_stdout
+        self.assertEqual(res, 'f1\nf2\n')
+
+        load_tmp_config_file.return_value = {"functions": {"aws": [{"lambda": {"name": "fname",
+                                                                               "supervisor": {"version": "latest"}},
+                                                                    "iam": {"account_id": "id",
+                                                                            "role": "role"}}]}}
+        lcli = MagicMock(['get_all_functions'])
+        lcli.get_all_functions.return_value = [{"lambda": {"environment": {"Variables": {"API_GATEWAY_ID": "aid",
+                                                                                         "IMAGE_ID": "image"}},
+                                                            "supervisor": {"version": "latest"},
+                                                            "memory": 1024,
+                                                            "timeout": 300,
+                                                            "name": "fname"},
+                                                "api_gateway": {"stage_name": "stage",
+                                                                "region": "region"}}]
+        lambda_cli.return_value = lcli
+
+        old_stdout = sys.stdout
+        sys.stdout = StringIO()
+        AWS("ls")
+        res = sys.stdout.getvalue()
+        sys.stdout = old_stdout
+        expected_res = """AWS FUNCTIONS:
+NAME      MEMORY    TIME  IMAGE_ID    API_URL                                                    SUPERVISOR_VERSION
+------  --------  ------  ----------  ---------------------------------------------------------  --------------------
+fname       1024     300  image       https://aid.execute-api.region.amazonaws.com/stage/launch  latest\n"""
+        self.assertEqual(res, expected_res)
