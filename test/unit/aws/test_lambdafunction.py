@@ -44,8 +44,8 @@ class TestLambda(unittest.TestCase):
     @patch('scar.providers.aws.launchtemplates.SupervisorUtils.download_supervisor')
     @patch('scar.providers.aws.udocker.Udocker.prepare_udocker_image')
     @patch('scar.providers.aws.controller.FileUtils.load_tmp_config_file')
-    @patch('docker.from_env')
-    def test_create_function(self, from_env, load_tmp_config_file, prepare_udocker_image, download_supervisor, boto_session):
+    def test_create_function(self, load_tmp_config_file, prepare_udocker_image,
+                             download_supervisor, boto_session):
         session = MagicMock(['client'])
         client = MagicMock(['list_layers', 'publish_layer_version', 'get_bucket_location', 'put_object',
                             'create_function', 'list_layer_versions'])
@@ -96,13 +96,42 @@ class TestLambda(unittest.TestCase):
         self.assertEqual(lam.client.client.publish_layer_version.call_args_list[0][1]['Description'], "1.4.2")
         self.assertEqual(len(lam.client.client.publish_layer_version.call_args_list[0][1]['Content']['ZipFile']), 99662)
 
-        # Test container image
-        client = MagicMock(['create_repository', 'describe_registry', 'get_authorization_token'])
+    @patch('boto3.Session')
+    @patch('scar.providers.aws.launchtemplates.SupervisorUtils.download_supervisor')
+    @patch('scar.providers.aws.controller.FileUtils.load_tmp_config_file')
+    @patch('scar.providers.aws.lambdafunction.FileUtils.unzip_folder')
+    @patch('docker.from_env')
+    def test_create_function_image(self, from_env, unzip_folder, load_tmp_config_file,
+                                   download_supervisor, boto_session):
+        session = MagicMock(['client'])
+        client = MagicMock(['create_function', 'create_repository', 'describe_registry', 'get_authorization_token'])
+        session.client.return_value = client
+        boto_session.return_value = session
+        load_tmp_config_file.return_value = {}
+
+        tests_path = os.path.dirname(os.path.abspath(__file__))
+        download_supervisor.return_value = os.path.join(tests_path, "../../files/supervisor.zip")
+        lam = Lambda({'lambda': {'name': 'fname',
+                                 'runtime': 'image',
+                                 'timeout': 300,
+                                 'memory': 512,
+                                 'layers': [],
+                                 'tags': {'createdby': 'scar'},
+                                 'handler': 'some.handler',
+                                 'description': 'desc',
+                                 'deployment': {'bucket': 'someb',
+                                                'max_s3_payload_size': 262144000},
+                                 'environment': {'Variables': {'IMAGE_ID': 'some/image'}},
+                                 'container': {'image': 'some/image:tag',
+                                               'image_file': 'some.tgz',
+                                               'environment': {'Variables': {}}},
+                                 'supervisor': {'version': '1.4.2',
+                                                'layer_name': 'layername'}},
+                        'iam': {'role': 'iamrole'}})
+        
         docker = MagicMock(['login', 'images'])
         docker.images = MagicMock(['build', 'push'])
         from_env.return_value = docker
-        session.client.return_value = client
-        lam.resources_info['lambda']['runtime'] = 'image'
 
         client.create_repository.return_value = {"repository": {"repositoryUri": "repouri"}}
         client.describe_registry.return_value = {'registryId': 'regid'}
@@ -118,6 +147,6 @@ class TestLambda(unittest.TestCase):
                'PackageType': 'Image',
                'Tags': {'createdby': 'scar'},
                'Code': {'ImageUri': 'repouri:latest'}}
-        self.assertEqual(lam.client.client.create_function.call_args_list[1][1], res)
+        self.assertEqual(lam.client.client.create_function.call_args_list[0][1], res)
         self.assertEqual(docker.images.push.call_args_list[0][0][0], "repouri")
         self.assertEqual(docker.images.build.call_args_list[0][1]['tag'], "repouri")
