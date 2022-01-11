@@ -41,23 +41,24 @@ class TestLambda(unittest.TestCase):
         session.client.return_value = client
 
         resource_info = {'lambda': {'name': 'fname',
-                                'runtime': 'python3.7',
-                                'timeout': 300,
-                                'memory': 512,
-                                'layers': [],
-                                'tags': {'createdby': 'scar'},
-                                'handler': 'some.handler',
-                                'description': 'desc',
-                                'deployment': {'bucket': 'someb',
-                                            'max_s3_payload_size': 262144000},
-                                'environment': {'Variables': {'IMAGE_ID': 'some/image'}},
-                                'container': {'image': 'some/image:tag',
-                                            'image_file': 'some.tgz',
-                                            'environment': {'Variables': {}}},
-                                'supervisor': {'version': '1.4.2',
-                                            'layer_name': 'layername'}},
-                        'ecr': {"delete_image": True},
-                        'iam': {'role': 'iamrole'}}
+                                    'runtime': 'python3.7',
+                                    'timeout': 300,
+                                    'memory': 512,
+                                    'layers': [],
+                                    'log_type': 'Tail',
+                                    'tags': {'createdby': 'scar'},
+                                    'handler': 'some.handler',
+                                    'description': 'desc',
+                                    'deployment': {'bucket': 'someb',
+                                                   'max_s3_payload_size': 262144000},
+                                    'environment': {'Variables': {'IMAGE_ID': 'some/image'}},
+                                    'container': {'image': 'some/image:tag',
+                                                  'image_file': 'some.tgz',
+                                                  'environment': {'Variables': {}}},
+                                    'supervisor': {'version': '1.4.2',
+                                                   'layer_name': 'layername'}},
+                         'ecr': {"delete_image": True},
+                         'iam': {'role': 'iamrole'}}
 
         lam = Lambda(resource_info)
         return session, lam, client
@@ -73,8 +74,8 @@ class TestLambda(unittest.TestCase):
     @patch('scar.providers.aws.controller.FileUtils.load_tmp_config_file')
     def test_create_function(self, load_tmp_config_file, prepare_udocker_image,
                              download_supervisor, boto_session):
-        session, lam, client = self._init_mocks(['list_layers', 'publish_layer_version', 'get_bucket_location', 'put_object',
-                            'create_function', 'list_layer_versions'])
+        session, lam, _ = self._init_mocks(['list_layers', 'publish_layer_version', 'get_bucket_location', 'put_object',
+                                            'create_function', 'list_layer_versions'])
         boto_session.return_value = session
 
         load_tmp_config_file.return_value = {}
@@ -86,7 +87,7 @@ class TestLambda(unittest.TestCase):
         lam.client.client.publish_layer_version.return_value = {'LayerVersionArn': '1'}
         lam.client.client.create_function.return_value = {'FunctionArn': 'farn'}
         lam.client.client.list_layer_versions.return_value = {'LayerVersions': []}
-        
+
         lam.create_function()
 
         res = {'FunctionName': 'fname',
@@ -121,7 +122,7 @@ class TestLambda(unittest.TestCase):
 
         tests_path = os.path.dirname(os.path.abspath(__file__))
         download_supervisor.return_value = os.path.join(tests_path, "../../files/supervisor.zip")
-        
+
         docker = MagicMock(['login', 'images'])
         docker.images = MagicMock(['build', 'push'])
         from_env.return_value = docker
@@ -151,7 +152,7 @@ class TestLambda(unittest.TestCase):
         boto_session.return_value = session
 
         lam.client.client.delete_function.return_value = {}
-        
+
         lam.delete_function()
         self.assertEqual(lam.client.client.delete_function.call_args_list[0][1], {'FunctionName': 'fname'})
 
@@ -160,14 +161,14 @@ class TestLambda(unittest.TestCase):
     def test_delete_function_image(self, ecr_client, boto_session):
         session, lam, _ = self._init_mocks(['delete_function'])
         boto_session.return_value = session
-  
+
         ecr = MagicMock(['get_repository_uri', 'delete_repository'])
         ecr.get_repository_uri.return_value = "repouri"
         ecr_client.return_value = ecr
 
         lam.client.client.delete_function.return_value = {}
         lam.resources_info['lambda']['runtime'] = 'image'
-        
+
         lam.delete_function()
         self.assertEqual(lam.client.client.delete_function.call_args_list[0][1], {'FunctionName': 'fname'})
         self.assertEqual(ecr.delete_repository.call_args_list[0][0][0], 'fname')
@@ -176,7 +177,7 @@ class TestLambda(unittest.TestCase):
     def test_preheat_function(self, boto_session):
         session, lam, _ = self._init_mocks(['invoke'])
         boto_session.return_value = session
-        
+
         lam.preheat_function()
         res = {'FunctionName': 'fname', 'InvocationType': 'Event', 'LogType': 'None', 'Payload': '{}'}
         self.assertEqual(lam.client.client.invoke.call_args_list[0][1], res)
@@ -187,7 +188,23 @@ class TestLambda(unittest.TestCase):
         boto_session.return_value = session
 
         lam.client.client.get_function_configuration.return_value = {}
-        
+
         self.assertEqual(lam.find_function('fname'), True)
         res = {'FunctionName': 'fname'}
         self.assertEqual(lam.client.client.get_function_configuration.call_args_list[0][1], res)
+
+    @patch('boto3.Session')
+    def test_process_asynchronous_lambda_invocations(self, boto_session):
+        session, lam, _ = self._init_mocks(['invoke', 'get_function_configuration'])
+        boto_session.return_value = session
+
+        lam.client.client.get_function_configuration.return_value = {}
+
+        event = {'Records': [{'s3': {'object': {'key': 'okey'}}}]}
+        lam.process_asynchronous_lambda_invocations([event])
+
+        res = {'FunctionName': 'fname',
+               'InvocationType': 'Event',
+               'LogType': 'None',
+               'Payload': '{"Records": [{"s3": {"object": {"key": "okey"}}}]}'}
+        self.assertEqual(lam.client.client.invoke.call_args_list[0][1], res)
