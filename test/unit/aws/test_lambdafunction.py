@@ -54,6 +54,9 @@ class TestLambda(unittest.TestCase):
                                                   'environment': {'Variables': {}}},
                                     'supervisor': {'version': '1.4.2',
                                                    'layer_name': 'layername'}},
+                         'api_gateway': {'endpoint': 'https://{api_id}.{api_region}/{stage_name}/l',
+                                         'region': 'us-east-1',
+                                         'stage_name': 'scar'},
                          'iam': {'role': 'iamrole'}}
 
         lam = Lambda(resource_info)
@@ -148,3 +151,40 @@ class TestLambda(unittest.TestCase):
                'LogType': 'None',
                'Payload': '{"Records": [{"s3": {"object": {"key": "okey"}}}]}'}
         self.assertEqual(lam.client.client.invoke.call_args_list[0][1], res)
+
+    @patch('boto3.Session')
+    @patch('requests.get')
+    def test_call_http_endpoint(self, get, boto_session):
+        session, lam, _ = self._init_mocks(['get_function_configuration'])
+        boto_session.return_value = session
+
+        lam.client.client.get_function_configuration.return_value = {'Environment': {'Variables': {'API_GATEWAY_ID': 'apiid'}}}
+        lam.call_http_endpoint()
+        self.assertEqual(get.call_args_list[0][0][0], 'https://apiid.us-east-1/scar/l')
+
+    @patch('boto3.Session')
+    @patch('requests.get')
+    @patch('scar.providers.aws.lambdafunction.ZipFile')
+    def test_get_fdl_config(self, zipfile, get, boto_session):
+        session, lam, _ = self._init_mocks(['get_function'])
+        boto_session.return_value = session
+
+        response = MagicMock(['content'])
+        response.content = b"aa"
+        get.return_value = response
+        lam.client.client.get_function.return_value = {'SupervisorVersion': '1.4.2',
+                                                       'Code': {'location': 'loc'}}
+
+        zfile = MagicMock(['__enter__', '__exit__'])
+        zipfile.return_value = zfile
+
+        filedata = MagicMock(['read'])
+        filedata.read.side_effect = ["- item\n- item2\n", ""]
+        filecont = MagicMock(['__enter__', '__exit__'])
+        filecont.__enter__.return_value = filedata
+
+        thezip = MagicMock(['open'])
+        thezip.open.return_value = filecont
+        zfile.__enter__.return_value = thezip
+
+        self.assertEqual(lam.get_fdl_config('arn'), ['item', 'item2'])
