@@ -92,7 +92,12 @@ class TestController(unittest.TestCase):
                                                                     "api_gateway": {"name": "api_name"}}]}}
         check_supervisor_version.return_value = '1.4.2'
 
+        old_stdout = sys.stdout
+        sys.stdout = StringIO()
         AWS("init")
+        res = sys.stdout.getvalue()
+        sys.stdout = old_stdout
+        self.assertEqual(res, "Function 'fname' successfully created.\nLog group 'group' successfully created.\n")
         self.assertEqual(lcli.create_function.call_count, 1)
         self.assertEqual(cwcli.create_log_group.call_count, 1)
         self.assertEqual(agcli.create_api_gateway.call_count, 1)
@@ -111,7 +116,7 @@ class TestController(unittest.TestCase):
         payload_json = {'headers': {'amz-log-group-name': 'group',
                                     'amz-log-stream-name': 'stream'},
                         'isBase64Encoded': False,
-                        'body': 'body'}
+                        'body': base64.b64encode(b"body").decode()}
         payload.read.return_value = json.dumps(payload_json).encode()
         response = {'LogResult': base64.b64encode(b"log"),
                     'Payload': payload,
@@ -136,8 +141,27 @@ class TestController(unittest.TestCase):
         s3_cli.return_value = s3cli
         mock_input.return_value = "Y"
 
+        old_stdout = sys.stdout
+        sys.stdout = StringIO()
         AWS("run")
+        res = sys.stdout.getvalue()
+        sys.stdout = old_stdout
+        self.assertEqual(res, "This function has an associated 'S3' input bucket.\nFiles found: '['f1', 'f2']'\n")
         self.assertEqual(lambda_cli.call_args_list[0][0][0]['lambda']['name'], "fname")
+
+        # Test run witout input file
+        load_tmp_config_file.return_value = {"functions": {"aws": [{"lambda": {"name": "fname",
+                                                                               "supervisor": {"version": "latest"}},
+                                                                    "iam": {"account_id": "id",
+                                                                            "role": "role"}}]}}
+
+        old_stdout = sys.stdout
+        sys.stdout = StringIO()
+        AWS("run")
+        res = sys.stdout.getvalue()
+        sys.stdout = old_stdout
+        self.assertEqual(res, 'Request Id: reqid\nLog Group Name: group\nLog Stream Name: stream\nbody\n')
+        self.assertEqual(lambda_cli.call_args_list[1][0][0]['lambda']['name'], "fname")
 
     @patch('scar.providers.aws.controller.IAM')
     @patch('scar.providers.aws.controller.Lambda')
