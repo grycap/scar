@@ -173,7 +173,7 @@ class TestLambda(unittest.TestCase):
         response.content = b"aa"
         get.return_value = response
         lam.client.client.get_function.return_value = {'SupervisorVersion': '1.4.2',
-                                                       'Code': {'location': 'loc'}}
+                                                       'Code': {'Location': 'http://loc.es'}}
 
         zfile = MagicMock(['__enter__', '__exit__'])
         zipfile.return_value = zfile
@@ -188,3 +188,4 @@ class TestLambda(unittest.TestCase):
         zfile.__enter__.return_value = thezip
 
         self.assertEqual(lam.get_fdl_config('arn'), ['item', 'item2'])
+        self.assertEqual(get.call_args_list[0][0][0], "http://loc.es")
