@@ -188,7 +188,7 @@ class Batch(GenericClient):
             ]
         }
         if self.batch.get('enable_gpu'):
-            job_def_args['containerProperties']['resourceRequirements'] = [
+            job_def_args['resourceRequirements'] = [
                 {
                     'value': '1',
                     'type': 'GPU'
