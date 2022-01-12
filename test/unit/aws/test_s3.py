@@ -32,12 +32,11 @@ from scar.providers.aws.s3 import S3
 class TestS3(unittest.TestCase):
 
     def __init__(self, *args):
-        os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
         unittest.TestCase.__init__(self, *args)
 
     def test_init(self):
-        ecr = S3({})
-        self.assertEqual(type(ecr.client.client).__name__, "S3")
+        s3 = S3({})
+        self.assertEqual(type(s3.client.client).__name__, "S3")
 
     def _init_mocks(self, call_list):
         session = MagicMock(['client'])
