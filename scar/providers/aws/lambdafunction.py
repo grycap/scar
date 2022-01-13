@@ -180,7 +180,14 @@ class Lambda(GenericClient):
             if self.function.get('container').get('alpine'):
                 supervisor_zip_path = os.path.abspath('examples/cowsay-ecr/supervisor-alpine.zip')
 
-            self._create_ecr_image(supervisor_zip_path)
+            create_image = self.function.get('container').get('create_image')
+            image_name = self.function.get('container').get('image')
+            if not create_image and ".dkr.ecr." in image_name:
+                logger.debug('Image already prepaired in ECR.')
+                if ":" not in image_name:
+                    self.function['container']['image'] = "%s:latest" % image_name
+            else:
+                self._create_ecr_image(supervisor_zip_path)
         else:
             # Download supervisor
             supervisor_zip_path = SupervisorUtils.download_supervisor(
