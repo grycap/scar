@@ -14,6 +14,7 @@
 """Module with classes and methods used to manage the AWS tools."""
 
 import os
+import time
 from typing import Dict
 from copy import deepcopy
 from scar.cmdtemplate import Commands
@@ -283,7 +284,14 @@ class AWS(Commands):
             for bucket in resources_info.get('lambda').get('input'):
                 if bucket.get('storage_provider') == 's3':
                     bucket_name, folders = s3_service.create_bucket_and_folders(bucket.get('path'))
-                    Lambda(resources_info).link_function_and_bucket(bucket_name)
+                    lambda_client = Lambda(resources_info)
+                    lambda_client.link_function_and_bucket(bucket_name)
+                    # Check if function is already available
+                    logger.info("Wait function to be 'Active'")
+                    if not lambda_client.wait_function_active(resources_info.get('lambda').get('arn')):
+                        logger.error("Timeout waiting function.")
+                    else:
+                        logger.info("Function 'Active'")
                     s3_service.set_input_bucket_notification(bucket_name, folders)
                     if not folders:
                         logger.info(f'Input bucket "{bucket_name}" successfully created')
@@ -344,7 +352,8 @@ class AWS(Commands):
         lambda_client = Lambda(resources_info)
         function_name = resources_info.get('lambda').get('name')
         resources_info['lambda']['arn'] = lambda_client.get_function_configuration(function_name).get('FunctionArn')
-        resources_info['lambda']['input'] = lambda_client.get_fdl_config(function_name).get('input', False)
+        if not resources_info.get('lambda').get('input'):
+            resources_info['lambda']['input'] = lambda_client.get_fdl_config(function_name).get('input', False)
         if resources_info.get('lambda').get('input'):
             for input_storage in resources_info.get('lambda').get('input'):
                 if input_storage.get('storage_provider') == 's3':

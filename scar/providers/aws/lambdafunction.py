@@ -20,6 +20,7 @@ from multiprocessing.pool import ThreadPool
 from zipfile import ZipFile, BadZipfile
 import yaml
 import docker
+import time
 from botocore.exceptions import ClientError
 from scar.http.request import call_http_endpoint, get_file
 from scar.providers.aws import GenericClient
@@ -426,3 +427,15 @@ class Lambda(GenericClient):
         AWSValidator.validate_http_payload_size(data_path, self.is_asynchronous())
         with open(data_path, 'rb') as data_file:
             return base64.b64encode(data_file.read())
+
+    def wait_function_active(self, function_arn, max_time=60, delay=2):
+        func = {"State": "Pending"}
+        wait = 0
+        while "State" in func and func["State"] == "Pending" and wait < max_time:
+            func = self.get_function_configuration(function_arn)
+            time.sleep(delay)
+            wait += delay
+        if func["State"] == "Active":
+            return True
+        else:
+            return False

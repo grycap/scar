@@ -66,10 +66,11 @@ class TestController(unittest.TestCase):
     @patch('scar.providers.aws.controller.SupervisorUtils.check_supervisor_version')
     def test_init(self, check_supervisor_version, load_tmp_config_file, lambda_cli,
                   cloud_watch_cli, api_gateway_cli, s3_cli, iam_cli):
-        lcli = MagicMock(['find_function', 'create_function', 'get_access_key',
+        lcli = MagicMock(['find_function', 'create_function', 'get_access_key', 'wait_function_active',
                           'add_invocation_permission_from_api_gateway', 'link_function_and_bucket'])
         lcli.find_function.return_value = False
         lcli.create_function.return_value = {'FunctionName': 'fname', 'FunctionArn': 'arn', 'Timeout': 10, 'MemorySize': 512}
+        lcli.wait_function_active.return_value = True
         lambda_cli.return_value = lcli
         cwcli = MagicMock(['create_log_group', 'get_log_group_name'])
         cwcli.create_log_group.return_value = {'Payload': {'Body': 'body'}}
