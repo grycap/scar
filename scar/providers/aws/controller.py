@@ -283,7 +283,10 @@ class AWS(Commands):
             for bucket in resources_info.get('lambda').get('input'):
                 if bucket.get('storage_provider') == 's3':
                     bucket_name, folders = s3_service.create_bucket_and_folders(bucket.get('path'))
-                    Lambda(resources_info).link_function_and_bucket(bucket_name)
+                    lambda_client = Lambda(resources_info)
+                    lambda_client.link_function_and_bucket(bucket_name)
+                    # Check if function is already available
+                    lambda_client.get_function_configuration(resources_info.get('lambda').get('arn'))
                     s3_service.set_input_bucket_notification(bucket_name, folders)
                     if not folders:
                         logger.info(f'Input bucket "{bucket_name}" successfully created')
