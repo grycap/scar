@@ -218,10 +218,8 @@ def _parse_requestresponse_invocation_response(**kwargs):
                                         'LogGroupName' : log_group_name,
                                         'LogStreamName' : log_stream_name,
                                         'RequestId' : request_id}}
-        if 'OutputFile' in kwargs and kwargs['OutputFile']:
-            _print_generic_response(response, kwargs['OutputType'], aws_output, text_message, json_output=json_message, output_file=kwargs['OutputFile'])
-        else:
-            _print_generic_response(response, kwargs['OutputType'], aws_output, text_message, json_output=json_message)
+        output_file = kwargs['OutputFile'] if 'OutputFile' in kwargs and kwargs['OutputFile'] else None
+        _print_generic_response(response, kwargs['OutputType'], aws_output, text_message, json_output=json_message, output_file=output_file)
 
 
 def _parse_base64_response_values(value):
