@@ -13,6 +13,7 @@ Welcome to SCAR's documentation!
    configuration
    basic_usage
    advanced_usage
+   image_env_usage
    api_gateway
    batch
    prog_model
