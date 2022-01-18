@@ -101,7 +101,7 @@ class Lambda(GenericClient):
         if self.resources_info.get('lambda').get('container').get('environment').get('Variables', False):
             for key, value in self.resources_info.get('lambda').get('container').get('environment').get('Variables').items():
                 dockerfile += 'ENV %s="%s"\n' % (key, value)
-    
+
         dockerfile += 'CMD [ "supervisor" ]\n'
         dockerfile += 'ADD supervisor ${FUNCTION_DIR}\n'
         dockerfile += 'COPY function_config.yaml ${FUNCTION_DIR}\n'
@@ -242,9 +242,9 @@ class Lambda(GenericClient):
         res = self.client.delete_function(self.resources_info.get('lambda').get('name'))
         if self.function.get('runtime') == "image":
             delete_image = False
-            if self.resources_info.get('ecr') and self.resources_info.get('ecr').get('delete_image') != False:
+            if self.resources_info.get('ecr') and self.resources_info.get('ecr').get('delete_image') is not False:
                 delete_image = True
-            if delete_image != False:
+            if delete_image is not False:
                 self._delete_ecr_image()
         return res
 
@@ -289,9 +289,9 @@ class Lambda(GenericClient):
         if self.is_asynchronous():
             self.set_asynchronous_call_parameters()
         response = self._invoke_lambda_function()
-        response_args = {'Response' : response,
-                         'FunctionName' : self.function.get('name'),
-                         'IsAsynchronous' : self.function.get('asynchronous')}
+        response_args = {'Response': response,
+                         'FunctionName': self.function.get('name'),
+                         'IsAsynchronous': self.function.get('asynchronous')}
         return response_args
 
     def _get_invocation_payload(self):
@@ -358,6 +358,7 @@ class Lambda(GenericClient):
         if fdl:
             return yaml.safe_load(StrUtils.decode_base64(fdl))
         else:
+            # In the future this part can be removed
             if 'Location' in function_info.get('Code'):
                 dep_pack_url = function_info.get('Code').get('Location')
             else:
@@ -396,9 +397,9 @@ class Lambda(GenericClient):
         self.client.add_invocation_permission(**kwargs)
         # Add Invocation permission
         kwargs['SourceArn'] = api.get('source_arn_invocation').format(api_region=api.get('region'),
-                                                                       account_id=self.resources_info.get('iam').get('account_id'),
-                                                                       api_id=api.get('id'),
-                                                                       stage_name=api.get('stage_name'))
+                                                                      account_id=self.resources_info.get('iam').get('account_id'),
+                                                                      api_id=api.get('id'),
+                                                                      stage_name=api.get('stage_name'))
         self.client.add_invocation_permission(**kwargs)
 
     def get_api_gateway_id(self):
@@ -414,7 +415,7 @@ class Lambda(GenericClient):
                                                                              stage_name=self.resources_info.get('api_gateway').get('stage_name'))
 
     def call_http_endpoint(self):
-        invoke_args = {'headers' : {'X-Amz-Invocation-Type':'Event'} if self.is_asynchronous() else {}}
+        invoke_args = {'headers': {'X-Amz-Invocation-Type': 'Event'} if self.is_asynchronous() else {}}
         self._set_invoke_args(invoke_args)
         return call_http_endpoint(self._get_api_gateway_url(), **invoke_args)
 
