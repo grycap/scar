@@ -26,6 +26,7 @@ sys.path.append("..")
 sys.path.append(".")
 sys.path.append("../..")
 
+from scar.utils import StrUtils
 from scar.providers.aws.lambdafunction import Lambda
 
 
@@ -90,9 +91,24 @@ class TestLambda(unittest.TestCase):
 
         lam.create_function()
 
+        fdl = {"storage_providers": {},
+               "name": "fname",
+               "runtime": "python3.7",
+               "timeout": 300,
+               "memory": 512,
+               "layers": ["1"],
+               "log_type": "Tail",
+               "tags": {"createdby": "scar"},
+               "handler": "some.handler",
+               "description": "desc",
+               "deployment": {"bucket": "someb", "max_s3_payload_size": 262144000},
+               "environment": {"Variables": {"IMAGE_ID": "some/image:tag"}},
+               "container": {"image": "some/image:tag", "image_file": "some.tgz", "environment": {"Variables": {}}},
+               "supervisor": {"version": "1.4.2", "layer_name": "layername"}}
         res = {'FunctionName': 'fname',
                'Role': 'iamrole',
-               'Environment': {'Variables': {'IMAGE_ID': 'some/image:tag'}},
+               'Environment': {'Variables': {'IMAGE_ID': 'some/image:tag',
+                                             'FDL': StrUtils.dict_to_base64_string(fdl)}},
                'Description': 'desc',
                'Timeout': 300,
                'MemorySize': 512,
@@ -101,6 +117,7 @@ class TestLambda(unittest.TestCase):
                'Runtime': 'python3.7',
                'Handler': 'some.handler',
                'Layers': ['1']}
+        print(lam.client.client.create_function.call_args_list[0][1])
         self.assertEqual(lam.client.client.create_function.call_args_list[0][1], res)
 
         self.assertEqual(lam.client.client.publish_layer_version.call_args_list[0][1]['LayerName'], "layername")
@@ -133,9 +150,24 @@ class TestLambda(unittest.TestCase):
 
         lam.resources_info['lambda']['runtime'] = 'image'
         lam.create_function()
+        fdl = {"storage_providers": {},
+               "name": "fname",
+               "runtime": "image",
+               "timeout": 300,
+               "memory": 512,
+               "layers": [],
+               "log_type": "Tail",
+               "tags": {"createdby": "scar"},
+               "handler": "some.handler",
+               "description": "desc",
+               "deployment": {"bucket": "someb", "max_s3_payload_size": 262144000},
+               "environment": {"Variables": {"IMAGE_ID": "repouri:latest"}},
+               "container": {"image": "repouri:latest", "image_file": "some.tgz", "environment": {"Variables": {}}},
+               "supervisor": {"version": "1.4.2", "layer_name": "layername"}}
         res = {'FunctionName': 'fname',
                'Role': 'iamrole',
-               'Environment': {'Variables': {'IMAGE_ID': 'repouri:latest'}},
+               'Environment': {'Variables': {'IMAGE_ID': 'repouri:latest',
+                                             'FDL': StrUtils.dict_to_base64_string(fdl)}},
                'Description': 'desc',
                'Timeout': 300,
                'MemorySize': 512,

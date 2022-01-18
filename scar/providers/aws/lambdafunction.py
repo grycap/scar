@@ -15,6 +15,7 @@
 import base64
 import json
 import io
+import os
 from typing import Dict
 from multiprocessing.pool import ThreadPool
 from zipfile import ZipFile, BadZipfile
@@ -176,7 +177,6 @@ class Lambda(GenericClient):
             #     asset_name,
             #     supervisor_path.name
             # )
-            import os
             supervisor_zip_path = os.path.abspath('examples/cowsay-ecr/supervisor.zip')
             if self.function.get('container').get('alpine'):
                 supervisor_zip_path = os.path.abspath('examples/cowsay-ecr/supervisor-alpine.zip')
@@ -200,6 +200,7 @@ class Lambda(GenericClient):
             # Create function
             zip_payload_path = FileUtils.join_paths(tmp_folder.name, 'function.zip')
         self._set_image_id()
+        self._set_fdl()
         creation_args = self._get_creations_args(zip_payload_path, supervisor_zip_path)
         response = self.client.create_function(**creation_args)
         if response and "FunctionArn" in response:
@@ -210,6 +211,10 @@ class Lambda(GenericClient):
         image = self.function.get('container').get('image')
         if image:
             self.function['environment']['Variables']['IMAGE_ID'] = image
+
+    def _set_fdl(self):
+        fdl = StrUtils.dict_to_base64_string(create_function_config(self.resources_info))
+        self.function['environment']['Variables']['FDL'] = fdl
 
     def _manage_supervisor_layer(self, supervisor_zip_path: str) -> None:
         layers_client = LambdaLayers(self.resources_info, self.client, supervisor_zip_path)
@@ -348,18 +353,23 @@ class Lambda(GenericClient):
     def get_fdl_config(self, arn: str = None) -> Dict:
         function = arn if arn else self.function.get('name')
         function_info = self.client.get_function(function)
-        if 'Location' in function_info.get('Code'):
-            dep_pack_url = function_info.get('Code').get('Location')
+        # Get the FDL from the env variable
+        fdl = function_info.get('Configuration').get('Environment').get('Variables').get('FDL')
+        if fdl:
+            return yaml.safe_load(StrUtils.decode_base64(fdl))
         else:
-            return {}
-        dep_pack = get_file(dep_pack_url)
-        # Extract function_config.yaml
-        try:
-            with ZipFile(io.BytesIO(dep_pack)) as thezip:
-                with thezip.open('function_config.yaml') as cfg_yaml:
-                    return yaml.safe_load(cfg_yaml)
-        except (KeyError, BadZipfile):
-            return {}
+            if 'Location' in function_info.get('Code'):
+                dep_pack_url = function_info.get('Code').get('Location')
+            else:
+                return {}
+            dep_pack = get_file(dep_pack_url)
+            # Extract function_config.yaml
+            try:
+                with ZipFile(io.BytesIO(dep_pack)) as thezip:
+                    with thezip.open('function_config.yaml') as cfg_yaml:
+                        return yaml.safe_load(cfg_yaml)
+            except (KeyError, BadZipfile):
+                return {}
 
     @excp.exception(logger)
     def find_function(self, function_name_or_arn=None):
