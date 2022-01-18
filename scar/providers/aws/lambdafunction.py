@@ -184,7 +184,7 @@ class Lambda(GenericClient):
             create_image = self.function.get('container').get('create_image')
             image_name = self.function.get('container').get('image')
             if not create_image and ".dkr.ecr." in image_name:
-                logger.debug('Image already prepaired in ECR.')
+                logger.info('Image already prepared in ECR.')
                 if ":" not in image_name:
                     self.function['container']['image'] = "%s:latest" % image_name
             else:
@@ -239,12 +239,15 @@ class Lambda(GenericClient):
         return code
 
     def delete_function(self):
-        res = self.client.delete_function(self.resources_info.get('lambda').get('name'))
-        if self.function.get('runtime') == "image":
-            delete_image = False
-            if self.resources_info.get('ecr') and self.resources_info.get('ecr').get('delete_image') is not False:
-                delete_image = True
-            if delete_image is not False:
+        function_name = self.resources_info.get('lambda').get('name')
+        fdl = self.get_fdl_config(function_name)
+        res = self.client.delete_function(function_name)
+        runtime = fdl.get('runtime', self.function.get('runtime'))
+        if runtime == "image":
+            ecr_info = self.resources_info.get('ecr', {'delete_image': True})
+            ecr_info.update(fdl.get('ecr', {}))
+            # only delete the image if delete_image is True and create_image was True
+            if ecr_info.get('delete_image') and fdl.get('container', {}).get('create_image', True):
                 self._delete_ecr_image()
         return res
 

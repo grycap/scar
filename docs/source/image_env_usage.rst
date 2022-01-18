@@ -5,7 +5,8 @@ Scar uses by default the python3.7 Lambda environment using udocker program to e
 In 2021 AWS added native support to ECR container images. Scar also supports to use this environment
 to execute your containers.
 
-To use it you only have to modify your scar configuration file, setting ``image`` as the lambda runtime::
+To use it you only have to set to ``image`` the lamda ``runtime`` property setting.
+You can set it in the scar configuration file::
 
   {
     "aws": {
@@ -14,6 +15,18 @@ To use it you only have to modify your scar configuration file, setting ``image`
       }
     }
   }
+
+Or in the function definition file::
+
+  functions:
+    aws:
+    - lambda:
+        runtime: image
+        name: scar-function
+        memory: 2048
+        init_script: script.sh
+        container:
+          image: image/name
 
 In this case the scar client will prepare the image and upload it to AWS ECR as required by the 
 Lambda Image Environment.
@@ -38,7 +51,7 @@ Use already prepared ECR images
 --------------------------------
 
 You can also use a previously prepared ECR image instead of building it and and pushing to ECR.
-In this case you have to specify the full ECR image name and add set to falsr the ``create_image``
+In this case you have to specify the full ECR image name and add set to false the ``create_image``
 flag in the function definition::
 
   functions:
@@ -65,3 +78,16 @@ file and set to false ``delete_image`` flag in the ecr configuration section::
       }
     }
   }
+
+Or set it in the function definition::
+
+  functions:
+    aws:
+    - lambda:
+        name: scar-function
+        memory: 2048
+        init_script: script.sh
+        container:
+          image: image/name
+      ecr:
+        delete_image: false

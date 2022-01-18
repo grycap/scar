@@ -163,7 +163,8 @@ class TestLambda(unittest.TestCase):
                "deployment": {"bucket": "someb", "max_s3_payload_size": 262144000},
                "environment": {"Variables": {"IMAGE_ID": "repouri:latest"}},
                "container": {"image": "repouri:latest", "image_file": "some.tgz", "environment": {"Variables": {}}},
-               "supervisor": {"version": "1.4.2", "layer_name": "layername"}}
+               "supervisor": {"version": "1.4.2", "layer_name": "layername"},
+               "ecr": {"delete_image": True}}
         res = {'FunctionName': 'fname',
                'Role': 'iamrole',
                'Environment': {'Variables': {'IMAGE_ID': 'repouri:latest',
@@ -180,9 +181,10 @@ class TestLambda(unittest.TestCase):
 
     @patch('boto3.Session')
     def test_delete_function(self, boto_session):
-        session, lam, _ = self._init_mocks(['delete_function'])
+        session, lam, _ = self._init_mocks(['delete_function', 'get_function'])
         boto_session.return_value = session
 
+        lam.client.client.get_function.return_value = {'Configuration': {'Environment': {'Variables': {'FDL': 'e30='}}}}
         lam.client.client.delete_function.return_value = {}
 
         lam.delete_function()
@@ -191,13 +193,14 @@ class TestLambda(unittest.TestCase):
     @patch('boto3.Session')
     @patch('scar.providers.aws.lambdafunction.ECR')
     def test_delete_function_image(self, ecr_client, boto_session):
-        session, lam, _ = self._init_mocks(['delete_function'])
+        session, lam, _ = self._init_mocks(['delete_function', 'get_function'])
         boto_session.return_value = session
 
         ecr = MagicMock(['get_repository_uri', 'delete_repository'])
         ecr.get_repository_uri.return_value = "repouri"
         ecr_client.return_value = ecr
 
+        lam.client.client.get_function.return_value = {'Configuration': {'Environment': {'Variables': {'FDL': 'cnVudGltZTogaW1hZ2U='}}}}
         lam.client.client.delete_function.return_value = {}
         lam.resources_info['lambda']['runtime'] = 'image'
 
