@@ -166,20 +166,14 @@ class Lambda(GenericClient):
             # Create docker image in ECR
             zip_payload_path = None
             # Get supervisor with awslambdaric support binary
-
-            # TODO: Obtain it in a similar way as supervisor zip
-            # when it is released
-            # asset_name = 'supervisor.zip'
-            # if self.function.get('container').get('alpine'):
-            #     asset_name = 'supervisor-alpine.zip'
-            # supervisor_zip_path = SupervisorUtils.download_supervisor_asset(
-            #     self.supervisor_version,
-            #     asset_name,
-            #     supervisor_path.name
-            # )
-            supervisor_zip_path = os.path.abspath('examples/cowsay-ecr/supervisor.zip')
+            asset_name = 'supervisor.zip'
             if self.function.get('container').get('alpine'):
-                supervisor_zip_path = os.path.abspath('examples/cowsay-ecr/supervisor-alpine.zip')
+                asset_name = 'supervisor-alpine.zip'
+            supervisor_zip_path = SupervisorUtils.download_supervisor_asset(
+                self.supervisor_version,
+                asset_name,
+                supervisor_path.name
+            )
 
             create_image = self.function.get('container').get('create_image')
             image_name = self.function.get('container').get('image')
@@ -360,20 +354,20 @@ class Lambda(GenericClient):
         fdl = function_info.get('Configuration').get('Environment').get('Variables').get('FDL')
         if fdl:
             return yaml.safe_load(StrUtils.decode_base64(fdl))
+
+        # In the future this part can be removed
+        if 'Location' in function_info.get('Code'):
+            dep_pack_url = function_info.get('Code').get('Location')
         else:
-            # In the future this part can be removed
-            if 'Location' in function_info.get('Code'):
-                dep_pack_url = function_info.get('Code').get('Location')
-            else:
-                return {}
-            dep_pack = get_file(dep_pack_url)
-            # Extract function_config.yaml
-            try:
-                with ZipFile(io.BytesIO(dep_pack)) as thezip:
-                    with thezip.open('function_config.yaml') as cfg_yaml:
-                        return yaml.safe_load(cfg_yaml)
-            except (KeyError, BadZipfile):
-                return {}
+            return {}
+        dep_pack = get_file(dep_pack_url)
+        # Extract function_config.yaml
+        try:
+            with ZipFile(io.BytesIO(dep_pack)) as thezip:
+                with thezip.open('function_config.yaml') as cfg_yaml:
+                    return yaml.safe_load(cfg_yaml)
+        except (KeyError, BadZipfile):
+            return {}
 
     @excp.exception(logger)
     def find_function(self, function_name_or_arn=None):
