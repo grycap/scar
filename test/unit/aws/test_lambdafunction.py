@@ -125,12 +125,12 @@ class TestLambda(unittest.TestCase):
         self.assertEqual(len(lam.client.client.publish_layer_version.call_args_list[0][1]['Content']['ZipFile']), 99662)
 
     @patch('boto3.Session')
-    @patch('scar.providers.aws.launchtemplates.SupervisorUtils.download_supervisor')
+    @patch('scar.providers.aws.launchtemplates.SupervisorUtils.download_supervisor_asset')
     @patch('scar.providers.aws.controller.FileUtils.load_tmp_config_file')
     @patch('scar.providers.aws.lambdafunction.FileUtils.unzip_folder')
     @patch('docker.from_env')
     def test_create_function_image(self, from_env, unzip_folder, load_tmp_config_file,
-                                   download_supervisor, boto_session):
+                                   download_supervisor_asset, boto_session):
         session, lam, client = self._init_mocks(['create_function', 'create_repository',
                                                  'describe_registry', 'get_authorization_token'])
         boto_session.return_value = session
@@ -138,7 +138,7 @@ class TestLambda(unittest.TestCase):
         load_tmp_config_file.return_value = {}
 
         tests_path = os.path.dirname(os.path.abspath(__file__))
-        download_supervisor.return_value = os.path.join(tests_path, "../../files/supervisor.zip")
+        download_supervisor_asset.return_value = os.path.join(tests_path, "../../files/supervisor.zip")
 
         docker = MagicMock(['login', 'images'])
         docker.images = MagicMock(['build', 'push'])

@@ -111,6 +111,15 @@ class Lambda(GenericClient):
 
     def _create_ecr_image(self, supervisor_path):
         """Creates an ECR image using the user provided image adding the supervisor tools"""
+        # If the user set an already prepared image return the image name
+        create_image = self.function.get('container').get('create_image')
+        image_name = self.function.get('container').get('image')
+        if not create_image and ".dkr.ecr." in image_name:
+            logger.info('Image already prepared in ECR.')
+            if ":" not in image_name:
+                image_name = "%s:latest" % image_name
+            return image_name
+
         client = docker.from_env()
         tmp_folder = FileUtils.create_tmp_dir()
 
@@ -155,16 +164,16 @@ class Lambda(GenericClient):
         logger.info('Pushing new image to ECR ...')
         for line in client.images.push(ecr_image, stream=True, decode=True):
             logger.debug(line)
-        self.function['container']['image'] = "%s:latest" % ecr_image
+        return "%s:latest" % ecr_image
 
     @excp.exception(logger)
     def create_function(self):
         # Create tmp folders
         supervisor_path = FileUtils.create_tmp_dir()
         tmp_folder = FileUtils.create_tmp_dir()
+        zip_payload_path = None
         if self.function.get('runtime') == "image":
             # Create docker image in ECR
-            zip_payload_path = None
             # Get supervisor with awslambdaric support binary
             asset_name = 'supervisor.zip'
             if self.function.get('container').get('alpine'):
@@ -175,14 +184,7 @@ class Lambda(GenericClient):
                 supervisor_path.name
             )
 
-            create_image = self.function.get('container').get('create_image')
-            image_name = self.function.get('container').get('image')
-            if not create_image and ".dkr.ecr." in image_name:
-                logger.info('Image already prepared in ECR.')
-                if ":" not in image_name:
-                    self.function['container']['image'] = "%s:latest" % image_name
-            else:
-                self._create_ecr_image(supervisor_zip_path)
+            self.function['container']['image'] = self._create_ecr_image(supervisor_zip_path)
         else:
             # Download supervisor
             supervisor_zip_path = SupervisorUtils.download_supervisor(
