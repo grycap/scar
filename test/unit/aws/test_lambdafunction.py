@@ -16,11 +16,8 @@
 import unittest
 import sys
 import os
-import tempfile
 from mock import MagicMock
 from mock import patch
-from zipfile import ZipFile
-from scar.providers.aws import clients
 
 sys.path.append("..")
 sys.path.append(".")
@@ -59,6 +56,9 @@ class TestLambda(unittest.TestCase):
                                     'supervisor': {'version': '1.4.2',
                                                    'layer_name': 'layername'}},
                          'ecr': {"delete_image": True},
+                         'api_gateway': {'endpoint': 'https://{api_id}.{api_region}/{stage_name}/l',
+                                         'region': 'us-east-1',
+                                         'stage_name': 'scar'},
                          'iam': {'role': 'iamrole'}}
 
         lam = Lambda(resource_info)
@@ -117,7 +117,6 @@ class TestLambda(unittest.TestCase):
                'Runtime': 'python3.7',
                'Handler': 'some.handler',
                'Layers': ['1']}
-        print(lam.client.client.create_function.call_args_list[0][1])
         self.assertEqual(lam.client.client.create_function.call_args_list[0][1], res)
 
         self.assertEqual(lam.client.client.publish_layer_version.call_args_list[0][1]['LayerName'], "layername")
@@ -243,3 +242,13 @@ class TestLambda(unittest.TestCase):
                'LogType': 'None',
                'Payload': '{"Records": [{"s3": {"object": {"key": "okey"}}}]}'}
         self.assertEqual(lam.client.client.invoke.call_args_list[0][1], res)
+
+    @patch('boto3.Session')
+    @patch('requests.get')
+    def test_call_http_endpoint(self, get, boto_session):
+        session, lam, _ = self._init_mocks(['get_function_configuration'])
+        boto_session.return_value = session
+
+        lam.client.client.get_function_configuration.return_value = {'Environment': {'Variables': {'API_GATEWAY_ID': 'apiid'}}}
+        lam.call_http_endpoint()
+        self.assertEqual(get.call_args_list[0][0][0], 'https://apiid.us-east-1/scar/l')
