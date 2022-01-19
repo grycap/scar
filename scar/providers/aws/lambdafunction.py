@@ -114,10 +114,10 @@ class Lambda(GenericClient):
         # If the user set an already prepared image return the image name
         create_image = self.function.get('container').get('create_image')
         image_name = self.function.get('container').get('image')
+        if ":" not in image_name:
+            image_name = "%s:latest" % image_name
         if not create_image and ".dkr.ecr." in image_name:
             logger.info('Image already prepared in ECR.')
-            if ":" not in image_name:
-                image_name = "%s:latest" % image_name
             return image_name
 
         client = docker.from_env()
