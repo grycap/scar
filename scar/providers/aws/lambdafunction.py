@@ -109,15 +109,21 @@ class Lambda(GenericClient):
             dockerfile += 'COPY %s ${FUNCTION_DIR}\n' % FileUtils.get_file_name(init_script_path)
         return dockerfile
 
-    def _create_ecr_image(self, supervisor_path):
-        """Creates an ECR image using the user provided image adding the supervisor tools"""
-        # If the user set an already prepared image return the image name
-        create_image = self.function.get('container').get('create_image')
+    def _ecr_image_name_prepared(self):
+        """If the user set an already prepared image return the image name."""
         image_name = self.function.get('container').get('image')
         if ":" not in image_name:
             image_name = "%s:latest" % image_name
-        if not create_image and ".dkr.ecr." in image_name:
+        if not self.function.get('container').get('create_image') and ".dkr.ecr." in image_name:
             logger.info('Image already prepared in ECR.')
+            return image_name
+        return None
+
+    def _create_ecr_image(self, supervisor_path):
+        """Creates an ECR image using the user provided image adding the supervisor tools."""
+        # If the user set an already prepared image return the image name
+        image_name = self._ecr_image_name_prepared()
+        if image_name:
             return image_name
 
         client = docker.from_env()
@@ -355,7 +361,7 @@ class Lambda(GenericClient):
         function = arn if arn else self.function.get('name')
         function_info = self.client.get_function(function)
         # Get the FDL from the env variable
-        fdl = function_info.get('Configuration').get('Environment').get('Variables').get('FDL')
+        fdl = function_info.get('Configuration', {}).get('Environment', {}).get('Variables', {}).get('FDL')
         if fdl:
             return yaml.safe_load(StrUtils.decode_base64(fdl))
 
