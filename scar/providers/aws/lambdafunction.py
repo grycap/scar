@@ -119,7 +119,7 @@ class Lambda(GenericClient):
             return image_name
         return None
 
-    def _build_push_ecr_image(self, tmp_folder, ecr_image, registry, username, password):
+    def _build_push_ecr_image(self, tmp_folder, ecr_image, registry, auth_token):
         dclient = docker.from_env()
         logger.info('Building new ECR image: %s' % ecr_image)
         dclient.images.build(path=tmp_folder.name, tag=ecr_image, pull=True)
@@ -127,7 +127,7 @@ class Lambda(GenericClient):
         # Login to the ECR registry
         # Known issue it does not work in Widnows WSL environment
         logger.info('Login to ECR registry %s' % registry)
-        dclient.login(username=username, password=password, registry=registry)
+        dclient.login(username=auth_token[0], password=auth_token[1], registry=registry)
 
         # Push the image, and change it in the container image to use it insteads of the user one
         logger.info('Pushing new image to ECR ...')
@@ -174,8 +174,7 @@ class Lambda(GenericClient):
 
         # Build and push the image to the ECR repo
         registry = ecr_cli.get_registry_url()
-        username, password = ecr_cli.get_authorization_token()
-        return self._build_push_ecr_image(tmp_folder, ecr_image, registry, username, password)
+        return self._build_push_ecr_image(tmp_folder, ecr_image, registry, ecr_cli.get_authorization_token())
 
     @excp.exception(logger)
     def create_function(self):
