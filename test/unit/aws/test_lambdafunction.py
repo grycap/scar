@@ -190,7 +190,7 @@ class TestLambda(unittest.TestCase):
         self.assertEqual(lam.client.client.delete_function.call_args_list[0][1], {'FunctionName': 'fname'})
 
     @patch('boto3.Session')
-    @patch('scar.providers.aws.lambdafunction.ECR')
+    @patch('scar.providers.aws.containerimage.ECR')
     def test_delete_function_image(self, ecr_client, boto_session):
         session, lam, _ = self._init_mocks(['delete_function', 'get_function'])
         boto_session.return_value = session

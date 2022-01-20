@@ -15,12 +15,10 @@
 import base64
 import json
 import io
-import os
 from typing import Dict
 from multiprocessing.pool import ThreadPool
 from zipfile import ZipFile, BadZipfile
 import yaml
-import docker
 import time
 from botocore.exceptions import ClientError
 from scar.http.request import call_http_endpoint, get_file
@@ -28,12 +26,12 @@ from scar.providers.aws import GenericClient
 from scar.providers.aws.functioncode import FunctionPackager, create_function_config
 from scar.providers.aws.lambdalayers import LambdaLayers
 from scar.providers.aws.s3 import S3
-from scar.providers.aws.ecr import ECR
 from scar.providers.aws.validators import AWSValidator
 import scar.exceptions as excp
 import scar.logger as logger
 from scar.utils import DataTypesUtils, FileUtils, StrUtils, SupervisorUtils
 from scar.parser.cfgfile import ConfigFileParser
+from scar.providers.aws.containerimage import ContainerImage
 
 
 MAX_CONCURRENT_INVOCATIONS = 500
@@ -78,104 +76,6 @@ class Lambda(GenericClient):
         """Returns the access key belonging to the boto_profile used."""
         return self.client.get_access_key()
 
-    def _delete_ecr_image(self):
-        """Delete the ECR repository created in _create_ecr_image function."""
-        ecr_cli = ECR(self.resources_info)
-        repo_name = self.function.get('name')
-        if ecr_cli.get_repository_uri(repo_name):
-            logger.info('Deleting ECR repo: %s' % repo_name)
-            ecr_cli.delete_repository(repo_name)
-
-    def _create_dockerfile_ecr_image(self, init_script_path):
-        """Create dockerfile to generate the new ECR image."""
-        dockerfile = 'from %s\n' % self.function.get('container').get('image')
-        dockerfile += 'ARG FUNCTION_DIR="/var/task"\n'
-        dockerfile += 'RUN mkdir -p ${FUNCTION_DIR}\n'
-        dockerfile += 'WORKDIR ${FUNCTION_DIR}\n'
-        dockerfile += 'ENV PATH="${FUNCTION_DIR}:${PATH}"\n'
-        # Add PYTHONIOENCODING to avoid UnicodeEncodeError as sugested in:
-        # https://github.com/aws/aws-lambda-python-runtime-interface-client/issues/19
-        dockerfile += 'ENV PYTHONIOENCODING="utf8"\n'
-
-        # Add user environment variables
-        if self.resources_info.get('lambda').get('container').get('environment').get('Variables', False):
-            for key, value in self.resources_info.get('lambda').get('container').get('environment').get('Variables').items():
-                dockerfile += 'ENV %s="%s"\n' % (key, value)
-
-        dockerfile += 'CMD [ "supervisor" ]\n'
-        dockerfile += 'ADD supervisor ${FUNCTION_DIR}\n'
-        dockerfile += 'COPY function_config.yaml ${FUNCTION_DIR}\n'
-        if init_script_path:
-            dockerfile += 'COPY %s ${FUNCTION_DIR}\n' % FileUtils.get_file_name(init_script_path)
-        return dockerfile
-
-    def _ecr_image_name_prepared(self):
-        """If the user set an already prepared image return the image name."""
-        image_name = self.function.get('container').get('image')
-        if ":" not in image_name:
-            image_name = "%s:latest" % image_name
-        if not self.function.get('container').get('create_image') and ".dkr.ecr." in image_name:
-            logger.info('Image already prepared in ECR.')
-            return image_name
-        return None
-
-    def _build_push_ecr_image(self, tmp_folder, ecr_image, registry, auth_token):
-        dclient = docker.from_env()
-        logger.info('Building new ECR image: %s' % ecr_image)
-        dclient.images.build(path=tmp_folder.name, tag=ecr_image, pull=True)
-
-        # Login to the ECR registry
-        # Known issue it does not work in Widnows WSL environment
-        logger.info('Login to ECR registry %s' % registry)
-        dclient.login(username=auth_token[0], password=auth_token[1], registry=registry)
-
-        # Push the image, and change it in the container image to use it insteads of the user one
-        logger.info('Pushing new image to ECR ...')
-        for line in dclient.images.push(ecr_image, stream=True, decode=True):
-            logger.debug(line)
-            if 'error' in line:
-                raise Exception("Error pushing image: %s" % line['errorDetail']['message'])
-        return "%s:latest" % ecr_image
-
-    def _create_ecr_image(self, supervisor_path):
-        """Creates an ECR image using the user provided image adding the supervisor tools."""
-        # If the user set an already prepared image return the image name
-        image_name = self._ecr_image_name_prepared()
-        if image_name:
-            return image_name
-
-        tmp_folder = FileUtils.create_tmp_dir()
-
-        # Create function config file
-        FileUtils.write_yaml(FileUtils.join_paths(tmp_folder.name, "function_config.yaml"),
-                             create_function_config(self.resources_info))
-
-        init_script_path = self.resources_info.get('lambda').get('init_script')
-        # Copy the init script defined by the user to the payload folder
-        if init_script_path:
-            FileUtils.copy_file(init_script_path,
-                                FileUtils.join_paths(tmp_folder.name,
-                                                     FileUtils.get_file_name(init_script_path)))
-
-        # Unzip the supervisor file to the temp file
-        FileUtils.unzip_folder(supervisor_path, tmp_folder.name)
-
-        # Create dockerfile to generate the new ECR image
-        FileUtils.create_file_with_content("%s/Dockerfile" % tmp_folder.name,
-                                           self._create_dockerfile_ecr_image(init_script_path))
-
-        # Create the ECR Repo and get the image uri
-        ecr_cli = ECR(self.resources_info)
-        repo_name = self.function.get('name')
-        ecr_image = ecr_cli.get_repository_uri(repo_name)
-        if not ecr_image:
-            logger.info('Creating ECR repository: %s' % repo_name)
-            ecr_image = ecr_cli.create_repository(repo_name)
-
-        # Build and push the image to the ECR repo
-        registry = ecr_cli.get_registry_url()
-        return self._build_push_ecr_image(tmp_folder, ecr_image, registry, ecr_cli.get_authorization_token())
-
     @excp.exception(logger)
     def create_function(self):
         # Create tmp folders
@@ -195,7 +95,7 @@ class Lambda(GenericClient):
                 supervisor_path.name
             )
 
-            self.function['container']['image'] = self._create_ecr_image(supervisor_zip_path)
+            self.function['container']['image'] = ContainerImage.create_ecr_image(self.resources_info, supervisor_zip_path)
         else:
             # Download supervisor
             supervisor_zip_path = SupervisorUtils.download_supervisor(
@@ -255,7 +155,7 @@ class Lambda(GenericClient):
             ecr_info.update(fdl.get('ecr', {}))
             # only delete the image if delete_image is True and create_image was True
             if ecr_info.get('delete_image') and fdl.get('container', {}).get('create_image', True):
-                self._delete_ecr_image()
+                ContainerImage.delete_ecr_image(self.resources_info)
         return res
 
     def link_function_and_bucket(self, bucket_name: str) -> None:
