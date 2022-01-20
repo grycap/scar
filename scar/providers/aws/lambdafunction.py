@@ -80,21 +80,16 @@ class Lambda(GenericClient):
     def create_function(self):
         # Create tmp folders
         supervisor_path = FileUtils.create_tmp_dir()
-        tmp_folder = FileUtils.create_tmp_dir()
         zip_payload_path = None
         if self.function.get('runtime') == "image":
-            # Create docker image in ECR
             # Get supervisor with awslambdaric support binary
             # TODO: Cache this files to avoid downloading each time
-            asset_name = 'supervisor.zip'
-            if self.function.get('container').get('alpine'):
-                asset_name = 'supervisor-alpine.zip'
-            supervisor_zip_path = SupervisorUtils.download_supervisor_asset(
+            supervisor_zip_path = SupervisorUtils.downloa_supervisor_asset(
                 self.supervisor_version,
-                asset_name,
+                'supervisor-alpine.zip' if self.function.get('container').get('alpine') else 'supervisor.zip',
                 supervisor_path.name
             )
-
+            # Create docker image in ECR
             self.function['container']['image'] = ContainerImage.create_ecr_image(self.resources_info, supervisor_zip_path)
         else:
             # Download supervisor
@@ -105,6 +100,7 @@ class Lambda(GenericClient):
             # Manage supervisor layer
             self._manage_supervisor_layer(supervisor_zip_path)
             # Create function
+            tmp_folder = FileUtils.create_tmp_dir()
             zip_payload_path = FileUtils.join_paths(tmp_folder.name, 'function.zip')
         self._set_image_id()
         self._set_fdl()
@@ -356,7 +352,4 @@ class Lambda(GenericClient):
             func = self.get_function_configuration(function_arn)
             time.sleep(delay)
             wait += delay
-        if func["State"] == "Active":
-            return True
-        else:
-            return False
+        return func["State"] == "Active"
