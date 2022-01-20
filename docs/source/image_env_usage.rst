@@ -47,6 +47,10 @@ You only have to add the ``alpine`` flag in the function definition::
           image: image/name
           alpine: true
 
+If you use an alpine based image and you do not set the ``alpine`` flag you will get an execution Error::
+
+  Error: fork/exec /var/task/supervisor: no such file or directory
+
 Use already prepared ECR images
 --------------------------------
 
