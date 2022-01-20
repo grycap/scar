@@ -81,12 +81,13 @@ class Lambda(GenericClient):
         # Create tmp folders
         supervisor_path = FileUtils.create_tmp_dir()
         zip_payload_path = None
+        asset_name = 'supervisor-alpine.zip' if self.function.get('container').get('alpine') else 'supervisor.zip'
         if self.function.get('runtime') == "image":
             # Get supervisor with awslambdaric support binary
             # TODO: Cache this files to avoid downloading each time
-            supervisor_zip_path = SupervisorUtils.downloa_supervisor_asset(
+            supervisor_zip_path = SupervisorUtils.download_supervisor_asset(
                 self.supervisor_version,
-                'supervisor-alpine.zip' if self.function.get('container').get('alpine') else 'supervisor.zip',
+                asset_name,
                 supervisor_path.name
             )
             # Create docker image in ECR
