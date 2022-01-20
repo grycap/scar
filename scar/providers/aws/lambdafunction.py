@@ -164,6 +164,8 @@ class Lambda(GenericClient):
         logger.info('Pushing new image to ECR ...')
         for line in client.images.push(ecr_image, stream=True, decode=True):
             logger.debug(line)
+            if 'error' in line:
+                raise Exception("Error pushing image: %s" % line['errorDetail']['message'])
         return "%s:latest" % ecr_image
 
     @excp.exception(logger)

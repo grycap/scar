@@ -480,6 +480,7 @@ class SupervisorUtils:
         if GitHubUtils.exists_release_in_repo(cls._SUPERVISOR_GITHUB_USER,
                                               cls._SUPERVISOR_GITHUB_REPO,
                                               supervisor_version):
+            logger.info(f'Using supervisor release: \'{supervisor_version}\'.')
             return supervisor_version
         latest_version = SupervisorUtils.get_latest_release()
         if supervisor_version != 'latest':
