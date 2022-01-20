@@ -119,6 +119,24 @@ class Lambda(GenericClient):
             return image_name
         return None
 
+    def _build_push_ecr_image(self, tmp_folder, ecr_image, registry, username, password):
+        dclient = docker.from_env()
+        logger.info('Building new ECR image: %s' % ecr_image)
+        dclient.images.build(path=tmp_folder.name, tag=ecr_image, pull=True)
+
+        # Login to the ECR registry
+        # Known issue it does not work in Widnows WSL environment
+        logger.info('Login to ECR registry %s' % registry)
+        dclient.login(username=username, password=password, registry=registry)
+
+        # Push the image, and change it in the container image to use it insteads of the user one
+        logger.info('Pushing new image to ECR ...')
+        for line in dclient.images.push(ecr_image, stream=True, decode=True):
+            logger.debug(line)
+            if 'error' in line:
+                raise Exception("Error pushing image: %s" % line['errorDetail']['message'])
+        return "%s:latest" % ecr_image
+
     def _create_ecr_image(self, supervisor_path):
         """Creates an ECR image using the user provided image adding the supervisor tools."""
         # If the user set an already prepared image return the image name
@@ -126,7 +144,6 @@ class Lambda(GenericClient):
         if image_name:
             return image_name
 
-        client = docker.from_env()
         tmp_folder = FileUtils.create_tmp_dir()
 
         # Create function config file
@@ -155,24 +172,10 @@ class Lambda(GenericClient):
             logger.info('Creating ECR repository: %s' % repo_name)
             ecr_image = ecr_cli.create_repository(repo_name)
 
-        # Build the image
-        logger.info('Building new ECR image: %s' % ecr_image)
-        client.images.build(path=tmp_folder.name, tag=ecr_image, pull=True)
-
-        # Login to the ECR registry
-        # TODO: Sometimes it does not work as expected
+        # Build and push the image to the ECR repo
         registry = ecr_cli.get_registry_url()
-        logger.info('Login to ECR registry %s' % registry)
         username, password = ecr_cli.get_authorization_token()
-        client.login(username=username, password=password, registry=registry)
-
-        # Push the image, and change it in the container image to use it insteads of the user one
-        logger.info('Pushing new image to ECR ...')
-        for line in client.images.push(ecr_image, stream=True, decode=True):
-            logger.debug(line)
-            if 'error' in line:
-                raise Exception("Error pushing image: %s" % line['errorDetail']['message'])
-        return "%s:latest" % ecr_image
+        return self._build_push_ecr_image(tmp_folder, ecr_image, registry, username, password)
 
     @excp.exception(logger)
     def create_function(self):
@@ -183,6 +186,7 @@ class Lambda(GenericClient):
         if self.function.get('runtime') == "image":
             # Create docker image in ECR
             # Get supervisor with awslambdaric support binary
+            # TODO: Cache this files to avoid downloading each time
             asset_name = 'supervisor.zip'
             if self.function.get('container').get('alpine'):
                 asset_name = 'supervisor-alpine.zip'
