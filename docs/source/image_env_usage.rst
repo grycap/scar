@@ -40,6 +40,7 @@ You only have to add the ``alpine`` flag in the function definition::
   functions:
     aws:
     - lambda:
+        runtime: image
         name: scar-function
         memory: 2048
         init_script: script.sh
@@ -61,6 +62,7 @@ flag in the function definition::
   functions:
     aws:
     - lambda:
+        runtime: image
         name: scar-function
         memory: 2048
         init_script: script.sh
@@ -88,6 +90,7 @@ Or set it in the function definition::
   functions:
     aws:
     - lambda:
+        runtime: image
         name: scar-function
         memory: 2048
         init_script: script.sh
@@ -95,3 +98,22 @@ Or set it in the function definition::
           image: image/name
       ecr:
         delete_image: false
+
+ARM64 support
+-------------
+
+Using the container image environment you can also specify the architecture to execute your lambda 
+function (x86_64 or arm64) setting the architectures field in the function definition. If not set
+the default architecture will be used (x86_64)::
+
+  functions:
+    aws:
+    - lambda:
+        runtime: image
+        architectures:
+          - arm64
+        name: scar-function
+        memory: 2048
+        init_script: script.sh
+        container:
+          image: image/name

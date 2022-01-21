@@ -51,9 +51,9 @@ class Lambda(GenericClient):
         self.function = resources_info.get('lambda', {})
         self.supervisor_version = resources_info.get('lambda').get('supervisor').get('version')
         if (self.function.get('runtime') == "image" and
-                StrUtils.compare_versions(self.supervisor_version, "1.5.0b2") < 0):
+                StrUtils.compare_versions(self.supervisor_version, "1.5.0b3") < 0):
             # In case of using image runtime
-            # it must be 1.5.0-beta2 version or higher
+            # it must be 1.5.0-beta3 version or higher
             raise Exception("Supervisor version must be 1.5.0 or higher for image runtime.")
 
     def _get_creations_args(self, zip_payload_path: str, supervisor_zip_path: str) -> Dict:
