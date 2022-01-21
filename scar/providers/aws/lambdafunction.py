@@ -50,9 +50,10 @@ class Lambda(GenericClient):
         self.resources_info = resources_info
         self.function = resources_info.get('lambda', {})
         self.supervisor_version = resources_info.get('lambda').get('supervisor').get('version')
-        # it must be 1.5.0-beta2 version or higher
         if (self.function.get('runtime') == "image" and
                 StrUtils.compare_versions(self.supervisor_version, "1.5.0b2") < 0):
+            # In case of using image runtime
+            # it must be 1.5.0-beta2 version or higher
             raise Exception("Supervisor version must be 1.5.0 or higher for image runtime.")
 
     def _get_creations_args(self, zip_payload_path: str, supervisor_zip_path: str) -> Dict:
@@ -95,7 +96,8 @@ class Lambda(GenericClient):
                 supervisor_path.name
             )
             # Create docker image in ECR
-            self.function['container']['image'] = ContainerImage.create_ecr_image(self.resources_info, supervisor_zip_path)
+            self.function['container']['image'] = ContainerImage.create_ecr_image(self.resources_info,
+                                                                                  supervisor_zip_path)
         else:
             # Download supervisor
             supervisor_zip_path = SupervisorUtils.download_supervisor(
