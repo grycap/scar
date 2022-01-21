@@ -116,6 +116,7 @@ class TestLambda(unittest.TestCase):
                'Code': {'S3Bucket': 'someb', 'S3Key': 'lambda/fname.zip'},
                'Runtime': 'python3.7',
                'Handler': 'some.handler',
+               'Architectures': ['x86_64'],
                'Layers': ['1']}
         self.assertEqual(lam.client.client.create_function.call_args_list[0][1], res)
 
@@ -148,6 +149,7 @@ class TestLambda(unittest.TestCase):
         client.get_authorization_token.return_value = {'authorizationData': [{'authorizationToken': 'QVdTOnRva2Vu'}]}
 
         lam.resources_info['lambda']['runtime'] = 'image'
+        lam.resources_info['lambda']['supervisor']['version'] = lam.supervisor_version = '1.5.0'
         lam.create_function()
         fdl = {"storage_providers": {},
                "name": "fname",
@@ -162,7 +164,7 @@ class TestLambda(unittest.TestCase):
                "deployment": {"bucket": "someb", "max_s3_payload_size": 262144000},
                "environment": {"Variables": {"IMAGE_ID": "repouri:latest"}},
                "container": {"image": "repouri:latest", "image_file": "some.tgz", "environment": {"Variables": {}}},
-               "supervisor": {"version": "1.4.2", "layer_name": "layername"},
+               "supervisor": {"version": "1.5.0", "layer_name": "layername"},
                "ecr": {"delete_image": True}}
         res = {'FunctionName': 'fname',
                'Role': 'iamrole',
@@ -173,7 +175,9 @@ class TestLambda(unittest.TestCase):
                'MemorySize': 512,
                'PackageType': 'Image',
                'Tags': {'createdby': 'scar'},
+               'Architectures': ['x86_64'],
                'Code': {'ImageUri': 'repouri:latest'}}
+        print(lam.client.client.create_function.call_args_list[0][1])
         self.assertEqual(lam.client.client.create_function.call_args_list[0][1], res)
         self.assertEqual(docker.images.push.call_args_list[0][0][0], "repouri")
         self.assertEqual(docker.images.build.call_args_list[0][1]['tag'], "repouri")

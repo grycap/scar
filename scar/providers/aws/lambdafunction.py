@@ -58,7 +58,8 @@ class Lambda(GenericClient):
                 'Description': self.function.get('description'),
                 'Timeout':  self.function.get('timeout'),
                 'MemorySize': self.function.get('memory'),
-                'Tags': self.function.get('tags')}
+                'Tags': self.function.get('tags'),
+                'Architectures': self.function.get('architectures', ['x86_64'])}
         if self.function.get('runtime') == "image":
             args['Code'] = {'ImageUri': self.function.get('container').get('image')}
             args['PackageType'] = 'Image'
@@ -81,13 +82,15 @@ class Lambda(GenericClient):
         # Create tmp folders
         supervisor_path = FileUtils.create_tmp_dir()
         zip_payload_path = None
-        asset_name = 'supervisor-alpine.zip' if self.function.get('container').get('alpine') else 'supervisor.zip'
         if self.function.get('runtime') == "image":
             # Get supervisor with awslambdaric support binary
-            # TODO: Cache this files to avoid downloading each time
+            # it must be 1.5.0-beta2 version or higher
+            if StrUtils.compare_versions(self.supervisor_version, "1.5.0b2") < 0:
+                raise Exception("Supervisor version must be 1.5.0 or higher for image runtime.")
+            # TODO: Cache this files to avoid downloading it each time
             supervisor_zip_path = SupervisorUtils.download_supervisor_asset(
                 self.supervisor_version,
-                asset_name,
+                ContainerImage.get_asset_name(self.function),
                 supervisor_path.name
             )
             # Create docker image in ECR

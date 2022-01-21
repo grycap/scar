@@ -14,7 +14,6 @@
 """Module with classes and methods used to manage the AWS tools."""
 
 import os
-import time
 from typing import Dict
 from copy import deepcopy
 from scar.cmdtemplate import Commands
@@ -64,6 +63,7 @@ def _choose_function(aws_resources: Dict) -> int:
 def _get_all_functions(resources_info: Dict):
     arn_list = ResourceGroups(resources_info).get_resource_arn_list(IAM(resources_info).get_user_name_or_id())
     return Lambda(resources_info).get_all_functions(arn_list)
+
 
 def _check_preheat_function(resources_info: Dict):
     if resources_info.get('lambda').get('preheat', False):

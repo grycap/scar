@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os.path
 import docker
 import scar.logger as logger
 from scar.providers.aws.ecr import ECR
@@ -20,6 +21,13 @@ from scar.providers.aws.functioncode import create_function_config
 
 
 class ContainerImage:
+
+    @staticmethod
+    def get_asset_name(function_info):
+        arch = function_info.get('architectures', ['x86_64'])[0]
+        arch = '' if arch == 'x86_64' else "-%s" % arch
+        alpine = '-alpine' if function_info.get('container').get('alpine') else ''
+        return 'supervisor%s%s.zip' % (alpine, arch)
 
     @staticmethod
     def delete_ecr_image(resources_info):
@@ -67,15 +75,17 @@ class ContainerImage:
             ecr_image = ecr_cli.create_repository(repo_name)
 
         # Build and push the image to the ECR repo
-        registry = ecr_cli.get_registry_url()
-        return ContainerImage._build_push_ecr_image(tmp_folder, ecr_image, registry, ecr_cli.get_authorization_token())
+        platform = None
+        arch = resources_info.get('lambda').get('architectures', ['x86_64'])[0]
+        if arch == 'arm64':
+            platform = 'linux/arm64'
+        return ContainerImage._build_push_ecr_image(tmp_folder, ecr_image, platform, ecr_cli.get_authorization_token())
 
     @staticmethod
     def _create_dockerfile_ecr_image(lambda_info):
         """Create dockerfile to generate the new ECR image."""
         dockerfile = 'from %s\n' % lambda_info.get('container').get('image')
         dockerfile += 'ARG FUNCTION_DIR="/var/task"\n'
-        dockerfile += 'RUN mkdir -p ${FUNCTION_DIR}\n'
         dockerfile += 'WORKDIR ${FUNCTION_DIR}\n'
         dockerfile += 'ENV PATH="${FUNCTION_DIR}:${PATH}"\n'
         # Add PYTHONIOENCODING to avoid UnicodeEncodeError as sugested in:
@@ -107,13 +117,14 @@ class ContainerImage:
         return None
 
     @staticmethod
-    def _build_push_ecr_image(tmp_folder, ecr_image, registry, auth_token):
+    def _build_push_ecr_image(tmp_folder, ecr_image, platform, auth_token):
         dclient = docker.from_env()
         logger.info('Building new ECR image: %s' % ecr_image)
-        dclient.images.build(path=tmp_folder.name, tag=ecr_image, pull=True)
+        dclient.images.build(path=tmp_folder.name, tag=ecr_image, pull=True, platform=platform)
 
         # Login to the ECR registry
         # Known issue it does not work in Widnows WSL environment
+        registry = os.path.dirname(ecr_image)
         logger.info('Login to ECR registry %s' % registry)
         dclient.login(username=auth_token[0], password=auth_token[1], registry=registry)
 
