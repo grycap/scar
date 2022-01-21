@@ -50,6 +50,10 @@ class Lambda(GenericClient):
         self.resources_info = resources_info
         self.function = resources_info.get('lambda', {})
         self.supervisor_version = resources_info.get('lambda').get('supervisor').get('version')
+        # it must be 1.5.0-beta2 version or higher
+        if (self.function.get('runtime') == "image" and
+                StrUtils.compare_versions(self.supervisor_version, "1.5.0b2") < 0):
+            raise Exception("Supervisor version must be 1.5.0 or higher for image runtime.")
 
     def _get_creations_args(self, zip_payload_path: str, supervisor_zip_path: str) -> Dict:
         args = {'FunctionName': self.function.get('name'),
@@ -84,9 +88,6 @@ class Lambda(GenericClient):
         zip_payload_path = None
         if self.function.get('runtime') == "image":
             # Get supervisor with awslambdaric support binary
-            # it must be 1.5.0-beta2 version or higher
-            if StrUtils.compare_versions(self.supervisor_version, "1.5.0b2") < 0:
-                raise Exception("Supervisor version must be 1.5.0 or higher for image runtime.")
             # TODO: Cache this files to avoid downloading it each time
             supervisor_zip_path = SupervisorUtils.download_supervisor_asset(
                 self.supervisor_version,
