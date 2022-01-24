@@ -43,7 +43,7 @@ def create_function_config(resources_info):
     # Add ECR specific info
     if resources_info.get('lambda').get('runtime') == "image":
         function_cfg.update({"ecr": {
-                             "delete_image": resources_info.get('ecr').get("delete_image")
+                             "delete_image": resources_info.get('ecr', {}).get("delete_image", True)
                              }})
     return function_cfg
 
