@@ -41,7 +41,7 @@ def create_function_config(resources_info):
                              "multi_node_parallel": resources_info.get('batch').get("multi_node_parallel")
                              }})
     # Add ECR specific info
-    if resources_info.get('lambda').get('runtime') == "image" and resources_info.get('ecr'):
+    if resources_info.get('lambda').get('runtime') == "image" and resources_info.get('ecr', {}).get("delete_image"):
         function_cfg.update({"ecr": {
                              "delete_image": resources_info.get('ecr').get("delete_image")
                              }})
