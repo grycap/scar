@@ -31,6 +31,10 @@ Or in the function definition file::
 In this case the scar client will prepare the image and upload it to AWS ECR as required by the 
 Lambda Image Environment.
 
+To use this functionality you should use `supervisor <https://github.com/grycap/faas-supervisor>`_ 
+version 1.5.0 or newer.
+
+
 Use alpine based images
 -----------------------
 
