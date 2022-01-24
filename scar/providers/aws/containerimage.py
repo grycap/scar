@@ -118,7 +118,10 @@ class ContainerImage:
 
     @staticmethod
     def _build_push_ecr_image(tmp_folder, ecr_image, platform, auth_token):
-        dclient = docker.from_env()
+        try:
+            dclient = docker.from_env()
+        except docker.errors.DockerException:
+            raise Exception("Error getting docker client. Check if current user has the correct permissions (docker group).")
         logger.info('Building new ECR image: %s' % ecr_image)
         dclient.images.build(path=tmp_folder.name, tag=ecr_image, pull=True, platform=platform)
 
