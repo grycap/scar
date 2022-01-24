@@ -34,6 +34,12 @@ Lambda Image Environment.
 To use this functionality you should use `supervisor <https://github.com/grycap/faas-supervisor>`_ 
 version 1.5.0 or newer.
 
+Using the image runtime the scar client will build a new container image adding the supervisor and
+other needed files to the user provided image. This image will be then uploaded to an ECR registry
+to enable Lambda environment to create the function. So the user that executes the scar client
+must have the ability to execute the docker commands (be part of the ``docker`` group, see 
+`docker documentation <https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user>`_)
+
 
 Use alpine based images
 -----------------------
