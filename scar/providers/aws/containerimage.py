@@ -16,11 +16,13 @@ import os.path
 import docker
 import scar.logger as logger
 from scar.providers.aws.ecr import ECR
-from scar.utils import FileUtils
+from scar.utils import FileUtils, SupervisorUtils
 from scar.providers.aws.functioncode import create_function_config
 
 
 class ContainerImage:
+
+    _CACHE_DIR = '/var/tmp/scar_cache'
 
     @staticmethod
     def get_asset_name(function_info):
@@ -39,7 +41,24 @@ class ContainerImage:
             ecr_cli.delete_repository(repo_name)
 
     @staticmethod
-    def create_ecr_image(resources_info, supervisor_path):
+    def get_supervisor_zip(resources_info, supervisor_version):
+        """Get from cache or download supervisor zip."""
+        asset_name = ContainerImage.get_asset_name(resources_info.get('lambda'))
+        supervisor_path = FileUtils.join_paths(ContainerImage._CACHE_DIR, supervisor_version)
+        supervisor_zip_path = FileUtils.join_paths(supervisor_path, asset_name)
+        if os.path.isfile(supervisor_zip_path):
+            return supervisor_zip_path
+        else:
+            if not os.path.exists(supervisor_path):
+                os.makedirs(supervisor_path)
+            return SupervisorUtils.download_supervisor_asset(
+                supervisor_version,
+                asset_name,
+                supervisor_zip_path
+            )
+
+    @staticmethod
+    def create_ecr_image(resources_info, supervisor_version):
         """Creates an ECR image using the user provided image adding the supervisor tools."""
         # If the user set an already prepared image return the image name
         image_name = ContainerImage._ecr_image_name_prepared(resources_info.get('lambda').get('container'))
@@ -59,8 +78,10 @@ class ContainerImage:
                                 FileUtils.join_paths(tmp_folder.name,
                                                      FileUtils.get_file_name(init_script_path)))
 
+        # Get supervisor zip
+        supervisor_zip_path = ContainerImage.get_supervisor_zip(resources_info, supervisor_version)
         # Unzip the supervisor file to the temp file
-        FileUtils.unzip_folder(supervisor_path, tmp_folder.name)
+        FileUtils.unzip_folder(supervisor_zip_path, tmp_folder.name)
 
         # Create dockerfile to generate the new ECR image
         FileUtils.create_file_with_content("%s/Dockerfile" % tmp_folder.name,

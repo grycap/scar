@@ -503,9 +503,8 @@ class SupervisorUtils:
                                               cls._SUPERVISOR_GITHUB_REPO)
 
     @classmethod
-    def download_supervisor_asset(cls, version: str, asset_name: str, path: str) -> str:
+    def download_supervisor_asset(cls, version: str, asset_name: str, supervisor_zip_path: str) -> str:
         """Downloads the FaaS Supervisor asset to the specified path."""
-        supervisor_zip_path = FileUtils.join_paths(path, 'supervisor.zip')
         supervisor_zip_url = GitHubUtils.get_asset_url(cls._SUPERVISOR_GITHUB_USER,
                                                        cls._SUPERVISOR_GITHUB_REPO,
                                                        asset_name,
