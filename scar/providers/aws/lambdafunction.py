@@ -85,19 +85,17 @@ class Lambda(GenericClient):
     @excp.exception(logger)
     def create_function(self):
         # Create tmp folders
-        supervisor_path = FileUtils.create_tmp_dir()
         zip_payload_path = None
-        supervisor_zip_path = None
         if self.function.get('runtime') == "image":
             # Create docker image in ECR
             self.function['container']['image'] = ContainerImage.create_ecr_image(self.resources_info,
                                                                                   self.supervisor_version)
         else:
-            # Download supervisor
-            supervisor_zip_path = SupervisorUtils.download_supervisor(
-                self.supervisor_version,
-                supervisor_path.name
-            )
+            # Check if supervisor's source is already cached
+            cached, supervisor_zip_path = SupervisorUtils.is_supervisor_cached(self.supervisor_version)
+            if not cached:
+                # Download supervisor
+                supervisor_zip_path = SupervisorUtils.download_supervisor(self.supervisor_version)
             # Manage supervisor layer
             self._manage_supervisor_layer(supervisor_zip_path)
             # Create function

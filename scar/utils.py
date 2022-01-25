@@ -461,11 +461,13 @@ class SupervisorUtils:
     _SUPERVISOR_GITHUB_USER = 'grycap'
     _SUPERVISOR_GITHUB_ASSET_NAME = 'supervisor'
     _SUPERVISOR_CACHE_DIR = '/var/tmp/cache/scar'
+    _SUPERVISOR_SOURCE_NAME = 'faas-supervisor.zip'
 
     @classmethod
-    def download_supervisor(cls, supervisor_version: str, path: str) -> str:
+    def download_supervisor(cls, supervisor_version: str) -> str:
         """Downloads the FaaS Supervisor .zip package to the specified path."""
-        supervisor_zip_path = FileUtils.join_paths(path, 'faas-supervisor.zip')
+        path = FileUtils.join_paths(cls._SUPERVISOR_CACHE_DIR, supervisor_version)
+        supervisor_zip_path = FileUtils.join_paths(path, cls._SUPERVISOR_SOURCE_NAME)
         supervisor_zip_url = GitHubUtils.get_source_code_url(
             cls._SUPERVISOR_GITHUB_USER,
             cls._SUPERVISOR_GITHUB_REPO,
@@ -528,3 +530,8 @@ class SupervisorUtils:
         except Exception as ex:
             logger.warning('Error checking asset file in cache: %s' % ex)
         return False, supervisor_zip_path
+
+    @classmethod
+    def is_supervisor_cached(cls, supervisor_version: str) -> Tuple[bool, str]:
+        """Check if supervisor source is cached."""
+        return SupervisorUtils.is_supervisor_asset_cached(cls._SUPERVISOR_SOURCE_NAME, supervisor_version)
