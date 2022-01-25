@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from zipfile import ZipFile
-from scar.utils import FileUtils, SysUtils, StrUtils
+from scar.utils import FileUtils, SysUtils
 
 
 def _extract_udocker_zip(supervisor_zip_path) -> None:
