@@ -460,7 +460,7 @@ class SupervisorUtils:
     _SUPERVISOR_GITHUB_REPO = 'faas-supervisor'
     _SUPERVISOR_GITHUB_USER = 'grycap'
     _SUPERVISOR_GITHUB_ASSET_NAME = 'supervisor'
-    _SUPERVISOR_CACHE_DIR = '/var/cache/scar'
+    _SUPERVISOR_CACHE_DIR = '/var/tmp/cache/scar'
 
     @classmethod
     def download_supervisor(cls, supervisor_version: str, path: str) -> str:
