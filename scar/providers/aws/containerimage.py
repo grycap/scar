@@ -43,8 +43,8 @@ class ContainerImage:
     def get_supervisor_zip(resources_info: Dict, supervisor_version: str) -> str:
         """Get from cache or download supervisor zip."""
         asset_name = ContainerImage.get_asset_name(resources_info.get('lambda'))
-        supervisor_zip_path = SupervisorUtils.is_supervisor_asset_cached(asset_name, supervisor_version)
-        if supervisor_zip_path:
+        cached, supervisor_zip_path = SupervisorUtils.is_supervisor_asset_cached(asset_name, supervisor_version)
+        if cached:
             # It is cached, do not download again
             return supervisor_zip_path
         else:

@@ -26,7 +26,7 @@ import sys
 from copy import deepcopy
 from zipfile import ZipFile
 from io import BytesIO
-from typing import Optional, Dict, List, Generator, Union, Any
+from typing import Optional, Dict, List, Generator, Union, Any, Tuple
 from distutils import dir_util
 from packaging import version
 import yaml
@@ -515,15 +515,15 @@ class SupervisorUtils:
         return supervisor_zip_path
 
     @classmethod
-    def is_supervisor_asset_cached(cls, asset_name: str, supervisor_version: str) -> str:
+    def is_supervisor_asset_cached(cls, asset_name: str, supervisor_version: str) -> Tuple[bool, str]:
         """Check if specified supervisor asset is cached."""
         supervisor_path = FileUtils.join_paths(cls._SUPERVISOR_CACHE_DIR, supervisor_version)
         supervisor_zip_path = FileUtils.join_paths(supervisor_path, asset_name)
         try:
             if os.path.isfile(supervisor_zip_path):
-                return supervisor_zip_path
+                return True, supervisor_zip_path
             elif not os.path.exists(supervisor_path):
                 os.makedirs(supervisor_path)
         except Exception as ex:
             logger.warning('Error checking asset file in cache: %s' % ex)
-        return None
+        return False, supervisor_zip_path
