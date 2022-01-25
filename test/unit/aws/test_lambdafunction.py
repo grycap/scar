@@ -16,6 +16,7 @@
 import unittest
 import sys
 import os
+import tempfile
 from mock import MagicMock
 from mock import patch
 
@@ -249,13 +250,31 @@ class TestLambda(unittest.TestCase):
 
     @patch('boto3.Session')
     @patch('requests.get')
-    def test_call_http_endpoint(self, get, boto_session):
+    @patch('requests.post')
+    @patch('scar.providers.aws.validators.FileUtils.get_file_size')
+    def test_call_http_endpoint(self, get_file_size, post, get, boto_session):
         session, lam, _ = self._init_mocks(['get_function_configuration'])
         boto_session.return_value = session
 
         lam.client.client.get_function_configuration.return_value = {'Environment': {'Variables': {'API_GATEWAY_ID': 'apiid'}}}
         lam.call_http_endpoint()
         self.assertEqual(get.call_args_list[0][0][0], 'https://apiid.us-east-1/scar/l')
+
+        tmpfile = tempfile.NamedTemporaryFile(delete=False, suffix=".yaml")
+        tmpfile.write(b"somedata\n")
+        tmpfile.close()
+
+        lam.resources_info['api_gateway']['data_binary'] = tmpfile.name
+        lam.resources_info['api_gateway']['parameters'] = {'key': 'value'}
+
+        get_file_size.return_value = 1024
+
+        lam.call_http_endpoint()
+
+        os.unlink(tmpfile.name)
+        self.assertEqual(post.call_args_list[0][0][0], 'https://apiid.us-east-1/scar/l')
+        self.assertEqual(post.call_args_list[0][1]['data'], b'c29tZWRhdGEK')
+        self.assertEqual(post.call_args_list[0][1]['params'], {'key': 'value'})
 
     @patch('boto3.Session')
     @patch('requests.get')
@@ -284,3 +303,17 @@ class TestLambda(unittest.TestCase):
 
         self.assertEqual(lam.get_fdl_config('arn'), ['item', 'item2'])
         self.assertEqual(get.call_args_list[0][0][0], "http://loc.es")
+
+    @patch('boto3.Session')
+    def test_get_all_functions(self, boto_session):
+        session, lam, _ = self._init_mocks(['get_function_configuration'])
+        boto_session.return_value = session
+
+        lam.client.client.get_function_configuration.return_value = {'FunctionName': 'fname',
+                                                                     'FunctionArn': 'arn1',
+                                                                     'Timeout': 600,
+                                                                     'MemorySize': 1024}
+
+        res = lam.get_all_functions(['arn1'])
+        self.assertEqual(res[0]['lambda']['memory'], 1024)
+        self.assertEqual(res[0]['lambda']['supervisor']['version'], '-')
