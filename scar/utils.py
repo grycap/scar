@@ -520,7 +520,8 @@ class SupervisorUtils:
         supervisor_path = FileUtils.join_paths(cls._SUPERVISOR_CACHE_DIR, supervisor_version)
         supervisor_zip_path = FileUtils.join_paths(supervisor_path, asset_name)
         try:
-            if os.path.isfile(supervisor_zip_path):
+            # The file must exist and be more that 1MB 
+            if os.path.isfile(supervisor_zip_path) and os.path.getsize(supervisor_zip_path) > 1048576:
                 return True, supervisor_zip_path
             elif not os.path.exists(supervisor_path):
                 os.makedirs(supervisor_path)

@@ -63,6 +63,7 @@ def create_function_definition_parser():
     function_definition_parser.add_argument("-sv", "--supervisor-version",
                                             help=("FaaS Supervisor version. "
                                                   "Can be a tag or 'latest'."))
+    function_definition_parser.add_argument("-rt", "--runtime", help="Lambda runtime")
     # Batch (job definition) options
     function_definition_parser.add_argument("-bm", "--batch-memory",
                                             help="Batch job memory in megabytes")
