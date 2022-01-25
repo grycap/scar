@@ -46,8 +46,10 @@ class ContainerImage:
         cached, supervisor_zip_path = SupervisorUtils.is_supervisor_asset_cached(asset_name, supervisor_version)
         if cached:
             # It is cached, do not download again
+            logger.debug('Using supervisor asset cached file: ver: %s, asset: %s' % (supervisor_version, asset_name))
             return supervisor_zip_path
         else:
+            logger.debug('Downloading supervisor asset file: ver: %s, asset: %s' % (supervisor_version, asset_name))
             return SupervisorUtils.download_supervisor_asset(
                 supervisor_version,
                 asset_name,
