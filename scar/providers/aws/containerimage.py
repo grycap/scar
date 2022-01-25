@@ -15,6 +15,7 @@
 import os.path
 import docker
 import scar.logger as logger
+from typing import Dict, Set
 from scar.providers.aws.ecr import ECR
 from scar.utils import FileUtils, SupervisorUtils
 from scar.providers.aws.functioncode import create_function_config
@@ -22,17 +23,15 @@ from scar.providers.aws.functioncode import create_function_config
 
 class ContainerImage:
 
-    _CACHE_DIR = '/var/tmp/scar_cache'
-
     @staticmethod
-    def get_asset_name(function_info):
+    def get_asset_name(function_info: Dict) -> str:
         arch = function_info.get('architectures', ['x86_64'])[0]
         arch = '' if arch == 'x86_64' else "-%s" % arch
         alpine = '-alpine' if function_info.get('container').get('alpine') else ''
         return 'supervisor%s%s.zip' % (alpine, arch)
 
     @staticmethod
-    def delete_ecr_image(resources_info):
+    def delete_ecr_image(resources_info: Dict) -> None:
         """Delete the ECR repository created in _create_ecr_image function."""
         ecr_cli = ECR(resources_info)
         repo_name = resources_info.get('lambda').get('name')
@@ -41,21 +40,10 @@ class ContainerImage:
             ecr_cli.delete_repository(repo_name)
 
     @staticmethod
-    def is_supervisor_zip_cached(asset_name, supervisor_version):
-        """Check if specified supervisor asset is cached."""
-        supervisor_path = FileUtils.join_paths(ContainerImage._CACHE_DIR, supervisor_version)
-        supervisor_zip_path = FileUtils.join_paths(supervisor_path, asset_name)
-        if os.path.isfile(supervisor_zip_path):
-            return supervisor_zip_path
-        elif not os.path.exists(supervisor_path):
-            os.makedirs(supervisor_path)
-        return None
-
-    @staticmethod
-    def get_supervisor_zip(resources_info, supervisor_version):
+    def get_supervisor_zip(resources_info: Dict, supervisor_version: str) -> str:
         """Get from cache or download supervisor zip."""
         asset_name = ContainerImage.get_asset_name(resources_info.get('lambda'))
-        supervisor_zip_path = ContainerImage.is_supervisor_zip_cached(asset_name, supervisor_version)
+        supervisor_zip_path = SupervisorUtils.is_supervisor_asset_cached(asset_name, supervisor_version)
         if supervisor_zip_path:
             # It is cached, do not download again
             return supervisor_zip_path
@@ -67,7 +55,7 @@ class ContainerImage:
             )
 
     @staticmethod
-    def create_ecr_image(resources_info, supervisor_version):
+    def create_ecr_image(resources_info: Dict, supervisor_version: str) -> str:
         """Creates an ECR image using the user provided image adding the supervisor tools."""
         # If the user set an already prepared image return the image name
         image_name = ContainerImage._ecr_image_name_prepared(resources_info.get('lambda').get('container'))
@@ -109,10 +97,10 @@ class ContainerImage:
         arch = resources_info.get('lambda').get('architectures', ['x86_64'])[0]
         if arch == 'arm64':
             platform = 'linux/arm64'
-        return ContainerImage._build_push_ecr_image(tmp_folder, ecr_image, platform, ecr_cli.get_authorization_token())
+        return ContainerImage._build_push_ecr_image(tmp_folder.name, ecr_image, platform, ecr_cli.get_authorization_token())
 
     @staticmethod
-    def _create_dockerfile_ecr_image(lambda_info):
+    def _create_dockerfile_ecr_image(lambda_info: Dict) -> str:
         """Create dockerfile to generate the new ECR image."""
         dockerfile = 'from %s\n' % lambda_info.get('container').get('image')
         dockerfile += 'ARG FUNCTION_DIR="/var/task"\n'
@@ -136,7 +124,7 @@ class ContainerImage:
         return dockerfile
 
     @staticmethod
-    def _ecr_image_name_prepared(container_info):
+    def _ecr_image_name_prepared(container_info: Dict) -> str:
         """If the user set an already prepared image return the image name."""
         image_name = container_info.get('image')
         if ":" not in image_name:
@@ -147,13 +135,13 @@ class ContainerImage:
         return None
 
     @staticmethod
-    def _build_push_ecr_image(tmp_folder, ecr_image, platform, auth_token):
+    def _build_push_ecr_image(tmp_folder: str, ecr_image: str, platform: str, auth_token: Set) -> str:
         try:
             dclient = docker.from_env()
         except docker.errors.DockerException:
             raise Exception("Error getting docker client. Check if current user has the correct permissions (docker group).")
         logger.info('Building new ECR image: %s' % ecr_image)
-        dclient.images.build(path=tmp_folder.name, tag=ecr_image, pull=True, platform=platform)
+        dclient.images.build(path=tmp_folder, tag=ecr_image, pull=True, platform=platform)
 
         # Login to the ECR registry
         # Known issue it does not work in Widnows WSL environment
