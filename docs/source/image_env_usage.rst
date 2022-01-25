@@ -30,7 +30,7 @@ Or in the function definition file::
 
 Or event set it as a parameter in the ``init`` scar call::
 
-  scarcli.py  init -f function_def.yaml -rt image
+  scar  init -f function_def.yaml -rt image
 
 In this case the scar client will prepare the image and upload it to AWS ECR as required by the 
 Lambda Image Environment.
