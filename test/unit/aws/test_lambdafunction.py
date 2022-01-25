@@ -317,3 +317,14 @@ class TestLambda(unittest.TestCase):
         res = lam.get_all_functions(['arn1'])
         self.assertEqual(res[0]['lambda']['memory'], 1024)
         self.assertEqual(res[0]['lambda']['supervisor']['version'], '-')
+
+    @patch('boto3.Session')
+    @patch('time.sleep')
+    def test_wait_function_active(self, sleep, boto_session):
+        session, lam, _ = self._init_mocks(['get_function_configuration'])
+        boto_session.return_value = session
+
+        lam.client.client.get_function_configuration.return_value = {'State': 'Active'}
+
+        self.assertEqual(lam.wait_function_active('farn'), True)
+        self.assertEqual(sleep.call_count, 1)
