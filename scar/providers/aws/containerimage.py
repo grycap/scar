@@ -41,16 +41,25 @@ class ContainerImage:
             ecr_cli.delete_repository(repo_name)
 
     @staticmethod
-    def get_supervisor_zip(resources_info, supervisor_version):
-        """Get from cache or download supervisor zip."""
-        asset_name = ContainerImage.get_asset_name(resources_info.get('lambda'))
+    def is_supervisor_zip_cached(asset_name, supervisor_version):
+        """Check if specified supervisor asset is cached."""
         supervisor_path = FileUtils.join_paths(ContainerImage._CACHE_DIR, supervisor_version)
         supervisor_zip_path = FileUtils.join_paths(supervisor_path, asset_name)
         if os.path.isfile(supervisor_zip_path):
             return supervisor_zip_path
+        elif not os.path.exists(supervisor_path):
+            os.makedirs(supervisor_path)
+        return None
+
+    @staticmethod
+    def get_supervisor_zip(resources_info, supervisor_version):
+        """Get from cache or download supervisor zip."""
+        asset_name = ContainerImage.get_asset_name(resources_info.get('lambda'))
+        supervisor_zip_path = ContainerImage.is_supervisor_zip_cached(asset_name, supervisor_version)
+        if supervisor_zip_path:
+            # It is cached, do not download again
+            return supervisor_zip_path
         else:
-            if not os.path.exists(supervisor_path):
-                os.makedirs(supervisor_path)
             return SupervisorUtils.download_supervisor_asset(
                 supervisor_version,
                 asset_name,
