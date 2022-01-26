@@ -131,3 +131,31 @@ the default architecture will be used (x86_64)::
         init_script: script.sh
         container:
           image: image/name
+
+EFS support
+------------
+
+Using the container image environment you can also configure file system access for your Lambda function.
+You have to set the VPC parameters to use the same subnet where the EFS is deployed. Also verify
+that the iam role set in the scar configuration has the correct permissions and the Security Group is
+properly configured to enable access to NFS port (see `Configuring file system access for Lambda functions <https://docs.aws.amazon.com/lambda/latest/dg/configuration-filesystem.html>`_)::
+
+
+  functions:
+    aws:
+    - lambda:
+        runtime: image
+        vpc:
+          SubnetIds:
+            - subnet-00000000000000000
+          SecurityGroupIds:
+            - sg-00000000000000000
+        file_system:
+          - Arn: arn:aws:elasticfilesystem:us-east-1:000000000000:access-point/fsap-00000000000000000
+            LocalMountPath: /mnt/efs
+        name: scar-function
+        memory: 2048
+        init_script: script.sh
+        container:
+          image: image/name
+
