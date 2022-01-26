@@ -151,6 +151,10 @@ class TestLambda(unittest.TestCase):
 
         lam.resources_info['lambda']['runtime'] = 'image'
         lam.resources_info['lambda']['supervisor']['version'] = lam.supervisor_version = '1.5.0'
+        lam.resources_info['lambda']['vpc'] = {'SubnetIds': ['subnet'],
+                                               'SecurityGroupIds': ['sg']}
+        lam.resources_info['lambda']['file_system'] = [{'Arn': 'efsaparn', '': '/mnt'}]
+
         lam.create_function()
         fdl = {"storage_providers": {},
                "name": "fname",
@@ -166,6 +170,8 @@ class TestLambda(unittest.TestCase):
                "environment": {"Variables": {"IMAGE_ID": "repouri:latest"}},
                "container": {"image": "repouri:latest", "image_file": "some.tgz", "environment": {"Variables": {}}},
                "supervisor": {"version": "1.5.0", "layer_name": "layername"},
+               "vpc": {"SubnetIds": ["subnet"], "SecurityGroupIds": ["sg"]},
+               "file_system": [{'Arn': 'efsaparn', '': '/mnt'}],
                "ecr": {"delete_image": True}}
         res = {'FunctionName': 'fname',
                'Role': 'iamrole',
@@ -177,8 +183,12 @@ class TestLambda(unittest.TestCase):
                'PackageType': 'Image',
                'Tags': {'createdby': 'scar'},
                'Architectures': ['x86_64'],
+               'VpcConfig': {'SubnetIds': ['subnet'],
+                             'SecurityGroupIds': ['sg']},
+               'FileSystemConfigs': [{'Arn': 'efsaparn', '': '/mnt'}],
                'Code': {'ImageUri': 'repouri:latest'}}
         print(lam.client.client.create_function.call_args_list[0][1])
+        print(res)
         self.assertEqual(lam.client.client.create_function.call_args_list[0][1], res)
         self.assertEqual(docker.images.push.call_args_list[0][0][0], "repouri")
         self.assertEqual(docker.images.build.call_args_list[0][1]['tag'], "repouri")

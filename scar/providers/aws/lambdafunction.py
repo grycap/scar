@@ -65,6 +65,10 @@ class Lambda(GenericClient):
                 'MemorySize': self.function.get('memory'),
                 'Tags': self.function.get('tags'),
                 'Architectures': self.function.get('architectures', ['x86_64'])}
+        if self.function.get('vpc'):
+            args['VpcConfig'] = self.function.get('vpc')
+        if self.function.get('file_system'):
+            args['FileSystemConfigs'] = self.function.get('file_system')
         if self.function.get('runtime') == "image":
             args['Code'] = {'ImageUri': self.function.get('container').get('image')}
             args['PackageType'] = 'Image'
