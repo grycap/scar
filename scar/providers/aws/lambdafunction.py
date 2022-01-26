@@ -90,6 +90,7 @@ class Lambda(GenericClient):
     def create_function(self):
         # Create tmp folders
         zip_payload_path = None
+        supervisor_zip_path = None
         if self.function.get('runtime') == "image":
             # Create docker image in ECR
             self.function['container']['image'] = ContainerImage.create_ecr_image(self.resources_info,

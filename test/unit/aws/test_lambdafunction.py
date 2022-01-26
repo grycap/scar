@@ -187,8 +187,6 @@ class TestLambda(unittest.TestCase):
                              'SecurityGroupIds': ['sg']},
                'FileSystemConfigs': [{'Arn': 'efsaparn', '': '/mnt'}],
                'Code': {'ImageUri': 'repouri:latest'}}
-        print(lam.client.client.create_function.call_args_list[0][1])
-        print(res)
         self.assertEqual(lam.client.client.create_function.call_args_list[0][1], res)
         self.assertEqual(docker.images.push.call_args_list[0][0][0], "repouri")
         self.assertEqual(docker.images.build.call_args_list[0][1]['tag'], "repouri")
