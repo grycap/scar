@@ -121,7 +121,7 @@ class LaunchTemplates(GenericClient):
         'faas-supervisor'. If it does not exists creates a new one."""
         if self._is_supervisor_created():
             is_created = self._is_supervisor_version_created()
-            if is_created is not -1:
+            if is_created != -1:
                 logger.info(f"Using existent '{self.template_name}' launch template.")
                 return is_created
             else:

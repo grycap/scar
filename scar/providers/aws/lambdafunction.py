@@ -19,10 +19,11 @@ from typing import Dict
 from multiprocessing.pool import ThreadPool
 from zipfile import ZipFile, BadZipfile
 import yaml
+import time
 from botocore.exceptions import ClientError
 from scar.http.request import call_http_endpoint, get_file
 from scar.providers.aws import GenericClient
-from scar.providers.aws.functioncode import FunctionPackager
+from scar.providers.aws.functioncode import FunctionPackager, create_function_config
 from scar.providers.aws.lambdalayers import LambdaLayers
 from scar.providers.aws.s3 import S3
 from scar.providers.aws.validators import AWSValidator
@@ -30,6 +31,7 @@ import scar.exceptions as excp
 import scar.logger as logger
 from scar.utils import DataTypesUtils, FileUtils, StrUtils, SupervisorUtils
 from scar.parser.cfgfile import ConfigFileParser
+from scar.providers.aws.containerimage import ContainerImage
 
 
 MAX_CONCURRENT_INVOCATIONS = 500
@@ -48,19 +50,34 @@ class Lambda(GenericClient):
         self.resources_info = resources_info
         self.function = resources_info.get('lambda', {})
         self.supervisor_version = resources_info.get('lambda').get('supervisor').get('version')
+        if (self.function.get('runtime') == "image" and
+                StrUtils.compare_versions(self.supervisor_version, "1.5.0b3") < 0):
+            # In case of using image runtime
+            # it must be 1.5.0-beta3 version or higher
+            raise Exception("Supervisor version must be 1.5.0 or higher for image runtime.")
 
     def _get_creations_args(self, zip_payload_path: str, supervisor_zip_path: str) -> Dict:
-        return {'FunctionName': self.function.get('name'),
-                'Runtime': self.function.get('runtime'),
+        args = {'FunctionName': self.function.get('name'),
                 'Role': self.resources_info.get('iam').get('role'),
-                'Handler': self.function.get('handler'),
-                'Code': self._get_function_code(zip_payload_path, supervisor_zip_path),
                 'Environment': self.function.get('environment'),
                 'Description': self.function.get('description'),
                 'Timeout':  self.function.get('timeout'),
                 'MemorySize': self.function.get('memory'),
                 'Tags': self.function.get('tags'),
-                'Layers': self.function.get('layers')}
+                'Architectures': self.function.get('architectures', ['x86_64'])}
+        if self.function.get('vpc'):
+            args['VpcConfig'] = self.function.get('vpc')
+        if self.function.get('file_system'):
+            args['FileSystemConfigs'] = self.function.get('file_system')
+        if self.function.get('runtime') == "image":
+            args['Code'] = {'ImageUri': self.function.get('container').get('image')}
+            args['PackageType'] = 'Image'
+        else:
+            args['Code'] = self._get_function_code(zip_payload_path, supervisor_zip_path)
+            args['Runtime'] = self.function.get('runtime')
+            args['Handler'] = self.function.get('handler')
+            args['Layers'] = self.function.get('layers')
+        return args
 
     def is_asynchronous(self):
         return self.function.get('asynchronous', False)
@@ -72,18 +89,25 @@ class Lambda(GenericClient):
     @excp.exception(logger)
     def create_function(self):
         # Create tmp folders
-        supervisor_path = FileUtils.create_tmp_dir()
-        tmp_folder = FileUtils.create_tmp_dir()
-        # Download supervisor
-        supervisor_zip_path = SupervisorUtils.download_supervisor(
-            self.supervisor_version,
-            supervisor_path.name
-        )
-        # Manage supervisor layer
-        self._manage_supervisor_layer(supervisor_zip_path)
-        # Create function
-        zip_payload_path = FileUtils.join_paths(tmp_folder.name, 'function.zip')
+        zip_payload_path = None
+        supervisor_zip_path = None
+        if self.function.get('runtime') == "image":
+            # Create docker image in ECR
+            self.function['container']['image'] = ContainerImage.create_ecr_image(self.resources_info,
+                                                                                  self.supervisor_version)
+        else:
+            # Check if supervisor's source is already cached
+            cached, supervisor_zip_path = SupervisorUtils.is_supervisor_cached(self.supervisor_version)
+            if not cached:
+                # Download supervisor
+                supervisor_zip_path = SupervisorUtils.download_supervisor(self.supervisor_version)
+            # Manage supervisor layer
+            self._manage_supervisor_layer(supervisor_zip_path)
+            # Create function
+            tmp_folder = FileUtils.create_tmp_dir()
+            zip_payload_path = FileUtils.join_paths(tmp_folder.name, 'function.zip')
         self._set_image_id()
+        self._set_fdl()
         creation_args = self._get_creations_args(zip_payload_path, supervisor_zip_path)
         response = self.client.create_function(**creation_args)
         if response and "FunctionArn" in response:
@@ -94,6 +118,10 @@ class Lambda(GenericClient):
         image = self.function.get('container').get('image')
         if image:
             self.function['environment']['Variables']['IMAGE_ID'] = image
+
+    def _set_fdl(self):
+        fdl = StrUtils.dict_to_base64_string(create_function_config(self.resources_info))
+        self.function['environment']['Variables']['FDL'] = fdl
 
     def _manage_supervisor_layer(self, supervisor_zip_path: str) -> None:
         layers_client = LambdaLayers(self.resources_info, self.client, supervisor_zip_path)
@@ -118,7 +146,17 @@ class Lambda(GenericClient):
         return code
 
     def delete_function(self):
-        return self.client.delete_function(self.resources_info.get('lambda').get('name'))
+        function_name = self.resources_info.get('lambda').get('name')
+        fdl = self.get_fdl_config(function_name)
+        res = self.client.delete_function(function_name)
+        runtime = fdl.get('runtime', self.function.get('runtime'))
+        if runtime == "image":
+            ecr_info = self.resources_info.get('ecr', {'delete_image': True})
+            ecr_info.update(fdl.get('ecr', {}))
+            # only delete the image if delete_image is True and create_image was True
+            if ecr_info.get('delete_image') and fdl.get('container', {}).get('create_image', True):
+                ContainerImage.delete_ecr_image(self.resources_info)
+        return res
 
     def link_function_and_bucket(self, bucket_name: str) -> None:
         kwargs = {'FunctionName': self.function.get('name'),
@@ -161,9 +199,9 @@ class Lambda(GenericClient):
         if self.is_asynchronous():
             self.set_asynchronous_call_parameters()
         response = self._invoke_lambda_function()
-        response_args = {'Response' : response,
-                         'FunctionName' : self.function.get('name'),
-                         'IsAsynchronous' : self.function.get('asynchronous')}
+        response_args = {'Response': response,
+                         'FunctionName': self.function.get('name'),
+                         'IsAsynchronous': self.function.get('asynchronous')}
         return response_args
 
     def _get_invocation_payload(self):
@@ -204,8 +242,10 @@ class Lambda(GenericClient):
         result['lambda']['arn'] = aws_conf['FunctionArn']
         result['lambda']['timeout'] = aws_conf['Timeout']
         result['lambda']['memory'] = aws_conf['MemorySize']
-        result['lambda']['environment']['Variables'] = aws_conf['Environment']['Variables'].copy()
-        result['lambda']['layers'] = aws_conf['Layers'].copy()
+        if 'Environment' in result:
+            result['lambda']['environment']['Variables'] = aws_conf['Environment']['Variables'].copy()
+        if 'Layers' in result:
+            result['lambda']['layers'] = aws_conf['Layers'].copy()
         result['lambda']['supervisor']['version'] = aws_conf['SupervisorVersion']
         return result
 
@@ -223,7 +263,16 @@ class Lambda(GenericClient):
     def get_fdl_config(self, arn: str = None) -> Dict:
         function = arn if arn else self.function.get('name')
         function_info = self.client.get_function(function)
-        dep_pack_url = function_info.get('Code').get('Location')
+        # Get the FDL from the env variable
+        fdl = function_info.get('Configuration', {}).get('Environment', {}).get('Variables', {}).get('FDL')
+        if fdl:
+            return yaml.safe_load(StrUtils.decode_base64(fdl))
+
+        # In the future this part can be removed
+        if 'Location' in function_info.get('Code'):
+            dep_pack_url = function_info.get('Code').get('Location')
+        else:
+            return {}
         dep_pack = get_file(dep_pack_url)
         # Extract function_config.yaml
         try:
@@ -258,9 +307,9 @@ class Lambda(GenericClient):
         self.client.add_invocation_permission(**kwargs)
         # Add Invocation permission
         kwargs['SourceArn'] = api.get('source_arn_invocation').format(api_region=api.get('region'),
-                                                                       account_id=self.resources_info.get('iam').get('account_id'),
-                                                                       api_id=api.get('id'),
-                                                                       stage_name=api.get('stage_name'))
+                                                                      account_id=self.resources_info.get('iam').get('account_id'),
+                                                                      api_id=api.get('id'),
+                                                                      stage_name=api.get('stage_name'))
         self.client.add_invocation_permission(**kwargs)
 
     def get_api_gateway_id(self):
@@ -276,7 +325,7 @@ class Lambda(GenericClient):
                                                                              stage_name=self.resources_info.get('api_gateway').get('stage_name'))
 
     def call_http_endpoint(self):
-        invoke_args = {'headers' : {'X-Amz-Invocation-Type':'Event'} if self.is_asynchronous() else {}}
+        invoke_args = {'headers': {'X-Amz-Invocation-Type': 'Event'} if self.is_asynchronous() else {}}
         self._set_invoke_args(invoke_args)
         return call_http_endpoint(self._get_api_gateway_url(), **invoke_args)
 
@@ -299,3 +348,12 @@ class Lambda(GenericClient):
         AWSValidator.validate_http_payload_size(data_path, self.is_asynchronous())
         with open(data_path, 'rb') as data_file:
             return base64.b64encode(data_file.read())
+
+    def wait_function_active(self, function_arn, max_time=60, delay=2):
+        func = {"State": "Pending"}
+        wait = 0
+        while "State" in func and func["State"] == "Pending" and wait < max_time:
+            func = self.get_function_configuration(function_arn)
+            time.sleep(delay)
+            wait += delay
+        return func["State"] == "Active"

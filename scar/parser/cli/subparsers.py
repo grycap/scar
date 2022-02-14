@@ -117,7 +117,7 @@ class Subparsers():
                            help="Delete all lambda functions",
                            action="store_true")
         group.add_argument("-f", "--conf-file",
-                           help="Yaml file with the function configuration")
+                        help="Yaml file with the function configuration")
 
     def _add_log_parser(self):
         log = self.subparser.add_parser('log',

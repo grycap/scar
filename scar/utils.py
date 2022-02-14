@@ -26,7 +26,7 @@ import sys
 from copy import deepcopy
 from zipfile import ZipFile
 from io import BytesIO
-from typing import Optional, Dict, List, Generator, Union, Any
+from typing import Optional, Dict, List, Generator, Union, Any, Tuple
 from distutils import dir_util
 from packaging import version
 import yaml
@@ -397,8 +397,12 @@ class GitHubUtils:
     def get_latest_release(user: str, project: str) -> str:
         """Get the tag of the latest release in a repository."""
         url = f'https://api.github.com/repos/{user}/{project}/releases/latest'
-        response = json.loads(request.get_file(url))
-        return response.get('tag_name', '')
+        response = request.get_file(url)
+        if response:
+            response = json.loads(response)
+            return response.get('tag_name', '')
+        else:
+            return None
 
     @staticmethod
     def exists_release_in_repo(user: str, project: str, tag_name: str) -> bool:
@@ -456,11 +460,14 @@ class SupervisorUtils:
     _SUPERVISOR_GITHUB_REPO = 'faas-supervisor'
     _SUPERVISOR_GITHUB_USER = 'grycap'
     _SUPERVISOR_GITHUB_ASSET_NAME = 'supervisor'
+    _SUPERVISOR_CACHE_DIR = '/var/tmp/cache/scar'
+    _SUPERVISOR_SOURCE_NAME = 'faas-supervisor.zip'
 
     @classmethod
-    def download_supervisor(cls, supervisor_version: str, path: str) -> str:
+    def download_supervisor(cls, supervisor_version: str) -> str:
         """Downloads the FaaS Supervisor .zip package to the specified path."""
-        supervisor_zip_path = FileUtils.join_paths(path, 'faas-supervisor.zip')
+        path = FileUtils.join_paths(cls._SUPERVISOR_CACHE_DIR, supervisor_version)
+        supervisor_zip_path = FileUtils.join_paths(path, cls._SUPERVISOR_SOURCE_NAME)
         supervisor_zip_url = GitHubUtils.get_source_code_url(
             cls._SUPERVISOR_GITHUB_USER,
             cls._SUPERVISOR_GITHUB_REPO,
@@ -476,6 +483,7 @@ class SupervisorUtils:
         if GitHubUtils.exists_release_in_repo(cls._SUPERVISOR_GITHUB_USER,
                                               cls._SUPERVISOR_GITHUB_REPO,
                                               supervisor_version):
+            logger.info(f'Using supervisor release: \'{supervisor_version}\'.')
             return supervisor_version
         latest_version = SupervisorUtils.get_latest_release()
         if supervisor_version != 'latest':
@@ -496,3 +504,34 @@ class SupervisorUtils:
         """Returns the latest FaaS Supervisor version."""
         return GitHubUtils.get_latest_release(cls._SUPERVISOR_GITHUB_USER,
                                               cls._SUPERVISOR_GITHUB_REPO)
+
+    @classmethod
+    def download_supervisor_asset(cls, version: str, asset_name: str, supervisor_zip_path: str) -> str:
+        """Downloads the FaaS Supervisor asset to the specified path."""
+        supervisor_zip_url = GitHubUtils.get_asset_url(cls._SUPERVISOR_GITHUB_USER,
+                                                       cls._SUPERVISOR_GITHUB_REPO,
+                                                       asset_name,
+                                                       version)
+        with open(supervisor_zip_path, "wb") as thezip:
+            thezip.write(request.get_file(supervisor_zip_url))
+        return supervisor_zip_path
+
+    @classmethod
+    def is_supervisor_asset_cached(cls, asset_name: str, supervisor_version: str) -> Tuple[bool, str]:
+        """Check if specified supervisor asset is cached."""
+        supervisor_path = FileUtils.join_paths(cls._SUPERVISOR_CACHE_DIR, supervisor_version)
+        supervisor_zip_path = FileUtils.join_paths(supervisor_path, asset_name)
+        try:
+            # The file must exist and be more that 1MB 
+            if os.path.isfile(supervisor_zip_path) and os.path.getsize(supervisor_zip_path) > 1048576:
+                return True, supervisor_zip_path
+            elif not os.path.exists(supervisor_path):
+                os.makedirs(supervisor_path)
+        except Exception as ex:
+            logger.warning('Error checking asset file in cache: %s' % ex)
+        return False, supervisor_zip_path
+
+    @classmethod
+    def is_supervisor_cached(cls, supervisor_version: str) -> Tuple[bool, str]:
+        """Check if supervisor source is cached."""
+        return SupervisorUtils.is_supervisor_asset_cached(cls._SUPERVISOR_SOURCE_NAME, supervisor_version)

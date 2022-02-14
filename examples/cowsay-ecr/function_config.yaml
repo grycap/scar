@@ -1,0 +1,34 @@
+asynchronous: false
+boto_profile: default
+config_path: ''
+container:
+  environment:
+    Variables: {}
+  image: 974349055189.dkr.ecr.us-east-1.amazonaws.com/micafer:latest
+  timeout_threshold: 10
+deployment:
+  max_payload_size: 52428800
+  max_s3_payload_size: 262144000
+environment:
+  Variables: {}
+description: Automatically generated lambda function
+execution_mode: lambda
+handler: scar-ecr-cowsay.lambda_handler
+init_script: test.sh
+invocation_type: RequestResponse
+layers: []
+log_level: DEBUG
+log_type: Tail
+memory: 512
+name: scar-ecr-cowsay
+region: us-east-1
+runtime: image
+storage_providers: {}
+supervisor:
+  layer_name: faas-supervisor
+  license_info: Apache 2.0
+  version: 1.4.2
+tags:
+  createdby: scar
+  owner: AIDAJNGRVV2UDO2O4TS4O
+timeout: 300

@@ -62,7 +62,7 @@ def _parse_lambda_args(cmd_args: Dict) -> Dict:
     lambda_arg_list = ['name', 'asynchronous', 'init_script', 'run_script', 'c_args', 'memory',
                        'timeout', 'timeout_threshold', 'image', 'image_file', 'description',
                        'lambda_role', 'extra_payload', ('environment', 'environment_variables'),
-                       'layers', 'lambda_environment', 'list_layers', 'log_level', 'preheat']
+                       'layers', 'lambda_environment', 'list_layers', 'log_level', 'preheat', 'runtime']
     lambda_args = DataTypesUtils.parse_arg_list(lambda_arg_list, cmd_args)
     # Standardize log level if defined
     if "log_level" in lambda_args:

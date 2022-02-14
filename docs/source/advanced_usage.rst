@@ -231,3 +231,22 @@ Finally, if the image is small enough, SCAR allows to upload it in the function 
 To help with the creation of slim images, you can use `minicon <https://github.com/grycap/minicon>`_.
 Minicon is a general tool to analyze applications and executions of these applications to obtain a filesystem that contains all the dependencies that have been detected.
 By using minicon the size of the cowsay image was reduced from 170MB to 11MB.
+
+Setting a specific VPC
+----------------------
+
+You can also set an specific VPC parameters to configure the network in you lambda functions.
+You only have to add the ``vpc`` field setting the subnets and security groups as shown in the 
+following example::
+
+    functions:
+      aws:
+      - lambda:
+          vpc:
+            SubnetIds:
+              - subnet-00000000000000000
+            SecurityGroupIds:
+              - sg-00000000000000000
+          name: scar-cowsay
+          container:
+            image: grycap/cowsay
