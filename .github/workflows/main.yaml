@@ -22,7 +22,7 @@ jobs:
       run: |
         pip install --upgrade pip
         pip install -r requirements.txt
-        pip install nose
+        pip install nose mock
     - name: Test
       run: nosetests test/unit/*.py test/unit/aws/*.py test/unit/oscar/*.py -v --stop --with-xunit --with-coverage --cover-erase --cover-xml --cover-package=scar
     - name: Report coverage
