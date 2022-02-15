@@ -1,0 +1,56 @@
+name: test
+
+on:
+  push:
+   branches: ["**"]
+  pull_request:
+    branches: ["**"]
+  release:
+    types: [created]
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8.9
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install nose
+    - name: Test
+      run: nosetests test/unit/*.py test/unit/aws/*.py test/unit/oscar/*.py -v --stop --with-xunit --with-coverage --cover-erase --cover-xml --cover-package=scar
+    - name: Report coverage
+      uses: codacy/codacy-coverage-reporter-action@v1
+      with:
+        project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        coverage-reports: coverage.xml
+
+  pypi:
+    needs: test
+    if: github.event_name == 'release'
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8.9
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install setuptools wheel twine
+        pip install -r requirements.txt
+    - name: Build and publish
+      env:
+        TWINE_USERNAME: ${{ secrets.PYPI_USER }}
+        TWINE_PASSWORD: ${{ secrets.PYPI_PASS }}
+      run: |
+        python setup.py sdist bdist_wheel
+        twine upload dist/*
