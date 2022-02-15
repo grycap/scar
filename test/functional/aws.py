@@ -18,7 +18,7 @@ import subprocess
 import unittest
 
 class AwsTest(unittest.TestCase):
-    
+
     scar_base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     scar_bin = ["scar"]
     
