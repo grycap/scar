@@ -62,9 +62,9 @@ def main():
         if func_call in ['init', 'rm', 'ls']:
             OSCAR(func_call)
         logger.end_execution_trace()
-    except Exception as excp:
-        print(excp)
-        logger.exception(excp)
+    except Exception as ex:
+        print(ex)
+        logger.exception(ex)
         logger.end_execution_trace_with_errors()
 
 

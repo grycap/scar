@@ -65,7 +65,7 @@ _DEFAULT_CFG = {
                     "UDOCKER_EXEC": "/opt/udocker/udocker.py"}},
             "deployment": {
                 "max_payload_size": 52428800,
-                "max_s3_payload_size": 262144000           
+                "max_s3_payload_size": 262144000
             },
             "container": {
                 "environment" : {
@@ -76,7 +76,7 @@ _DEFAULT_CFG = {
             "supervisor": {
                 "version": "latest",
                 'layer_name' : "faas-supervisor",
-                'license_info' : 'Apache 2.0'                
+                'license_info' : 'Apache 2.0'
             }
         },
         "s3": {
@@ -156,7 +156,7 @@ _DEFAULT_CFG = {
                 "launch_template_name": "faas-supervisor",
                 "instance_role": "arn:aws:iam::{account_id}:instance-profile/ecsInstanceRole"
             },
-            "service_role": "arn:aws:iam::{account_id}:role/service-role/AWSBatchServiceRole"            
+            "service_role": "arn:aws:iam::{account_id}:role/service-role/AWSBatchServiceRole"
         }
     }
 }

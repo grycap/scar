@@ -49,7 +49,7 @@ class GenericClient():
                 self.properties['client'] = {'region_name': region}
             session = resource_info.get('boto_profile')
             if session:
-                self.properties['session'] = {'profile_name': session}        
+                self.properties['session'] = {'profile_name': session}
 
     @lazy_property
     def client(self):

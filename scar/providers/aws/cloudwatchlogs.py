@@ -29,7 +29,7 @@ def _parse_events_in_message(log_events: List) -> str:
 
 class CloudWatchLogs(GenericClient):
     """Manages the AWS CloudWatch Logs functionality"""
-    
+
     def __init__(self, resources_info: Dict):
         super().__init__(resources_info.get('cloudwatch'))
         self.resources_info = resources_info

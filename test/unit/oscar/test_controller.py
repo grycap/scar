@@ -43,7 +43,7 @@ class TestOSCARController(unittest.TestCase):
         oscar_client.return_value = ocli
 
         OSCAR('init')
-    
+
         os.unlink(tmpfile.name)
         res = {'name': 'oname', 'script': 'Hello world!',
                'cluster_id': 'my_oscar', 'storage_providers': {}}

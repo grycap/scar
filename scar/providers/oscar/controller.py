@@ -15,7 +15,7 @@
 
 from typing import Dict
 from copy import deepcopy
-from scar.utils import StrUtils, FileUtils, SupervisorUtils
+from scar.utils import FileUtils
 from scar.providers.oscar.client import OSCARClient
 from scar.providers.aws.controller import add_output
 import scar.exceptions as excp
