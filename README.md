@@ -1,7 +1,9 @@
 # SCAR - Serverless Container-aware ARchitectures
 
 [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Build Status](https://jenkins.i3m.upv.es/buildStatus/icon?job=grycap/scar)](https://jenkins.i3m.upv.es/job/grycap/job/scar/)
+[![test](https://github.com/grycap/scar/actions/workflows/main.yaml/badge.svg)](https://github.com/grycap/scar/actions/workflows/main.yaml)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/54fa508a76fa4001843abad945c127c9)](https://www.codacy.com/gh/grycap/scar/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=grycap/scar&amp;utm_campaign=Badge_Grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/54fa508a76fa4001843abad945c127c9)](https://www.codacy.com/gh/grycap/scar/dashboard?utm_source=github.com&utm_medium=referral&utm_content=grycap/scar&utm_campaign=Badge_Coverage)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/1968/badge)](https://bestpractices.coreinfrastructure.org/projects/1968)
 
 # ![SCAR](scar-logo.png)
