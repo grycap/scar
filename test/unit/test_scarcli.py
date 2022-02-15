@@ -18,18 +18,27 @@ import sys
 import os
 import tempfile
 import yaml
+import json
 from mock import patch
 
 sys.path.append("..")
 sys.path.append(".")
 
 from scar.scarcli import main
+from scar.parser.cfgfile import ConfigFileParser, _DEFAULT_CFG
+from scar.utils import FileUtils
 
 
 class TestSCARCli(unittest.TestCase):
 
     def __init__(self, *args):
         unittest.TestCase.__init__(self, *args)
+
+    def setUp(self):
+        if not FileUtils.is_file(ConfigFileParser.config_file_path):
+            FileUtils.create_folder(ConfigFileParser.config_file_folder)
+            FileUtils.create_file_with_content(ConfigFileParser.config_file_path,
+                                        json.dumps(_DEFAULT_CFG, indent=2))
 
     @patch('scar.scarcli.AWS')
     @patch('scar.scarcli.OSCAR')
