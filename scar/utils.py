@@ -39,7 +39,7 @@ COMMANDS = ['scar-config']
 
 def lazy_property(func):
     # Skipped type hinting: https://github.com/python/mypy/issues/3157
-    """ A decorator that makes a property lazy-evaluated."""
+    """A decorator that makes a property lazy-evaluated."""
     attr_name = '_lazy_' + func.__name__
 
     @property
@@ -52,6 +52,7 @@ def lazy_property(func):
 
 
 class SysUtils:
+
     """Common methods for system management."""
 
     @staticmethod
@@ -99,12 +100,14 @@ class SysUtils:
 
 
 class DataTypesUtils:
+
     """Common methods for data types management."""
 
     @staticmethod
     def merge_dicts(dict1: Dict, dict2: Dict) -> Dict:
         """Merge 'dict1' and 'dict2' dicts into 'dict1'.
-        'dict2' has precedence over 'dict1'."""
+        'dict2' has precedence over 'dict1'.
+        """
         for key, val in dict2.items():
             if val is not None:
                 if isinstance(val, dict) and key in dict1:
@@ -140,8 +143,7 @@ class DataTypesUtils:
 
     @staticmethod
     def parse_arg_list(arg_keys: List, cmd_args: Dict) -> Dict:
-        """Parse an argument dictionary filtering by the names
-        specified in a list."""
+        """Parse an argument dictionary filtering by the names specified in a list."""
         result = {}
         for key in arg_keys:
             if isinstance(key, tuple):
@@ -154,6 +156,7 @@ class DataTypesUtils:
 
 
 class FileUtils:
+
     """Common methods for file and directory management."""
 
     @staticmethod
@@ -168,8 +171,7 @@ class FileUtils:
 
     @staticmethod
     def create_folder(folder_name):
-        """Creates a system folder.
-        Does nothing if the folder exists."""
+        """Creates a system folder. Does nothing if the folder exists."""
         os.makedirs(folder_name, exist_ok=True)
 
     @staticmethod
@@ -324,6 +326,7 @@ class FileUtils:
 
 
 class StrUtils:
+
     """Common methods for string management."""
 
     @staticmethod
@@ -390,6 +393,7 @@ class StrUtils:
 
 
 class GitHubUtils:
+
     """Common methods for GitHub API Queries.
     https://developer.github.com/v3/repos/releases/"""
 
@@ -454,6 +458,7 @@ class GitHubUtils:
 
 
 class SupervisorUtils:
+
     """Common methods for FaaS Supervisor management.
     https://github.com/grycap/faas-supervisor/"""
 
@@ -522,7 +527,7 @@ class SupervisorUtils:
         supervisor_path = FileUtils.join_paths(cls._SUPERVISOR_CACHE_DIR, supervisor_version)
         supervisor_zip_path = FileUtils.join_paths(supervisor_path, asset_name)
         try:
-            # The file must exist and be more that 1MB 
+            # The file must exist and be more that 1MB
             if os.path.isfile(supervisor_zip_path) and os.path.getsize(supervisor_zip_path) > 1048576:
                 return True, supervisor_zip_path
             elif not os.path.exists(supervisor_path):
