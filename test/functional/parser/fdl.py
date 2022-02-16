@@ -45,7 +45,7 @@ class Test(unittest.TestCase):
             if function['name'] == 'function1':
                 self.assertEqual(len(function['env_vars'].items()), 8)
             elif function['name'] == 'function2':
-                self.assertEqual(len(function['env_vars'].items()), 5)                
+                self.assertEqual(len(function['env_vars'].items()), 5)
 
 
 if __name__ == "__main__":

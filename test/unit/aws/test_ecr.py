@@ -41,7 +41,7 @@ class TestECR(unittest.TestCase):
         session = MagicMock(['client'])
         client = MagicMock(call_list)
         session.client.return_value = client
-        return session   
+        return session
 
     @patch('boto3.Session')
     def test_get_authorization_token(self, boto_session):

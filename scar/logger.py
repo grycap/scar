@@ -38,7 +38,7 @@ def init_execution_trace():
 def end_execution_trace():
     logging.info('SCAR execution finished')
     logging.info('----------------------------------------------------')
-        
+
 def end_execution_trace_with_errors():
     logging.info('SCAR execution finished with errors')
     logging.info('----------------------------------------------------')

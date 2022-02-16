@@ -37,7 +37,7 @@ class Commands(metaclass=abc.ABCMeta):
     def invoke(self):
         pass
 
-    @abc.abstractmethod    
+    @abc.abstractmethod
     def run(self):
         pass
 

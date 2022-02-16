@@ -15,8 +15,7 @@
 import requests
 
 def call_http_endpoint(url, **kwargs):
-    """
-    Does a 'GET' or 'PUT' request if the parameter 'data' exists or not respectively
+    """Does a 'GET' or 'PUT' request if the parameter 'data' exists or not respectively
 
     :param url: URL for the request.
     :param data: (optional) Dictionary (will be form-encoded), bytes, or file-like object to send in the body of the request.

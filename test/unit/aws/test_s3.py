@@ -38,11 +38,12 @@ class TestS3(unittest.TestCase):
         s3 = S3({})
         self.assertEqual(type(s3.client.client).__name__, "S3")
 
-    def _init_mocks(self, call_list):
+    @staticmethod
+    def _init_mocks(call_list):
         session = MagicMock(['client'])
         client = MagicMock(call_list)
         session.client.return_value = client
-        return session   
+        return session
 
     @patch('boto3.Session')
     def test_create_bucket(self, boto_session):

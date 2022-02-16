@@ -113,8 +113,8 @@ class ContainerImage:
         dockerfile += 'ENV PYTHONIOENCODING="utf8"\n'
 
         # Add user environment variables
-        vars = lambda_info.get('container').get('environment').get('Variables', {})
-        for key, value in vars.items():
+        variables = lambda_info.get('container').get('environment').get('Variables', {})
+        for key, value in variables.items():
             dockerfile += 'ENV %s="%s"\n' % (key, value)
 
         dockerfile += 'CMD [ "supervisor" ]\n'

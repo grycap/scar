@@ -25,7 +25,8 @@ class AwsTest(unittest.TestCase):
     def tearDown(self):
         self.execute_command(self.get_cmd(["rm","-a"]))
 
-    def execute_command(self, cmd):
+    @staticmethod
+    def execute_command(cmd):
         return subprocess.check_output(cmd).decode("utf-8")
 
     def get_cmd(self, extra_args):
@@ -50,7 +51,7 @@ class AwsTest(unittest.TestCase):
 
         cmd = self.get_cmd(["ls", "-v"])
         cmd_out = self.execute_command(cmd)
-        self.assertEqual(json.loads(cmd_out), {"Functions": []})                 
+        self.assertEqual(json.loads(cmd_out), {"Functions": []})
 
     def test_init_ls_run_rm_function(self):
         func_name = "scar-test-init-ls-run-rm"
@@ -60,7 +61,7 @@ class AwsTest(unittest.TestCase):
         cmd_out = self.execute_command(cmd)
         self.assertTrue("NAME                        MEMORY    TIME  IMAGE_ID    API_URL" in cmd_out)
         self.assertTrue("------------------------  --------  ------  ----------  ---------" in cmd_out)
-        self.assertTrue("{0}       512     300  centos:7    -".format(func_name) in cmd_out)        
+        self.assertTrue("{0}       512     300  centos:7    -".format(func_name) in cmd_out)
 
         cmd = self.get_cmd(["run", "-n", func_name])
         cmd_out = self.execute_command(cmd)

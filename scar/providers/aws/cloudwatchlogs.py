@@ -79,7 +79,7 @@ class CloudWatchLogs(GenericClient):
         except ClientError as cerr:
             logger.warning("Error getting the function logs: %s" % cerr)
         return function_logs
-            
+
     def _get_batch_job_log(self, jobs_info: List) -> str:
         """Returns Batch logs for an specific job."""
         batch_logs = ""

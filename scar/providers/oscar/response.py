@@ -18,7 +18,6 @@ from typing import Dict, List
 from tabulate import tabulate
 from scar.providers.aws.response import OutputType
 import scar.logger as logger
-from scar.utils import StrUtils
 
 
 def parse_ls_response(oscar_resources: List, endpoint: str, cluster_id: str, output_type: int) -> None:
