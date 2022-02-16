@@ -23,17 +23,17 @@ class CallType(Enum):
     RM = "rm"
     LOG = "log"
     PUT = "put"
-    GET = "get"  
+    GET = "get"
 
 class Commands(metaclass=abc.ABCMeta):
-    ''' All the different cloud provider controllers must inherit 
+    ''' All the different cloud provider controllers must inherit
     from this class to ensure that the commands are defined consistently'''
 
     @abc.abstractmethod
     def init(self):
         pass
 
-    @abc.abstractmethod    
+    @abc.abstractmethod
     def invoke(self):
         pass
 
@@ -59,4 +59,4 @@ class Commands(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get(self):
-        pass    
+        pass

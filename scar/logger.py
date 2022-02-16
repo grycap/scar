@@ -34,10 +34,10 @@ logging.basicConfig(filename=log_file_path, level=loglevel, format=FORMAT)
 def init_execution_trace():
     logging.info('----------------------------------------------------')
     logging.info('SCAR execution started')
-    
+
 def end_execution_trace():
     logging.info('SCAR execution finished')
-    logging.info('----------------------------------------------------')     
+    logging.info('----------------------------------------------------')
         
 def end_execution_trace_with_errors():
     logging.info('SCAR execution finished with errors')
@@ -66,7 +66,7 @@ def error(cli_msg, log_msg=None):
         logging.error(cli_msg)
         
 def exception(msg):
-    logging.exception(msg)        
+    logging.exception(msg)
 
 def log_exception(error_msg, exception):
     error(error_msg, error_msg + ": {0}".format(exception))
@@ -84,4 +84,4 @@ def warning_json(cli_msg, log_msg=None):
 
 def error_json(cli_msg, log_msg=None):
     print_json(cli_msg)
-    logging.error(log_msg) if log_msg else logging.error(cli_msg)          
+    logging.error(log_msg) if log_msg else logging.error(cli_msg)

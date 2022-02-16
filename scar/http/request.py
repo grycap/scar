@@ -18,7 +18,7 @@ def call_http_endpoint(url, **kwargs):
     """
     Does a 'GET' or 'PUT' request if the parameter 'data' exists or not respectively
 
-    :param url: URL for the request.        
+    :param url: URL for the request.
     :param data: (optional) Dictionary (will be form-encoded), bytes, or file-like object to send in the body of the request.
     :param headers: (optional) Dictionary of HTTP Headers to send with the request.
     :param parameters: (optional) Dictionary or bytes to be sent in the query string.
