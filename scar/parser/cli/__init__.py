@@ -87,7 +87,7 @@ def _get_lambda_environment_variables(lambda_args: Dict) -> None:
             lambda_env_vars['container']['environment']['Variables'][f'{key_val[0]}'] = key_val[1]
         del(lambda_args['environment_variables'])
     if "extra_payload" in lambda_args:
-        lambda_env_vars['container']['extra_payload'] = f"/var/task"
+        lambda_env_vars['container']['extra_payload'] = "/var/task"
     if "init_script" in lambda_args:
         lambda_env_vars['container']['init_script'] = f"/var/task/{FileUtils.get_file_name(lambda_args['init_script'])}"
     if "image" in lambda_args:

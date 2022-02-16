@@ -116,7 +116,7 @@ _DEFAULT_CFG = {
                 'integrationHttpMethod' : "POST",
                 'uri' : "arn:aws:apigateway:{api_region}:lambda:path/2015-03-31/functions/arn:aws:lambda:{lambda_region}:{account_id}:function:{function_name}/invocations",
                 'requestParameters' : {"integration.request.header.X-Amz-Invocation-Type":
-                                       "method.request.header.X-Amz-Invocation-Type"}            
+                                       "method.request.header.X-Amz-Invocation-Type"}
             },
             'path_part': "{proxy+}",
             'stage_name': "scar",

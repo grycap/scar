@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Module with the class implementing the low-level functions to 
+"""Module with the class implementing the low-level functions to
 communicate with an OSCAR cluster."""
 
 from typing import Dict, List
@@ -35,7 +35,7 @@ def _get_error_msg(res: requests.Response) -> str:
         error_msg = 'The Service doesn\'t exist'
     elif res.status_code == 500:
         error_msg = 'Internal Server Error'
-    return error_msg    
+    return error_msg
 
 
 class OSCARClient():
@@ -47,7 +47,7 @@ class OSCARClient():
         self.auth_user = credentials_info['auth_user']
         self.auth_password = credentials_info['auth_password']
         self.ssl_verify = credentials_info['ssl_verify']
-        
+
     def create_service(self, **kwargs: Dict) -> Dict:
         """Creates a new OSCAR service."""
         logger.debug('Creating OSCAR service.')
