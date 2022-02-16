@@ -197,7 +197,7 @@ class Batch(GenericClient):
         return job_def_args
 
     def _get_node_properties_multi_node_args(self):
-        targetNodes = self.batch.get('multi_node_parallel').get('number_nodes') - 1
+        #targetNodes = self.batch.get('multi_node_parallel').get('number_nodes') - 1
         job_def_args = {
             "numNodes": int(self.batch.get('multi_node_parallel').get('number_nodes')),
             "mainNode": int(self.batch.get('multi_node_parallel').get('main_node_index')),
