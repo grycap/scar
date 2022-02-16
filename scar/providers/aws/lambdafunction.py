@@ -319,7 +319,7 @@ class Lambda(GenericClient):
     def _get_api_gateway_url(self):
         api_id = self.get_api_gateway_id()
         if not api_id:
-            raise excp.ApiEndpointNotFoundError(self.function.get('name'))
+            raise excp.ApiEndpointNotFoundError(function_name=self.function.get('name'))
         return self.resources_info.get('api_gateway').get('endpoint').format(api_id=api_id,
                                                                              api_region=self.resources_info.get('api_gateway').get('region'),
                                                                              stage_name=self.resources_info.get('api_gateway').get('stage_name'))

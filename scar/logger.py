@@ -64,7 +64,7 @@ def error(cli_msg, log_msg=None):
     else:
         print(cli_msg)
         logging.error(cli_msg)
-        
+
 def exception(msg):
     logging.exception(msg)
 
