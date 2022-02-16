@@ -36,7 +36,8 @@ class TestECR(unittest.TestCase):
         ecr = ECR({})
         self.assertEqual(type(ecr.client.client).__name__, "ECR")
 
-    def _init_mocks(self, call_list):
+    @staticmethod
+    def _init_mocks(call_list):
         session = MagicMock(['client'])
         client = MagicMock(call_list)
         session.client.return_value = client

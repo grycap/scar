@@ -34,7 +34,8 @@ class TestLambda(unittest.TestCase):
         os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
         unittest.TestCase.__init__(self, *args)
 
-    def _init_mocks(self, call_list):
+    @staticmethod
+    def _init_mocks(call_list):
         session = MagicMock(['client'])
         client = MagicMock(call_list)
         session.client.return_value = client

@@ -20,7 +20,7 @@ from scar.providers.aws import GenericClient
 
 class ECR(GenericClient):
     """Manages the AWS ElasticContainerRegistry functionality"""
-    
+
     def __init__(self, resources_info: Dict):
         super().__init__()
         self.resources_info = resources_info

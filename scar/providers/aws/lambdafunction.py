@@ -340,7 +340,7 @@ class Lambda(GenericClient):
             invoke_args['headers'].update({'Content-Type': 'application/json'})
 
     def _parse_http_parameters(self, parameters):
-        return parameters if type(parameters) is dict else json.loads(parameters)
+        return parameters if isinstance(parameters, dict) else json.loads(parameters)
 
     @excp.exception(logger)
     def _get_b64encoded_binary_data(self):

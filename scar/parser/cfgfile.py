@@ -81,7 +81,7 @@ _DEFAULT_CFG = {
         },
         "s3": {
             "boto_profile": "default",
-            "region": "us-east-1",            
+            "region": "us-east-1",
             "event" : {
                 "Records": [{
                     "eventSource": "aws:s3",
@@ -99,7 +99,7 @@ _DEFAULT_CFG = {
         },
         "api_gateway": {
             "boto_profile": "default",
-            "region": "us-east-1",            
+            "region": "us-east-1",
             "endpoint": "https://{api_id}.execute-api.{api_region}.amazonaws.com/{stage_name}/launch",
             'request_parameters': {"integration.request.header.X-Amz-Invocation-Type":
                                    "method.request.header.X-Amz-Invocation-Type"},
