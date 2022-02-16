@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from _ast import Or
 """Module with methods and classes to create the function deployment package."""
 
 from typing import Dict

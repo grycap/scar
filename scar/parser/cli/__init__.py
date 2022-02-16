@@ -16,10 +16,14 @@ of parsing the SCAR CLI commands."""
 
 import argparse
 import sys
-from typing import Dict, List
+from typing import Dict
 from scar.parser.cli.subparsers import Subparsers
-from scar.parser.cli.parents import *
-from scar.utils import DataTypesUtils, StrUtils, FileUtils
+from scar.parser.cli.parents import (create_exec_parser,
+                                     create_function_definition_parser,
+                                     create_output_parser,
+                                     create_profile_parser,
+                                     create_storage_parser)
+from scar.utils import DataTypesUtils, FileUtils
 from scar.cmdtemplate import CallType
 import scar.exceptions as excp
 import scar.logger as logger

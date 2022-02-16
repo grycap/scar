@@ -6,7 +6,7 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/54fa508a76fa4001843abad945c127c9)](https://www.codacy.com/gh/grycap/scar/dashboard?utm_source=github.com&utm_medium=referral&utm_content=grycap/scar&utm_campaign=Badge_Coverage)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/1968/badge)](https://bestpractices.coreinfrastructure.org/projects/1968)
 
-# ![SCAR](scar-logo.png)
+## ![SCAR](scar-logo.png)
 
 SCAR is a framework to transparently execute containers out of Docker images in AWS Lambda, in order to run applications (see examples for [ImageMagick](examples/imagemagick/README.md), [FFmpeg](examples/ffmpeg/README.md) and [AWS CLI](examples/aws-cli/README.md), as well as deep learning frameworks such as [Theano](examples/theano/README.md) and [Darknet](examples/darknet/README.md)) and code in virtually any programming language (see examples for [Ruby](examples/ruby), [R](examples/r), [Erlang](examples/erlang) and [Elixir](examples/elixir)) on AWS Lambda.
 
