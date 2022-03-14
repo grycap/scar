@@ -349,7 +349,7 @@ class Lambda(GenericClient):
         with open(data_path, 'rb') as data_file:
             return base64.b64encode(data_file.read())
 
-    def wait_function_active(self, function_arn, max_time=60, delay=2):
+    def wait_function_active(self, function_arn, max_time=300, delay=2):
         func = {"State": "Pending"}
         wait = 0
         while "State" in func and func["State"] == "Pending" and wait < max_time:
