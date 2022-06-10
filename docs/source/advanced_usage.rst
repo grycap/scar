@@ -87,7 +87,7 @@ Now if you execute the function without passing more parameters, the entrypoint 
                 ||     ||
 
 But, when you use the configuration file with the ``run_script`` property::
-  
+
   scar run -f cow.yaml
 
 or use CLI parameters::
@@ -172,7 +172,7 @@ For easier scripting, a JSON output can be obtained by including the `-j` or the
 
   scar run -f cow.yaml -j
 
-  { "LambdaOutput": 
+  { "LambdaOutput":
     {
       "StatusCode": 200,
       "Payload": " _________________________________________\n/  \"I always avoid prophesying beforehand \\\n| because it is much better               |\n|                                         |\n| to prophesy after the event has already |\n| taken place. \" - Winston                |\n|                                         |\n\\ Churchill                               /\n -----------------------------------------\n        \\   ^__^\n         \\  (oo)\\_______\n            (__)\\       )\\/\\\n                ||----w |\n                ||     ||\n",
@@ -187,7 +187,8 @@ Upload docker image files using an S3 bucket
 --------------------------------------------
 
 SCAR allows to upload a saved docker image.
-We created the image file with the command ``docker save grycap/cowsay > cowsay.tar.gz``::
+We created the image file with the command ``docker save grycap/cowsay > cowsay.tar.gz``.
+In case the docker is not in localhost pull it with the command ``docker pull grycap/cowsay``::
 
   cat >> cow.yaml << EOF
   functions:
@@ -208,14 +209,13 @@ or for the CLI fans::
 
 Have in mind that the maximum deployment package size allowed by AWS is an unzipped file of 250MB.
 The image file is unpacked in a temporal folder and the udocker layers are created.
-Depending on the size of the layers, SCAR will try to upload them or will show the user an error.  
+Depending on the size of the layers, SCAR will try to upload them or will show the user an error.
 
 Upload 'slim' docker image files in the payload
 -----------------------------------------------
 
-Finally, if the image is small enough, SCAR allows to upload it in the function payload wich is ~50MB::
-
-  docker save grycap/minicow > minicow.tar.gz
+Finally, if the image is small enough, SCAR allows to upload it in the function payload wich is ~50MB `` docker save grycap/minicow > minicow.tar.gz``
+in case::
 
   cat >> minicow.yaml << EOF
   functions:
@@ -236,7 +236,7 @@ Setting a specific VPC
 ----------------------
 
 You can also set an specific VPC parameters to configure the network in you lambda functions.
-You only have to add the ``vpc`` field setting the subnets and security groups as shown in the 
+You only have to add the ``vpc`` field setting the subnets and security groups as shown in the
 following example::
 
     functions:
