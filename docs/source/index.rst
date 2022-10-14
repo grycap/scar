@@ -15,6 +15,7 @@ Welcome to SCAR's documentation!
    advanced_usage
    image_env_usage
    api_gateway
+   fdl
    batch
    prog_model
    testing

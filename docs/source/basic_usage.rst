@@ -33,6 +33,8 @@ Using a configuration file (recommended)
 
     scar rm -f basic-cow.yaml
 
+A role must be specified with the flag -r. It must be the ARN code of the role. To find it, search IAM, the Identity and Access Management of AWS. Press the Role tab. Search and select the role name. That will have an structure similar to this arn:aws:iam::{code}:role/{name_of_the_role}
+
 Using CLI configuration (old school)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
