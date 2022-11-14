@@ -307,7 +307,7 @@ class AWS(Commands):
 
     @excp.exception(logger)
     def _add_api_gateway_permissions(self, resources_info: Dict):
-        if resources_info.get("api_gateway").get('name', False):
+        if resources_info.get("api_gateway", {}).get('name', False):
             Lambda(resources_info).add_invocation_permission_from_api_gateway()
 
     @excp.exception(logger)
