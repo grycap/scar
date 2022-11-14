@@ -136,7 +136,7 @@ class AWS(Commands):
         self.storage_providers = self.raw_args.get('storage_providers', {})
         self.scar_info = self.raw_args.get('scar', {})
         _add_extra_aws_properties(self.scar_info, self.aws_resources)
-        # Call the user's command, if defined
+        # Call the user's command
         getattr(self, func_call)()
 
 ############################################
