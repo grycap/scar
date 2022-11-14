@@ -84,6 +84,30 @@ flag in the function definition::
           image: 000000000000.dkr.ecr.us-east-1.amazonaws.com/scar-function
           create_image: false
 
+But this ECR image must have been prepared to work with scar, so it must have the
+init_script and the ``supervisor`` installed and set it as the ``CMD`` of the docker
+image. You can use this example to create your own ``Dockefile``::
+
+  from your_repo/your_image
+
+  # Create a base dir
+  ARG FUNCTION_DIR="/var/task"
+  WORKDIR ${FUNCTION_DIR}
+  # Set workdir in the path
+  ENV PATH="${FUNCTION_DIR}:${PATH}"
+  # Add PYTHONIOENCODING to avoid UnicodeEncodeError as sugested in:
+  # https://github.com/aws/aws-lambda-python-runtime-interface-client/issues/19
+  ENV PYTHONIOENCODING="utf8"
+
+  # Copy your script, similar to:
+  # https://github.com/grycap/scar/blob/master/examples/darknet/yolo.sh
+  COPY script.sh ${FUNCTION_DIR}
+  # Copy the supervisor
+  COPY supervisor ${FUNCTION_DIR}
+  # Set it as the CMD
+  CMD [ "supervisor" ]
+
+
 Do not delete ECR image on function deletion
 --------------------------------------------
 
