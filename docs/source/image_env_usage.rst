@@ -84,8 +84,8 @@ flag in the function definition::
           image: 000000000000.dkr.ecr.us-east-1.amazonaws.com/scar-function
           create_image: false
 
-But this ECR image must have been prepared to work with scar, so it must have the
-init_script and the ``supervisor`` installed and set it as the ``CMD`` of the docker
+But this ECR image must have been prepared to work with scar. So it must have the
+``init_script`` and the ``supervisor`` installed and set it as the ``CMD`` of the docker
 image. You can use this example to create your own ``Dockefile``::
 
   from your_repo/your_image

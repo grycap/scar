@@ -137,8 +137,7 @@ class AWS(Commands):
         self.scar_info = self.raw_args.get('scar', {})
         _add_extra_aws_properties(self.scar_info, self.aws_resources)
         # Call the user's command, if defined
-        if func_call:
-            getattr(self, func_call)()
+        getattr(self, func_call)()
 
 ############################################
 ###              AWS COMMANDS            ###
@@ -307,7 +306,7 @@ class AWS(Commands):
 
     @excp.exception(logger)
     def _add_api_gateway_permissions(self, resources_info: Dict):
-        if resources_info.get("api_gateway", {}).get('name', False):
+        if resources_info.get("api_gateway").get('name', False):
             Lambda(resources_info).add_invocation_permission_from_api_gateway()
 
     @excp.exception(logger)
