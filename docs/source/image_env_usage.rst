@@ -102,6 +102,8 @@ image. You can use this example to create your own ``Dockefile``::
   # Copy your script, similar to:
   # https://github.com/grycap/scar/blob/master/examples/darknet/yolo.sh
   COPY script.sh ${FUNCTION_DIR}
+  # Download the supervisor binary
+  # https://github.com/grycap/faas-supervisor/releases/latest
   # Copy the supervisor
   COPY supervisor ${FUNCTION_DIR}
   # Set it as the CMD
