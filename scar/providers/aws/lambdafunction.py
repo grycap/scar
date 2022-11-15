@@ -51,6 +51,7 @@ class Lambda(GenericClient):
         self.function = resources_info.get('lambda', {})
         self.supervisor_version = resources_info.get('lambda').get('supervisor').get('version')
         if (self.function.get('runtime') == "image" and
+                self.supervisor_version != "latest" and
                 StrUtils.compare_versions(self.supervisor_version, "1.5.0b3") < 0):
             # In case of using image runtime
             # it must be 1.5.0-beta3 version or higher
