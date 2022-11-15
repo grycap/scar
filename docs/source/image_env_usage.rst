@@ -5,6 +5,9 @@ Scar uses by default the python3.7 Lambda environment using udocker program to e
 In 2021 AWS added native support to ECR container images. Scar also supports to use this environment
 to execute your containers.
 
+This functionality requires docker to be installed (check installation documentation
+`here <https://docs.docker.com/engine/install/>`_).
+
 To use it you only have to set to ``image`` the lamda ``runtime`` property setting.
 You can set it in the scar configuration file::
 
