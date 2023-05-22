@@ -5,6 +5,9 @@ Scar uses by default the python3.7 Lambda environment using udocker program to e
 In 2021 AWS added native support to ECR container images. Scar also supports to use this environment
 to execute your containers.
 
+This functionality requires docker to be installed (check installation documentation
+`here <https://docs.docker.com/engine/install/>`_).
+
 To use it you only have to set to ``image`` the lamda ``runtime`` property setting.
 You can set it in the scar configuration file::
 
@@ -102,6 +105,8 @@ image. You can use this example to create your own ``Dockefile``::
   # Copy your script, similar to:
   # https://github.com/grycap/scar/blob/master/examples/darknet/yolo.sh
   COPY script.sh ${FUNCTION_DIR}
+  # Download the supervisor binary
+  # https://github.com/grycap/faas-supervisor/releases/latest
   # Copy the supervisor
   COPY supervisor ${FUNCTION_DIR}
   # Set it as the CMD
